@@ -64,13 +64,13 @@ pnpm install
 
 ### 2. Set Up Environment Variables
 
-Create `.env.local` files in both `apps/web` and `apps/app`:
+`.env.local` files have been created for local development using the Beta Supabase project. They are already configured with:
 
-**apps/web/.env.local:**
+**apps/web/.env.local** and **apps/app/.env.local:**
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+NEXT_PUBLIC_SUPABASE_URL=https://aiopjznxnoqgmmqowpxb.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpb3Bqem54bm9xZ21tcW93cHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNDg3MzMsImV4cCI6MjA4MTYyNDczM30.BLHb8D33PSCKUeI4ZkM6KT-a_a8ns2QnjCeUY7h2IiU
+SUPABASE_SERVICE_ROLE_KEY=YOUR_BETA_SERVICE_ROLE_KEY_HERE
 
 NEXT_PUBLIC_APP_ENV=local
 NEXT_PUBLIC_APP_VERSION=0.0.0-local
@@ -79,18 +79,11 @@ NEXT_PUBLIC_WEB_URL=http://localhost:3006
 NEXT_PUBLIC_APP_URL=http://localhost:3007
 ```
 
-**apps/app/.env.local:**
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
-
-NEXT_PUBLIC_APP_ENV=local
-NEXT_PUBLIC_APP_VERSION=0.0.0-local
-
-NEXT_PUBLIC_WEB_URL=http://localhost:3006
-NEXT_PUBLIC_APP_URL=http://localhost:3007
-```
+**⚠️ Important**: You need to add the `SUPABASE_SERVICE_ROLE_KEY` from your Beta Supabase project:
+1. Go to your Beta Supabase project: https://aiopjznxnoqgmmqowpxb.supabase.co
+2. Navigate to Settings → API
+3. Copy the `service_role` `secret` key
+4. Replace `YOUR_BETA_SERVICE_ROLE_KEY_HERE` in both `.env.local` files
 
 ### 3. Set Up Supabase Database
 
