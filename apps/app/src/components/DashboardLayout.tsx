@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Logo, Dropdown, cn } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
+import { UserProfileModal } from "./UserProfileModal";
 
 interface NavItem {
   label: string;
@@ -36,8 +37,24 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, role, userEmail }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const pathname = usePathname();
   const supabase = createBrowserClient();
+
+  // Load user roles
+  useEffect(() => {
+    const loadRoles = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+        if (data) {
+          setUserRoles(data.map((r) => r.role));
+        }
+      }
+    };
+    loadRoles();
+  }, []);
 
   const getNavItems = (): NavItem[] => {
     switch (role) {
@@ -163,8 +180,8 @@ export function DashboardLayout({ children, role, userEmail }: DashboardLayoutPr
               }
               items={[
                 {
-                  label: "Profile",
-                  onClick: () => {},
+                  label: "Profile & Settings",
+                  onClick: () => setProfileModalOpen(true),
                   icon: <User className="h-4 w-4" />,
                 },
                 {
@@ -214,6 +231,14 @@ export function DashboardLayout({ children, role, userEmail }: DashboardLayoutPr
           </div>
         </main>
       </div>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        userEmail={userEmail}
+        userRoles={userRoles}
+      />
     </div>
   );
 }

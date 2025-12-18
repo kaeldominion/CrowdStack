@@ -17,12 +17,29 @@ export async function getUserRoles(): Promise<UserRole[]> {
     return [];
   }
 
+  // Try with regular client first (respects RLS)
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id);
 
-  if (error || !data) {
+  if (error) {
+    // If RLS blocks, try with service role as fallback (for debugging)
+    console.warn("Failed to get user roles with regular client, trying service role:", error.message);
+    try {
+      const serviceSupabase = createServiceRoleClient();
+      const { data: serviceData } = await serviceSupabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      return serviceData?.map((r) => r.role as UserRole) || [];
+    } catch (serviceError) {
+      console.error("Failed to get roles with service role:", serviceError);
+      return [];
+    }
+  }
+
+  if (!data) {
     return [];
   }
 

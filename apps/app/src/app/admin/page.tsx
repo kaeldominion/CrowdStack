@@ -35,6 +35,39 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const adminManagement = [
+    {
+      name: "Venues",
+      href: "/admin/venues",
+      description: "View and manage all venues",
+      icon: <Building2 className="h-6 w-6" />,
+    },
+    {
+      name: "Events",
+      href: "/admin/events",
+      description: "View and manage all events",
+      icon: <Calendar className="h-6 w-6" />,
+    },
+    {
+      name: "Promoters",
+      href: "/admin/promoters",
+      description: "View all promoters and performance",
+      icon: <Users className="h-6 w-6" />,
+    },
+    {
+      name: "Users",
+      href: "/admin/users",
+      description: "Manage users and roles",
+      icon: <Shield className="h-6 w-6" />,
+    },
+    {
+      name: "Attendees",
+      href: "/admin/attendees",
+      description: "Comprehensive attendee database",
+      icon: <Users className="h-6 w-6" />,
+    },
+  ];
+
   const adminTools = [
     {
       name: "Merge Duplicate Attendees",
@@ -110,6 +143,24 @@ export default function AdminDashboardPage() {
                     </div>
                     <h3 className="text-sm font-semibold text-foreground mb-2">{dashboard.name}</h3>
                     <p className="text-xs text-foreground-muted">{dashboard.description}</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Admin Management */}
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Management</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {adminManagement.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <Card hover className="h-full">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary mb-4">
+                      {item.icon}
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground mb-2">{item.name}</h3>
+                    <p className="text-xs text-foreground-muted">{item.description}</p>
                   </Card>
                 </Link>
               ))}

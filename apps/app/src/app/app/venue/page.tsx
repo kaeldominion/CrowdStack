@@ -1,34 +1,56 @@
-import { createClient } from "@crowdstack/shared/supabase/server";
-import { getUserRole } from "@crowdstack/shared/auth/roles";
+"use client";
+
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { BentoCard } from "@/components/BentoCard";
-import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users } from "lucide-react";
+import { Button } from "@crowdstack/ui";
+import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users, Plus } from "lucide-react";
+import Link from "next/link";
 
-export default async function VenueDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const role = await getUserRole();
-
-  // TODO: Fetch actual data
-  const stats = {
+export default function VenueDashboardPage() {
+  const [stats, setStats] = useState({
     totalEvents: 0,
     thisMonth: 0,
     totalCheckIns: 0,
     repeatRate: 0,
     avgAttendance: 0,
     topEvent: "N/A",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const response = await fetch("/api/venue/dashboard-stats");
+      if (!response.ok) throw new Error("Failed to load stats");
+      const data = await response.json();
+      setStats(data.stats || stats);
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <DashboardLayout role={role as any} userEmail={user?.email}>
+    <DashboardLayout role="venue_admin" userEmail="">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Overview of your venue performance
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
+            <p className="mt-2 text-sm text-white/60">
+              Overview of your venue performance
+            </p>
+          </div>
+          <Link href="/app/venue/events/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          </Link>
         </div>
 
         {/* Bento Grid Layout */}
@@ -93,7 +115,10 @@ export default async function VenueDashboardPage() {
                 <span className="text-sm text-white/40">per event</span>
               </div>
               <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: "75%" }} />
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                  style={{ width: "75%" }}
+                />
               </div>
             </div>
           </BentoCard>
@@ -105,10 +130,6 @@ export default async function VenueDashboardPage() {
                 <BarChart3 className="h-4 w-4 text-white/40" />
               </div>
               <p className="text-2xl font-bold tracking-tighter text-white">{stats.topEvent}</p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-emerald-400 font-medium">+24.8%</span>
-                <span className="text-white/40">vs average</span>
-              </div>
             </div>
           </BentoCard>
         </div>
@@ -116,4 +137,3 @@ export default async function VenueDashboardPage() {
     </DashboardLayout>
   );
 }
-

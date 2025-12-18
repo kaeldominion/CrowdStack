@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "../supabase/server";
-import { getUserRole, userHasRole } from "./roles";
+import { getUserRole, userHasRole, getUserRoles } from "./roles";
 import type { UserRole } from "../types";
 
 /**
@@ -132,11 +132,6 @@ export async function canAccessEvent(eventId: string): Promise<boolean> {
  * Check if user can manage an event (create, update, delete)
  */
 export async function canManageEvent(eventId: string | null): Promise<boolean> {
-  if (!eventId) {
-    // Creating new event - check if user is organizer
-    return await userHasRole("event_organizer");
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -144,6 +139,19 @@ export async function canManageEvent(eventId: string | null): Promise<boolean> {
 
   if (!user) {
     return false;
+  }
+
+  // Check if superadmin
+  const roles = await getUserRoles();
+  const isSuperadmin = roles.includes("superadmin");
+
+  if (!eventId) {
+    // Creating new event - check if user is organizer or superadmin
+    return isSuperadmin || (await userHasRole("event_organizer"));
+  }
+
+  if (isSuperadmin) {
+    return true;
   }
 
   // Only organizers can manage events
@@ -171,7 +179,7 @@ export async function canManageEvent(eventId: string | null): Promise<boolean> {
     return false;
   }
 
-  // Can't manage locked events
+  // Can't manage locked events (unless superadmin - checked above)
   if (event.locked_at) {
     return false;
   }

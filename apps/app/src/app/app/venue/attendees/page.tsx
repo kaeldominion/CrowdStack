@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
-import { Search, Filter, Download, Flag, User } from "lucide-react";
+import { Search, Filter, Download, Flag, User, UserCheck } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
 
 export default function VenueAttendeesPage() {
@@ -153,37 +153,48 @@ export default function VenueAttendeesPage() {
         <Card>
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Events</TableHead>
-                  <TableHead>Check-ins</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Event</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAttendees.length === 0 ? (
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-foreground-muted">
-                      No attendees found
-                    </TableCell>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Events</TableHead>
+                    <TableHead>Check-ins</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Event</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredAttendees.map((attendee) => (
-                    <TableRow key={attendee.id} hover>
-                      <TableCell className="font-medium">{attendee.name}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {attendee.email && (
-                            <div className="text-sm text-foreground-muted">{attendee.email}</div>
-                          )}
-                          <div className="text-sm text-foreground-muted">{attendee.phone}</div>
-                        </div>
+                </TableHeader>
+              <TableBody>
+                  {filteredAttendees.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-foreground-muted">
+                        No attendees found
                       </TableCell>
-                      <TableCell>{attendee.events_attended}</TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAttendees.map((attendee) => (
+                      <TableRow key={attendee.id} hover>
+                        <TableCell className="font-medium">{attendee.name}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {attendee.email && (
+                              <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                            )}
+                            <div className="text-sm text-foreground-muted">{attendee.phone}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {attendee.user_id ? (
+                            <div className="flex items-center gap-1">
+                              <UserCheck className="h-4 w-4 text-success" />
+                              <span className="text-xs text-foreground-muted">Linked</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-foreground-muted">No account</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{attendee.events_attended}</TableCell>
                       <TableCell>{attendee.total_check_ins}</TableCell>
                       <TableCell>{getStrikeBadge(attendee.strike_count)}</TableCell>
                       <TableCell className="text-sm text-foreground-muted">

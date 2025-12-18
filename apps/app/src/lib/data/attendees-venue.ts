@@ -6,6 +6,7 @@ export interface VenueAttendee {
   name: string;
   email: string | null;
   phone: string;
+  user_id: string | null;
   events_attended: number;
   total_check_ins: number;
   last_event_at: string | null;
@@ -63,7 +64,7 @@ export async function getVenueAttendees(
   // Get attendees
   let query = supabase
     .from("attendees")
-    .select("id, name, email, phone, created_at")
+    .select("id, name, email, phone, user_id, created_at")
     .in("id", attendeeIds);
 
   // Apply filters
@@ -84,12 +85,12 @@ export async function getVenueAttendees(
   }
 
   // Get guest flags for these attendees
-  const attendeeIds = data?.map((a) => a.id) || [];
+  const filteredAttendeeIds = data?.map((a) => a.id) || [];
   const { data: flags } = await supabase
     .from("guest_flags")
     .select("attendee_id, strike_count, permanent_ban")
     .eq("venue_id", venueId)
-    .in("attendee_id", attendeeIds);
+    .in("attendee_id", filteredAttendeeIds);
 
   const flagsMap = new Map(
     flags?.map((f) => [f.attendee_id, { strikes: f.strike_count || 0, banned: f.permanent_ban || false }]) || []
@@ -121,6 +122,7 @@ export async function getVenueAttendees(
       name: attendee.name,
       email: attendee.email,
       phone: attendee.phone,
+      user_id: attendee.user_id,
       events_attended: attendeeRegs.length,
       total_check_ins: checkins.length,
       last_event_at: eventTimes[0] || null,
