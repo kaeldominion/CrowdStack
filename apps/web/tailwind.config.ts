@@ -10,8 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "#0A0A0A",
+        surface: "#111111",
+        border: "rgba(255, 255, 255, 0.1)",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        geist: ["Inter", "system-ui", "sans-serif"],
+      },
+      letterSpacing: {
+        tighter: "-0.02em",
+        widest: "0.1em",
+      },
+      backdropBlur: {
+        xs: "2px",
       },
     },
   },

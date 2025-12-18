@@ -13,6 +13,8 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE public.healthcheck ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access for health checks
+-- Drop policy if it exists, then create it
+DROP POLICY IF EXISTS "Allow public read access for health checks" ON public.healthcheck;
 CREATE POLICY "Allow public read access for health checks"
   ON public.healthcheck
   FOR SELECT

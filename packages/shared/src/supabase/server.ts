@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
@@ -60,4 +62,3 @@ export function createServiceRoleClient() {
     },
   });
 }
-

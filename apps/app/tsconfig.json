@@ -10,7 +10,7 @@
       "@/*": ["./src/*"],
       "@crowdstack/ui": ["../../packages/ui/src"],
       "@crowdstack/shared": ["../../packages/shared/src"],
-      "@crowdstack/shared/server": ["../../packages/shared/src/server"]
+      "@crowdstack/shared/*": ["../../packages/shared/src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

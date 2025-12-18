@@ -2,7 +2,8 @@ import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ss
 
 /**
  * Create a Supabase client for use in the browser
- * This should only be used in client components or client-side code
+ * MUST use cookies for PKCE code verifier storage (not localStorage)
+ * This is critical for magic links clicked from email
  */
 export function createBrowserClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,6 +15,6 @@ export function createBrowserClient() {
     );
   }
 
+  // Use default implementation - @supabase/ssr handles PKCE automatically
   return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }
-

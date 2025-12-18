@@ -2,27 +2,165 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* CrowdStack Brand Colors */
+  --crowdstack-black: #0B0D10;
+  --crowdstack-graphite: #141821;
+  --crowdstack-steel: #2A2F3A;
+  --crowdstack-blue: #3B82F6;
+  --crowdstack-success: #10B981;
+  --crowdstack-warning: #F59E0B;
+  --crowdstack-error: #EF4444;
+  
+  --background: var(--crowdstack-black);
+  --foreground: #FFFFFF;
+  --surface: var(--crowdstack-graphite);
+  --border: var(--crowdstack-steel);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--crowdstack-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--crowdstack-steel);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--crowdstack-blue);
+}
+
+/* Selection */
+::selection {
+  background: var(--crowdstack-blue);
+  color: white;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--crowdstack-blue);
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Utility classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+  
+  .bg-surface {
+    background-color: var(--crowdstack-graphite);
+  }
+  
+  .bg-black-brand {
+    background-color: var(--crowdstack-black);
+  }
+  
+  .border-steel {
+    border-color: var(--crowdstack-steel);
+  }
+  
+  .text-blue-brand {
+    color: var(--crowdstack-blue);
+  }
+  
+  .text-success {
+    color: var(--crowdstack-success);
+  }
+  
+  .text-warning {
+    color: var(--crowdstack-warning);
+  }
+  
+  .text-error {
+    color: var(--crowdstack-error);
+  }
 }
 
+/* Brutal design - clean, sharp, no fluff */
+button, a {
+  transition: all 0.15s ease;
+}
+
+/* Smooth transitions for interactive elements */
+.transition-brutal {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glow effect for important elements */
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.glow-blue-hover:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}

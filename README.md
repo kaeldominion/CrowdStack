@@ -100,39 +100,40 @@ NEXT_PUBLIC_APP_URL=http://localhost:3007
 ### 3. Set Up Supabase Database
 
 1. Create a Supabase project (or use existing)
-2. Run the migration to create the healthcheck table:
+2. Run the migrations in order:
 
-```sql
--- Run this in your Supabase SQL Editor
-CREATE TABLE IF NOT EXISTS public.healthcheck (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+```bash
+# Run migrations in Supabase SQL Editor or via Supabase CLI
+# Migration files are in supabase/migrations/
 
-INSERT INTO public.healthcheck (id) VALUES (gen_random_uuid())
-ON CONFLICT (id) DO NOTHING;
-
-ALTER TABLE public.healthcheck ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow public read access for health checks"
-  ON public.healthcheck
-  FOR SELECT
-  USING (true);
+# 001_healthcheck.sql - Basic healthcheck table
+# 002_core_schema.sql - All core tables (venues, events, registrations, etc.)
+# 003_rls_policies.sql - Row Level Security policies
+# 004_seed_data.sql - Sample data for development
 ```
+
+**Important**: Run migrations in order (001, 002, 003, 004) in your Supabase SQL Editor.
+
+**Required Environment Variable**: Add `JWT_SECRET` to your `.env.local` files:
+```env
+JWT_SECRET=your-secure-random-secret-key-here
+```
+
+This is used for signing QR pass tokens. Generate a secure random string (e.g., using `openssl rand -hex 32`).
 
 ### 4. Run Development Server
 
 ```bash
-# Start web app on port 3006 (default)
-pnpm dev
+# Start both servers simultaneously (recommended)
+pnpm dev:all
 
 # Or start individually
-pnpm dev:web  # Port 3006 (web app)
-pnpm dev:app  # Port 3007 (B2B app)
+pnpm dev        # Port 3006 (web app only)
+pnpm dev:web    # Port 3006 (web app)
+pnpm dev:app    # Port 3007 (B2B app)
 ```
 
-**Default Port**: The `pnpm dev` command runs the web app on **port 3006** by default.
+**Recommended**: Use `pnpm dev:all` to start both servers at once with colored output.
 
 The apps will be available at:
 - **Web**: http://localhost:3006
@@ -529,13 +530,188 @@ CrowdStack/
 └── README.md
 ```
 
+## Database Migrations
+
+### Running Migrations
+
+Migrations are located in `supabase/migrations/`. Run them in order:
+
+1. **001_healthcheck.sql** - Basic connectivity table
+2. **002_core_schema.sql** - Core database schema (all tables)
+3. **003_rls_policies.sql** - Row Level Security policies
+4. **004_seed_data.sql** - Development seed data
+
+**Via Supabase Dashboard:**
+1. Go to your Supabase project → SQL Editor
+2. Copy and paste each migration file content
+3. Run them in order
+
+**Via Supabase CLI:**
+```bash
+supabase db push
+```
+
+### Storage Buckets
+
+Create the following storage buckets in Supabase:
+- `event-photos` - For event photo albums
+- `statements` - For payout PDF statements
+- `qr-passes` (optional) - For QR pass assets
+
+Set appropriate RLS policies for each bucket.
+
+## Invite Token Generation
+
+To generate invite tokens for B2B roles (venue_admin, event_organizer, promoter, door_staff):
+
+**Via SQL:**
+```sql
+SELECT public.create_invite_token('venue_admin'::user_role, '{}'::jsonb);
+SELECT public.create_invite_token('event_organizer'::user_role, '{}'::jsonb);
+SELECT public.create_invite_token('promoter'::user_role, '{}'::jsonb);
+SELECT public.create_invite_token('door_staff'::user_role, '{}'::jsonb);
+```
+
+**Via API (future):**
+Create an admin endpoint or use the service role client to call `createInviteToken()` from `@crowdstack/shared`.
+
+Invite tokens are single-use and do not expire. Share the token URL: `https://crowdstack.app/invite/{token}`
+
+## Role-Based Access Control
+
+The system implements RBAC with these roles:
+- **superadmin** - Platform administrator with full access (bypasses RLS)
+- **venue_admin** - Full access to venue data
+- **event_organizer** - Manage their events
+- **promoter** - View assigned events, track referrals
+- **door_staff** - Check-in attendees at events
+- **attendee** - Consumer-facing role
+
+### Making a User Superadmin
+
+To make a user a superadmin, run the SQL script:
+
+```sql
+-- In Supabase SQL Editor or via psql
+\i scripts/make-superadmin.sql
+```
+
+Or manually:
+
+```sql
+-- Replace 'user@example.com' with the target email
+INSERT INTO public.user_roles (user_id, role, metadata)
+SELECT id, 'superadmin'::user_role, '{"created_by": "system"}'::jsonb
+FROM auth.users
+WHERE email = 'spencertarring@gmail.com'
+ON CONFLICT (user_id, role) DO UPDATE SET updated_at = NOW();
+```
+
+Users are redirected based on their role:
+- Venue admins → `/app/venue`
+- Organizers → `/app/organizer`
+- Promoters → `/app/promoter`
+- Door staff → `/door`
+- Attendees → `/me`
+
+## API Routes
+
+### Web App (`apps/web`)
+- `POST /api/events/[eventSlug]/register` - Register for event
+- `POST /api/invites/[token]/accept` - Accept invite token
+
+### B2B App (`apps/app`)
+- `POST /api/events/create` - Create new event
+- `POST /api/events/[eventId]/checkin` - Check-in attendee
+- `POST /api/events/[eventId]/quick-add` - Quick-add attendee at door
+- `POST /api/events/[eventId]/payouts/generate` - Generate payout statements
+- `POST /api/events/[eventId]/photos/publish` - Publish photo album
+
+## Environment Variables
+
+### Required for All Apps
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Get from Supabase Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server only) | Get from Supabase Settings → API |
+| `JWT_SECRET` | Secret for QR pass signing | Generate secure random string |
+| `NEXT_PUBLIC_APP_ENV` | Environment identifier | `local`, `beta`, or `prod` |
+| `NEXT_PUBLIC_APP_VERSION` | App version | `$VERCEL_GIT_COMMIT_SHA` or custom |
+| `NEXT_PUBLIC_WEB_URL` | Web app URL | `http://localhost:3006` (local) |
+| `NEXT_PUBLIC_APP_URL` | B2B app URL | `http://localhost:3007` (local) |
+
+### Environment-Specific URLs
+
+**Local:**
+- `NEXT_PUBLIC_WEB_URL=http://localhost:3006`
+- `NEXT_PUBLIC_APP_URL=http://localhost:3007`
+
+**Beta (Preview):**
+- `NEXT_PUBLIC_WEB_URL=https://beta.crowdstack.app`
+- `NEXT_PUBLIC_APP_URL=https://app-beta.crowdstack.app`
+
+**Production:**
+- `NEXT_PUBLIC_WEB_URL=https://crowdstack.app`
+- `NEXT_PUBLIC_APP_URL=https://app.crowdstack.app`
+
+## Deployment Notes
+
+### Vercel Configuration
+
+Each Vercel project should have:
+- **Root Directory**: `apps/web` or `apps/app`
+- **Build Command**: `cd ../.. && pnpm build:web` or `cd ../.. && pnpm build:app`
+- **Install Command**: `corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install`
+
+### Supabase Projects
+
+**Critical**: Never mix environments!
+- **Beta Supabase** → Used by `develop` branch deployments
+- **Prod Supabase** → Used by `main` branch deployments
+
+Both projects should have:
+- All migrations run (001-004)
+- Storage buckets created
+- RLS policies enabled
+- Same schema structure
+
+### Migration Deployment
+
+When deploying new migrations:
+1. Run migrations in **Beta Supabase** first (for local/preview testing)
+2. Test thoroughly in beta environment
+3. **When ready for production**, run migrations in **Prod Supabase**
+4. Deploy to production
+
+**Migration Workflow:**
+
+- **During Development**: Only update Beta Supabase
+  ```bash
+  # Link to Beta and push migrations
+  ./scripts/update-beta-db.sh
+  ```
+
+- **Before Production Release**: Sync migrations to Prod Supabase
+  ```bash
+  # Link to Prod and push migrations
+  ./scripts/update-prod-db.sh
+  ```
+
+**⚠️ Important**: 
+- Always test migrations in Beta first
+- Only sync to Prod when you're ready to deploy to production
+- Production migrations should match your `main` branch code
+- Never run untested migrations directly on Prod
+
 ## Next Steps
 
-1. Set up authentication flows
-2. Create event management features
-3. Implement QR code generation/scanning
-4. Add photo gallery functionality
-5. Set up analytics and monitoring
+1. Set up Supabase Storage buckets
+2. Configure email templates (Supabase Auth)
+3. Implement QR code scanning in door scanner
+4. Add analytics queries to dashboards
+5. Set up n8n webhook polling from `event_outbox` table
 
 ## Support
 
