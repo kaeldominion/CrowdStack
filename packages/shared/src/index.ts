@@ -2,7 +2,9 @@
 export * from "./types";
 export * from "./utils";
 
-// Supabase clients - use appropriate one for your context
+// Supabase browser client (safe for client components)
 export { createBrowserClient } from "./supabase/client";
-export { createClient, createServiceRoleClient } from "./supabase/server";
+
+// Server-only Supabase clients - import directly from "./supabase/server" in server components
+// Not exported here to avoid bundling server-only code in client components
 

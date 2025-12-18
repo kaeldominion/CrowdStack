@@ -1,4 +1,4 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ssr";
 
 /**
  * Create a Supabase client for use in the browser
@@ -14,6 +14,6 @@ export function createBrowserClient() {
     );
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 
