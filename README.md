@@ -431,11 +431,12 @@ If you see errors about pnpm version (e.g., "Got: 6.35.1" instead of ">=8.0.0"):
    (Note: Using `corepack pnpm` ensures we use the corepack-managed version)
 3. Ensure **Root Directory** is set to `apps/web` (or `apps/app` for app projects)
 
-**Solution 2: Install pnpm via npm (Fallback)**
-If corepack doesn't work in Vercel's environment, use:
+**Solution 2: Install pnpm via npm (Most Reliable)**
+If `corepack pnpm` still doesn't work, use npm to install pnpm globally:
 ```
 cd ../.. && npm install -g pnpm@8.15.0 && pnpm install
 ```
+This removes the old pnpm and installs the correct version before running install.
 
 **Solution 3: Generate pnpm-lock.yaml**
 Vercel auto-detects pnpm if `pnpm-lock.yaml` exists. To generate it locally:
