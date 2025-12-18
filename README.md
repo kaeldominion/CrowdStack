@@ -295,7 +295,7 @@ Go to [Vercel Dashboard](https://vercel.com/dashboard) and create 4 new projects
 - **Root Directory**: `apps/web`
 - **Framework Preset**: Next.js
 - **Build Command**: (auto-detected, or use `cd ../.. && pnpm build:web`)
-- **Install Command**: `cd ../.. && pnpm install`
+- **Install Command**: `corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install`
 - **Branch**: `develop` (auto-deploy on push)
 - **Environment Variables** (use Beta Supabase):
   ```
@@ -313,7 +313,7 @@ Go to [Vercel Dashboard](https://vercel.com/dashboard) and create 4 new projects
 - **Root Directory**: `apps/web`
 - **Framework Preset**: Next.js
 - **Build Command**: (auto-detected, or use `cd ../.. && pnpm build:web`)
-- **Install Command**: `cd ../.. && pnpm install`
+- **Install Command**: `corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install`
 - **Branch**: `main` (auto-deploy on push)
 - **Environment Variables** (use Prod Supabase):
   ```
@@ -331,7 +331,7 @@ Go to [Vercel Dashboard](https://vercel.com/dashboard) and create 4 new projects
 - **Root Directory**: `apps/app`
 - **Framework Preset**: Next.js
 - **Build Command**: (auto-detected, or use `cd ../.. && pnpm build:app`)
-- **Install Command**: `cd ../.. && pnpm install`
+- **Install Command**: `corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install`
 - **Branch**: `develop` (auto-deploy on push)
 - **Environment Variables** (use Beta Supabase):
   ```
@@ -349,7 +349,7 @@ Go to [Vercel Dashboard](https://vercel.com/dashboard) and create 4 new projects
 - **Root Directory**: `apps/app`
 - **Framework Preset**: Next.js
 - **Build Command**: (auto-detected, or use `cd ../.. && pnpm build:app`)
-- **Install Command**: `cd ../.. && pnpm install`
+- **Install Command**: `corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install`
 - **Branch**: `main` (auto-deploy on push)
 - **Environment Variables** (use Prod Supabase):
   ```
@@ -415,6 +415,18 @@ Health check endpoints log to console:
 Check Vercel function logs for production monitoring.
 
 ## Troubleshooting
+
+### Vercel Build Issues with pnpm
+
+If you see errors about pnpm version or npm being used instead of pnpm:
+
+1. **Ensure `packageManager` field is set** in root `package.json` (already configured)
+2. **Verify Install Command** in Vercel project settings uses:
+   ```
+   corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install
+   ```
+3. **Check Root Directory** is set correctly (`apps/web` or `apps/app`)
+4. **Vercel should auto-detect pnpm** if `packageManager` field exists, but the explicit install command ensures it works
 
 ### Port Conflicts
 
