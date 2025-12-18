@@ -2,7 +2,6 @@
   "buildCommand": "cd ../.. && pnpm build:web",
   "devCommand": "cd ../.. && pnpm dev:web",
   "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@8.15.0 --activate && corepack pnpm install",
-  "framework": "nextjs",
-  "outputDirectory": ".next"
+  "framework": "nextjs"
 }
 
