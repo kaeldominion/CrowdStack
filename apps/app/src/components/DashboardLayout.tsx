@@ -45,9 +45,10 @@ export function DashboardLayout({ children, role, userEmail }: DashboardLayoutPr
         return [
           { label: "Dashboard", href: "/app/venue", icon: <LayoutDashboard className="h-5 w-5" /> },
           { label: "Events", href: "/app/venue/events", icon: <Calendar className="h-5 w-5" /> },
+          { label: "Attendees", href: "/app/venue/attendees", icon: <Users className="h-5 w-5" /> },
           { label: "Organizers", href: "/app/venue/organizers", icon: <Building2 className="h-5 w-5" /> },
           { label: "Promoters", href: "/app/venue/promoters", icon: <Users className="h-5 w-5" /> },
-          { label: "Guests", href: "/app/venue/guests/flags", icon: <Ticket className="h-5 w-5" /> },
+          { label: "Guest Flags", href: "/app/venue/guests/flags", icon: <Ticket className="h-5 w-5" /> },
           { label: "Reports", href: "/app/venue/reports", icon: <BarChart3 className="h-5 w-5" /> },
           { label: "Settings", href: "/app/venue/settings", icon: <Settings className="h-5 w-5" /> },
         ];
@@ -55,6 +56,7 @@ export function DashboardLayout({ children, role, userEmail }: DashboardLayoutPr
         return [
           { label: "Dashboard", href: "/app/organizer", icon: <LayoutDashboard className="h-5 w-5" /> },
           { label: "Events", href: "/app/organizer/events", icon: <Calendar className="h-5 w-5" /> },
+          { label: "Attendees", href: "/app/organizer/attendees", icon: <Users className="h-5 w-5" /> },
           { label: "Promoters", href: "/app/organizer/promoters", icon: <Users className="h-5 w-5" /> },
           { label: "Payouts", href: "/app/organizer/payouts", icon: <DollarSign className="h-5 w-5" /> },
           { label: "Settings", href: "/app/organizer/settings", icon: <Settings className="h-5 w-5" /> },
@@ -63,6 +65,7 @@ export function DashboardLayout({ children, role, userEmail }: DashboardLayoutPr
         return [
           { label: "Dashboard", href: "/app/promoter", icon: <LayoutDashboard className="h-5 w-5" /> },
           { label: "Events", href: "/app/promoter/events", icon: <Calendar className="h-5 w-5" /> },
+          { label: "My Attendees", href: "/app/promoter/attendees", icon: <Users className="h-5 w-5" /> },
           { label: "Earnings", href: "/app/promoter/earnings", icon: <DollarSign className="h-5 w-5" /> },
           { label: "Tools", href: "/app/promoter/tools", icon: <QrCode className="h-5 w-5" /> },
           { label: "Profile", href: "/app/promoter/profile", icon: <User className="h-5 w-5" /> },
