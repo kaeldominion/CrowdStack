@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { createClient } from "@crowdstack/shared/server";
 import type { HealthCheckResult } from "@crowdstack/shared";
 
 export async function GET() {
