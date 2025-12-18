@@ -12,7 +12,7 @@ export default function HomePage() {
           Your complete event management platform
         </p>
         <p className="mt-2 text-sm text-gray-500">
-          Deployed via Vercel with preview deployments
+          Deployed via Vercel with preview deployments • Updated {new Date().toLocaleDateString()}
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
           <Link
