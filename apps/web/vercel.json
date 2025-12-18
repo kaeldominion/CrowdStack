@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd ../.. && npm install -g pnpm@8.15.0 && $(npm config get prefix)/bin/pnpm build:web",
+  "buildCommand": "cd ../.. && npx -y pnpm@8.15.0 build:web",
   "devCommand": "cd ../.. && pnpm dev:web",
-  "installCommand": "cd ../.. && npm install -g pnpm@8.15.0 && $(npm config get prefix)/bin/pnpm install",
+  "installCommand": "cd ../.. && npx -y pnpm@8.15.0 install",
   "framework": "nextjs"
 }
 
