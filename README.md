@@ -238,14 +238,17 @@ git push origin main
 
 ## Vercel Deployment
 
-We use **4 separate Vercel projects** pointing to the same GitHub repository with different configurations:
+We use **2 Vercel projects** with preview deployments, pointing to the same GitHub repository:
 
-| Vercel Project | Root Directory | Branch | Domain |
-|----------------|----------------|--------|--------|
-| `crowdstack-web-beta` | `apps/web` | `develop` | `beta.crowdstack.app` |
-| `crowdstack-web-prod` | `apps/web` | `main` | `crowdstack.app` |
-| `crowdstack-app-beta` | `apps/app` | `develop` | `app-beta.crowdstack.app` |
-| `crowdstack-app-prod` | `apps/app` | `main` | `app.crowdstack.app` |
+| Vercel Project | Root Directory | Production Branch | Preview Branch | Production Domain | Preview Domain |
+|----------------|----------------|-------------------|----------------|-------------------|----------------|
+| `crowdstack-web` | `apps/web` | `main` | `develop` | `crowdstack.app` | `beta.crowdstack.app` |
+| `crowdstack-app` | `apps/app` | `main` | `develop` | `app.crowdstack.app` | `app-beta.crowdstack.app` |
+
+**Deployment Strategy:**
+- **Production**: Deploys from `main` branch → Production domains
+- **Beta/Preview**: Deploys from `develop` branch → Preview domains
+- Vercel automatically creates preview deployments for the `develop` branch
 
 ### Environment Variable Mapping
 
@@ -260,9 +263,9 @@ Each Vercel project must be configured with the correct environment variables po
 
 **⚠️ Critical**: Beta Vercel projects MUST use the Beta Supabase project. Prod Vercel projects MUST use the Prod Supabase project. Never mix environments.
 
-### Required Environment Variables for Each Vercel Project
+### Required Environment Variables
 
-All 4 Vercel projects require these environment variables (with values specific to their environment):
+Each Vercel project requires environment variables configured separately for **Production** and **Preview** environments:
 
 | Variable | Description | Example Values |
 |----------|-------------|----------------|
@@ -362,10 +365,11 @@ Go to [Vercel Dashboard](https://vercel.com/dashboard) and create 4 new projects
   NEXT_PUBLIC_APP_URL=https://app.crowdstack.app
   ```
 
-#### 4. Configure Custom Domains
+#### 2. Configure Custom Domains
 
-In each Vercel project settings:
-- Add custom domain
+For each Vercel project:
+- **Production domain**: Add `crowdstack.app` (web) or `app.crowdstack.app` (app) in Settings → Domains
+- **Preview domain**: Add `beta.crowdstack.app` (web) or `app-beta.crowdstack.app` (app) and assign it to the `develop` branch
 - Configure DNS records as instructed by Vercel
 
 ### Promoting from Beta to Prod

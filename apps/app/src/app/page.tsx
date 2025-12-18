@@ -11,6 +11,9 @@ export default function DashboardHomePage() {
         <p className="mt-6 text-lg leading-8 text-gray-600">
           Manage your events, venues, and attendees
         </p>
+        <p className="mt-2 text-sm text-gray-500">
+          Deployed via Vercel with preview deployments
+        </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
           <Link
             href="/dashboard"
