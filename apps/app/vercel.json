@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd ../.. && npm uninstall -g pnpm && npm install -g pnpm@8.15.0 && pnpm build:app",
+  "buildCommand": "cd ../.. && npm install -g pnpm@8.15.0 && $(npm config get prefix)/bin/pnpm build:app",
   "devCommand": "cd ../.. && pnpm dev:app",
-  "installCommand": "cd ../.. && npm uninstall -g pnpm && npm install -g pnpm@8.15.0 && pnpm install",
+  "installCommand": "cd ../.. && npm install -g pnpm@8.15.0 && $(npm config get prefix)/bin/pnpm install",
   "framework": "nextjs"
 }
 
