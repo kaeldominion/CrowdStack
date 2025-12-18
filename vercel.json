@@ -1,6 +1,7 @@
 {
-  "installCommand": "corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install"
+  "installCommand": "corepack enable && corepack prepare pnpm@8.15.0 --activate && corepack pnpm install"
 }
+
 
 
 

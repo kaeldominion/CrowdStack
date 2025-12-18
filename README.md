@@ -426,8 +426,9 @@ If you see errors about pnpm version (e.g., "Got: 6.35.1" instead of ">=8.0.0"):
 1. Go to your Vercel project Settings → General
 2. Set **Install Command** to:
    ```
-   cd ../.. && corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install
+   cd ../.. && corepack enable && corepack prepare pnpm@8.15.0 --activate && corepack pnpm install
    ```
+   (Note: Using `corepack pnpm` ensures we use the corepack-managed version)
 3. Ensure **Root Directory** is set to `apps/web` (or `apps/app` for app projects)
 
 **Solution 2: Install pnpm via npm (Fallback)**
