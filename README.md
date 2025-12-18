@@ -88,8 +88,9 @@ SUPABASE_SERVICE_ROLE_KEY=YOUR_BETA_SERVICE_ROLE_KEY_HERE
 NEXT_PUBLIC_APP_ENV=local
 NEXT_PUBLIC_APP_VERSION=0.0.0-local
 
+# Unified origin for local dev (fixes Supabase auth cookie sharing)
 NEXT_PUBLIC_WEB_URL=http://localhost:3006
-NEXT_PUBLIC_APP_URL=http://localhost:3007
+NEXT_PUBLIC_APP_URL=http://localhost:3006
 ```
 
 **⚠️ Important**: Add the `SUPABASE_SERVICE_ROLE_KEY` from your Beta Supabase project:
@@ -124,20 +125,34 @@ This is used for signing QR pass tokens. Generate a secure random string (e.g., 
 ### 4. Run Development Server
 
 ```bash
-# Start both servers simultaneously (recommended)
-pnpm dev:all
+# Start both servers simultaneously (recommended for unified local dev)
+pnpm dev
 
 # Or start individually
-pnpm dev        # Port 3006 (web app only)
 pnpm dev:web    # Port 3006 (web app)
-pnpm dev:app    # Port 3007 (B2B app)
+pnpm dev:app    # Port 3007 (B2B app - internal only in local dev)
 ```
 
-**Recommended**: Use `pnpm dev:all` to start both servers at once with colored output.
+**Recommended**: Use `pnpm dev` to start both servers at once with colored output.
 
-The apps will be available at:
-- **Web**: http://localhost:3006
-- **App**: http://localhost:3007
+#### Local Development Routing (Unified Origin)
+
+For local development, **everything is accessed via `http://localhost:3006`** to fix Supabase auth cookie sharing issues:
+
+- **Web App**: http://localhost:3006 (direct)
+- **B2B App**: http://localhost:3006/app/* (proxied to port 3007)
+- **Door Scanner**: http://localhost:3006/door/* (proxied to port 3007)
+
+**How it works:**
+1. Both apps run: `web` on port 3006, `app` on port 3007 (internal)
+2. `apps/web` automatically proxies `/app/*` and `/door/*` routes to `apps/app` (port 3007)
+3. This ensures a single origin (`localhost:3006`) so Supabase auth cookies work across both apps
+4. The proxy is **local dev only** - production still uses separate Vercel projects
+
+**Important**: 
+- ✅ Always use `http://localhost:3006` for local development
+- ✅ Access B2B features at `http://localhost:3006/app/*`
+- ❌ Don't access `http://localhost:3007` directly (it's internal only)
 
 ### 5. Verify Setup
 
@@ -145,9 +160,9 @@ Visit http://localhost:3006/health to verify Supabase connectivity.
 
 ## Available Scripts
 
-- `pnpm dev` - Start web app development server on **port 3006** (default)
+- `pnpm dev` - Start both web and app servers simultaneously (web on 3006, app on 3007)
 - `pnpm dev:web` - Start web app development server on **port 3006**
-- `pnpm dev:app` - Start B2B app development server on **port 3007**
+- `pnpm dev:app` - Start B2B app development server on **port 3007** (internal only in local dev)
 - `pnpm build` - Build all apps
 - `pnpm build:web` - Build web app only
 - `pnpm build:app` - Build app only

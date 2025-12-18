@@ -1,22 +1,13 @@
 import { createClient } from "@crowdstack/shared/supabase/server";
-import { getUserRole } from "@crowdstack/shared/auth/roles";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button, EmptyState, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@crowdstack/ui";
 import { Plus, Calendar } from "lucide-react";
 import Link from "next/link";
 
 export default async function OrganizerEventsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const role = await getUserRole();
-
   // TODO: Fetch actual events
   const events: any[] = [];
 
   return (
-    <DashboardLayout role={role as any} userEmail={user?.email}>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
@@ -78,7 +69,7 @@ export default async function OrganizerEventsPage() {
           </Table>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

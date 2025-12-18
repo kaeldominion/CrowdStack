@@ -2,8 +2,16 @@ import { createBrowserClient as createSupabaseBrowserClient } from "@supabase/ss
 
 /**
  * Create a Supabase client for use in the browser
- * MUST use cookies for PKCE code verifier storage (not localStorage)
- * This is critical for magic links clicked from email
+ * 
+ * Note: @supabase/ssr's createBrowserClient uses localStorage for PKCE code verifier by default.
+ * This means magic links MUST be opened in the same browser/device where the request was initiated.
+ * 
+ * For magic links to work:
+ * 1. Request magic link in one browser tab
+ * 2. Click the link in the SAME browser (can be different tab, but same browser)
+ * 3. Don't clear cookies between request and click
+ * 
+ * This is a known limitation of PKCE flow with magic links.
  */
 export function createBrowserClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,6 +23,8 @@ export function createBrowserClient() {
     );
   }
 
-  // Use default implementation - @supabase/ssr handles PKCE automatically
+  // @supabase/ssr's createBrowserClient uses localStorage for PKCE by default
+  // This is why magic links must be opened in the same browser
+  // There's no way to configure it to use cookies in the browser client
   return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }

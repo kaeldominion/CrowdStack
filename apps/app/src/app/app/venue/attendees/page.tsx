@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
 import { Search, Filter, Download, Flag, User, UserCheck } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
@@ -78,17 +77,14 @@ export default function VenueAttendeesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout role="venue_admin" userEmail="">
         <div className="flex items-center justify-center h-64">
           <div className="text-foreground-muted">Loading attendees...</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout role="venue_admin" userEmail="">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
@@ -228,7 +224,7 @@ export default function VenueAttendeesPage() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

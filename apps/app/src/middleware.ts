@@ -25,8 +25,20 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/login" || pathname.startsWith("/login")) {
     console.log("[App Middleware] Login route, redirecting to web login");
     const redirectParam = request.nextUrl.searchParams.get("redirect") || "/admin";
+    
+    // In local dev with unified origin, use relative paths (same origin)
+    // In production, use full URLs
+    const isLocalDev = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
     const loginUrl = new URL("/login", webUrl);
-    loginUrl.searchParams.set("redirect", `${appUrl}${redirectParam}`);
+    
+    if (isLocalDev) {
+      // Local dev: redirect param should just be the path (same origin)
+      loginUrl.searchParams.set("redirect", redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`);
+    } else {
+      // Production: include full app URL
+      loginUrl.searchParams.set("redirect", `${appUrl}${redirectParam}`);
+    }
+    
     return NextResponse.redirect(loginUrl);
   }
 
@@ -92,16 +104,27 @@ export async function middleware(request: NextRequest) {
   // If not authenticated, redirect to web login
   if (!user) {
     console.log("[App Middleware] No valid session, redirecting to login");
+    const isLocalDev = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
     const loginUrl = new URL("/login", webUrl);
-    loginUrl.searchParams.set("redirect", request.url);
+    
+    if (isLocalDev) {
+      // Local dev: redirect param should just be the pathname (same origin)
+      loginUrl.searchParams.set("redirect", request.nextUrl.pathname + request.nextUrl.search);
+    } else {
+      // Production: include full URL
+      loginUrl.searchParams.set("redirect", request.url);
+    }
+    
     return NextResponse.redirect(loginUrl);
   }
   
   console.log("[App Middleware] User authenticated:", user.email);
 
-  // Redirect root to admin
-  if (pathname === "/" || pathname === "/app") {
-    return NextResponse.redirect(new URL("/admin", appUrl));
+  // Don't redirect /app anymore - it's the unified dashboard
+  // Root redirect is handled by the page component
+  if (pathname === "/") {
+    // Let the root page handle the redirect based on roles
+    return NextResponse.next();
   }
 
   // All authenticated users can access all routes for now

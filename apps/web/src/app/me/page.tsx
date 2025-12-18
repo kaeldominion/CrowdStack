@@ -61,13 +61,23 @@ export default function MePage() {
           </h1>
           <p className="mt-4 text-white/60">Welcome, {user?.email}</p>
           
-          <div className="mt-6">
-            <a
-              href={`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007"}/login?redirect=/admin`}
-              className="inline-flex items-center px-4 py-2 bg-[#3B82F6] text-white rounded-md hover:bg-[#3B82F6]/80 transition-colors"
-            >
-              Go to Admin Dashboard
-            </a>
+          <div className="mt-6 flex gap-4 justify-center">
+            {(roles.includes("superadmin") || roles.includes("venue_admin") || roles.includes("event_organizer") || roles.includes("promoter")) && (
+              <a
+                href="/app"
+                className="inline-flex items-center px-4 py-2 bg-[#3B82F6] text-white rounded-md hover:bg-[#3B82F6]/80 transition-colors"
+              >
+                Go to Dashboard
+              </a>
+            )}
+            {roles.includes("superadmin") && (
+              <a
+                href="/admin"
+                className="inline-flex items-center px-4 py-2 bg-[#EF4444] text-white rounded-md hover:bg-[#EF4444]/80 transition-colors"
+              >
+                Admin Panel
+              </a>
+            )}
           </div>
         </div>
 

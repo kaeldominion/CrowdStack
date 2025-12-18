@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { BentoCard } from "@/components/BentoCard";
 import { Badge } from "@crowdstack/ui";
 import { Users, Activity, AlertTriangle, Clock } from "lucide-react";
@@ -35,17 +34,14 @@ export default function VenueLiveMissionControlPage() {
 
   if (loading || !metrics) {
     return (
-      <DashboardLayout role="venue_admin" userEmail="">
         <div className="flex items-center justify-center h-64">
           <div className="text-foreground-muted">Loading live metrics...</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout role="venue_admin" userEmail="">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Live Mission Control</h1>
@@ -147,7 +143,7 @@ export default function VenueLiveMissionControlPage() {
           </div>
         </BentoCard>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import {
   Card,
   Button,
@@ -192,25 +191,21 @@ export default function OrganizerEventDetailPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-foreground-muted">Loading event...</div>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-foreground-muted">Loading event...</div>
+      </div>
     );
   }
 
   if (!event) {
     return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-          <AlertCircle className="h-12 w-12 text-foreground-muted" />
-          <div className="text-foreground-muted">Event not found</div>
-          <Link href="/app/organizer/events">
-            <Button variant="default">Back to Events</Button>
-          </Link>
-        </div>
-      </DashboardLayout>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <AlertCircle className="h-12 w-12 text-foreground-muted" />
+        <div className="text-foreground-muted">Event not found</div>
+        <Link href="/app/organizer/events">
+          <Button variant="default">Back to Events</Button>
+        </Link>
+      </div>
     );
   }
 
@@ -224,8 +219,7 @@ export default function OrganizerEventDetailPage() {
   }));
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -573,6 +567,6 @@ export default function OrganizerEventDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

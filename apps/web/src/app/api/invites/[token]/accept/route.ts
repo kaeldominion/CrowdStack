@@ -22,7 +22,13 @@ export async function POST(
     const { role, metadata } = await acceptInviteToken(params.token, user.id);
 
     // Determine redirect URL based on role
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007";
+    // In local dev, use same origin (3006). In production, use app subdomain
+    const isLocalDev = request.headers.get("host")?.includes("localhost");
+    const origin = request.headers.get("origin") || request.url.split("/").slice(0, 3).join("/");
+    const appUrl = isLocalDev 
+      ? origin  // Same origin in local dev
+      : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007");
+    
     let redirectUrl = "/me";
 
     switch (role) {

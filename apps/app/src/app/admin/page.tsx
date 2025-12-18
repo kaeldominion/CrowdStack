@@ -10,22 +10,10 @@ export default function AdminDashboardPage() {
 
   const dashboards = [
     {
-      name: "Venue Dashboard",
-      href: "/app/venue",
-      description: "Manage venues, events, promoters, and reports",
-      icon: <Building2 className="h-6 w-6" />,
-    },
-    {
-      name: "Organizer Dashboard",
-      href: "/app/organizer",
-      description: "Create events, manage promoters, handle payouts",
+      name: "Unified Dashboard",
+      href: "/app",
+      description: "Access all features based on your roles - venue, organizer, promoter",
       icon: <Calendar className="h-6 w-6" />,
-    },
-    {
-      name: "Promoter Portal",
-      href: "/app/promoter",
-      description: "View events, track referrals, earnings, and tools",
-      icon: <Users className="h-6 w-6" />,
     },
     {
       name: "Door Scanner",
@@ -131,10 +119,10 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {/* B2B Dashboards */}
+          {/* Quick Access */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">B2B Dashboards</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Quick Access</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
               {dashboards.map((dashboard) => (
                 <Link key={dashboard.href} href={dashboard.href}>
                   <Card hover className="h-full">

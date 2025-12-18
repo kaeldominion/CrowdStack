@@ -55,11 +55,18 @@ export async function GET() {
         }
       }
 
+      // In local dev, redirect should use same origin. In production, use full URLs
+      const isLocalDev = request.headers.get("host")?.includes("localhost");
+      const redirectPath = isLocalDev ? "/admin" : "http://localhost:3007/admin";
+      const loginUrl = isLocalDev 
+        ? "http://localhost:3006/login"
+        : (process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3006") + "/login";
+      
       return NextResponse.json({
         error: "Unauthorized",
         user: null,
         cookieFound: !!authCookie,
-        message: "Please log in at http://localhost:3006/login?redirect=http://localhost:3007/admin",
+        message: `Please log in at ${loginUrl}?redirect=${redirectPath}`,
       }, { status: 401 });
     }
 

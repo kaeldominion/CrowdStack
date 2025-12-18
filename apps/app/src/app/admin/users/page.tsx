@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { User, Search, Edit, Shield } from "lucide-react";
+import { User, Search, Edit, Shield, Building2, Calendar } from "lucide-react";
+import { UserAssignmentModal } from "@/components/UserAssignmentModal";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [assignmentModal, setAssignmentModal] = useState<{
+    open: boolean;
+    userId: string;
+    userEmail: string;
+    type: "venue" | "organizer";
+  } | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -126,8 +133,31 @@ export default function AdminUsersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => {/* Edit roles */}}>
-                              <Shield className="h-4 w-4" />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAssignmentModal({
+                                open: true,
+                                userId: user.id,
+                                userEmail: user.email,
+                                type: "venue",
+                              })}
+                              title="Assign to Venues"
+                            >
+                              <Building2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setAssignmentModal({
+                                open: true,
+                                userId: user.id,
+                                userEmail: user.email,
+                                type: "organizer",
+                              })}
+                              title="Assign to Organizers"
+                            >
+                              <Calendar className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -140,6 +170,20 @@ export default function AdminUsersPage() {
           </Card>
         </Container>
       </Section>
+
+      {/* User Assignment Modal */}
+      {assignmentModal && (
+        <UserAssignmentModal
+          isOpen={assignmentModal.open}
+          onClose={() => setAssignmentModal(null)}
+          userId={assignmentModal.userId}
+          userEmail={assignmentModal.userEmail}
+          type={assignmentModal.type}
+          onAssign={() => {
+            loadUsers(); // Refresh users list
+          }}
+        />
+      )}
     </div>
   );
 }

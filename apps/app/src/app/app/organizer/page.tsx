@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { BentoCard } from "@/components/BentoCard";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { Button } from "@crowdstack/ui";
@@ -39,8 +38,7 @@ export default function OrganizerDashboardPage() {
   };
 
   return (
-    <DashboardLayout role="event_organizer" userEmail="">
-      <div className="space-y-8">
+    <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
@@ -163,6 +161,6 @@ export default function OrganizerDashboardPage() {
           </BentoCard>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
 import { Search, Download, User, TrendingUp } from "lucide-react";
 import type { PromoterAttendee } from "@/lib/data/attendees-promoter";
@@ -56,17 +55,14 @@ export default function PromoterAttendeesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout role="promoter" userEmail="">
         <div className="flex items-center justify-center h-64">
           <div className="text-foreground-muted">Loading attendees...</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout role="promoter" userEmail="">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">My Attendees</h1>
@@ -164,7 +160,7 @@ export default function PromoterAttendeesPage() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

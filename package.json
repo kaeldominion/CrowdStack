@@ -5,7 +5,7 @@
   "description": "CrowdStack - Event management platform",
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dev": "pnpm --filter web dev",
+    "dev": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"pnpm --filter web dev\" \"pnpm --filter app dev\"",
     "dev:web": "pnpm --filter web dev",
     "dev:app": "pnpm --filter app dev",
     "dev:all": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"pnpm --filter web dev\" \"pnpm --filter app dev\"",

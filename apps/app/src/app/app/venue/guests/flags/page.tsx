@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge, Modal } from "@crowdstack/ui";
 import { Search, Flag, AlertTriangle, Ban } from "lucide-react";
 import type { GuestFlag } from "@/lib/data/flags";
@@ -64,17 +63,14 @@ export default function VenueGuestFlagsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout role="venue_admin" userEmail="">
         <div className="flex items-center justify-center h-64">
           <div className="text-foreground-muted">Loading flags...</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout role="venue_admin" userEmail="">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Guest Flags & Bans</h1>
@@ -156,6 +152,6 @@ export default function VenueGuestFlagsPage() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

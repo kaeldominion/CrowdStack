@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@crowdstack/ui";
 import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users, Plus } from "lucide-react";
@@ -36,8 +35,7 @@ export default function VenueDashboardPage() {
   };
 
   return (
-    <DashboardLayout role="venue_admin" userEmail="">
-      <div className="space-y-8">
+    <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
@@ -134,6 +132,5 @@ export default function VenueDashboardPage() {
           </BentoCard>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

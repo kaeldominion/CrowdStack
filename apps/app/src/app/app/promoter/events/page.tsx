@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
 import { Calendar, Search, Eye, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -72,16 +71,13 @@ export default function PromoterEventsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout role="promoter" userEmail="">
         <div className="flex items-center justify-center h-64">
           <div className="text-foreground-muted">Loading events...</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout role="promoter" userEmail="">
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tighter text-white">Events</h1>
@@ -201,7 +197,6 @@ export default function PromoterEventsPage() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }
 

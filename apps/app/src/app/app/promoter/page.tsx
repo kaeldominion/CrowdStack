@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { BentoCard } from "@/components/BentoCard";
 import { EarningsChart } from "@/components/charts/EarningsChart";
 import { Button } from "@crowdstack/ui";
@@ -72,8 +71,7 @@ export default function PromoterDashboardPage() {
   };
 
   return (
-    <DashboardLayout role="promoter" userEmail="">
-      <div className="space-y-8">
+    <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
           <p className="mt-2 text-sm text-white/60">
@@ -207,6 +205,6 @@ export default function PromoterDashboardPage() {
           </BentoCard>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

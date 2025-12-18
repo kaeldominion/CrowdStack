@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Calendar, Plus, Search, Eye, Edit } from "lucide-react";
+import { Calendar, Plus, Search, Eye, Edit, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminEventsPage() {
@@ -149,7 +149,14 @@ export default function AdminEventsPage() {
                   ) : (
                     filteredEvents.map((event) => (
                       <TableRow key={event.id} hover>
-                        <TableCell className="font-medium">{event.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <Link 
+                            href={`/app/organizer/events/${event.id}`}
+                            className="text-primary hover:text-primary/80 hover:underline"
+                          >
+                            {event.name}
+                          </Link>
+                        </TableCell>
                         <TableCell>{event.venue?.name || "—"}</TableCell>
                         <TableCell>{event.organizer?.name || "—"}</TableCell>
                         <TableCell className="text-sm text-foreground-muted">
@@ -159,11 +166,25 @@ export default function AdminEventsPage() {
                         <TableCell>{event.checkins_count || 0}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
-                          <Link href={`/app/organizer/events/${event.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/app/organizer/events/${event.id}`}>
+                              <Button variant="ghost" size="sm" title="View & Manage">
+                                <Eye className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
+                            </Link>
+                            {event.slug && (
+                              <a
+                                href={`${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3006"}/e/${event.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                                title="View Public Page"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

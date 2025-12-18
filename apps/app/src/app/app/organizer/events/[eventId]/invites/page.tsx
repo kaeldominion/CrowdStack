@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, Button, Input, Badge } from "@crowdstack/ui";
 import { QrCode, Plus, Copy, Check } from "lucide-react";
 import type { InviteQRCode } from "@/lib/data/invite-codes";
@@ -65,16 +64,13 @@ export default function EventInvitesPage() {
 
   if (loading) {
     return (
-      <DashboardLayout role="event_organizer" userEmail="">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading invite codes...</div>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-foreground-muted">Loading invite codes...</div>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout role="event_organizer" userEmail="">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -164,7 +160,7 @@ export default function EventInvitesPage() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

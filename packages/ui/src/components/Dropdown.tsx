@@ -16,9 +16,10 @@ export interface DropdownProps {
   items: DropdownItem[];
   align?: "left" | "right";
   className?: string;
+  triggerClassName?: string;
 }
 
-export function Dropdown({ trigger, items, align = "right", className }: DropdownProps) {
+export function Dropdown({ trigger, items, align = "right", className, triggerClassName }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +44,7 @@ export function Dropdown({ trigger, items, align = "right", className }: Dropdow
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2"
+        className={cn("flex items-center gap-2", triggerClassName)}
       >
         {trigger}
       </button>

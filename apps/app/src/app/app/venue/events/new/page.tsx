@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button, Input, Textarea, Card } from "@crowdstack/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -112,7 +111,6 @@ export default function VenueNewEventPage() {
   };
 
   return (
-    <DashboardLayout role="venue_admin" userEmail="">
       <div className="space-y-8">
         <Link href="/app/venue/events">
           <Button variant="ghost" size="sm" className="mb-6">
@@ -277,7 +275,6 @@ export default function VenueNewEventPage() {
           </form>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }
 

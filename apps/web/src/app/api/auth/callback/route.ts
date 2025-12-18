@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
   }
 
-  // Create response for setting cookies
+  // Create response for setting cookies (we'll update redirect after exchange)
   let redirectTo = redirectParam || "/me";
   
-  // Create Supabase client with cookie handlers
-  const response = NextResponse.redirect(new URL(redirectTo, origin));
+  // Create temporary response for cookie handling
+  const response = new NextResponse(null, { status: 200 });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -42,19 +42,63 @@ export async function GET(request: NextRequest) {
   });
 
   // Exchange code for session
+  // Debug: Log cookies available (especially PKCE verifier)
+  const allCookies = request.cookies.getAll();
+  const cookieNames = allCookies.map(c => c.name);
+  console.log("[Auth Callback] Available cookies:", cookieNames);
+  console.log("[Auth Callback] Looking for PKCE cookies:", cookieNames.filter(n => n.includes("code-verifier") || n.includes("pkce")));
+  console.log("[Auth Callback] Code:", code?.substring(0, 20) + "...");
+  console.log("[Auth Callback] Origin:", origin);
+
   const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !session) {
-    console.error("Error exchanging code for session:", error);
-    return NextResponse.redirect(new URL("/login?error=auth_failed", origin));
+    console.error("[Auth Callback] Error exchanging code for session:", error);
+    console.error("[Auth Callback] Error details:", JSON.stringify(error, null, 2));
+    
+    // More specific error message
+    const errorMessage = error?.message || "Unknown error";
+    const errorCode = error?.status || 500;
+    
+    // If PKCE error, suggest clearing cookies and trying again
+    if (errorMessage.includes("PKCE") || errorMessage.includes("code verifier")) {
+      return NextResponse.redirect(
+        new URL("/login?error=pkce_error&message=" + encodeURIComponent(errorMessage), origin)
+      );
+    }
+    
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_failed&details=${encodeURIComponent(errorMessage)}`, origin)
+    );
   }
+
+  console.log("[Auth Callback] Session created successfully for user:", session.user?.email);
+
+  // Now create redirect response with cookies
+  const redirectResponse = NextResponse.redirect(new URL(redirectTo, origin));
+  
+  // Copy all cookies from the exchange response to the redirect response
+  response.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value, {
+      path: cookie.path || "/",
+      domain: cookie.domain,
+      httpOnly: cookie.httpOnly,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite as any,
+      maxAge: cookie.maxAge,
+    });
+  });
 
   // Get user and check role
   const { data: { user } } = await supabase.auth.getUser();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3007";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3006";
   
-  // Determine if we need to redirect to app (port 3007)
-  const isRedirectingToApp = redirectParam?.includes("localhost:3007") || redirectParam?.includes("3007");
+  // With unified origin, we check if redirecting to /app/* routes
+  // Also check for old 3007 URLs (legacy redirects)
+  const isRedirectingToApp = redirectParam?.startsWith("/app") || 
+                              redirectParam?.startsWith("/door") || 
+                              redirectParam?.startsWith("/admin") ||
+                              redirectParam?.includes("localhost:3007");
   
   // Check if user has B2B roles
   let shouldGoToApp = false;
@@ -88,8 +132,10 @@ export async function GET(request: NextRequest) {
     }
   }
   
-  // If redirecting to app OR user has B2B role, use token-sharing endpoint
-  // Cookies are NOT shared between localhost ports, so we MUST pass tokens explicitly
+  // Check if we're in local dev with unified origin
+  const isLocalDev = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_APP_ENV === "local";
+  
+  // If redirecting to app OR user has B2B role
   if (shouldGoToApp || isRedirectingToApp) {
     // Extract path from redirectParam (could be full URL or just path)
     let finalPath = targetPath;
@@ -103,12 +149,42 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // In local dev with unified origin, just redirect to the path (cookies are shared)
+    if (isLocalDev && appUrl.includes("localhost:3006")) {
+      const localRedirectResponse = NextResponse.redirect(new URL(finalPath, origin));
+      // Copy cookies to the redirect
+      redirectResponse.cookies.getAll().forEach((cookie) => {
+        localRedirectResponse.cookies.set(cookie.name, cookie.value, {
+          path: cookie.path || "/",
+          domain: cookie.domain,
+          httpOnly: cookie.httpOnly,
+          secure: cookie.secure,
+          sameSite: cookie.sameSite as any,
+          maxAge: cookie.maxAge,
+        });
+      });
+      return localRedirectResponse;
+    }
+    
+    // Production or old local setup: use token-sharing endpoint
     const sessionUrl = new URL("/api/auth/session", appUrl);
     sessionUrl.searchParams.set("access_token", session.access_token);
     sessionUrl.searchParams.set("refresh_token", session.refresh_token);
     sessionUrl.searchParams.set("redirect", finalPath);
-    return NextResponse.redirect(sessionUrl.toString());
+    const tokenRedirectResponse = NextResponse.redirect(sessionUrl.toString());
+    // Copy cookies
+    redirectResponse.cookies.getAll().forEach((cookie) => {
+      tokenRedirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path || "/",
+        domain: cookie.domain,
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite as any,
+        maxAge: cookie.maxAge,
+      });
+    });
+    return tokenRedirectResponse;
   }
 
-  return response;
+  return redirectResponse;
 }
