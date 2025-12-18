@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd ../.. && npm install -g pnpm@8.15.0 && pnpm build:web",
+  "buildCommand": "cd ../.. && npm uninstall -g pnpm && npm install -g pnpm@8.15.0 && pnpm build:web",
   "devCommand": "cd ../.. && pnpm dev:web",
-  "installCommand": "cd ../.. && npm install -g pnpm@8.15.0 && pnpm install",
+  "installCommand": "cd ../.. && npm uninstall -g pnpm && npm install -g pnpm@8.15.0 && pnpm install",
   "framework": "nextjs"
 }
 
