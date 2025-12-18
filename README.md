@@ -418,15 +418,35 @@ Check Vercel function logs for production monitoring.
 
 ### Vercel Build Issues with pnpm
 
-If you see errors about pnpm version or npm being used instead of pnpm:
+If you see errors about pnpm version (e.g., "Got: 6.35.1" instead of ">=8.0.0"):
 
-1. **Ensure `packageManager` field is set** in root `package.json` (already configured)
-2. **Verify Install Command** in Vercel project settings uses:
+**The Problem**: Vercel is using an old pnpm version or npm instead of pnpm.
+
+**Solution 1: Set Install Command in Vercel Dashboard (Recommended)**
+1. Go to your Vercel project Settings → General
+2. Set **Install Command** to:
    ```
-   corepack enable && corepack prepare pnpm@8.15.0 --activate && cd ../.. && pnpm install
+   cd ../.. && corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install
    ```
-3. **Check Root Directory** is set correctly (`apps/web` or `apps/app`)
-4. **Vercel should auto-detect pnpm** if `packageManager` field exists, but the explicit install command ensures it works
+3. Ensure **Root Directory** is set to `apps/web` (or `apps/app` for app projects)
+
+**Solution 2: Install pnpm via npm (Fallback)**
+If corepack doesn't work in Vercel's environment, use:
+```
+cd ../.. && npm install -g pnpm@8.15.0 && pnpm install
+```
+
+**Solution 3: Generate pnpm-lock.yaml**
+Vercel auto-detects pnpm if `pnpm-lock.yaml` exists. To generate it locally:
+```bash
+npm install -g pnpm@8.15.0
+pnpm install
+git add pnpm-lock.yaml
+git commit -m "Add pnpm-lock.yaml for Vercel"
+git push
+```
+
+**Note**: The `packageManager` field in `package.json` should help Vercel detect pnpm, but manually setting the Install Command in Vercel dashboard ensures it works.
 
 ### Port Conflicts
 
