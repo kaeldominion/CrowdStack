@@ -252,16 +252,23 @@ We use **2 Vercel projects** with preview deployments, pointing to the same GitH
 
 ### Environment Variable Mapping
 
-Each Vercel project must be configured with the correct environment variables pointing to the appropriate Supabase project:
+Each Vercel project has environment variables configured separately for **Production** and **Preview** environments:
 
-| Vercel Project | Supabase Project | NEXT_PUBLIC_APP_ENV |
-|----------------|------------------|---------------------|
-| `crowdstack-web-beta` | **Beta Supabase** | `beta` |
-| `crowdstack-web-prod` | **Prod Supabase** | `prod` |
-| `crowdstack-app-beta` | **Beta Supabase** | `beta` |
-| `crowdstack-app-prod` | **Prod Supabase** | `prod` |
+| Vercel Project | Environment | Supabase Project | NEXT_PUBLIC_APP_ENV |
+|----------------|------------|------------------|---------------------|
+| `crowdstack-web` | Production (main) | **Prod Supabase** | `prod` |
+| `crowdstack-web` | Preview (develop) | **Beta Supabase** | `beta` |
+| `crowdstack-app` | Production (main) | **Prod Supabase** | `prod` |
+| `crowdstack-app` | Preview (develop) | **Beta Supabase** | `beta` |
 
-**⚠️ Critical**: Beta Vercel projects MUST use the Beta Supabase project. Prod Vercel projects MUST use the Prod Supabase project. Never mix environments.
+**⚠️ Critical**: Preview deployments (develop branch) MUST use the Beta Supabase project. Production deployments (main branch) MUST use the Prod Supabase project. Never mix environments.
+
+**How to Set Environment Variables in Vercel:**
+1. Go to your project → Settings → Environment Variables
+2. Add each variable and select which environments it applies to:
+   - **Production**: For `main` branch deployments
+   - **Preview**: For `develop` branch deployments
+3. This allows different Supabase credentials for beta vs prod
 
 ### Required Environment Variables
 
@@ -389,7 +396,7 @@ For each Vercel project:
 
 3. **Vercel auto-deploys**:
    - Pushing to `main` branch triggers production deployments
-   - Both `crowdstack-web-prod` and `crowdstack-app-prod` will deploy automatically
+   - Both `crowdstack-web` and `crowdstack-app` projects will deploy to production domains
    - Monitor deployments in Vercel dashboard
 
 4. **Verify production**:
