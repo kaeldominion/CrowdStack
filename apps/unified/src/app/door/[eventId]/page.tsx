@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Input, Modal, Card } from "@crowdstack/ui";
+import { Button, Input, Modal, Card, Logo } from "@crowdstack/ui";
 import { 
   QrCode, 
   Search, 
@@ -12,12 +12,11 @@ import {
   AlertTriangle,
   Camera,
   CameraOff,
-  ArrowLeft,
+  Download,
   Users,
   Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 
 interface CheckInResult {
   id: string;
@@ -30,6 +29,7 @@ interface CheckInResult {
 interface EventInfo {
   id: string;
   name: string;
+  slug: string;
   venue?: { name: string };
 }
 
@@ -68,6 +68,9 @@ export default function DoorScannerPage() {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({ name: "", email: "", phone: "" });
   const [quickAddLoading, setQuickAddLoading] = useState(false);
+  
+  // QR code modal
+  const [showQRCode, setShowQRCode] = useState(false);
 
   // Load event info and stats
   useEffect(() => {
@@ -88,6 +91,7 @@ export default function DoorScannerPage() {
         setEventInfo({
           id: data.event.id,
           name: data.event.name,
+          slug: data.event.slug,
           venue: data.event.venue,
         });
       }
@@ -358,18 +362,19 @@ export default function DoorScannerPage() {
       </AnimatePresence>
 
       <div className="mx-auto max-w-md px-4 py-6">
-        {/* Header */}
-        <div className="mb-6">
-          <Link href="/door" className="inline-flex items-center text-white/60 hover:text-white mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
-          </Link>
-          <h1 className="text-3xl font-bold text-white mb-1">Door Scanner</h1>
+        {/* Header with Branding */}
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Logo variant="full" size="md" className="text-white" animated={false} />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-1">Door Scanner</h1>
           {eventInfo && (
-            <p className="text-white/60">
-              {eventInfo.name}
-              {eventInfo.venue && <span className="text-white/40"> @ {eventInfo.venue.name}</span>}
-            </p>
+            <div className="text-white/60 text-sm space-y-0.5">
+              <p className="font-medium">{eventInfo.name}</p>
+              {eventInfo.venue && (
+                <p className="text-white/40">{eventInfo.venue.name}</p>
+              )}
+            </div>
           )}
         </div>
 
@@ -525,16 +530,30 @@ export default function DoorScannerPage() {
           )}
         </div>
 
-        {/* Quick Add Button */}
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={() => setShowQuickAdd(true)}
-          className="w-full h-14 text-lg font-semibold bg-white/10 border-white/20 text-white mb-6"
-        >
-          <UserPlus className="h-5 w-5 mr-2" />
-          Quick Add & Check In
-        </Button>
+        {/* Action Buttons */}
+        <div className="space-y-3 mb-6">
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => setShowQuickAdd(true)}
+            className="w-full h-14 text-lg font-semibold bg-white/10 border-white/20 text-white"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Quick Add & Check In
+          </Button>
+          
+          {eventInfo && (
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowQRCode(true)}
+              className="w-full h-14 text-lg font-semibold bg-white/10 border-white/20 text-white"
+            >
+              <QrCode className="h-5 w-5 mr-2" />
+              Show Event QR Code
+            </Button>
+          )}
+        </div>
 
         {/* Recent Scans */}
         {recentScans.length > 0 && (
@@ -561,6 +580,52 @@ export default function DoorScannerPage() {
           </div>
         )}
       </div>
+
+      {/* QR Code Modal */}
+      {eventInfo && (
+        <Modal
+          isOpen={showQRCode}
+          onClose={() => setShowQRCode(false)}
+          title="Event Registration QR Code"
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-foreground-muted">
+              Scan this QR code to register for the event. Registrations will be attributed to the venue.
+            </p>
+            
+            <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+                  typeof window !== "undefined" 
+                    ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                    : `/e/${eventInfo.slug}/register`
+                )}`}
+                alt="Event Registration QR Code"
+                className="w-64 h-64"
+              />
+            </div>
+            
+            <div className="text-center space-y-2">
+              <p className="text-sm font-medium text-foreground">Event Registration Link</p>
+              <p className="text-xs text-foreground-muted break-all">
+                {typeof window !== "undefined" 
+                  ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                  : `/e/${eventInfo.slug}/register`}
+              </p>
+            </div>
+            
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => setShowQRCode(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Quick Add Modal */}
       <Modal
