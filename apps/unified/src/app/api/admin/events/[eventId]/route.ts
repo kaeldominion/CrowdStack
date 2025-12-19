@@ -1,30 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@crowdstack/shared/supabase/server";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
-import { createServiceRoleClient } from "@crowdstack/shared";
 
-async function getUser(request: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
+async function getUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let userId = user?.id;
+
+  // If no user from Supabase client, try reading from localhost cookie
+  if (!userId) {
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+    const authCookieName = `sb-${projectRef}-auth-token`;
+    const authCookie = cookieStore.get(authCookieName);
+
+    if (authCookie) {
+      try {
+        const cookieValue = decodeURIComponent(authCookie.value);
+        const parsed = JSON.parse(cookieValue);
+        if (parsed.user?.id) {
+          userId = parsed.user.id;
+        }
+      } catch (e) {
+        // Cookie parse error
+      }
     }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  }
+
+  return userId || null;
 }
 
 async function isSuperadmin(userId: string): Promise<boolean> {
@@ -47,12 +55,12 @@ export async function GET(
   { params }: { params: { eventId: string } }
 ) {
   try {
-    const user = await getUser(request);
-    if (!user) {
+    const userId = await getUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!(await isSuperadmin(user.id))) {
+    if (!(await isSuperadmin(userId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

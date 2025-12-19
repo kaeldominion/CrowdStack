@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@crowdstack/shared/supabase/server";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
-import { createServiceRoleClient } from "@crowdstack/shared";
 import { 
   notifyOrganizerOfApproval,
   getVenueUserIds,
@@ -9,28 +9,36 @@ import {
   NotificationData
 } from "@crowdstack/shared/notifications/send";
 
-async function getUser(request: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
+async function getUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let userId = user?.id;
+
+  // If no user from Supabase client, try reading from localhost cookie
+  if (!userId) {
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+    const authCookieName = `sb-${projectRef}-auth-token`;
+    const authCookie = cookieStore.get(authCookieName);
+
+    if (authCookie) {
+      try {
+        const cookieValue = decodeURIComponent(authCookie.value);
+        const parsed = JSON.parse(cookieValue);
+        if (parsed.user?.id) {
+          userId = parsed.user.id;
+        }
+      } catch (e) {
+        // Cookie parse error
+      }
     }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  }
+
+  return userId || null;
 }
 
 async function isSuperadmin(userId: string): Promise<boolean> {
@@ -53,12 +61,12 @@ export async function POST(
   { params }: { params: { eventId: string } }
 ) {
   try {
-    const user = await getUser(request);
-    if (!user) {
+    const userId = await getUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!(await isSuperadmin(user.id))) {
+    if (!(await isSuperadmin(userId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -98,7 +106,7 @@ export async function POST(
       .update({
         venue_approval_status: approved ? "approved" : "rejected",
         venue_approval_at: now,
-        venue_approval_by: user.id,
+        venue_approval_by: userId,
         venue_rejection_reason: approved ? null : (rejection_reason || null),
       })
       .eq("id", params.eventId);
@@ -127,8 +135,8 @@ export async function POST(
     if (event.venue_id) {
       const venueUserIds = await getVenueUserIds(event.venue_id);
       
-      const venueNotifications: NotificationData[] = venueUserIds.map((userId) => ({
-        user_id: userId,
+      const venueNotifications: NotificationData[] = venueUserIds.map((venueUserId) => ({
+        user_id: venueUserId,
         type: approved ? "admin_event_approved" : "admin_event_rejected",
         title: approved ? "Event Approved by Admin" : "Event Rejected by Admin",
         message: approved
@@ -154,4 +162,3 @@ export async function POST(
     );
   }
 }
-
