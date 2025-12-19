@@ -19,10 +19,12 @@ export interface SignupData {
   instagram_handle: string;
 }
 
-const steps = [
+type StepId = "name" | "surname" | "date_of_birth" | "whatsapp" | "instagram";
+
+const steps: Array<{ id: StepId; label: string }> = [
   { id: "name", label: "What's your first name?" },
   { id: "surname", label: "And your last name?" },
-  { id: "dob", label: "When were you born?" },
+  { id: "date_of_birth", label: "When were you born?" },
   { id: "whatsapp", label: "What's your WhatsApp number?" },
   { id: "instagram", label: "What's your Instagram handle?" },
 ];
@@ -142,7 +144,7 @@ export function TypeformSignup({ email, onSubmit, isLoading = false }: TypeformS
           </div>
         );
 
-      case "dob":
+      case "date_of_birth":
         return (
           <div className="space-y-4">
             <Input
