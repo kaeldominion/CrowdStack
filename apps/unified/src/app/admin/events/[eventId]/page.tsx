@@ -523,7 +523,7 @@ export default function AdminEventDetailPage() {
               Cancel
             </Button>
             <Button
-              variant={approvalAction === "approve" ? "primary" : "danger"}
+              variant={approvalAction === "approve" ? "primary" : "destructive"}
               onClick={handleApproval}
               disabled={approving}
               loading={approving}
