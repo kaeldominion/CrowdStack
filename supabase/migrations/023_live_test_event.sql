@@ -79,18 +79,19 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Create registrations (some with promoter referrals)
-INSERT INTO public.registrations (id, event_id, attendee_id, referral_promoter_id, checked_in)
+-- Note: checked_in status is determined by existence of record in checkins table
+INSERT INTO public.registrations (id, event_id, attendee_id, referral_promoter_id)
 VALUES 
-  -- Alex - checked in via Luna (checked in 2 hours ago)
-  ('a0000001-0001-0001-0001-000000000001', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999991', 'b8888888-8888-8888-8888-888888888881', TRUE),
-  -- Jamie - checked in via Rex (checked in 1 hour ago)
-  ('a0000001-0001-0001-0001-000000000002', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999992', 'b8888888-8888-8888-8888-888888888882', TRUE),
-  -- Casey - NOT checked in yet (registered via Maya)
-  ('a0000001-0001-0001-0001-000000000003', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999993', 'b8888888-8888-8888-8888-888888888883', FALSE),
-  -- Morgan - NOT checked in yet (no promoter referral - organic)
-  ('a0000001-0001-0001-0001-000000000004', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999994', NULL, FALSE),
-  -- Taylor - checked in recently (no promoter referral - organic)
-  ('a0000001-0001-0001-0001-000000000005', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999995', NULL, TRUE)
+  -- Alex - referred by Luna
+  ('a0000001-0001-0001-0001-000000000001', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999991', 'b8888888-8888-8888-8888-888888888881'),
+  -- Jamie - referred by Rex
+  ('a0000001-0001-0001-0001-000000000002', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999992', 'b8888888-8888-8888-8888-888888888882'),
+  -- Casey - referred by Maya (not checked in)
+  ('a0000001-0001-0001-0001-000000000003', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999993', 'b8888888-8888-8888-8888-888888888883'),
+  -- Morgan - organic registration (not checked in)
+  ('a0000001-0001-0001-0001-000000000004', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999994', NULL),
+  -- Taylor - organic registration
+  ('a0000001-0001-0001-0001-000000000005', 'e1111111-1111-1111-1111-111111111111', 'a9999999-9999-9999-9999-999999999995', NULL)
 ON CONFLICT (id) DO NOTHING;
 
 -- Create check-in records for those who checked in
