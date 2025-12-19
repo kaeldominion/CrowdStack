@@ -1,0 +1,221 @@
+import Link from "next/link";
+import { Container, Section, Button, Card, Badge } from "@crowdstack/ui";
+import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import { ShareButton } from "@/components/ShareButton";
+
+async function getEvent(slug: string) {
+  try {
+    const response = await fetch(`/api/events/${slug}`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data.event;
+  } catch (error) {
+    console.error("Failed to fetch event:", error);
+    return null;
+  }
+}
+
+export default async function EventPage({
+  params,
+}: {
+  params: { eventSlug: string };
+}) {
+  const event = await getEvent(params.eventSlug);
+
+  if (!event) {
+    notFound();
+  }
+
+  const startDate = new Date(event.start_time);
+  const endDate = event.end_time ? new Date(event.end_time) : null;
+
+  const shareUrl = typeof window !== "undefined" 
+    ? `${window.location.origin}/e/${params.eventSlug}`
+    : `/e/${params.eventSlug}`;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Hero Section with Cover Image */}
+      {event.cover_image_url && (
+        <div className="relative h-96 w-full overflow-hidden">
+          <Image
+            src={event.cover_image_url}
+            alt={event.name}
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        </div>
+      )}
+
+      <Section spacing="xl">
+        <Container size="lg">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-4">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                {event.name}
+              </h1>
+              {event.description && (
+                <p className="text-lg text-foreground-muted max-w-3xl mx-auto">
+                  {event.description}
+                </p>
+              )}
+            </div>
+
+            {/* Event Details Card */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <div className="space-y-6">
+                  <h2 className="text-2xl font-semibold text-foreground">Event Details</h2>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4">
+                      <Calendar className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="text-sm text-foreground-muted">Date & Time</div>
+                        <div className="text-foreground font-medium">
+                          {startDate.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </div>
+                        <div className="text-foreground-muted">
+                          {startDate.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                          {endDate && ` - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {event.venue && (
+                      <div className="flex items-start gap-4">
+                        <MapPin className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-sm text-foreground-muted">Venue</div>
+                          <div className="text-foreground font-medium">{event.venue.name}</div>
+                          {event.venue.address && (
+                            <div className="text-foreground-muted text-sm">{event.venue.address}</div>
+                          )}
+                          {(event.venue.city || event.venue.state) && (
+                            <div className="text-foreground-muted text-sm">
+                              {[event.venue.city, event.venue.state, event.venue.country]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {event.capacity && (
+                      <div className="flex items-start gap-4">
+                        <Users className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+                        <div>
+                          <div className="text-sm text-foreground-muted">Capacity</div>
+                          <div className="text-foreground font-medium">
+                            {event.registration_count || 0} registered
+                            {event.capacity && ` / ${event.capacity} capacity`}
+                          </div>
+                          {event.capacity && (
+                            <div className="w-full bg-surface rounded-full h-2 mt-2">
+                              <div
+                                className="bg-primary h-2 rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(
+                                    ((event.registration_count || 0) / event.capacity) * 100,
+                                    100
+                                  )}%`,
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {event.organizer && (
+                      <div className="flex items-start gap-4">
+                        <div className="text-sm text-foreground-muted">Organized by</div>
+                        <div className="text-foreground font-medium">{event.organizer.name}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Action Card */}
+              <Card>
+                <div className="space-y-4">
+                  <div className="text-center space-y-4">
+                    <div>
+                      {event.capacity ? (
+                        <div className="space-y-2">
+                          <div className="text-2xl font-bold text-foreground">
+                            {event.capacity - (event.registration_count || 0)} spots left
+                          </div>
+                          <div className="text-sm text-foreground-muted">
+                            {event.registration_count || 0} people registered
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-2xl font-bold text-foreground">
+                          {event.registration_count || 0} registered
+                        </div>
+                      )}
+                    </div>
+
+                    <Link href={`/e/${params.eventSlug}/register`} className="block">
+                      <Button variant="primary" size="lg" className="w-full">
+                        Register Now
+                      </Button>
+                    </Link>
+
+                    <ShareButton
+                      title={event.name}
+                      text={event.description || undefined}
+                      url={shareUrl}
+                    />
+                  </div>
+
+                  {/* Event Status Badge */}
+                  <div className="pt-4 border-t border-border">
+                    <div className="flex items-center justify-center gap-2">
+                      {new Date() < startDate ? (
+                        <Badge variant="default" className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Upcoming
+                        </Badge>
+                      ) : new Date() > startDate && (!endDate || new Date() < endDate) ? (
+                        <Badge variant="success" className="flex items-center gap-1">
+                          <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                          Live Now
+                        </Badge>
+                      ) : (
+                        <Badge variant="default">Past Event</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </Container>
+      </Section>
+    </div>
+  );
+}
+

@@ -1,0 +1,201 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
+import { Calendar, Plus, Search, Eye, Edit, ExternalLink } from "lucide-react";
+import Link from "next/link";
+
+export default function AdminEventsPage() {
+  const [events, setEvents] = useState<any[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  useEffect(() => {
+    filterEvents();
+  }, [search, statusFilter, events]);
+
+  const loadEvents = async () => {
+    try {
+      const response = await fetch("/api/admin/events");
+      if (!response.ok) throw new Error("Failed to load events");
+      const data = await response.json();
+      setEvents(data.events || []);
+    } catch (error) {
+      console.error("Error loading events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterEvents = () => {
+    let filtered = [...events];
+    
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.name.toLowerCase().includes(searchLower) ||
+          e.venue?.name?.toLowerCase().includes(searchLower) ||
+          e.organizer?.name?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((e) => e.status === statusFilter);
+    }
+
+    setFilteredEvents(filtered);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "published":
+        return <Badge variant="success">Published</Badge>;
+      case "draft":
+        return <Badge variant="warning">Draft</Badge>;
+      case "ended":
+        return <Badge variant="default">Ended</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-foreground-muted">Loading events...</div>
+        </div>
+      </Container>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Section spacing="lg">
+        <Container>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Event Management</h1>
+              <p className="mt-2 text-sm text-foreground-muted">
+                View and manage all events in the system
+              </p>
+            </div>
+            <Link href="/app/organizer/events/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Event
+              </Button>
+            </Link>
+          </div>
+
+          <Card>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search events by name, venue, or organizer..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="all">All Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="ended">Ended</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
+          <div className="mt-4 text-sm text-foreground-muted">
+            Showing {filteredEvents.length} of {events.length} events
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event Name</TableHead>
+                    <TableHead>Venue</TableHead>
+                    <TableHead>Organizer</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Registrations</TableHead>
+                    <TableHead>Check-ins</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-foreground-muted">
+                        No events found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredEvents.map((event) => (
+                      <TableRow key={event.id} hover>
+                        <TableCell className="font-medium">
+                          <Link 
+                            href={`/app/organizer/events/${event.id}`}
+                            className="text-primary hover:text-primary/80 hover:underline"
+                          >
+                            {event.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>{event.venue?.name || "—"}</TableCell>
+                        <TableCell>{event.organizer?.name || "—"}</TableCell>
+                        <TableCell className="text-sm text-foreground-muted">
+                          {new Date(event.start_time).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{event.registrations_count || 0}</TableCell>
+                        <TableCell>{event.checkins_count || 0}</TableCell>
+                        <TableCell>{getStatusBadge(event.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/app/organizer/events/${event.id}`}>
+                              <Button variant="ghost" size="sm" title="View & Manage">
+                                <Eye className="h-4 w-4 mr-1" />
+                                Manage
+                              </Button>
+                            </Link>
+                            {event.slug && (
+                              <a
+                                href={`/e/${event.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                                title="View Public Page"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </Container>
+      </Section>
+    </div>
+  );
+}
+

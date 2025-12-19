@@ -4,10 +4,11 @@ Quick reference for setting up environment variables in your Vercel projects.
 
 ## Projects
 
-- **crowdstack-web**: Web app (Root: `apps/web`)
-- **crowdstack-app**: B2B app (Root: `apps/app`)
+- **crowdstack-web**: Unified app (Root: `apps/unified`)
+  - Production: `crowdstack.app` (main branch)
+  - Preview: `beta.crowdstack.app` (develop branch)
 
-## Environment Variables for Each Project
+## Environment Variables for Unified App
 
 ### Production Environment (main branch)
 
@@ -17,16 +18,20 @@ Set these in Vercel → Settings → Environment Variables → **Production**:
 NEXT_PUBLIC_SUPABASE_URL=https://fvrjcyscwibrqpsviblx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2cmpjeXNjd2licnFwc3ZpYmx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNDc5NTMsImV4cCI6MjA4MTYyMzk1M30.cpk5MaPXqzQ3-eiZFaUT58EmKbABs-cOzTvgKtGNIzU
 SUPABASE_SERVICE_ROLE_KEY=<get-from-prod-supabase>
+JWT_SECRET=<generate-secure-random-string>
 NEXT_PUBLIC_APP_ENV=prod
 NEXT_PUBLIC_APP_VERSION=$VERCEL_GIT_COMMIT_SHA
-NEXT_PUBLIC_WEB_URL=https://crowdstack.app
-NEXT_PUBLIC_APP_URL=https://app.crowdstack.app
 ```
 
 **To get SUPABASE_SERVICE_ROLE_KEY:**
 1. Go to https://fvrjcyscwibrqpsviblx.supabase.co
 2. Settings → API
 3. Copy the `service_role` `secret` key
+
+**To generate JWT_SECRET:**
+```bash
+openssl rand -hex 32
+```
 
 ### Preview Environment (develop branch)
 
@@ -36,10 +41,9 @@ Set these in Vercel → Settings → Environment Variables → **Preview**:
 NEXT_PUBLIC_SUPABASE_URL=https://aiopjznxnoqgmmqowpxb.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpb3Bqem54bm9xZ21tcW93cHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNDg3MzMsImV4cCI6MjA4MTYyNDczM30.BLHb8D33PSCKUeI4ZkM6KT-a_a8ns2QnjCeUY7h2IiU
 SUPABASE_SERVICE_ROLE_KEY=<get-from-beta-supabase>
+JWT_SECRET=<generate-secure-random-string>
 NEXT_PUBLIC_APP_ENV=beta
 NEXT_PUBLIC_APP_VERSION=$VERCEL_GIT_COMMIT_SHA
-NEXT_PUBLIC_WEB_URL=https://beta.crowdstack.app
-NEXT_PUBLIC_APP_URL=https://app-beta.crowdstack.app
 ```
 
 **To get SUPABASE_SERVICE_ROLE_KEY:**

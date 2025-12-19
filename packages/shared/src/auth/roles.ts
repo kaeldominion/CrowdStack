@@ -9,41 +9,99 @@ import type { UserRole, UserRoleRecord } from "../types";
  */
 export async function getUserRoles(): Promise<UserRole[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
 
-  if (!user) {
-    return [];
+  // First try standard Supabase auth
+  const { data: { user: supabaseUser }, error: getUserError } = await supabase.auth.getUser();
+  user = supabaseUser;
+  
+  if (process.env.NODE_ENV === "development") {
+    console.log("[getUserRoles] Standard Supabase auth result:", {
+      hasUser: !!user,
+      userEmail: user?.email,
+      userId: user?.id,
+      error: getUserError?.message || null,
+    });
   }
 
-  // Try with regular client first (respects RLS)
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-
-  if (error) {
-    // If RLS blocks, try with service role as fallback (for debugging)
-    console.warn("Failed to get user roles with regular client, trying service role:", error.message);
+  // If that fails, try getting user from custom localhost cookie
+  if (!user) {
     try {
-      const serviceSupabase = createServiceRoleClient();
-      const { data: serviceData } = await serviceSupabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      return serviceData?.map((r) => r.role as UserRole) || [];
-    } catch (serviceError) {
-      console.error("Failed to get roles with service role:", serviceError);
-      return [];
+      const { cookies } = await import("next/headers");
+      const cookieStore = await cookies();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+      const authCookieName = `sb-${projectRef}-auth-token`;
+      const authCookie = cookieStore.get(authCookieName);
+
+      if (authCookie) {
+        const cookieValue = decodeURIComponent(authCookie.value);
+        const parsed = JSON.parse(cookieValue);
+        if (parsed.user && parsed.expires_at) {
+          const now = Math.floor(Date.now() / 1000);
+          if (parsed.expires_at > now) {
+            user = parsed.user;
+            if (process.env.NODE_ENV === "development") {
+              console.log("[getUserRoles] Got user from custom cookie:", user.email);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Custom cookie parsing failed
+      if (process.env.NODE_ENV === "development") {
+        console.log("[getUserRoles] Custom cookie parsing failed:", e);
+      }
     }
   }
 
-  if (!data) {
+  if (!user) {
+    console.log("[getUserRoles] No user found, returning empty roles");
     return [];
   }
 
-  return data.map((r) => r.role as UserRole);
+  console.log("[getUserRoles] Looking up roles for user:", {
+    userId: user.id,
+    email: user.email,
+  });
+
+  // Use service role client to get roles (bypasses RLS issues)
+  try {
+    const serviceSupabase = createServiceRoleClient();
+    console.log("[getUserRoles] Querying user_roles table for user_id:", user.id);
+    
+    const { data, error } = await serviceSupabase
+      .from("user_roles")
+      .select("role, user_id")
+      .eq("user_id", user.id);
+
+    console.log("[getUserRoles] Query result:", {
+      dataCount: data?.length || 0,
+      data: data,
+      error: error?.message || null,
+      errorCode: error?.code || null,
+    });
+
+    if (error) {
+      console.error("[getUserRoles] Failed to get roles:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      return [];
+    }
+
+    const roles = data?.map((r) => r.role as UserRole) || [];
+    console.log("[getUserRoles] Returning roles:", roles);
+    return roles;
+  } catch (serviceError: any) {
+    console.error("[getUserRoles] Service role query failed:", {
+      error: serviceError?.message,
+      stack: serviceError?.stack,
+    });
+    return [];
+  }
 }
 
 /**

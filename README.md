@@ -259,12 +259,11 @@ git push origin main
 
 ## Vercel Deployment
 
-We use **2 Vercel projects** with preview deployments, pointing to the same GitHub repository:
+We use **1 Vercel project** with preview deployments, pointing to the same GitHub repository:
 
 | Vercel Project | Root Directory | Production Branch | Preview Branch | Production Domain | Preview Domain |
 |----------------|----------------|-------------------|----------------|-------------------|----------------|
-| `crowdstack-web` | `apps/web` | `main` | `develop` | `crowdstack.app` | `beta.crowdstack.app` |
-| `crowdstack-app` | `apps/app` | `main` | `develop` | `app.crowdstack.app` | `app-beta.crowdstack.app` |
+| `crowdstack-web` | `apps/unified` | `main` | `develop` | `crowdstack.app` | `beta.crowdstack.app` |
 
 **Deployment Strategy:**
 - **Production**: Deploys from `main` branch → Production domains
@@ -273,14 +272,12 @@ We use **2 Vercel projects** with preview deployments, pointing to the same GitH
 
 ### Environment Variable Mapping
 
-Each Vercel project has environment variables configured separately for **Production** and **Preview** environments:
+The Vercel project has environment variables configured separately for **Production** and **Preview** environments:
 
 | Vercel Project | Environment | Supabase Project | NEXT_PUBLIC_APP_ENV |
 |----------------|------------|------------------|---------------------|
 | `crowdstack-web` | Production (main) | **Prod Supabase** | `prod` |
 | `crowdstack-web` | Preview (develop) | **Beta Supabase** | `beta` |
-| `crowdstack-app` | Production (main) | **Prod Supabase** | `prod` |
-| `crowdstack-app` | Preview (develop) | **Beta Supabase** | `beta` |
 
 **⚠️ Critical**: Preview deployments (develop branch) MUST use the Beta Supabase project. Production deployments (main branch) MUST use the Prod Supabase project. Never mix environments.
 
@@ -302,8 +299,8 @@ Each Vercel project requires environment variables configured separately for **P
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) | Get from Supabase project Settings → API |
 | `NEXT_PUBLIC_APP_ENV` | Environment identifier | Beta projects: `beta`<br>Prod projects: `prod` |
 | `NEXT_PUBLIC_APP_VERSION` | App version string | Use `$VERCEL_GIT_COMMIT_SHA` or custom version |
-| `NEXT_PUBLIC_WEB_URL` | Web app URL | Beta: `https://beta.crowdstack.app`<br>Prod: `https://crowdstack.app` |
-| `NEXT_PUBLIC_APP_URL` | B2B app URL | Beta: `https://app-beta.crowdstack.app`<br>Prod: `https://app.crowdstack.app` |
+
+**Note**: `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_WEB_URL` are no longer needed - all routes are on the same domain.
 
 **Note**: `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed to the client.
 

@@ -5,13 +5,14 @@
   "description": "CrowdStack - Event management platform",
   "packageManager": "pnpm@8.15.0",
   "scripts": {
-    "dev": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"pnpm --filter web dev\" \"pnpm --filter app dev\"",
+    "dev": "pnpm --filter unified dev",
+    "dev:unified": "pnpm --filter unified dev",
     "dev:web": "pnpm --filter web dev",
     "dev:app": "pnpm --filter app dev",
     "dev:all": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"pnpm --filter web dev\" \"pnpm --filter app dev\"",
-    "dev:all:npx": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"npx -y pnpm@8.15.0 --filter web dev\" \"npx -y pnpm@8.15.0 --filter app dev\"",
     "start": "./scripts/start-dev.sh",
     "build": "pnpm -r build",
+    "build:unified": "npx -y pnpm@8.15.0 --filter unified build",
     "build:web": "npx -y pnpm@8.15.0 --filter web build",
     "build:app": "npx -y pnpm@8.15.0 --filter app build",
     "lint": "pnpm -r lint",
@@ -23,9 +24,9 @@
     "watch-fix": "node scripts/auto-fix-watch.js"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.2"
   },
   "engines": {
     "node": ">=18.0.0",
