@@ -20,6 +20,7 @@ interface Registration {
   id: string;
   event_id: string;
   created_at: string;
+  qr_pass_token?: string;
   event: {
     id: string;
     name: string;
@@ -39,6 +40,43 @@ interface UserProfile {
   name: string | null;
   email: string;
   xp_points: number;
+}
+
+// QR Pass button component
+function QRPassButton({ registrationId, eventSlug }: { registrationId: string; eventSlug: string }) {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`/api/registrations/${registrationId}/qr-token`);
+      if (response.ok) {
+        const data = await response.json();
+        router.push(`/e/${eventSlug}/pass?token=${data.qr_token}`);
+      } else {
+        console.error("Failed to get QR token");
+      }
+    } catch (error) {
+      console.error("Error fetching QR token:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-600 transition-all disabled:opacity-50"
+    >
+      <QrCode className="h-5 w-5" />
+      {loading ? "Loading..." : "View QR Pass"}
+    </button>
+  );
 }
 
 export default function MePage() {
@@ -98,7 +136,8 @@ export default function MePage() {
       });
 
       // Load registrations with events
-      const { data: registrations } = await supabase
+      console.log("[Me] Loading registrations for attendee:", attendee?.id);
+      const { data: registrations, error: regError } = await supabase
         .from("registrations")
         .select(`
           id,
@@ -117,6 +156,8 @@ export default function MePage() {
         `)
         .eq("attendee_id", attendee?.id || "")
         .order("created_at", { ascending: false });
+      
+      console.log("[Me] Registrations result:", registrations, "Error:", regError);
 
       if (registrations) {
         const now = new Date();
@@ -275,57 +316,66 @@ export default function MePage() {
           {upcomingEvents.length > 0 ? (
             <div className="space-y-3">
               {upcomingEvents.slice(0, 3).map((reg) => (
-                <Link
+                <div
                   key={reg.id}
-                  href={`/e/${reg.event?.slug}`}
-                  className="block rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 overflow-hidden group"
+                  className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
                 >
-                  <div className="flex items-center gap-4 p-4">
-                    {/* Event Image or Placeholder */}
-                    <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {reg.event?.cover_image_url ? (
-                        <img
-                          src={reg.event.cover_image_url}
-                          alt={reg.event.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <Ticket className="h-8 w-8 text-white/40" />
-                      )}
-                    </div>
-
-                    {/* Event Details */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white group-hover:text-indigo-400 transition-colors truncate">
-                        {reg.event?.name}
-                      </h3>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-white/50">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {formatEventDate(reg.event?.start_time || "")}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatEventTime(reg.event?.start_time || "")}
-                        </span>
+                  <Link
+                    href={`/e/${reg.event?.slug}`}
+                    className="block hover:bg-white/5 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-4 p-4">
+                      {/* Event Image or Placeholder */}
+                      <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {reg.event?.cover_image_url ? (
+                          <img
+                            src={reg.event.cover_image_url}
+                            alt={reg.event.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Ticket className="h-8 w-8 text-white/40" />
+                        )}
                       </div>
-                      {reg.event?.venue && (
-                        <div className="flex items-center gap-1 mt-1 text-sm text-white/40">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {reg.event.venue.name}
-                          {reg.event.venue.city && `, ${reg.event.venue.city}`}
+
+                      {/* Event Details */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white group-hover:text-indigo-400 transition-colors truncate">
+                          {reg.event?.name}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-white/50">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {formatEventDate(reg.event?.start_time || "")}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatEventTime(reg.event?.start_time || "")}
+                          </span>
                         </div>
-                      )}
-                    </div>
+                        {reg.event?.venue && (
+                          <div className="flex items-center gap-1 mt-1 text-sm text-white/40">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {reg.event.venue.name}
+                            {reg.event.venue.city && `, ${reg.event.venue.city}`}
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Countdown */}
-                    <div className="text-right flex-shrink-0">
-                      <div className="px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 text-sm font-medium">
-                        {getTimeUntil(reg.event?.start_time || "")}
+                      {/* Countdown */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-400 text-sm font-medium">
+                          {getTimeUntil(reg.event?.start_time || "")}
+                        </div>
                       </div>
                     </div>
+                  </Link>
+                  
+                  {/* QR Pass Button */}
+                  <div className="px-4 pb-4">
+                    <QRPassButton registrationId={reg.id} eventSlug={reg.event?.slug || ""} />
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
