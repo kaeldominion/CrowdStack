@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { BentoCard } from "@/components/BentoCard";
 import { Badge, Logo, Button, Input } from "@crowdstack/ui";
