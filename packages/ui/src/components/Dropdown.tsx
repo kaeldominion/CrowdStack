@@ -53,12 +53,12 @@ export function Dropdown({ trigger, items, align = "right", className, triggerCl
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-[60]"
             onClick={() => setIsOpen(false)}
           />
           <div
             className={cn(
-              "absolute z-20 mt-2 w-56 rounded-md bg-surface border border-border shadow-card py-1",
+              "absolute z-[70] mt-2 w-56 rounded-md bg-surface border border-border shadow-card py-1",
               align === "right" ? "right-0" : "left-0"
             )}
           >

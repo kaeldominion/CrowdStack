@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "../utils/cn";
 import { Button } from "./Button";
@@ -24,6 +25,12 @@ export function Modal({
   size = "md",
   className,
 }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -45,7 +52,7 @@ export function Modal({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const sizeClasses = {
     sm: "max-w-md",
@@ -54,9 +61,9 @@ export function Modal({
     xl: "max-w-4xl",
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -64,14 +71,14 @@ export function Modal({
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         className={cn(
-          "relative z-50 w-full rounded-md bg-surface border border-border shadow-card",
+          "relative z-[1] w-full rounded-md bg-surface border border-border shadow-card my-auto max-h-[90vh] flex flex-col",
           sizeClasses[size],
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
             <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             <button
               onClick={onClose}
@@ -81,14 +88,17 @@ export function Modal({
             </button>
           </div>
         )}
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border flex-shrink-0">
             {footer}
           </div>
         )}
       </div>
     </div>
   );
+
+  // Use portal to render modal at document body level, outside any stacking contexts
+  return createPortal(modalContent, document.body);
 }
 

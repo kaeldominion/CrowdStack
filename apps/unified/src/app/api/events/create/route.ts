@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import type { CreateEventRequest } from "@crowdstack/shared";
+import { notifyVenueOfPendingEvent, notifyVenueOfAutoApprovedEvent } from "@crowdstack/shared/notifications/send";
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,6 +91,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine venue approval status
+    let venueApprovalStatus = "not_required";
+    let autoApproved = false;
+    
+    // Check if user is acting purely as superadmin (impersonating) vs as a real organizer
+    const isActingAsOrganizer = roles.includes("event_organizer");
+    const isPureSuperadmin = isSuperadmin && !isActingAsOrganizer;
+    
+    if (body.venue_id) {
+      // Check if there's a partnership that allows auto-approval
+      const { data: partnership } = await serviceSupabase
+        .from("venue_organizer_partnerships")
+        .select("auto_approve")
+        .eq("venue_id", body.venue_id)
+        .eq("organizer_id", organizer.id)
+        .single();
+
+      if (partnership?.auto_approve) {
+        // Pre-approved organizer
+        venueApprovalStatus = "approved";
+        autoApproved = true;
+      } else if (isPureSuperadmin) {
+        // Pure superadmin (impersonating) events are auto-approved
+        venueApprovalStatus = "approved";
+        autoApproved = true;
+      } else {
+        // Regular organizer (or superadmin+organizer) needs venue approval
+        venueApprovalStatus = "pending";
+      }
+    }
+    
+    console.log("[Event Creation] Venue approval status:", {
+      venue_id: body.venue_id,
+      organizer_id: organizer.id,
+      venueApprovalStatus,
+      autoApproved,
+      isSuperadmin,
+      isActingAsOrganizer,
+      isPureSuperadmin,
+    });
+
     // Create event
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
@@ -105,12 +147,52 @@ export async function POST(request: NextRequest) {
         cover_image_url: body.cover_image_url || null,
         status: "draft",
         promoter_access_type: body.promoter_access_type || "public",
+        venue_approval_status: venueApprovalStatus,
+        venue_approval_at: autoApproved ? new Date().toISOString() : null,
       })
       .select()
       .single();
 
     if (eventError) {
       throw eventError;
+    }
+
+    // Send notification to venue admins
+    if (body.venue_id) {
+      try {
+        // Get organizer name for notification
+        const { data: org } = await serviceSupabase
+          .from("organizers")
+          .select("name")
+          .eq("id", organizer.id)
+          .single();
+
+        const organizerName = org?.name || "An organizer";
+
+        if (venueApprovalStatus === "pending") {
+          // Notify venue that approval is needed
+          console.log("[Event Creation] Sending pending notification to venue:", body.venue_id);
+          await notifyVenueOfPendingEvent(
+            body.venue_id,
+            event.id,
+            body.name,
+            organizerName
+          );
+        } else if (autoApproved && !isPureSuperadmin) {
+          // Notify venue about auto-approved event (from pre-approved organizer)
+          // Skip notification for pure superadmin-created events (impersonation)
+          console.log("[Event Creation] Sending auto-approved notification to venue:", body.venue_id);
+          await notifyVenueOfAutoApprovedEvent(
+            body.venue_id,
+            event.id,
+            body.name,
+            organizerName
+          );
+        }
+      } catch (notifyError) {
+        // Don't fail event creation if notification fails
+        console.error("Failed to send venue notification:", notifyError);
+      }
     }
 
     // Create event_promoters if provided

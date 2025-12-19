@@ -55,6 +55,12 @@ export default function AdminDashboardPage() {
       icon: <Building2 className="h-6 w-6" />,
     },
     {
+      name: "Organizers",
+      href: "/admin/organizers",
+      description: "View and manage event organizers",
+      icon: <Calendar className="h-6 w-6" />,
+    },
+    {
       name: "Events",
       href: "/admin/events",
       description: "View and manage all events",

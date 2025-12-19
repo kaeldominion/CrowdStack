@@ -57,13 +57,6 @@ export async function POST(
         console.warn(`Failed to assign role ${requiredRole}:`, roleError.message);
       }
     } else if (action === "unassign") {
-      // Check if user has other assignments before removing role
-      const { data: otherAssignments } = await serviceSupabase
-        .from(junctionTable)
-        .select(entityIdField)
-        .eq("user_id", userId)
-        .neq(entityIdField, entityId);
-
       // Remove assignment from junction table
       const { error: deleteError } = await serviceSupabase
         .from(junctionTable)
@@ -75,9 +68,22 @@ export async function POST(
         return NextResponse.json({ error: deleteError.message }, { status: 500 });
       }
 
-      // If no other assignments, optionally remove the role (or keep it for convenience)
-      // For now, we'll keep the role even if unassigned - admin can manually remove it if needed
-      // This is safer in case they get reassigned soon
+      // Check if user has any remaining assignments of this type
+      const { data: remainingAssignments } = await serviceSupabase
+        .from(junctionTable)
+        .select(entityIdField)
+        .eq("user_id", userId);
+
+      // If no more assignments of this type, remove the role
+      if (!remainingAssignments || remainingAssignments.length === 0) {
+        try {
+          await removeUserRole(userId, requiredRole as any);
+          console.log(`Removed role ${requiredRole} from user ${userId} - no remaining assignments`);
+        } catch (roleError: any) {
+          // Log but don't fail - role might not exist or other issue
+          console.warn(`Failed to remove role ${requiredRole}:`, roleError.message);
+        }
+      }
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }

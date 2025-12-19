@@ -15,6 +15,7 @@ import type { UserRole } from "@crowdstack/shared";
 import { getNavItemsForUser } from "@/lib/navigation";
 import { UserProfileModal } from "./UserProfileModal";
 import { ImprovedEntitySwitcher as EntitySwitcher, getImpersonation } from "./ImprovedEntitySwitcher";
+import { NotificationBell } from "./NotificationBell";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -221,7 +222,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       {/* Main content */}
       <div className="flex flex-1 flex-col lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-sm border-b border-border">
+        <header className="sticky top-0 z-[80] bg-background/80 backdrop-blur-sm border-b border-border">
           <div className="flex h-14 items-center gap-3 px-4 lg:px-8">
             {/* Mobile menu button */}
             <button
@@ -240,6 +241,9 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
               {userRoles.includes("superadmin") && (
                 <EntitySwitcher userRoles={userRoles as UserRole[]} />
               )}
+              
+              {/* Notification Bell */}
+              <NotificationBell />
               
               {/* Environment badge */}
               {envBadge && (

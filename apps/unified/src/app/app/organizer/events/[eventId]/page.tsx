@@ -17,6 +17,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Modal,
 } from "@crowdstack/ui";
 import {
   ArrowLeft,
@@ -35,6 +36,11 @@ import {
   CheckCircle2,
   Clock,
   BarChart3,
+  Building2,
+  ShieldCheck,
+  ShieldX,
+  ShieldAlert,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -52,6 +58,9 @@ interface EventData {
   promoter_access_type: string;
   organizer_id: string;
   venue_id: string | null;
+  venue_approval_status: string | null;
+  venue_approval_at: string | null;
+  venue_rejection_reason: string | null;
   created_at: string;
   organizer?: { id: string; name: string; email: string | null };
   venue?: { id: string; name: string; address: string | null; city: string | null };
@@ -61,6 +70,16 @@ interface EventData {
     commission_type: string;
     commission_config: any;
   }>;
+}
+
+interface EditRecord {
+  id: string;
+  edited_by: string;
+  editor_email: string;
+  editor_role: string;
+  changes: Record<string, { old: any; new: any }>;
+  reason: string | null;
+  created_at: string;
 }
 
 interface Stats {
@@ -100,11 +119,14 @@ export default function OrganizerEventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
 
   useEffect(() => {
     loadEventData();
     loadStats();
     loadAttendees();
+    loadEditHistory(); // Load edit history to show badge if there are edits
     
     // Refresh stats every 30 seconds
     const statsInterval = setInterval(loadStats, 30000);
@@ -151,6 +173,34 @@ export default function OrganizerEventDetailPage() {
     }
   };
 
+  const loadEditHistory = async () => {
+    try {
+      const response = await fetch(`/api/venue/events/${eventId}/edit`);
+      if (response.ok) {
+        const data = await response.json();
+        setEditHistory(data.edits || []);
+      }
+    } catch (error) {
+      console.error("Failed to load edit history:", error);
+    }
+  };
+
+  const handleOpenHistory = async () => {
+    setShowHistoryModal(true);
+    await loadEditHistory();
+  };
+
+  const formatApprovalDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     try {
       const response = await fetch(`/api/events/${eventId}`, {
@@ -161,9 +211,13 @@ export default function OrganizerEventDetailPage() {
 
       if (response.ok) {
         loadEventData();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to update event status");
       }
     } catch (error) {
       console.error("Failed to update status:", error);
+      alert("Failed to update event status. Please try again.");
     }
   };
 
@@ -243,13 +297,39 @@ export default function OrganizerEventDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {event.status === "draft" && (
-            <Button
-              variant="primary"
-              onClick={() => handleStatusChange("published")}
-            >
-              Publish Event
+          {editHistory.length > 0 && (
+            <Button variant="ghost" onClick={handleOpenHistory}>
+              <History className="h-4 w-4 mr-2" />
+              <span className="flex items-center gap-1">
+                Edit History
+                <Badge variant="secondary" size="sm">{editHistory.length}</Badge>
+              </span>
             </Button>
+          )}
+          {event.status === "draft" && (
+            event.venue_id && event.venue_approval_status !== "approved" ? (
+              <Button
+                variant="secondary"
+                disabled
+                title={
+                  event.venue_approval_status === "pending"
+                    ? "Waiting for venue approval before publishing"
+                    : event.venue_approval_status === "rejected"
+                    ? "Venue rejected this event - edit and try a different venue"
+                    : "Venue approval required"
+                }
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                {event.venue_approval_status === "pending" ? "Awaiting Approval" : "Publish Blocked"}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => handleStatusChange("published")}
+              >
+                Publish Event
+              </Button>
+            )
           )}
           {event.status === "published" && (
             <Button
@@ -274,6 +354,85 @@ export default function OrganizerEventDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Venue Approval Status Card */}
+      {event.venue_id && event.venue_approval_status && event.venue_approval_status !== "not_required" && (
+        <div className={`rounded-xl border-2 p-5 transition-all ${
+          event.venue_approval_status === "approved" 
+            ? "bg-gradient-to-r from-success/5 to-success/10 border-success/30" 
+            : event.venue_approval_status === "rejected"
+            ? "bg-gradient-to-r from-error/5 to-error/10 border-error/30"
+            : "bg-gradient-to-r from-warning/5 to-warning/10 border-warning/30 animate-pulse"
+        }`}>
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className={`p-3 rounded-full ${
+              event.venue_approval_status === "approved"
+                ? "bg-success/20"
+                : event.venue_approval_status === "rejected"
+                ? "bg-error/20"
+                : "bg-warning/20"
+            }`}>
+              {event.venue_approval_status === "approved" ? (
+                <ShieldCheck className="h-8 w-8 text-success" />
+              ) : event.venue_approval_status === "rejected" ? (
+                <ShieldX className="h-8 w-8 text-error" />
+              ) : (
+                <ShieldAlert className="h-8 w-8 text-warning" />
+              )}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className={`text-lg font-bold ${
+                  event.venue_approval_status === "approved"
+                    ? "text-success"
+                    : event.venue_approval_status === "rejected"
+                    ? "text-error"
+                    : "text-warning"
+                }`}>
+                  {event.venue_approval_status === "approved"
+                    ? "✓ Approved by Venue"
+                    : event.venue_approval_status === "rejected"
+                    ? "✗ Rejected by Venue"
+                    : "⏳ Awaiting Venue Approval"}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 text-foreground-muted mb-2">
+                <Building2 className="h-4 w-4" />
+                <span>{event.venue?.name || "Venue"}</span>
+              </div>
+
+              {event.venue_approval_status === "approved" && event.venue_approval_at && (
+                <p className="text-sm text-foreground-muted">
+                  Approved on {formatApprovalDate(event.venue_approval_at)}
+                </p>
+              )}
+
+              {event.venue_approval_status === "rejected" && (
+                <div className="mt-2 p-3 bg-error/10 rounded-lg border border-error/20">
+                  <p className="text-sm text-error font-medium">
+                    {event.venue_rejection_reason || "No reason provided"}
+                  </p>
+                  <p className="text-xs text-foreground-muted mt-1">
+                    You can edit the event and try a different venue.
+                  </p>
+                </div>
+              )}
+
+              {event.venue_approval_status === "pending" && (
+                <p className="text-sm text-foreground-muted">
+                  The venue has been notified and will review your event soon. 
+                  You'll receive a notification when they respond.
+                </p>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       {stats && (
@@ -565,6 +724,86 @@ export default function OrganizerEventDetailPage() {
         </Card>
       </TabsContent>
     </Tabs>
+
+    {/* Edit History Modal */}
+    <Modal
+      isOpen={showHistoryModal}
+      onClose={() => setShowHistoryModal(false)}
+      title="Event Edit History"
+      size="lg"
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-foreground-muted">
+          This shows all changes made to your event by venue administrators.
+        </p>
+        {editHistory.length === 0 ? (
+          <div className="text-center py-8 text-foreground-muted">
+            <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>No edits have been made to this event.</p>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {editHistory.map((edit) => (
+              <div key={edit.id} className="p-4 border border-border rounded-lg bg-surface">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-full ${
+                      edit.editor_role === "venue_admin" 
+                        ? "bg-primary/10" 
+                        : "bg-warning/10"
+                    }`}>
+                      <Building2 className={`h-4 w-4 ${
+                        edit.editor_role === "venue_admin" 
+                          ? "text-primary" 
+                          : "text-warning"
+                      }`} />
+                    </div>
+                    <span className="font-medium text-foreground">{edit.editor_email}</span>
+                    <Badge variant="secondary" size="sm">
+                      {edit.editor_role === "venue_admin" ? "Venue Admin" : edit.editor_role}
+                    </Badge>
+                  </div>
+                  <span className="text-sm text-foreground-muted">
+                    {formatApprovalDate(edit.created_at)}
+                  </span>
+                </div>
+
+                {edit.reason && (
+                  <p className="text-sm text-foreground-muted mb-3 italic bg-background/50 p-2 rounded">
+                    "{edit.reason}"
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  {Object.entries(edit.changes).map(([field, { old, new: newVal }]) => (
+                    <div key={field} className="text-sm flex items-start gap-2">
+                      <span className="font-medium text-foreground capitalize min-w-24">
+                        {field.replace(/_/g, " ")}:
+                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2 py-0.5 bg-error/10 text-error rounded line-through">
+                          {String(old) || "(empty)"}
+                        </span>
+                        <span className="text-foreground-muted">→</span>
+                        <span className="px-2 py-0.5 bg-success/10 text-success rounded">
+                          {String(newVal) || "(empty)"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2">
+          <Button variant="ghost" onClick={() => setShowHistoryModal(false)}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </Modal>
     </div>
   );
 }

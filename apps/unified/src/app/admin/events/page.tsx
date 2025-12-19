@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Calendar, Plus, Search, Eye, Edit, ExternalLink } from "lucide-react";
+import { Calendar, Plus, Search, ExternalLink, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminEventsPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +138,7 @@ export default function AdminEventsPage() {
                     <TableHead>Registrations</TableHead>
                     <TableHead>Check-ins</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -148,14 +150,28 @@ export default function AdminEventsPage() {
                     </TableRow>
                   ) : (
                     filteredEvents.map((event) => (
-                      <TableRow key={event.id} hover>
+                      <TableRow 
+                        key={event.id} 
+                        hover
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/app/organizer/events/${event.id}`)}
+                      >
                         <TableCell className="font-medium">
-                          <Link 
-                            href={`/app/organizer/events/${event.id}`}
-                            className="text-primary hover:text-primary/80 hover:underline"
-                          >
-                            {event.name}
-                          </Link>
+                          {event.name}
+                          {event.slug && (
+                            <span className="ml-2">
+                              <a
+                                href={`/e/${event.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-foreground-muted hover:text-primary"
+                                title="View Public Page"
+                              >
+                                <ExternalLink className="h-3 w-3 inline" />
+                              </a>
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>{event.venue?.name || "—"}</TableCell>
                         <TableCell>{event.organizer?.name || "—"}</TableCell>
@@ -166,25 +182,7 @@ export default function AdminEventsPage() {
                         <TableCell>{event.checkins_count || 0}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Link href={`/app/organizer/events/${event.id}`}>
-                              <Button variant="ghost" size="sm" title="View & Manage">
-                                <Eye className="h-4 w-4 mr-1" />
-                                Manage
-                              </Button>
-                            </Link>
-                            {event.slug && (
-                              <a
-                                href={`/e/${event.slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3"
-                                title="View Public Page"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            )}
-                          </div>
+                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
                         </TableCell>
                       </TableRow>
                     ))

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Modal, Button, Input } from "@crowdstack/ui";
 import { Search, User, Building2, Calendar, Check, X } from "lucide-react";
-import { createBrowserClient } from "@crowdstack/shared";
 
 interface User {
   id: string;
@@ -37,6 +36,7 @@ export function UserAssignmentModal({
   const [entities, setEntities] = useState<Entity[]>([]);
   const [assignedEntities, setAssignedEntities] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -49,18 +49,24 @@ export function UserAssignmentModal({
 
   const loadEntities = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const supabase = createBrowserClient();
-      const tableName = type === "venue" ? "venues" : "organizers";
-      const { data, error } = await supabase
-        .from(tableName)
-        .select("id, name, email")
-        .order("name");
-
-      if (error) throw error;
-      setEntities(data || []);
-    } catch (error) {
+      // Use admin API endpoints that bypass RLS
+      const endpoint = type === "venue" ? "/api/admin/venues" : "/api/admin/organizers";
+      const response = await fetch(endpoint);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to load ${type}s`);
+      }
+      
+      const data = await response.json();
+      // Extract entities from the response (API returns { venues: [...] } or { organizers: [...] })
+      const entityList = type === "venue" ? data.venues : data.organizers;
+      setEntities(entityList || []);
+    } catch (error: any) {
       console.error("Failed to load entities:", error);
+      setLoadError(error.message || `Failed to load ${type}s`);
     } finally {
       setLoading(false);
     }
@@ -68,17 +74,16 @@ export function UserAssignmentModal({
 
   const loadAssignedEntities = async () => {
     try {
-      const supabase = createBrowserClient();
-      const junctionTable = type === "venue" ? "venue_users" : "organizer_users";
-      const entityIdField = type === "venue" ? "venue_id" : "organizer_id";
-
-      const { data, error } = await supabase
-        .from(junctionTable)
-        .select(entityIdField)
-        .eq("user_id", userId);
-
-      if (error) throw error;
-      setAssignedEntities((data || []).map((d: any) => d[entityIdField]));
+      // Use admin API endpoint that bypasses RLS
+      const response = await fetch(`/api/admin/users/${userId}/assignments`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to load assignments");
+      }
+      const data = await response.json();
+      // Extract the appropriate assignments based on type
+      const assignments = type === "venue" ? data.venues : data.organizers;
+      setAssignedEntities(assignments || []);
     } catch (error) {
       console.error("Failed to load assigned entities:", error);
     }
@@ -145,6 +150,11 @@ export function UserAssignmentModal({
 
         {loading ? (
           <div className="text-center py-8 text-foreground-muted">Loading...</div>
+        ) : loadError ? (
+          <div className="text-center py-8 text-error">
+            <p className="font-medium">Error loading {type === "venue" ? "venues" : "organizers"}</p>
+            <p className="text-sm mt-1">{loadError}</p>
+          </div>
         ) : filteredEntities.length === 0 ? (
           <div className="text-center py-8 text-foreground-muted">
             No {type === "venue" ? "venues" : "organizers"} found

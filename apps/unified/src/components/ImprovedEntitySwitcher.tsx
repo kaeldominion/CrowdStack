@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dropdown, Modal, Input } from "@crowdstack/ui";
 import { Building2, Calendar, Users, User, Shield, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { UserRole } from "@crowdstack/shared";
-import { createBrowserClient } from "@crowdstack/shared";
 
 const IMPERSONATION_COOKIE = "cs-impersonate-role";
 const IMPERSONATION_ENTITY_COOKIE = "cs-impersonate-entity-id";
@@ -66,55 +65,109 @@ export function ImprovedEntitySwitcher({ userRoles }: { userRoles: UserRole[] })
     setImpersonatingRole(role); // Set the role being loaded
     
     try {
-      const supabase = createBrowserClient();
       let data: Entity[] = [];
       let count = 0;
 
-      const selectFields = "id, name, email";
-
+      // Use admin API endpoints that bypass RLS
       switch (role) {
         case "venue_admin": {
-          let query = supabase.from("venues").select(selectFields, { count: "exact" });
-          if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+          const response = await fetch("/api/admin/venues");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to load venues");
           }
-          const { data: venues, count: venueCount, error } = await query.order("name").range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
-          if (error) throw error;
-          data = (venues || []).map(v => ({ ...v, role: "venue_admin" as UserRole }));
-          count = venueCount || 0;
+          const json = await response.json();
+          let venues = json.venues || [];
+          // Filter by search if provided
+          if (search) {
+            const searchLower = search.toLowerCase();
+            venues = venues.filter((v: any) => 
+              v.name?.toLowerCase().includes(searchLower) || 
+              v.email?.toLowerCase().includes(searchLower)
+            );
+          }
+          // Sort by name
+          venues.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+          count = venues.length;
+          // Apply pagination
+          const startIdx = (page - 1) * ITEMS_PER_PAGE;
+          const endIdx = startIdx + ITEMS_PER_PAGE;
+          data = venues.slice(startIdx, endIdx).map((v: any) => ({ ...v, role: "venue_admin" as UserRole }));
           break;
         }
         case "event_organizer": {
-          let query = supabase.from("organizers").select(selectFields, { count: "exact" });
-          if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+          const response = await fetch("/api/admin/organizers");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to load organizers");
           }
-          const { data: organizers, count: orgCount, error } = await query.order("name").range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
-          if (error) throw error;
-          data = (organizers || []).map(o => ({ ...o, role: "event_organizer" as UserRole }));
-          count = orgCount || 0;
+          const json = await response.json();
+          let organizers = json.organizers || [];
+          // Filter by search if provided
+          if (search) {
+            const searchLower = search.toLowerCase();
+            organizers = organizers.filter((o: any) => 
+              o.name?.toLowerCase().includes(searchLower) || 
+              o.email?.toLowerCase().includes(searchLower)
+            );
+          }
+          // Sort by name
+          organizers.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+          count = organizers.length;
+          // Apply pagination
+          const startIdx = (page - 1) * ITEMS_PER_PAGE;
+          const endIdx = startIdx + ITEMS_PER_PAGE;
+          data = organizers.slice(startIdx, endIdx).map((o: any) => ({ ...o, role: "event_organizer" as UserRole }));
           break;
         }
         case "promoter": {
-          let query = supabase.from("promoters").select(selectFields, { count: "exact" });
-          if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+          const response = await fetch("/api/admin/promoters");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to load promoters");
           }
-          const { data: promoters, count: promoCount, error } = await query.order("name").range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
-          if (error) throw error;
-          data = (promoters || []).map(p => ({ ...p, role: "promoter" as UserRole }));
-          count = promoCount || 0;
+          const json = await response.json();
+          let promoters = json.promoters || [];
+          // Filter by search if provided
+          if (search) {
+            const searchLower = search.toLowerCase();
+            promoters = promoters.filter((p: any) => 
+              p.name?.toLowerCase().includes(searchLower) || 
+              p.email?.toLowerCase().includes(searchLower)
+            );
+          }
+          // Sort by name
+          promoters.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+          count = promoters.length;
+          // Apply pagination
+          const startIdx = (page - 1) * ITEMS_PER_PAGE;
+          const endIdx = startIdx + ITEMS_PER_PAGE;
+          data = promoters.slice(startIdx, endIdx).map((p: any) => ({ ...p, role: "promoter" as UserRole }));
           break;
         }
         case "attendee": {
-          let query = supabase.from("attendees").select(selectFields, { count: "exact" });
-          if (search) {
-            query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+          const response = await fetch("/api/admin/attendees");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to load attendees");
           }
-          const { data: attendees, count: attendeeCount, error } = await query.order("name").range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
-          if (error) throw error;
-          data = (attendees || []).map(a => ({ ...a, role: "attendee" as UserRole }));
-          count = attendeeCount || 0;
+          const json = await response.json();
+          let attendees = json.attendees || [];
+          // Filter by search if provided
+          if (search) {
+            const searchLower = search.toLowerCase();
+            attendees = attendees.filter((a: any) => 
+              a.name?.toLowerCase().includes(searchLower) || 
+              a.email?.toLowerCase().includes(searchLower)
+            );
+          }
+          // Sort by name
+          attendees.sort((a: any, b: any) => (a.name || "").localeCompare(b.name || ""));
+          count = attendees.length;
+          // Apply pagination
+          const startIdx = (page - 1) * ITEMS_PER_PAGE;
+          const endIdx = startIdx + ITEMS_PER_PAGE;
+          data = attendees.slice(startIdx, endIdx).map((a: any) => ({ ...a, role: "attendee" as UserRole }));
           break;
         }
       }

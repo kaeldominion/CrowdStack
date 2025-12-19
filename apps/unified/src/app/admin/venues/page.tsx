@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Building2, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Building2, Plus, Search, ChevronRight } from "lucide-react";
 import { CreateVenueModal } from "@/components/CreateVenueModal";
 import { EditVenueModal } from "@/components/EditVenueModal";
 
@@ -13,7 +13,6 @@ export default function AdminVenuesPage() {
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<any | null>(null);
-  const [deletingVenue, setDeletingVenue] = useState<any | null>(null);
 
   useEffect(() => {
     loadVenues();
@@ -131,7 +130,7 @@ export default function AdminVenuesPage() {
                     <TableHead>Contact</TableHead>
                     <TableHead>Events</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -143,7 +142,12 @@ export default function AdminVenuesPage() {
                     </TableRow>
                   ) : (
                     filteredVenues.map((venue) => (
-                      <TableRow key={venue.id} hover>
+                      <TableRow 
+                        key={venue.id} 
+                        hover
+                        className="cursor-pointer"
+                        onClick={() => setEditingVenue(venue)}
+                      >
                         <TableCell className="font-medium">{venue.name}</TableCell>
                         <TableCell>
                           {venue.city && venue.state ? `${venue.city}, ${venue.state}` : "—"}
@@ -163,24 +167,7 @@ export default function AdminVenuesPage() {
                           {new Date(venue.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setEditingVenue(venue)}
-                              title="Edit venue"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => setDeletingVenue(venue)}
-                              title="Delete venue"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
                         </TableCell>
                       </TableRow>
                     ))
@@ -206,55 +193,11 @@ export default function AdminVenuesPage() {
               setEditingVenue(null);
             }}
             venue={editingVenue}
+            onDelete={() => {
+              loadVenues();
+              setEditingVenue(null);
+            }}
           />
-
-          {/* Delete Confirmation Modal */}
-          {deletingVenue && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Delete Venue</h3>
-                <p className="text-foreground-muted mb-4">
-                  Are you sure you want to delete <strong>{deletingVenue.name}</strong>?
-                  {deletingVenue.events_count > 0 && (
-                    <span className="block mt-2 text-warning">
-                      ⚠️ This venue has {deletingVenue.events_count} event(s) and cannot be deleted.
-                    </span>
-                  )}
-                </p>
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => setDeletingVenue(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(`/api/admin/venues/${deletingVenue.id}`, {
-                          method: "DELETE",
-                        });
-
-                        if (!response.ok) {
-                          const data = await response.json();
-                          throw new Error(data.error || "Failed to delete venue");
-                        }
-
-                        loadVenues();
-                        setDeletingVenue(null);
-                      } catch (error: any) {
-                        alert(error.message || "Failed to delete venue");
-                      }
-                    }}
-                    disabled={deletingVenue.events_count > 0}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </Container>
       </Section>
     </div>

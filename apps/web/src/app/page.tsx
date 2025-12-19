@@ -139,16 +139,6 @@ export default function HomePage() {
                     Book a demo
                   </motion.button>
                 </Link>
-                <Link href="/pricing">
-                  <motion.button
-                    className="px-6 py-3 text-base font-medium border border-white/10 bg-black/50 backdrop-blur-md text-white rounded-md transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-black/70"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    See how it works
-                    <ArrowRight className="inline ml-2 h-4 w-4" />
-                  </motion.button>
-                </Link>
               </motion.div>
 
               {/* Trusted By */}
@@ -505,16 +495,6 @@ export default function HomePage() {
                   >
                     <ArrowRight className="h-4 w-4 inline" />
                   </motion.div>
-                </motion.button>
-              </Link>
-              <Link href="/pricing">
-                <motion.button
-                  className="px-8 py-4 text-base font-medium border border-white/10 bg-black/50 backdrop-blur-md text-white rounded-md transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-black/70"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  See Pricing
-                  <ArrowRight className="inline ml-2 h-4 w-4" />
                 </motion.button>
               </Link>
             </motion.div>

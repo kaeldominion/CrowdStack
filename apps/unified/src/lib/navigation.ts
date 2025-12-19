@@ -12,6 +12,8 @@ import {
   BarChart3,
   QrCode,
   Shield,
+  Clock,
+  Star,
 } from "lucide-react";
 
 export interface NavItem {
@@ -45,6 +47,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["venue_admin"],
   },
   {
+    label: "Pending Approvals",
+    href: "/app/venue/events/pending",
+    icon: Clock,
+    roles: ["venue_admin"],
+  },
+  {
     label: "Attendees",
     href: "/app/venue/attendees",
     icon: Users,
@@ -54,6 +62,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Organizers",
     href: "/app/venue/organizers",
     icon: Building2,
+    roles: ["venue_admin"],
+  },
+  {
+    label: "Pre-approved",
+    href: "/app/venue/organizers/preapproved",
+    icon: Star,
     roles: ["venue_admin"],
   },
   {

@@ -44,7 +44,7 @@ export default function ContactPage() {
               We&apos;ve received your request and will contact you within 24 hours.
             </p>
             <p className="mt-4 text-sm text-foreground-subtle">
-              In the meantime, check out our <a href="/pricing" className="text-primary hover:text-primary-hover">pricing</a> page.
+              We&apos;ll be in touch soon!
             </p>
           </Card>
         </Container>

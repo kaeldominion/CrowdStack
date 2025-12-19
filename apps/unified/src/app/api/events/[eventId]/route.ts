@@ -129,6 +129,31 @@ export async function PATCH(
       }
     }
 
+    // Check if trying to publish - prevent if venue approval is pending/rejected
+    if (body.status === "published") {
+      const { data: currentEvent } = await serviceSupabase
+        .from("events")
+        .select("venue_id, venue_approval_status")
+        .eq("id", params.eventId)
+        .single();
+
+      if (currentEvent?.venue_id) {
+        // Event has a venue - check approval status
+        if (currentEvent.venue_approval_status === "pending") {
+          return NextResponse.json(
+            { error: "Cannot publish event: Waiting for venue approval. The venue must approve your event before it can be published." },
+            { status: 400 }
+          );
+        }
+        if (currentEvent.venue_approval_status === "rejected") {
+          return NextResponse.json(
+            { error: "Cannot publish event: The venue has rejected this event. Please edit the event or choose a different venue." },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Update event
     const { data: updatedEvent, error: updateError } = await serviceSupabase
       .from("events")

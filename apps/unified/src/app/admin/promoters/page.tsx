@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Users, Search } from "lucide-react";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal } from "@crowdstack/ui";
+import { Users, Search, ChevronRight, X } from "lucide-react";
 
 export default function AdminPromotersPage() {
   const [promoters, setPromoters] = useState<any[]>([]);
   const [filteredPromoters, setFilteredPromoters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedPromoter, setSelectedPromoter] = useState<any | null>(null);
 
   useEffect(() => {
     loadPromoters();
@@ -92,18 +93,24 @@ export default function AdminPromotersPage() {
                     <TableHead>Events</TableHead>
                     <TableHead>Total Referrals</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPromoters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={7} className="text-center py-8 text-foreground-muted">
                         No promoters found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredPromoters.map((promoter) => (
-                      <TableRow key={promoter.id} hover>
+                      <TableRow 
+                        key={promoter.id} 
+                        hover
+                        className="cursor-pointer"
+                        onClick={() => setSelectedPromoter(promoter)}
+                      >
                         <TableCell className="font-medium">{promoter.name}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -121,6 +128,9 @@ export default function AdminPromotersPage() {
                         <TableCell className="text-sm text-foreground-muted">
                           {new Date(promoter.created_at).toLocaleDateString()}
                         </TableCell>
+                        <TableCell>
+                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -128,6 +138,62 @@ export default function AdminPromotersPage() {
               </Table>
             </div>
           </Card>
+
+          {/* Promoter Detail Modal */}
+          <Modal
+            isOpen={!!selectedPromoter}
+            onClose={() => setSelectedPromoter(null)}
+            title="Promoter Details"
+            size="md"
+          >
+            {selectedPromoter && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">{selectedPromoter.name}</h3>
+                  {selectedPromoter.parent?.name && (
+                    <p className="text-sm text-foreground-muted">
+                      Parent: {selectedPromoter.parent.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Email</p>
+                    <p className="text-sm text-foreground">{selectedPromoter.email || "—"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Phone</p>
+                    <p className="text-sm text-foreground">{selectedPromoter.phone || "—"}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Events</p>
+                    <p className="text-sm text-foreground">{selectedPromoter.events_count || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Total Referrals</p>
+                    <p className="text-sm text-foreground">{selectedPromoter.total_referrals || 0}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
+                  <p className="text-sm text-foreground">
+                    {new Date(selectedPromoter.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-border">
+                  <Button variant="ghost" onClick={() => setSelectedPromoter(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Modal>
         </Container>
       </Section>
     </div>
