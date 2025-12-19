@@ -8,12 +8,15 @@ import { logMessage } from "./log-message";
  */
 export async function sendMagicLink(
   email: string,
-  redirectTo?: string
+  redirectTo: string
 ): Promise<void> {
   const supabase = createServiceRoleClient();
 
-  const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3006";
-  const redirectUrl = redirectTo || `${webUrl}/auth/magic`;
+  if (!redirectTo) {
+    throw new Error("redirectTo parameter is required for sendMagicLink");
+  }
+  
+  const redirectUrl = redirectTo;
 
   try {
     const { error } = await supabase.auth.signInWithOtp({
