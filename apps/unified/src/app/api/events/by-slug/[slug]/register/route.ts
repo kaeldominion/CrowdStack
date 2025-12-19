@@ -170,10 +170,38 @@ export async function POST(
       attendee_id: attendee.id,
     });
 
+    // Get venue and organizer details for success screen
+    let venue = null;
+    let organizer = null;
+    
+    if (event.venue_id) {
+      const { data: venueData } = await supabase
+        .from("venues")
+        .select("id, name")
+        .eq("id", event.venue_id)
+        .single();
+      venue = venueData;
+    }
+
+    const { data: organizerData } = await supabase
+      .from("organizers")
+      .select("id, name")
+      .eq("id", event.organizer_id)
+      .single();
+    organizer = organizerData;
+
     return NextResponse.json({
       registration,
       qr_pass_token: qrToken,
       attendee,
+      event: {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        start_time: event.start_time,
+        venue: venue ? { id: venue.id, name: venue.name } : null,
+        organizer: organizer ? { id: organizer.id, name: organizer.name } : null,
+      },
     });
   } catch (error: any) {
     return NextResponse.json(

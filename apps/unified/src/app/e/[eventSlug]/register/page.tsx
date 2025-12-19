@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
-import { Container, Section, Button, Card } from "@crowdstack/ui";
-import { CheckCircle2, Mail } from "lucide-react";
-import Link from "next/link";
+import { RegistrationSuccess } from "@/components/RegistrationSuccess";
 
 export default function RegisterPage() {
   const params = useParams();
@@ -22,6 +20,11 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [qrToken, setQrToken] = useState("");
   const [error, setError] = useState("");
+  const [eventDetails, setEventDetails] = useState<{
+    name: string;
+    venue?: { name: string } | null;
+    start_time?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -35,6 +38,24 @@ export default function RegisterPage() {
       if (user && user.email) {
         setAuthenticated(true);
         setUserEmail(user.email);
+        
+        // Check if already registered
+        const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          if (checkData.registered && checkData.event) {
+            setSuccess(true);
+            setQrToken(checkData.qr_pass_token);
+            setEventDetails({
+              name: checkData.event.name,
+              venue: checkData.event.venue,
+              start_time: checkData.event.start_time,
+            });
+            setLoading(false);
+            return;
+          }
+        }
+        
         setShowSignup(true);
       } else {
         setAuthenticated(false);
@@ -99,7 +120,7 @@ export default function RegisterPage() {
       // Map whatsapp to phone if needed (API expects phone)
       const requestBody: any = {
         ...signupData,
-        email: userEmail, // Email from magic link
+        email: signupData.email || userEmail, // Use email from form (or fallback to userEmail if authenticated)
       };
       
       // If whatsapp is provided but not phone, use whatsapp as phone
@@ -121,6 +142,13 @@ export default function RegisterPage() {
 
       setSuccess(true);
       setQrToken(data.qr_pass_token);
+      if (data.event) {
+        setEventDetails({
+          name: data.event.name,
+          venue: data.event.venue,
+          start_time: data.event.start_time,
+        });
+      }
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {
@@ -136,95 +164,85 @@ export default function RegisterPage() {
     );
   }
 
-  if (success) {
+  if (success && eventDetails) {
     return (
-      <Section spacing="xl" className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
-        <Container size="sm" className="flex items-center justify-center min-h-screen">
-          <Card className="text-center w-full max-w-md">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10 mb-4">
-              <CheckCircle2 className="h-8 w-8 text-success" />
-            </div>
-            <h1 className="text-2xl font-semibold text-foreground">Registration Successful!</h1>
-            <p className="mt-4 text-foreground-muted">
-              Your QR pass has been generated.
-            </p>
-            <div className="mt-6">
-              <Link href={`/e/${eventSlug}/pass?token=${qrToken}`}>
-                <Button variant="primary" size="lg" className="w-full">
-                  View QR Pass
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </Container>
-      </Section>
-    );
-  }
-
-  // If authenticated, show Typeform signup
-  if (authenticated && userEmail && showSignup) {
-    return (
-      <TypeformSignup
-        email={userEmail}
-        onSubmit={handleSignupSubmit}
-        isLoading={loading}
+      <RegistrationSuccess
+        eventName={eventDetails.name}
+        eventSlug={eventSlug}
+        venueName={eventDetails.venue?.name || null}
+        startTime={eventDetails.start_time || null}
+        qrToken={qrToken}
       />
     );
   }
 
-  // Show magic link login
+  // Check registration status callback
+  const checkRegistration = async (): Promise<boolean> => {
+    try {
+      const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        if (checkData.registered && checkData.event) {
+          setSuccess(true);
+          setQrToken(checkData.qr_pass_token);
+          setEventDetails({
+            name: checkData.event.name,
+            venue: checkData.event.venue,
+            start_time: checkData.event.start_time,
+          });
+          return true;
+        }
+      }
+    } catch (err) {
+      console.error("Error checking registration:", err);
+    }
+    return false;
+  };
+
+  // If authenticated, show Typeform signup (skip email step)
+  if (authenticated && userEmail && showSignup) {
+    const redirectUrl = typeof window !== "undefined" 
+      ? window.location.href 
+      : `/e/${eventSlug}/register`;
+    
+    return (
+      <TypeformSignup
+        onSubmit={handleSignupSubmit}
+        isLoading={loading}
+        redirectUrl={redirectUrl}
+        onEmailVerified={checkRegistration}
+        eventSlug={eventSlug}
+      />
+    );
+  }
+
+  // Show Typeform signup (will handle email verification internally)
+  if (!authenticated && !loading) {
+    const redirectUrl = typeof window !== "undefined"
+      ? new URL(window.location.origin)
+      : null;
+    if (redirectUrl) {
+      redirectUrl.pathname = `/e/${eventSlug}/register`;
+      if (ref) {
+        redirectUrl.searchParams.set("ref", ref);
+      }
+    }
+    
+    return (
+      <TypeformSignup
+        onSubmit={handleSignupSubmit}
+        isLoading={loading}
+        redirectUrl={redirectUrl?.toString() || `/e/${eventSlug}/register`}
+        onEmailVerified={checkRegistration}
+        eventSlug={eventSlug}
+      />
+    );
+  }
+
+  // Loading state (should not reach here as TypeformSignup handles everything)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <Mail className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Sign in to Register
-            </h1>
-            <p className="text-foreground-muted">
-              We'll send you a magic link to sign in or create your account
-            </p>
-          </div>
-
-          {error && (
-            <div className="rounded-md bg-error/10 border border-error/20 p-4 mb-6">
-              <p className="text-sm text-error">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <input
-              type="email"
-              value={userEmail || ""}
-              onChange={(e) => setUserEmail(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleMagicLink();
-                }
-              }}
-              placeholder="your@email.com"
-              className="w-full px-4 py-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-
-            <Button
-              onClick={handleMagicLink}
-              disabled={loading || !userEmail}
-              loading={loading}
-              variant="primary"
-              size="lg"
-              className="w-full"
-            >
-              Send Magic Link
-            </Button>
-
-            <p className="text-xs text-foreground-muted text-center mt-4">
-              Click the link in your email in the same browser to continue
-            </p>
-          </div>
-        </Card>
-      </div>
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="text-white/60">Loading...</div>
     </div>
   );
 }
