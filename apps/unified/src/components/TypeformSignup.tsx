@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button } from "@crowdstack/ui";
 import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2 } from "lucide-react";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface TypeformSignupProps {
   onSubmit: (data: SignupData) => Promise<void>;
