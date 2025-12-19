@@ -203,7 +203,7 @@ export default function OrganizerEventDetailPage() {
         <AlertCircle className="h-12 w-12 text-foreground-muted" />
         <div className="text-foreground-muted">Event not found</div>
         <Link href="/app/organizer/events">
-          <Button variant="default">Back to Events</Button>
+          <Button variant="secondary">Back to Events</Button>
         </Link>
       </div>
     );
@@ -245,7 +245,7 @@ export default function OrganizerEventDetailPage() {
         <div className="flex items-center gap-2">
           {event.status === "draft" && (
             <Button
-              variant="success"
+              variant="primary"
               onClick={() => handleStatusChange("published")}
             >
               Publish Event
@@ -253,7 +253,7 @@ export default function OrganizerEventDetailPage() {
           )}
           {event.status === "published" && (
             <Button
-              variant="default"
+              variant="secondary"
               onClick={() => handleStatusChange("draft")}
             >
               Unpublish
@@ -555,7 +555,7 @@ export default function OrganizerEventDetailPage() {
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/app/organizer/events/${eventId}/invites`}>
-                <Button variant="default">
+                <Button variant="secondary">
                   <QrCode className="h-4 w-4 mr-2" />
                   Manage Invite Codes
                 </Button>

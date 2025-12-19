@@ -9,6 +9,7 @@ export interface DropdownItem {
   onClick: () => void;
   icon?: ReactNode;
   destructive?: boolean;
+  active?: boolean;
 }
 
 export interface DropdownProps {
@@ -71,7 +72,8 @@ export function Dropdown({ trigger, items, align = "right", className, triggerCl
                 }}
                 className={cn(
                   "w-full flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-background transition-colors",
-                  item.destructive && "text-error hover:bg-error/10"
+                  item.destructive && "text-error hover:bg-error/10",
+                  item.active && "bg-primary/10 text-primary"
                 )}
               >
                 {item.icon && <span className="h-4 w-4">{item.icon}</span>}

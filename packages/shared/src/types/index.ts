@@ -304,15 +304,20 @@ export interface CheckinResponse {
   message?: string;
 }
 
+export type PromoterAccessType = "public" | "invite_only";
+
 export interface CreateEventRequest {
   name: string;
   slug: string;
   description?: string;
   venue_id?: string;
+  organizer_id?: string;
   start_time: string;
   end_time?: string;
   capacity?: number;
   cover_image_url?: string;
+  promoter_access_type?: PromoterAccessType;
+  self_promote?: boolean;
   promoters?: Array<{
     promoter_id: string;
     commission_type: CommissionType;

@@ -68,7 +68,7 @@ export function TableRow({ children, className, hover, onClick }: TableRowProps)
 }
 
 export interface TableHeadProps {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
 }
 

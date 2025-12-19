@@ -41,7 +41,7 @@ export default function DoorLandingPage() {
     const now = new Date();
     const start = new Date(event.start_time);
     const end = start.getTime() + (2 * 60 * 60 * 1000); // Assume 2 hour events if no end_time
-    return now >= start && now <= end && event.status === "published";
+    return now >= start && now.getTime() <= end && event.status === "published";
   };
 
   const activeEvents = events.filter(isEventActive);
