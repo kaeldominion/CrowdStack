@@ -15,6 +15,13 @@ import {
   Download,
   Users,
   Loader2,
+  Phone,
+  Mail,
+  Instagram,
+  Calendar,
+  Clock,
+  User,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -24,6 +31,8 @@ interface CheckInResult {
   status: "success" | "error" | "duplicate" | "banned";
   message: string;
   timestamp: string;
+  attendee_id?: string;
+  registration_id?: string;
 }
 
 interface EventInfo {
@@ -35,10 +44,29 @@ interface EventInfo {
 
 interface SearchResult {
   registration_id: string;
+  attendee_id: string;
   attendee_name: string;
   attendee_email: string | null;
   attendee_phone: string | null;
   checked_in: boolean;
+  checked_in_at?: string | null;
+}
+
+interface AttendeeProfile {
+  id: string;
+  name: string;
+  surname?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  instagram_handle?: string | null;
+  tiktok_handle?: string | null;
+  avatar_url?: string | null;
+  date_of_birth?: string | null;
+  registration_id?: string;
+  registered_at?: string;
+  checked_in?: boolean;
+  checked_in_at?: string | null;
 }
 
 export default function DoorScannerPage() {
@@ -71,6 +99,10 @@ export default function DoorScannerPage() {
   
   // QR code modal
   const [showQRCode, setShowQRCode] = useState(false);
+  
+  // Attendee profile modal
+  const [selectedAttendee, setSelectedAttendee] = useState<AttendeeProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   // Load event info and stats
   useEffect(() => {
@@ -170,6 +202,8 @@ export default function DoorScannerPage() {
           status: data.duplicate ? "duplicate" : "success",
           message: data.message || "Checked in successfully",
           timestamp: new Date().toISOString(),
+          attendee_id: data.attendee_id,
+          registration_id: data.registration_id,
         };
         setLastCheckIn(result);
         setFlashColor(data.duplicate ? null : "green");
@@ -189,6 +223,7 @@ export default function DoorScannerPage() {
           status: data.error?.includes("banned") ? "banned" : "error",
           message: data.error || "Check-in failed",
           timestamp: new Date().toISOString(),
+          attendee_id: data.attendee_id,
         };
         setLastCheckIn(result);
         setFlashColor("red");
@@ -277,6 +312,30 @@ export default function DoorScannerPage() {
       }
     }
     setScanning(false);
+  };
+
+  // Load attendee profile
+  const loadAttendeeProfile = async (attendeeId: string, registrationId?: string) => {
+    setLoadingProfile(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/attendee/${attendeeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedAttendee({
+          ...data.attendee,
+          registration_id: registrationId || data.registration?.id,
+          registered_at: data.registration?.registered_at,
+          checked_in: data.checkin !== null,
+          checked_in_at: data.checkin?.checked_in_at,
+        });
+      } else {
+        console.error("Failed to load attendee profile");
+      }
+    } catch (err) {
+      console.error("Error loading attendee profile:", err);
+    } finally {
+      setLoadingProfile(false);
+    }
   };
 
   // Quick add functionality
@@ -512,11 +571,12 @@ export default function DoorScannerPage() {
               {searchResults.map((result) => (
                 <div
                   key={result.registration_id}
-                  className={`p-3 rounded-lg border flex items-center justify-between ${
+                  className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors ${
                     result.checked_in
                       ? "bg-green-500/10 border-green-500/30"
                       : "bg-white/5 border-white/10"
                   }`}
+                  onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">{result.attendee_name}</p>
@@ -527,14 +587,18 @@ export default function DoorScannerPage() {
                   {result.checked_in ? (
                     <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 ml-2" />
                   ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleCheckIn(result.registration_id)}
+                    <div 
                       className="flex-shrink-0 ml-2"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Check In
-                    </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleCheckIn(result.registration_id)}
+                      >
+                        Check In
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -577,7 +641,10 @@ export default function DoorScannerPage() {
                   key={`${scan.id}-${scan.timestamp}`}
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 1 - index * 0.08 }}
-                  className="flex items-center gap-2 p-2 rounded bg-white/5"
+                  className={`flex items-center gap-2 p-2 rounded bg-white/5 ${
+                    scan.attendee_id ? "cursor-pointer hover:bg-white/10" : ""
+                  }`}
+                  onClick={() => scan.attendee_id && loadAttendeeProfile(scan.attendee_id, scan.registration_id)}
                 >
                   {getStatusIcon(scan.status)}
                   <div className="flex-1 min-w-0">
@@ -700,6 +767,155 @@ export default function DoorScannerPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Attendee Profile Modal */}
+      <AnimatePresence>
+        {(selectedAttendee || loadingProfile) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => !loadingProfile && setSelectedAttendee(null)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-gray-900 rounded-t-3xl max-h-[85vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {loadingProfile ? (
+                <div className="p-8 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-white animate-spin" />
+                </div>
+              ) : selectedAttendee ? (
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar */}
+                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
+                        {selectedAttendee.avatar_url ? (
+                          <img 
+                            src={selectedAttendee.avatar_url} 
+                            alt={selectedAttendee.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-white">
+                            {selectedAttendee.name?.charAt(0)?.toUpperCase() || "?"}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">
+                          {selectedAttendee.name} {selectedAttendee.surname || ""}
+                        </h3>
+                        {selectedAttendee.checked_in ? (
+                          <span className="inline-flex items-center gap-1 text-sm text-green-400">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Checked in {selectedAttendee.checked_in_at && (
+                              <>at {new Date(selectedAttendee.checked_in_at).toLocaleTimeString()}</>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-yellow-400">Not checked in</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedAttendee(null)}
+                      className="p-2 text-white/60 hover:text-white rounded-full hover:bg-white/10"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-3 mb-6">
+                    {selectedAttendee.email && (
+                      <a 
+                        href={`mailto:${selectedAttendee.email}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        <Mail className="h-5 w-5 text-white/60" />
+                        <span className="text-white">{selectedAttendee.email}</span>
+                      </a>
+                    )}
+                    {(selectedAttendee.phone || selectedAttendee.whatsapp) && (
+                      <a 
+                        href={`tel:${selectedAttendee.whatsapp || selectedAttendee.phone}`}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        <Phone className="h-5 w-5 text-white/60" />
+                        <span className="text-white">{selectedAttendee.whatsapp || selectedAttendee.phone}</span>
+                      </a>
+                    )}
+                    {selectedAttendee.instagram_handle && (
+                      <a 
+                        href={`https://instagram.com/${selectedAttendee.instagram_handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        <Instagram className="h-5 w-5 text-white/60" />
+                        <span className="text-white">@{selectedAttendee.instagram_handle}</span>
+                      </a>
+                    )}
+                    {selectedAttendee.date_of_birth && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
+                        <Calendar className="h-5 w-5 text-white/60" />
+                        <span className="text-white">
+                          {new Date(selectedAttendee.date_of_birth).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Registration Info */}
+                  {selectedAttendee.registered_at && (
+                    <div className="mb-6 p-3 rounded-lg bg-white/5">
+                      <p className="text-sm text-white/60 mb-1">Registered</p>
+                      <p className="text-white">
+                        {new Date(selectedAttendee.registered_at).toLocaleDateString(undefined, {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Check In Button (if not checked in) */}
+                  {!selectedAttendee.checked_in && selectedAttendee.registration_id && (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className="w-full"
+                      onClick={() => {
+                        handleCheckIn(selectedAttendee.registration_id);
+                        setSelectedAttendee(null);
+                      }}
+                    >
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      Check In Now
+                    </Button>
+                  )}
+                </div>
+              ) : null}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

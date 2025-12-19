@@ -207,6 +207,8 @@ export async function POST(
         duplicate: true,
         checkin: existingCheckin,
         attendee_name: attendeeName,
+        attendee_id: registration.attendee_id,
+        registration_id: registrationId,
         message: `${attendeeName} was already checked in`,
       });
     }
@@ -249,6 +251,8 @@ export async function POST(
       duplicate: false,
       checkin,
       attendee_name: attendeeName,
+      attendee_id: registration.attendee_id,
+      registration_id: registrationId,
       attendee: attendee,
       message: `${attendeeName} checked in successfully`,
     });
