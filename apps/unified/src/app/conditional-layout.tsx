@@ -36,6 +36,8 @@ const isStandaloneRoute = (pathname: string) => {
   // Event registration and pass pages are standalone mobile-first experiences
   if (pathname.match(/^\/e\/[^/]+\/register/)) return true; // /e/[slug]/register
   if (pathname.match(/^\/e\/[^/]+\/pass/)) return true; // /e/[slug]/pass
+  // Door scanner is always standalone
+  if (pathname.startsWith("/door")) return true;
   return false;
 };
 
