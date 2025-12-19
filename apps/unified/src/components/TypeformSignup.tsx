@@ -161,8 +161,18 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const handleSubmit = async () => {
-    if (validateStep(currentStep)) {
+    if (!validateStep(currentStep)) {
+      return; // Validation failed, don't submit
+    }
+    
+    try {
       await onSubmit(formData);
+    } catch (error: any) {
+      // Handle errors from onSubmit - set error state
+      const errorMessage = error?.message || "Failed to submit form";
+      const stepKey = steps[currentStep].id as keyof SignupData;
+      setErrors({ [stepKey]: errorMessage });
+      console.error("Form submission error:", error);
     }
   };
 
@@ -467,7 +477,14 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
               <Button
                 variant="primary"
-                onClick={handleNext}
+                onClick={() => {
+                  if (currentStep === steps.length - 1) {
+                    // On last step, directly call handleSubmit instead of handleNext
+                    handleSubmit();
+                  } else {
+                    handleNext();
+                  }
+                }}
                 disabled={isLoading || sendingMagicLink}
                 loading={isLoading && currentStep === steps.length - 1}
                 className="flex items-center gap-2 flex-1 sm:flex-initial text-base sm:text-sm py-3 sm:py-2"

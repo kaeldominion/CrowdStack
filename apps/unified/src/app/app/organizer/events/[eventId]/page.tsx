@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
+import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 interface EventData {
@@ -123,6 +124,7 @@ export default function OrganizerEventDetailPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
+  const [showPromoterModal, setShowPromoterModal] = useState(false);
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
 
   useEffect(() => {
@@ -670,12 +672,18 @@ export default function OrganizerEventDetailPage() {
         <Card>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-foreground">Promoters</h2>
-            <Link href={`/app/organizer/events/${eventId}/invites`}>
-              <Button variant="primary">
-                <QrCode className="h-4 w-4 mr-2" />
-                Manage Invites
+            <div className="flex gap-2">
+              <Button variant="primary" onClick={() => setShowPromoterModal(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Manage Promoters
               </Button>
-            </Link>
+              <Link href={`/app/organizer/events/${eventId}/invites`}>
+                <Button variant="secondary">
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Invite Codes
+                </Button>
+              </Link>
+            </div>
           </div>
           {event.event_promoters && event.event_promoters.length > 0 ? (
             <Table>
@@ -825,6 +833,16 @@ export default function OrganizerEventDetailPage() {
         onClose={() => setShowDoorStaffModal(false)}
         eventId={event.id}
         eventName={event.name}
+      />
+    )}
+
+    {/* Promoter Management Modal */}
+    {event && (
+      <PromoterManagementModal
+        isOpen={showPromoterModal}
+        onClose={() => setShowPromoterModal(false)}
+        eventId={event.id}
+        onUpdate={loadEventData}
       />
     )}
     </div>
