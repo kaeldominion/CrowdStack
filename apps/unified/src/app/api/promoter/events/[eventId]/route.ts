@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/service";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
 
 export async function GET(
