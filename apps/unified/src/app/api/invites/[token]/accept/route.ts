@@ -22,7 +22,7 @@ export async function POST(
     const { role, metadata } = await acceptInviteToken(params.token, user.id);
 
     // Determine redirect URL based on role
-    // In local dev, use same origin (3006). In production, use app subdomain
+    // All routes use the same origin (unified app)
     const isLocalDev = request.headers.get("host")?.includes("localhost");
     const origin = request.headers.get("origin") || request.url.split("/").slice(0, 3).join("/");
     // All routes are now on the same origin

@@ -57,7 +57,7 @@ export default function InviteAcceptPage() {
   };
 
   const getRedirectUrl = (role: string): string => {
-    // In local dev, use same origin (3006). In production, use app subdomain
+    // All routes use the same origin (unified app)
     const isLocalDev = typeof window !== "undefined" && 
                       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
     // All routes are now on the same origin

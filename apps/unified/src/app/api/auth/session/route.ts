@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * API route to establish session on app (3007) using tokens from web (3006)
+ * API route to establish session using tokens
  * 
  * Returns an HTML page that sets cookies via JavaScript and redirects.
  * This is more reliable than trying to set cookies on a redirect response.
