@@ -4,14 +4,30 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, LogOut, Home } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, LogOut, Home, Radio, MapPin, UserCheck } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
+
+interface LiveEvent {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  end_time: string | null;
+  status: string;
+  capacity: number | null;
+  venue: { id: string; name: string } | null;
+  organizer: { id: string; name: string } | null;
+  registrations: number;
+  checkins: number;
+}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [baseUrl, setBaseUrl] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [loadingLive, setLoadingLive] = useState(true);
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
@@ -23,6 +39,26 @@ export default function AdminDashboardPage() {
       setUserEmail(user?.email || null);
     };
     loadUser();
+
+    // Load live events
+    const loadLiveEvents = async () => {
+      try {
+        const response = await fetch("/api/admin/events/live");
+        if (response.ok) {
+          const data = await response.json();
+          setLiveEvents(data.events || []);
+        }
+      } catch (error) {
+        console.error("Error loading live events:", error);
+      } finally {
+        setLoadingLive(false);
+      }
+    };
+    loadLiveEvents();
+
+    // Refresh live events every 30 seconds
+    const interval = setInterval(loadLiveEvents, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = async () => {
@@ -171,11 +207,102 @@ export default function AdminDashboardPage() {
 
       <Section spacing="lg">
         <Container>
-          <div className="mb-12">
+          <div className="mb-8">
             <p className="text-sm text-foreground-muted">
               Quick access to all dashboards, tools, and areas of the platform
             </p>
           </div>
+
+          {/* Live Events Section */}
+          {liveEvents.length > 0 && (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+                  <h2 className="text-xl font-semibold text-foreground">Live Events</h2>
+                </div>
+                <span className="text-sm text-foreground-muted">
+                  {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {liveEvents.map((event) => (
+                  <Link key={event.id} href={`/admin/events/${event.id}`}>
+                    <Card hover className="h-full border-l-4 border-l-red-500">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground truncate">
+                            {event.name}
+                          </h3>
+                          {event.venue && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <MapPin className="h-3 w-3 text-foreground-muted flex-shrink-0" />
+                              <span className="text-xs text-foreground-muted truncate">
+                                {event.venue.name}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3 text-foreground-muted" />
+                          <span className="text-foreground-muted">
+                            {event.registrations} registered
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <UserCheck className="h-3 w-3 text-success" />
+                          <span className="text-success font-medium">
+                            {event.checkins} checked in
+                          </span>
+                        </div>
+                      </div>
+
+                      {event.capacity && (
+                        <div className="mt-3">
+                          <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
+                              style={{
+                                width: `${Math.min((event.checkins / event.capacity) * 100, 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="text-[10px] text-foreground-muted mt-1">
+                            {Math.round((event.checkins / event.capacity) * 100)}% capacity
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="mt-3 flex gap-2">
+                        <Link
+                          href={`/door/${event.id}`}
+                          target="_blank"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <QrCode className="h-3 w-3" />
+                          Door Scanner
+                        </Link>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {loadingLive && (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-3 w-3 bg-foreground-muted rounded-full animate-pulse" />
+                <h2 className="text-xl font-semibold text-foreground-muted">Loading live events...</h2>
+              </div>
+            </div>
+          )}
 
           {/* Quick Access */}
           <div className="mb-12">

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { EarningsChart } from "@/components/charts/EarningsChart";
@@ -12,6 +12,20 @@ import { createBrowserClient } from "@crowdstack/shared";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
+}
+
+interface LiveEvent {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  end_time: string | null;
+  status: string;
+  capacity: number | null;
+  venue?: { id: string; name: string } | null;
+  organizer?: { id: string; name: string } | null;
+  registrations: number;
+  checkins: number;
 }
 
 export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
@@ -76,6 +90,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
 
   const isVenue = effectiveRoles.includes("venue_admin");
   const isOrganizer = effectiveRoles.includes("event_organizer");
@@ -84,10 +99,39 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
   useEffect(() => {
     loadAllStats();
+    loadLiveEvents();
     if (isPromoter) {
       loadReferralLink();
     }
-  }, [userRoles, isPromoter]);
+
+    // Refresh live events every 30 seconds
+    const interval = setInterval(loadLiveEvents, 30000);
+    return () => clearInterval(interval);
+  }, [userRoles, isPromoter, isVenue, isOrganizer]);
+
+  const loadLiveEvents = async () => {
+    try {
+      // Fetch live events based on user's role
+      let endpoint = "";
+      if (isVenue) {
+        endpoint = "/api/venue/events/live";
+      } else if (isOrganizer) {
+        endpoint = "/api/organizer/events/live";
+      } else if (isPromoter) {
+        endpoint = "/api/promoter/events/live";
+      }
+
+      if (endpoint) {
+        const response = await fetch(endpoint);
+        if (response.ok) {
+          const data = await response.json();
+          setLiveEvents(data.events || []);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading live events:", error);
+    }
+  };
 
   const loadAllStats = async () => {
     setLoading(true);
@@ -198,6 +242,113 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           )}
         </div>
       </div>
+
+      {/* Live Events Section */}
+      {liveEvents.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+              <h2 className="text-xl font-semibold text-white">Live Now</h2>
+            </div>
+            <span className="text-sm text-white/60">
+              {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {liveEvents.map((event) => (
+              <Link 
+                key={event.id} 
+                href={isVenue ? `/app/venue/events/${event.id}` : isOrganizer ? `/app/organizer/events/${event.id}` : `/app/promoter/events/${event.id}`}
+              >
+                <BentoCard className="border-l-4 border-l-red-500 hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-white truncate">
+                        {event.name}
+                      </h3>
+                      {event.venue && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <MapPin className="h-3 w-3 text-white/40 flex-shrink-0" />
+                          <span className="text-xs text-white/40 truncate">
+                            {event.venue.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3 text-white/40" />
+                      <span className="text-white/60">
+                        {event.registrations} registered
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <UserCheck className="h-3 w-3 text-green-400" />
+                      <span className="text-green-400 font-medium">
+                        {event.checkins} in
+                      </span>
+                    </div>
+                  </div>
+
+                  {event.capacity && (
+                    <div className="mt-3">
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
+                          style={{
+                            width: `${Math.min((event.checkins / event.capacity) * 100, 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <p className="text-[10px] text-white/40 mt-1">
+                        {Math.round((event.checkins / event.capacity) * 100)}% capacity
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex gap-2">
+                    {(isVenue || isOrganizer) && (
+                      <>
+                        <Link
+                          href={isVenue ? `/app/venue/live/${event.id}` : `/app/organizer/live/${event.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Radio className="h-3 w-3" />
+                          Live Control
+                        </Link>
+                        <Link
+                          href={`/door/${event.id}`}
+                          target="_blank"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <QrCode className="h-3 w-3" />
+                          Scanner
+                        </Link>
+                      </>
+                    )}
+                    {isPromoter && (
+                      <Link
+                        href={`/app/promoter/live/${event.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Radio className="h-3 w-3" />
+                        Live View
+                      </Link>
+                    )}
+                  </div>
+                </BentoCard>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Venue Admin Section */}
       {isVenue && (
