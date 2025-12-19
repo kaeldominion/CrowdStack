@@ -255,7 +255,6 @@ export default function PreapprovedOrganizersPage() {
             placeholder="Search organizers by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            icon={<Search className="h-4 w-4" />}
           />
 
           <div className="max-h-80 overflow-y-auto space-y-2">

@@ -55,7 +55,7 @@ export async function GET(
     if (query) {
       const searchLower = query.toLowerCase();
       filtered = filtered.filter((reg) => {
-        const attendee = reg.attendee;
+        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
         if (!attendee) return false;
         
         return (
@@ -75,13 +75,16 @@ export async function GET(
 
     const checkedInIds = new Set(checkins?.map((c) => c.registration_id) || []);
 
-    const results = filtered.map((reg) => ({
-      registration_id: reg.id,
-      attendee_name: reg.attendee?.name || "Unknown",
-      attendee_email: reg.attendee?.email || null,
-      attendee_phone: reg.attendee?.phone || null,
-      checked_in: checkedInIds.has(reg.id),
-    }));
+    const results = filtered.map((reg) => {
+      const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+      return {
+        registration_id: reg.id,
+        attendee_name: attendee?.name || "Unknown",
+        attendee_email: attendee?.email || null,
+        attendee_phone: attendee?.phone || null,
+        checked_in: checkedInIds.has(reg.id),
+      };
+    });
 
     console.log(`[Search API] Found ${results.length} results`);
 

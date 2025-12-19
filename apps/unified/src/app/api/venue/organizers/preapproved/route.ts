@@ -39,11 +39,12 @@ export async function GET() {
     // Get event counts for each organizer at this venue
     const partnershipsWithCounts = await Promise.all(
       (partnerships || []).map(async (p) => {
+        const organizer = Array.isArray(p.organizer) ? p.organizer[0] : p.organizer;
         const { count } = await serviceSupabase
           .from("events")
           .select("*", { count: "exact", head: true })
           .eq("venue_id", venueId)
-          .eq("organizer_id", p.organizer.id);
+          .eq("organizer_id", organizer?.id);
 
         return {
           ...p,

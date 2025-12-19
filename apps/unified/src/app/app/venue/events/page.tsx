@@ -224,7 +224,6 @@ export default function VenueEventsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-xs"
-              icon={<Search className="h-4 w-4" />}
             />
           </div>
         </Tabs>

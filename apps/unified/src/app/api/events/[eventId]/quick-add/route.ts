@@ -76,7 +76,8 @@ export async function POST(
             .eq("venue_id", event.venue_id)
             .eq("user_id", userId)
             .single();
-          hasAccess = hasAccess || !!venueUser || event.venue?.created_by === userId;
+          const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+          hasAccess = hasAccess || !!venueUser || venue?.created_by === userId;
         }
 
         if (isOrganizer && event.organizer_id) {
@@ -86,7 +87,8 @@ export async function POST(
             .eq("organizer_id", event.organizer_id)
             .eq("user_id", userId)
             .single();
-          hasAccess = hasAccess || !!organizerUser || event.organizer?.created_by === userId;
+          const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+          hasAccess = hasAccess || !!organizerUser || organizer?.created_by === userId;
         }
       }
     }

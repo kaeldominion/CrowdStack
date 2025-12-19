@@ -189,7 +189,8 @@ export async function POST(
       );
     }
 
-    const attendeeName = registration.attendee?.name || "Unknown Attendee";
+    const attendee = Array.isArray(registration.attendee) ? registration.attendee[0] : registration.attendee;
+    const attendeeName = attendee?.name || "Unknown Attendee";
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
 
     // Check if already checked in (idempotent)
@@ -248,7 +249,7 @@ export async function POST(
       duplicate: false,
       checkin,
       attendee_name: attendeeName,
-      attendee: registration.attendee,
+      attendee: attendee,
       message: `${attendeeName} checked in successfully`,
     });
   } catch (error: any) {
