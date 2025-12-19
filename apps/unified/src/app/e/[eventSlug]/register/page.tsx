@@ -170,6 +170,8 @@ export default function RegisterPage() {
     setError("");
 
     try {
+      console.log("handleSignupSubmit called with:", signupData);
+      
       const url = new URL(`/api/events/by-slug/${eventSlug}/register`, window.location.origin);
       if (ref) {
         url.searchParams.set("ref", ref);
@@ -186,6 +188,8 @@ export default function RegisterPage() {
         requestBody.phone = signupData.whatsapp;
       }
 
+      console.log("Sending registration request:", requestBody);
+      
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -193,20 +197,38 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
+      console.log("Registration response:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Registration failed");
       }
 
-      setSuccess(true);
-      setQrToken(data.qr_pass_token);
+      // Always set event details, even if data.event is missing (will fetch if needed)
       if (data.event) {
         setEventDetails({
           name: data.event.name,
           venue: data.event.venue,
           start_time: data.event.start_time,
         });
+      } else {
+        // If event details not in response, fetch them
+        try {
+          const eventResponse = await fetch(`/api/events/by-slug/${eventSlug}`);
+          if (eventResponse.ok) {
+            const eventData = await eventResponse.json();
+            setEventDetails({
+              name: eventData.name,
+              venue: eventData.venue || null,
+              start_time: eventData.start_time || null,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch event details:", err);
+        }
       }
+      
+      setQrToken(data.qr_pass_token);
+      setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {

@@ -75,7 +75,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     return visible;
   }, [emailVerified, existingProfile]);
 
-  // Check if user is already authenticated
+  // Check if user is already authenticated and update formData with email
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createBrowserClient();
@@ -87,6 +87,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     };
     checkAuth();
   }, []);
+
+  // Update formData when existingProfile changes
+  useEffect(() => {
+    if (existingProfile) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || existingProfile.name || "",
+        surname: prev.surname || existingProfile.surname || "",
+        date_of_birth: prev.date_of_birth || existingProfile.date_of_birth || "",
+        whatsapp: prev.whatsapp || existingProfile.whatsapp || "",
+        instagram_handle: prev.instagram_handle || existingProfile.instagram_handle || "",
+      }));
+    }
+  }, [existingProfile]);
 
   // Reset current step when visible steps change (e.g., when email is verified)
   useEffect(() => {
@@ -204,11 +218,30 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     }
     
     try {
-      await onSubmit(formData);
+      // Get email from authenticated user if not in formData
+      let email = formData.email;
+      if (!email) {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        email = user?.email || "";
+      }
+      
+      // Merge existing profile data with form data to ensure all fields are included
+      const mergedData: SignupData = {
+        email: email,
+        name: formData.name || existingProfile?.name || "",
+        surname: formData.surname || existingProfile?.surname || "",
+        date_of_birth: formData.date_of_birth || existingProfile?.date_of_birth || "",
+        whatsapp: formData.whatsapp || existingProfile?.whatsapp || "",
+        instagram_handle: formData.instagram_handle || existingProfile?.instagram_handle || "",
+      };
+      
+      console.log("Submitting form data:", mergedData);
+      await onSubmit(mergedData);
     } catch (error: any) {
       // Handle errors from onSubmit - set error state
       const errorMessage = error?.message || "Failed to submit form";
-      const stepKey = steps[currentStep].id as keyof SignupData;
+      const stepKey = visibleSteps[currentStep] as keyof SignupData;
       setErrors({ [stepKey]: errorMessage });
       console.error("Form submission error:", error);
     }
