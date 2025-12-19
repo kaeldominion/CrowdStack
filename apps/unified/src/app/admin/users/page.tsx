@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal } from "@crowdstack/ui";
-import { User, Search, Edit, Shield, Building2, Calendar, ChevronRight } from "lucide-react";
+import { User, Search, Edit, Shield, Building2, Calendar, ChevronRight, Phone, Mail, Instagram, MapPin } from "lucide-react";
 import { UserAssignmentModal } from "@/components/UserAssignmentModal";
 
 export default function AdminUsersPage() {
@@ -153,34 +153,136 @@ export default function AdminUsersPage() {
             isOpen={!!selectedUser}
             onClose={() => setSelectedUser(null)}
             title="User Details"
-            size="md"
+            size="lg"
           >
             {selectedUser && (
               <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">{selectedUser.email}</h3>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {getRoleBadges(selectedUser.roles || [])}
+                {/* Header with Avatar */}
+                <div className="flex items-start gap-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {selectedUser.profile?.avatar_url ? (
+                      <img 
+                        src={selectedUser.profile.avatar_url} 
+                        alt={selectedUser.profile.name || selectedUser.email}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-white">
+                        {(selectedUser.profile?.name || selectedUser.email)?.charAt(0)?.toUpperCase() || "?"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {selectedUser.profile?.name ? (
+                      <>
+                        <h3 className="text-xl font-bold text-foreground">
+                          {selectedUser.profile.name} {selectedUser.profile.surname || ""}
+                        </h3>
+                        <p className="text-sm text-foreground-muted">{selectedUser.email}</p>
+                      </>
+                    ) : (
+                      <h3 className="text-xl font-bold text-foreground">{selectedUser.email}</h3>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {getRoleBadges(selectedUser.roles || [])}
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
-                    <p className="text-sm text-foreground">
-                      {new Date(selectedUser.created_at).toLocaleDateString()}
-                    </p>
+                {/* Profile Info */}
+                {selectedUser.profile && (
+                  <div className="border-t border-border pt-4">
+                    <p className="text-sm font-medium text-foreground mb-3">Profile Information</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedUser.profile.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-foreground-muted" />
+                          <span>{selectedUser.profile.phone}</span>
+                        </div>
+                      )}
+                      {selectedUser.profile.whatsapp && selectedUser.profile.whatsapp !== selectedUser.profile.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-green-500" />
+                          <span>WhatsApp: {selectedUser.profile.whatsapp}</span>
+                        </div>
+                      )}
+                      {selectedUser.profile.instagram_handle && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Instagram className="h-4 w-4 text-pink-500" />
+                          <a 
+                            href={`https://instagram.com/${selectedUser.profile.instagram_handle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            @{selectedUser.profile.instagram_handle}
+                          </a>
+                        </div>
+                      )}
+                      {selectedUser.profile.date_of_birth && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-foreground-muted" />
+                          <span>
+                            {new Date(selectedUser.profile.date_of_birth).toLocaleDateString(undefined, {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {selectedUser.profile.bio && (
+                      <p className="mt-3 text-sm text-foreground-muted">{selectedUser.profile.bio}</p>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Last Sign In</p>
-                    <p className="text-sm text-foreground">
-                      {selectedUser.last_sign_in_at
-                        ? new Date(selectedUser.last_sign_in_at).toLocaleDateString()
-                        : "Never"}
-                    </p>
+                )}
+
+                {/* Assignments */}
+                {(selectedUser.venues?.length > 0 || selectedUser.organizers?.length > 0) && (
+                  <div className="border-t border-border pt-4">
+                    <p className="text-sm font-medium text-foreground mb-3">Current Assignments</p>
+                    <div className="space-y-2">
+                      {selectedUser.venues?.map((venue: any) => (
+                        <div key={venue.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
+                          <Building2 className="h-4 w-4 text-blue-500" />
+                          <span>{venue.name}</span>
+                          <Badge variant="secondary" className="ml-auto">Venue</Badge>
+                        </div>
+                      ))}
+                      {selectedUser.organizers?.map((org: any) => (
+                        <div key={org.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
+                          <Calendar className="h-4 w-4 text-purple-500" />
+                          <span>{org.name}</span>
+                          <Badge variant="secondary" className="ml-auto">Organizer</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Account Info */}
+                <div className="border-t border-border pt-4">
+                  <p className="text-sm font-medium text-foreground mb-3">Account Details</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
+                      <p className="text-sm text-foreground">
+                        {new Date(selectedUser.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Last Sign In</p>
+                      <p className="text-sm text-foreground">
+                        {selectedUser.last_sign_in_at
+                          ? new Date(selectedUser.last_sign_in_at).toLocaleDateString()
+                          : "Never"}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
+                {/* Actions */}
                 <div className="border-t border-border pt-4">
                   <p className="text-sm font-medium text-foreground mb-3">Assign to Entity</p>
                   <div className="flex gap-3">
