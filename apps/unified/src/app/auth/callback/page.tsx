@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
@@ -36,13 +36,24 @@ function getCallbackClient(): SupabaseClient {
 let isProcessing = false;
 let hasSucceeded = false;
 
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
+        <p className="text-white/60">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Client-side auth callback page
  * This page handles the magic link callback by exchanging the code for a session
  * using the browser client, which has access to localStorage where the
  * PKCE code_verifier is stored.
  */
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -220,3 +231,10 @@ export default function AuthCallbackPage() {
   );
 }
 
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
+  );
+}

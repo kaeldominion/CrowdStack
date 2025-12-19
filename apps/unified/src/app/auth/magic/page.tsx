@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-white/60">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Magic link callback page - redirects to server-side API route
+ * Magic link callback content - redirects to server-side API route
  * This ensures PKCE code verifier is handled properly via cookies
  */
-export default function MagicLinkPage() {
+function MagicLinkContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -45,6 +55,14 @@ export default function MagicLinkPage() {
         <p className="text-white/60">Verifying magic link...</p>
       </div>
     </div>
+  );
+}
+
+export default function MagicLinkPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <MagicLinkContent />
+    </Suspense>
   );
 }
 

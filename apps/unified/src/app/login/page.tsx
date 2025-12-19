@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
@@ -34,7 +34,20 @@ function getMagicLinkClient(): SupabaseClient {
   return magicLinkClientInstance;
 }
 
-export default function LoginPage() {
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <Card className="w-full max-w-md">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
+          <p className="text-white/60">Loading...</p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function LoginContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -408,5 +421,13 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LoginContent />
+    </Suspense>
   );
 }
