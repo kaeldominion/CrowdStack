@@ -24,16 +24,18 @@ export async function middleware(request: NextRequest) {
     });
     
     // Check if request is coming from an admin/app/door page
-    const isFromAdminApp = referer && (
-      referer.includes("/admin/") || 
-      (referer.includes("/app/") && !referer.includes("/api/")) || 
-      referer.includes("/door/")
-    );
+    // Handle both /app and /app/ patterns
+    const hasAdminPath = referer?.includes("/admin/") ?? false;
+    const hasAppPath = referer ? (referer.includes("/app") && !referer.includes("/api/") && !referer.includes("/app/health")) : false;
+    const hasDoorPath = referer?.includes("/door/") ?? false;
+    const isFromAdminApp = hasAdminPath || hasAppPath || hasDoorPath;
     
     // Also check chunk path itself for app-specific routes
     // Next.js generates paths like: /_next/static/chunks/app/admin/venues/page.js
     // Or: /_next/static/css/app/layout.css
+    // Use a more general pattern to catch all app chunks
     const chunkPathIncludesAppRoutes = 
+      pathname.includes("/chunks/app/") ||  // General pattern for all app chunks
       pathname.includes("/chunks/app/admin/") || 
       pathname.includes("/chunks/app/venue/") ||
       pathname.includes("/chunks/app/organizer/") ||
@@ -44,6 +46,10 @@ export async function middleware(request: NextRequest) {
       pathname.includes("app-pages-internals.js");
     
     console.log("[Middleware Proxy] Static asset analysis:", {
+      referer,
+      hasAdminPath,
+      hasAppPath,
+      hasDoorPath,
       isFromAdminApp,
       chunkPathIncludesAppRoutes,
       shouldProxy: isFromAdminApp || chunkPathIncludesAppRoutes,
