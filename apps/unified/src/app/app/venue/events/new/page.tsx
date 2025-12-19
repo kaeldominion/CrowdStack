@@ -111,170 +111,169 @@ export default function VenueNewEventPage() {
   };
 
   return (
-      <div className="space-y-8">
-        <Link href="/app/venue/events">
-          <Button variant="ghost" size="sm" className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
-          </Button>
-        </Link>
+    <div className="space-y-8">
+      <Link href="/app/venue/events">
+        <Button variant="ghost" size="sm" className="mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Events
+        </Button>
+      </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Create an event at your venue
-          </p>
-        </div>
-
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-6 p-6">
-            <Input
-              label="Event Name"
-              required
-              value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Summer Music Festival 2024"
-            />
-
-            <Input
-              label="URL Slug"
-              required
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              placeholder="summer-music-festival-2024"
-            />
-
-            <Textarea
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe your event..."
-              rows={4}
-            />
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Input
-                label="Start Date & Time"
-                type="datetime-local"
-                required
-                value={formData.start_time}
-                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-              />
-
-              <Input
-                label="End Date & Time"
-                type="datetime-local"
-                value={formData.end_time}
-                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-              />
-            </div>
-
-            <Input
-              label="Capacity (Optional)"
-              type="number"
-              value={formData.capacity}
-              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-              placeholder="500"
-            />
-
-            {/* Organizer Selection */}
-            <div className="space-y-4 border-t border-border pt-6">
-              <h3 className="text-lg font-semibold text-white">Organizer</h3>
-
-              <div className="flex items-center gap-2 mb-4">
-                <input
-                  type="checkbox"
-                  id="create_new_organizer"
-                  checked={formData.create_new_organizer}
-                  onChange={(e) =>
-                    setFormData({ ...formData, create_new_organizer: e.target.checked })
-                  }
-                  className="rounded border-border"
-                />
-                <label htmlFor="create_new_organizer" className="text-sm text-foreground">
-                  Create new organizer
-                </label>
-              </div>
-
-              {formData.create_new_organizer ? (
-                <Input
-                  label="Organizer Name"
-                  required
-                  value={formData.new_organizer_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, new_organizer_name: e.target.value })
-                  }
-                  placeholder="Event Organizer Name"
-                />
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Select Organizer
-                  </label>
-                  <select
-                    value={formData.organizer_id}
-                    onChange={(e) => setFormData({ ...formData, organizer_id: e.target.value })}
-                    className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
-                  >
-                    <option value="">Select an organizer</option>
-                    {organizers.map((organizer) => (
-                      <option key={organizer.id} value={organizer.id}>
-                        {organizer.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Direct Promoter Assignment */}
-            <div className="space-y-4 border-t border-border pt-6">
-              <h3 className="text-lg font-semibold text-white">Assign Promoters (Optional)</h3>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
-                {promoters.map((promoter) => (
-                  <div key={promoter.id} className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`promoter-${promoter.id}`}
-                      checked={formData.selected_promoters.includes(promoter.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({
-                            ...formData,
-                            selected_promoters: [...formData.selected_promoters, promoter.id],
-                          });
-                        } else {
-                          setFormData({
-                            ...formData,
-                            selected_promoters: formData.selected_promoters.filter(
-                              (id) => id !== promoter.id
-                            ),
-                          });
-                        }
-                      }}
-                      className="rounded border-border"
-                    />
-                    <label htmlFor={`promoter-${promoter.id}`} className="text-sm text-foreground">
-                      {promoter.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-              <Link href="/app/venue/events">
-                <Button type="button" variant="ghost">
-                  Cancel
-                </Button>
-              </Link>
-              <Button type="submit" variant="primary" loading={loading}>
-                Create Event
-              </Button>
-            </div>
-          </form>
-        </Card>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
+        <p className="mt-2 text-sm text-white/60">
+          Create an event at your venue
+        </p>
       </div>
+
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          <Input
+            label="Event Name"
+            required
+            value={formData.name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder="Summer Music Festival 2024"
+          />
+
+          <Input
+            label="URL Slug"
+            required
+            value={formData.slug}
+            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            placeholder="summer-music-festival-2024"
+          />
+
+          <Textarea
+            label="Description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Describe your event..."
+            rows={4}
+          />
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <Input
+              label="Start Date & Time"
+              type="datetime-local"
+              required
+              value={formData.start_time}
+              onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            />
+
+            <Input
+              label="End Date & Time"
+              type="datetime-local"
+              value={formData.end_time}
+              onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+            />
+          </div>
+
+          <Input
+            label="Capacity (Optional)"
+            type="number"
+            value={formData.capacity}
+            onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+            placeholder="500"
+          />
+
+          {/* Organizer Selection */}
+          <div className="space-y-4 border-t border-border pt-6">
+            <h3 className="text-lg font-semibold text-white">Organizer</h3>
+
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="checkbox"
+                id="create_new_organizer"
+                checked={formData.create_new_organizer}
+                onChange={(e) =>
+                  setFormData({ ...formData, create_new_organizer: e.target.checked })
+                }
+                className="rounded border-border"
+              />
+              <label htmlFor="create_new_organizer" className="text-sm text-foreground">
+                Create new organizer
+              </label>
+            </div>
+
+            {formData.create_new_organizer ? (
+              <Input
+                label="Organizer Name"
+                required
+                value={formData.new_organizer_name}
+                onChange={(e) =>
+                  setFormData({ ...formData, new_organizer_name: e.target.value })
+                }
+                placeholder="Event Organizer Name"
+              />
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Select Organizer
+                </label>
+                <select
+                  value={formData.organizer_id}
+                  onChange={(e) => setFormData({ ...formData, organizer_id: e.target.value })}
+                  className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="">Select an organizer</option>
+                  {organizers.map((organizer) => (
+                    <option key={organizer.id} value={organizer.id}>
+                      {organizer.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Direct Promoter Assignment */}
+          <div className="space-y-4 border-t border-border pt-6">
+            <h3 className="text-lg font-semibold text-white">Assign Promoters (Optional)</h3>
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
+              {promoters.map((promoter) => (
+                <div key={promoter.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`promoter-${promoter.id}`}
+                    checked={formData.selected_promoters.includes(promoter.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          selected_promoters: [...formData.selected_promoters, promoter.id],
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          selected_promoters: formData.selected_promoters.filter(
+                            (id) => id !== promoter.id
+                          ),
+                        });
+                      }
+                    }}
+                    className="rounded border-border"
+                  />
+                  <label htmlFor={`promoter-${promoter.id}`} className="text-sm text-foreground">
+                    {promoter.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+            <Link href="/app/venue/events">
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" variant="primary" loading={loading}>
+              Create Event
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 }
-

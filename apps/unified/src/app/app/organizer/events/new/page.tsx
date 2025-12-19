@@ -121,178 +121,178 @@ export default function NewEventPage() {
 
   return (
     <div className="space-y-8">
-        <Link href="/app/organizer/events">
-          <Button variant="ghost" size="sm" className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
-          </Button>
-        </Link>
+      <Link href="/app/organizer/events">
+        <Button variant="ghost" size="sm" className="mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Events
+        </Button>
+      </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Set up a new event and start tracking attendance
-          </p>
-        </div>
-
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-6 p-6">
-            <Input
-              label="Event Name"
-              required
-              value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Summer Music Festival 2024"
-            />
-
-            <Input
-              label="URL Slug"
-              required
-              value={formData.slug}
-              onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-              placeholder="summer-music-festival-2024"
-              helperText="Used in the event URL (e.g., /e/summer-music-festival-2024)"
-            />
-
-            <Textarea
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe your event..."
-              rows={4}
-            />
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Input
-                label="Start Date & Time"
-                type="datetime-local"
-                required
-                value={formData.start_time}
-                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-              />
-
-              <Input
-                label="End Date & Time"
-                type="datetime-local"
-                value={formData.end_time}
-                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Venue (Optional)</label>
-                <select
-                  value={formData.venue_id}
-                  onChange={(e) => setFormData({ ...formData, venue_id: e.target.value })}
-                  className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
-                >
-                  <option value="">Select a venue</option>
-                  {venues.map((venue) => (
-                    <option key={venue.id} value={venue.id}>
-                      {venue.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Input
-                label="Capacity (Optional)"
-                type="number"
-                value={formData.capacity}
-                onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                placeholder="500"
-              />
-            </div>
-
-            {/* Promoter Settings */}
-            <div className="space-y-4 border-t border-border pt-6">
-              <h3 className="text-lg font-semibold text-white">Promoter Settings</h3>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Promoter Access</label>
-                <select
-                  value={formData.promoter_access_type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      promoter_access_type: e.target.value as "public" | "invite_only",
-                    })
-                  }
-                  className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
-                >
-                  <option value="public">Public - All promoters can request to promote</option>
-                  <option value="invite_only">Invite Only - Only invited promoters can promote</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="self_promote"
-                  checked={formData.self_promote}
-                  onChange={(e) => setFormData({ ...formData, self_promote: e.target.checked })}
-                  className="rounded border-border"
-                />
-                <label htmlFor="self_promote" className="text-sm text-foreground">
-                  Promote as yourself (add yourself as a promoter)
-                </label>
-              </div>
-
-              {formData.promoter_access_type === "invite_only" && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Invite Promoters
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
-                    {promoters.map((promoter) => (
-                      <div key={promoter.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          id={`promoter-${promoter.id}`}
-                          checked={formData.selected_promoters.includes(promoter.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({
-                                ...formData,
-                                selected_promoters: [...formData.selected_promoters, promoter.id],
-                              });
-                            } else {
-                              setFormData({
-                                ...formData,
-                                selected_promoters: formData.selected_promoters.filter(
-                                  (id) => id !== promoter.id
-                                ),
-                              });
-                            }
-                          }}
-                          className="rounded border-border"
-                        />
-                        <label
-                          htmlFor={`promoter-${promoter.id}`}
-                          className="text-sm text-foreground"
-                        >
-                          {promoter.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-              <Link href="/app/organizer/events">
-                <Button type="button" variant="ghost">
-                  Cancel
-                </Button>
-              </Link>
-              <Button type="submit" variant="primary" loading={loading}>
-                Create Event
-              </Button>
-            </div>
-          </form>
-        </Card>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
+        <p className="mt-2 text-sm text-white/60">
+          Set up a new event and start tracking attendance
+        </p>
       </div>
+
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          <Input
+            label="Event Name"
+            required
+            value={formData.name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder="Summer Music Festival 2024"
+          />
+
+          <Input
+            label="URL Slug"
+            required
+            value={formData.slug}
+            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+            placeholder="summer-music-festival-2024"
+            helperText="Used in the event URL (e.g., /e/summer-music-festival-2024)"
+          />
+
+          <Textarea
+            label="Description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Describe your event..."
+            rows={4}
+          />
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <Input
+              label="Start Date & Time"
+              type="datetime-local"
+              required
+              value={formData.start_time}
+              onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            />
+
+            <Input
+              label="End Date & Time"
+              type="datetime-local"
+              value={formData.end_time}
+              onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Venue (Optional)</label>
+              <select
+                value={formData.venue_id}
+                onChange={(e) => setFormData({ ...formData, venue_id: e.target.value })}
+                className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+              >
+                <option value="">Select a venue</option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Input
+              label="Capacity (Optional)"
+              type="number"
+              value={formData.capacity}
+              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+              placeholder="500"
+            />
+          </div>
+
+          {/* Promoter Settings */}
+          <div className="space-y-4 border-t border-border pt-6">
+            <h3 className="text-lg font-semibold text-white">Promoter Settings</h3>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Promoter Access</label>
+              <select
+                value={formData.promoter_access_type}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    promoter_access_type: e.target.value as "public" | "invite_only",
+                  })
+                }
+                className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+              >
+                <option value="public">Public - All promoters can request to promote</option>
+                <option value="invite_only">Invite Only - Only invited promoters can promote</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="self_promote"
+                checked={formData.self_promote}
+                onChange={(e) => setFormData({ ...formData, self_promote: e.target.checked })}
+                className="rounded border-border"
+              />
+              <label htmlFor="self_promote" className="text-sm text-foreground">
+                Promote as yourself (add yourself as a promoter)
+              </label>
+            </div>
+
+            {formData.promoter_access_type === "invite_only" && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Invite Promoters
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
+                  {promoters.map((promoter) => (
+                    <div key={promoter.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`promoter-${promoter.id}`}
+                        checked={formData.selected_promoters.includes(promoter.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              selected_promoters: [...formData.selected_promoters, promoter.id],
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              selected_promoters: formData.selected_promoters.filter(
+                                (id) => id !== promoter.id
+                              ),
+                            });
+                          }
+                        }}
+                        className="rounded border-border"
+                      />
+                      <label
+                        htmlFor={`promoter-${promoter.id}`}
+                        className="text-sm text-foreground"
+                      >
+                        {promoter.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+            <Link href="/app/organizer/events">
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" variant="primary" loading={loading}>
+              Create Event
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 }
