@@ -3,12 +3,17 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Button, Card } from "@crowdstack/ui";
 
-// Create a fresh Supabase client for magic link flow
-// We create a new one each time to avoid stale session issues
-function createMagicLinkClient() {
+// Singleton magic link client to avoid "Multiple GoTrueClient instances" warning
+let magicLinkClientInstance: SupabaseClient | null = null;
+
+function getMagicLinkClient(): SupabaseClient {
+  if (magicLinkClientInstance) {
+    return magicLinkClientInstance;
+  }
+  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
   
@@ -16,7 +21,7 @@ function createMagicLinkClient() {
     throw new Error("Missing Supabase configuration");
   }
   
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  magicLinkClientInstance = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       flowType: 'pkce',
       autoRefreshToken: true,
@@ -25,6 +30,8 @@ function createMagicLinkClient() {
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   });
+  
+  return magicLinkClientInstance;
 }
 
 export default function LoginPage() {
@@ -230,24 +237,32 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      // Create a fresh client for magic link
-      const supabase = createMagicLinkClient();
+      // Use singleton client to avoid "Multiple GoTrueClient instances" warning
+      const supabase = getMagicLinkClient();
       
-      // IMPORTANT: Sign out any existing session before requesting a magic link for a different user
+      // Clear any existing session data (ignore errors - it's fine if no session exists)
       // This prevents the old session from interfering with the new one
-      console.log("[Login] Signing out any existing session before magic link request...");
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut({ scope: 'local' }); // Use local scope to avoid 403 errors
+      } catch {
+        // Ignore signOut errors - there may be no session to sign out
+      }
       
-      // Clear any old PKCE code verifiers from localStorage
+      // Also clear the custom cookie manually
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+      const cookieName = `sb-${projectRef}-auth-token`;
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      
+      // Clear any old PKCE code verifiers and session data from localStorage
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.includes('code-verifier')) {
+        if (key && (key.includes('code-verifier') || key.includes('auth-token'))) {
           keysToRemove.push(key);
         }
       }
       keysToRemove.forEach(key => {
-        console.log("[Login] Clearing old code verifier:", key);
         localStorage.removeItem(key);
       });
       

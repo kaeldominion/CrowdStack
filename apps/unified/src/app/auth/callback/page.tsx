@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { createBrowserClient } from "@crowdstack/shared";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Create a matching Supabase client for PKCE exchange
-// Must use the same configuration as the login page
-function createMagicLinkClient() {
+// Singleton client to avoid multiple instances
+let callbackClientInstance: SupabaseClient | null = null;
+
+function getCallbackClient(): SupabaseClient {
+  if (callbackClientInstance) {
+    return callbackClientInstance;
+  }
+  
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
   
@@ -15,16 +19,22 @@ function createMagicLinkClient() {
     throw new Error("Missing Supabase configuration");
   }
   
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  callbackClientInstance = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       flowType: 'pkce',
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false, // We handle this manually
+      detectSessionInUrl: false,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   });
+  
+  return callbackClientInstance;
 }
+
+// Track if we've already started processing to avoid React StrictMode double-execution issues
+let isProcessing = false;
+let hasSucceeded = false;
 
 /**
  * Client-side auth callback page
@@ -37,29 +47,36 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState("Verifying...");
+  const hasAttemptedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent double-execution in React StrictMode
-    let cancelled = false;
+    // Skip if we've already successfully authenticated or are currently processing
+    if (hasSucceeded || hasAttemptedRef.current) {
+      return;
+    }
+    hasAttemptedRef.current = true;
     
     const handleCallback = async () => {
-      if (cancelled) return;
+      // Double-check we're not already processing
+      if (isProcessing) return;
+      isProcessing = true;
       
       const code = searchParams.get("code");
       const redirectParam = searchParams.get("redirect");
       const errorParam = searchParams.get("error");
       const errorDescription = searchParams.get("error_description");
 
-
       // Handle errors from Supabase
       if (errorParam) {
-        console.error("[Auth Callback Client] Error from Supabase:", errorParam, errorDescription);
+        console.error("[Auth Callback] Error from Supabase:", errorParam, errorDescription);
+        isProcessing = false;
         setError(errorDescription || errorParam);
         return;
       }
 
       if (!code) {
-        console.error("[Auth Callback Client] No code provided");
+        console.error("[Auth Callback] No code provided");
+        isProcessing = false;
         setError("No authorization code provided");
         return;
       }
@@ -67,16 +84,12 @@ export default function AuthCallbackPage() {
       try {
         setStatus("Exchanging code for session...");
         
-        const supabase = createMagicLinkClient();
-        
-        // NOTE: We do NOT sign out before exchangeCodeForSession because that would
-        // clear the PKCE code verifier from localStorage which we need for the exchange.
-        // The exchange will establish the NEW session for the user who clicked the magic link.
-        
+        const supabase = getCallbackClient();
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
         if (exchangeError) {
           console.error("[Auth Callback] Exchange error:", exchangeError.message);
+          isProcessing = false;
           
           if (exchangeError.message.includes("already been used") || exchangeError.message.includes("expired")) {
             setError("This magic link has already been used or has expired. Please request a new one.");
@@ -89,21 +102,23 @@ export default function AuthCallbackPage() {
         }
 
         if (!data.session) {
-          console.error("[Auth Callback Client] No session returned");
+          console.error("[Auth Callback] No session returned");
+          isProcessing = false;
           setError("Failed to create session");
           return;
         }
 
-        console.log("[Auth Callback Client] Session created for:", data.session.user?.email);
-        setStatus("Session created! Setting cookies...");
+        // Mark as succeeded to prevent any further attempts from showing errors
+        hasSucceeded = true;
         
-        // IMPORTANT: Set the custom cookie format that the server-side expects
-        // The magic link client uses localStorage, but the server needs cookies
+        console.log("[Auth Callback] Session created for:", data.session.user?.email);
+        setStatus("Session created! Redirecting...");
+        
+        // Set the custom cookie format that the server-side expects
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
         const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
         const cookieName = `sb-${projectRef}-auth-token`;
         
-        // Create the cookie value in the format the server expects
         const cookieValue = JSON.stringify({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
@@ -111,17 +126,13 @@ export default function AuthCallbackPage() {
           user: data.session.user,
         });
         
-        // Set the cookie (expires when browser closes, or use session expiry)
         const expiresAt = data.session.expires_at ? new Date(data.session.expires_at * 1000) : undefined;
         const cookieOptions = expiresAt 
           ? `; expires=${expiresAt.toUTCString()}; path=/; SameSite=Lax`
           : `; path=/; SameSite=Lax`;
         document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
-        
-        console.log("[Auth Callback Client] Custom cookie set for server-side auth");
-        setStatus("Redirecting...");
 
-        // Get user roles to determine redirect destination
+        // Determine redirect destination based on roles
         const user = data.session.user;
         let targetPath = redirectParam || "/me";
 
@@ -133,9 +144,7 @@ export default function AuthCallbackPage() {
 
           if (roles && roles.length > 0) {
             const roleNames = roles.map((r: any) => r.role);
-            console.log("[Auth Callback Client] User roles:", roleNames);
 
-            // B2B roles go to app
             if (roleNames.includes("superadmin")) {
               targetPath = "/admin";
             } else if (roleNames.includes("venue_admin")) {
@@ -150,30 +159,37 @@ export default function AuthCallbackPage() {
           }
         }
 
-        // Use redirectParam if it was specifically provided (e.g., from middleware)
         if (redirectParam && (redirectParam.startsWith("/app") || redirectParam.startsWith("/admin") || redirectParam.startsWith("/door"))) {
           targetPath = redirectParam;
         }
 
-        console.log("[Auth Callback Client] Redirecting to:", targetPath);
+        console.log("[Auth Callback] Redirecting to:", targetPath);
         
-        // Small delay to ensure session cookies are fully set
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Use window.location for full page reload to ensure cookies are read
+        // Redirect immediately - don't wait
         window.location.href = targetPath;
       } catch (err: any) {
-        console.error("[Auth Callback Client] Unexpected error:", err);
-        setError(err.message || "An unexpected error occurred");
+        console.error("[Auth Callback] Unexpected error:", err);
+        isProcessing = false;
+        if (!hasSucceeded) {
+          setError(err.message || "An unexpected error occurred");
+        }
       }
     };
 
     handleCallback();
-    
-    return () => {
-      cancelled = true;
-    };
   }, [searchParams, router]);
+  
+  // Don't show error if we've already succeeded
+  if (hasSucceeded) {
+    return (
+      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
+          <p className="text-white/60">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
