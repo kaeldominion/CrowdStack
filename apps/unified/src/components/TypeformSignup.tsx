@@ -273,7 +273,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       case "surname":
         return (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Input
               value={value}
               onChange={(e) => {
@@ -282,7 +282,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               }}
               onKeyDown={handleKeyDown}
               placeholder="Last name"
-              className="text-2xl sm:text-3xl py-6 sm:py-8 text-center border-2 focus:border-primary w-full"
+              className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
               autoFocus
               autoComplete="family-name"
             />
@@ -291,7 +291,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       case "date_of_birth":
         return (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <Input
               type="date"
               value={value}
@@ -300,7 +300,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 if (error) setErrors({ ...errors, date_of_birth: undefined });
               }}
               onKeyDown={handleKeyDown}
-              className="text-lg sm:text-2xl py-6 sm:py-8 text-center border-2 focus:border-primary w-full"
+              className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
               autoFocus
             />
           </div>
@@ -308,9 +308,9 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       case "whatsapp":
         return (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
+              <MessageCircle className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40" />
               <Input
                 value={value}
                 onChange={(e) => {
@@ -319,21 +319,21 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="+1234567890"
-                className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-primary w-full"
+                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
                 autoFocus
                 autoComplete="tel"
                 inputMode="tel"
               />
             </div>
-            <p className="text-sm text-white/60 text-center px-4">We'll use this to send you event updates</p>
+            <p className="text-xs sm:text-sm text-white/60 text-center px-4">We'll use this to send you event updates</p>
           </div>
         );
 
       case "instagram_handle":
         return (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
+              <Instagram className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40" />
               <Input
                 value={value}
                 onChange={(e) => {
@@ -344,12 +344,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="username"
-                className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-primary w-full"
+                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
                 autoFocus
                 autoComplete="username"
               />
             </div>
-            <p className="text-sm text-white/60 text-center px-4">We'll tag you in event photos</p>
+            <p className="text-xs sm:text-sm text-white/60 text-center px-4">We'll tag you in event photos</p>
           </div>
         );
 
@@ -370,10 +370,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 sm:p-6" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
-      <div className="w-full max-w-2xl flex flex-col" style={{ maxHeight: "100vh" }}>
+    <div 
+      className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+      style={{ 
+        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))",
+        // Use 100dvh on mobile to account for dynamic viewport changes (keyboard)
+        height: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
+      }}
+    >
+      <div className="w-full max-w-2xl flex flex-col justify-center" style={{ 
+        maxHeight: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
+        minHeight: 0,
+      }}>
         {/* Progress Bar */}
-        <div className="mb-4 sm:mb-6 flex-shrink-0">
+        <div className="mb-3 sm:mb-6 flex-shrink-0">
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-primary/80"
@@ -396,8 +406,14 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 sm:p-8 md:p-12 shadow-2xl flex-shrink-0 overflow-y-auto"
-          style={{ maxHeight: "calc(100vh - 12rem)" }}
+          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink min-w-0 overflow-y-auto overscroll-contain"
+          style={{ 
+            maxHeight: typeof window !== "undefined" && window.innerWidth < 640 
+              ? "calc(100dvh - 6rem)" 
+              : "calc(100vh - 12rem)",
+            // Prevent scroll bounce on iOS
+            WebkitOverflowScrolling: "touch",
+          }}
         >
           {/* Question */}
           <motion.h2
@@ -434,7 +450,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              className="flex items-center justify-between mt-6 sm:mt-8 gap-3"
+              className="flex items-center justify-between mt-4 sm:mt-6 md:mt-8 gap-3 flex-shrink-0"
             >
               <Button
                 variant="secondary"
@@ -471,7 +487,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
-              className="mt-6 sm:mt-8"
+              className="mt-4 sm:mt-6 md:mt-8 flex-shrink-0"
             >
               <Button
                 variant="primary"
