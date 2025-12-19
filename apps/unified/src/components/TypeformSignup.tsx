@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button } from "@crowdstack/ui";
 import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2 } from "lucide-react";
-import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface TypeformSignupProps {
   onSubmit: (data: SignupData) => Promise<void>;
@@ -111,19 +110,23 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     setErrors({});
 
     try {
-      const supabase = createBrowserClient();
-      // Use current window location origin and pathname to construct redirect URL
-      const currentUrl = new URL(window.location.href);
-      const redirect = redirectUrl || currentUrl.toString();
+      // Use the API route which properly handles redirect URLs with current origin
+      const currentUrl = redirectUrl || window.location.href;
       
-      const { error } = await supabase.auth.signInWithOtp({
-        email: formData.email,
-        options: {
-          emailRedirectTo: redirect,
-        },
+      const response = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          redirect: currentUrl,
+        }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send magic link");
+      }
 
       setMagicLinkSent(true);
     } catch (err: any) {
