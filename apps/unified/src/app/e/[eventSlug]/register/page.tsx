@@ -237,26 +237,6 @@ export default function RegisterPage() {
     }
   };
 
-  if (loading && !authenticated && !success) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
-      </div>
-    );
-  }
-
-  if (success && eventDetails) {
-    return (
-      <RegistrationSuccess
-        eventName={eventDetails.name}
-        eventSlug={eventSlug}
-        venueName={eventDetails.venue?.name || null}
-        startTime={eventDetails.start_time || null}
-        qrToken={qrToken}
-      />
-    );
-  }
-
   // Check registration status callback
   const checkRegistration = async (): Promise<boolean> => {
     try {
@@ -280,8 +260,29 @@ export default function RegisterPage() {
     return false;
   };
 
+  // Show success screen if registration is complete (check this FIRST)
+  if (success && eventDetails) {
+    return (
+      <RegistrationSuccess
+        eventName={eventDetails.name}
+        eventSlug={eventSlug}
+        venueName={eventDetails.venue?.name || null}
+        startTime={eventDetails.start_time || null}
+        qrToken={qrToken}
+      />
+    );
+  }
+
+  if (loading && !authenticated && !success) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white/60">Loading...</div>
+      </div>
+    );
+  }
+
   // If authenticated, show Typeform signup (skip email step, only show missing fields)
-  if (authenticated && userEmail && showSignup) {
+  if (authenticated && userEmail && showSignup && !success) {
     const redirectUrl = typeof window !== "undefined" 
       ? window.location.href 
       : `/e/${eventSlug}/register`;
@@ -299,7 +300,7 @@ export default function RegisterPage() {
   }
 
   // Show Typeform signup (will handle email verification internally)
-  if (!authenticated && !loading) {
+  if (!authenticated && !loading && !success) {
     // Construct redirect URL using current window location
     const redirectUrl = typeof window !== "undefined"
       ? window.location.href

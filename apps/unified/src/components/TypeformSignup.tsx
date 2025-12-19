@@ -213,8 +213,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) {
-      return; // Validation failed, don't submit
+    // Validate the current step first
+    const isValid = validateStep(currentStep);
+    if (!isValid) {
+      // Validation failed - error is already set by validateStep
+      return;
     }
     
     try {
@@ -236,6 +239,18 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         instagram_handle: formData.instagram_handle || existingProfile?.instagram_handle || "",
       };
       
+      // Validate that all required fields are present before submitting
+      if (!mergedData.email || !mergedData.name || !mergedData.surname || !mergedData.date_of_birth || !mergedData.whatsapp || !mergedData.instagram_handle) {
+        const missingFields = [];
+        if (!mergedData.email) missingFields.push("email");
+        if (!mergedData.name) missingFields.push("name");
+        if (!mergedData.surname) missingFields.push("surname");
+        if (!mergedData.date_of_birth) missingFields.push("date of birth");
+        if (!mergedData.whatsapp) missingFields.push("whatsapp");
+        if (!mergedData.instagram_handle) missingFields.push("instagram handle");
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
+      
       console.log("Submitting form data:", mergedData);
       await onSubmit(mergedData);
     } catch (error: any) {
@@ -244,6 +259,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       const stepKey = visibleSteps[currentStep] as keyof SignupData;
       setErrors({ [stepKey]: errorMessage });
       console.error("Form submission error:", error);
+      // Re-throw so the parent can handle it
+      throw error;
     }
   };
 
@@ -550,10 +567,10 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
               <Button
                 variant="primary"
-                onClick={() => {
+                onClick={async () => {
                   if (currentStep === visibleSteps.length - 1) {
                     // On last step, directly call handleSubmit instead of handleNext
-                    handleSubmit();
+                    await handleSubmit();
                   } else {
                     handleNext();
                   }
