@@ -19,14 +19,14 @@ export interface SignupData {
   instagram_handle: string;
 }
 
-type StepId = "name" | "surname" | "date_of_birth" | "whatsapp" | "instagram";
+type StepId = "name" | "surname" | "date_of_birth" | "whatsapp" | "instagram_handle";
 
 const steps: Array<{ id: StepId; label: string }> = [
   { id: "name", label: "What's your first name?" },
   { id: "surname", label: "And your last name?" },
   { id: "date_of_birth", label: "When were you born?" },
   { id: "whatsapp", label: "What's your WhatsApp number?" },
-  { id: "instagram", label: "What's your Instagram handle?" },
+  { id: "instagram_handle", label: "What's your Instagram handle?" },
 ];
 
 export function TypeformSignup({ email, onSubmit, isLoading = false }: TypeformSignupProps) {
@@ -183,7 +183,7 @@ export function TypeformSignup({ email, onSubmit, isLoading = false }: TypeformS
           </div>
         );
 
-      case "instagram":
+      case "instagram_handle":
         return (
           <div className="space-y-4">
             <div className="relative">
