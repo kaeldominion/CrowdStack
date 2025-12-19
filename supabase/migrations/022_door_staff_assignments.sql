@@ -1,9 +1,6 @@
 -- Door Staff Assignments
 -- Allows venue admins and organizers to assign specific users as door staff for specific events
 
--- Enable pgcrypto extension for gen_random_bytes
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- Create event_door_staff table
 CREATE TABLE IF NOT EXISTS public.event_door_staff (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -93,7 +90,7 @@ CREATE POLICY "Door staff can view their own assignments"
 CREATE TABLE IF NOT EXISTS public.door_staff_invites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
-  token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token TEXT NOT NULL UNIQUE DEFAULT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   email TEXT, -- Optional: if inviting a specific email
   created_by UUID NOT NULL REFERENCES auth.users(id),
   expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
