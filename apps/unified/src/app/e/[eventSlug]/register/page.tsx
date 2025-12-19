@@ -38,20 +38,27 @@ export default function RegisterPage() {
   }, []);
 
   const checkAuth = async () => {
+    console.log("[Register] checkAuth started");
     try {
       const supabase = createBrowserClient();
       const { data: { user }, error } = await supabase.auth.getUser();
+      console.log("[Register] User check:", { hasUser: !!user, email: user?.email, error: error?.message });
 
       if (user && user.email) {
         setAuthenticated(true);
         setUserEmail(user.email);
+        console.log("[Register] User is authenticated:", user.email);
         
         // Always check if already registered first (whether from QR code or direct link)
         try {
+          console.log("[Register] Checking if already registered for event:", eventSlug);
           const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+          console.log("[Register] Check registration response status:", checkResponse.status);
           if (checkResponse.ok) {
             const checkData = await checkResponse.json();
+            console.log("[Register] Check registration data:", checkData);
             if (checkData.registered && checkData.event) {
+              console.log("[Register] User is already registered! Showing success screen");
               // User is already registered - show success screen immediately
               setSuccess(true);
               setQrToken(checkData.qr_pass_token);
@@ -65,16 +72,19 @@ export default function RegisterPage() {
             }
           }
         } catch (checkErr) {
-          console.error("Error checking registration:", checkErr);
+          console.error("[Register] Error checking registration:", checkErr);
           // Continue to registration if check fails
         }
         
         // Not registered yet - check if user has existing profile
+        console.log("[Register] Not registered yet, checking profile...");
         try {
           const profileResponse = await fetch("/api/profile");
+          console.log("[Register] Profile response status:", profileResponse.status);
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             const attendee = profileData.attendee;
+            console.log("[Register] Profile data:", attendee);
             
             if (attendee) {
               // Store existing profile to pre-fill form
@@ -94,34 +104,54 @@ export default function RegisterPage() {
                 attendee.date_of_birth && 
                 attendee.instagram_handle;
               
+              console.log("[Register] Has all required fields:", hasRequiredFields, {
+                name: !!attendee.name,
+                whatsapp: !!attendee.whatsapp,
+                surname: !!attendee.surname,
+                date_of_birth: !!attendee.date_of_birth,
+                instagram_handle: !!attendee.instagram_handle,
+              });
+              
               if (hasRequiredFields) {
                 // Profile is complete - register them automatically
-                await handleSignupSubmit({
-                  email: user.email,
-                  name: attendee.name,
-                  surname: attendee.surname,
-                  date_of_birth: attendee.date_of_birth,
-                  whatsapp: attendee.whatsapp,
-                  instagram_handle: attendee.instagram_handle,
-                });
+                console.log("[Register] Auto-registering user with complete profile...");
+                try {
+                  await handleSignupSubmit({
+                    email: user.email,
+                    name: attendee.name,
+                    surname: attendee.surname,
+                    date_of_birth: attendee.date_of_birth,
+                    whatsapp: attendee.whatsapp,
+                    instagram_handle: attendee.instagram_handle,
+                  });
+                  console.log("[Register] Auto-registration complete");
+                } catch (autoRegErr) {
+                  console.error("[Register] Auto-registration failed:", autoRegErr);
+                  // If auto-registration fails, show the signup form
+                  setShowSignup(true);
+                  setLoading(false);
+                }
                 return;
               }
             }
           }
         } catch (profileErr) {
-          console.error("Error checking profile:", profileErr);
+          console.error("[Register] Error checking profile:", profileErr);
           // Continue to signup form if profile check fails
         }
         
         // Profile incomplete or check failed - show signup form
+        console.log("[Register] Profile incomplete, showing signup form");
         setShowSignup(true);
+        setLoading(false);
       } else {
+        console.log("[Register] User is not authenticated");
         setAuthenticated(false);
+        setLoading(false);
       }
     } catch (err) {
-      console.error("Error checking auth:", err);
+      console.error("[Register] Error in checkAuth:", err);
       setAuthenticated(false);
-    } finally {
       setLoading(false);
     }
   };
@@ -260,8 +290,12 @@ export default function RegisterPage() {
     return false;
   };
 
+  // Debug current state
+  console.log("[Register] Render state:", { loading, authenticated, showSignup, success, hasEventDetails: !!eventDetails, error });
+
   // Show success screen if registration is complete (check this FIRST)
   if (success && eventDetails) {
+    console.log("[Register] Rendering success screen");
     return (
       <RegistrationSuccess
         eventName={eventDetails.name}
@@ -273,8 +307,37 @@ export default function RegisterPage() {
     );
   }
 
-  // Show loading state for any loading scenario (authenticated or not)
-  if (loading && !success) {
+  // If success is true but eventDetails is missing, show a fallback success
+  if (success && !eventDetails) {
+    console.log("[Register] Success but no event details - showing fallback");
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+        <div className="text-white text-xl">Registration Complete!</div>
+        <div className="text-white/60">You're all set for the event.</div>
+      </div>
+    );
+  }
+
+  // Show error if there is one
+  if (error && !loading) {
+    console.log("[Register] Rendering error:", error);
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 p-4">
+        <div className="text-red-400 text-xl">Registration Error</div>
+        <div className="text-white/60 text-center">{error}</div>
+        <button 
+          onClick={() => { setError(""); setLoading(false); setShowSignup(true); }}
+          className="mt-4 px-4 py-2 bg-white/10 text-white rounded-lg"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading state for any loading scenario
+  if (loading) {
+    console.log("[Register] Rendering loading state");
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white/60">Loading...</div>
@@ -283,7 +346,8 @@ export default function RegisterPage() {
   }
 
   // If authenticated, show Typeform signup (skip email step, only show missing fields)
-  if (authenticated && userEmail && showSignup && !success) {
+  if (authenticated && userEmail && showSignup) {
+    console.log("[Register] Rendering TypeformSignup for authenticated user");
     const redirectUrl = typeof window !== "undefined" 
       ? window.location.href 
       : `/e/${eventSlug}/register`;
@@ -300,9 +364,9 @@ export default function RegisterPage() {
     );
   }
 
-  // Show Typeform signup (will handle email verification internally)
-  if (!authenticated && !loading && !success) {
-    // Construct redirect URL using current window location
+  // Show Typeform signup for unauthenticated users
+  if (!authenticated) {
+    console.log("[Register] Rendering TypeformSignup for unauthenticated user");
     const redirectUrl = typeof window !== "undefined"
       ? window.location.href
       : null;
@@ -318,10 +382,17 @@ export default function RegisterPage() {
     );
   }
 
-  // Loading state (should not reach here as TypeformSignup handles everything)
+  // Fallback - this should not happen, but handle it gracefully
+  console.log("[Register] Fallback state reached - this should not happen");
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="text-white/60">Loading...</div>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <div className="text-white/60">Something went wrong...</div>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-white/10 text-white rounded-lg"
+      >
+        Refresh Page
+      </button>
     </div>
   );
 }
