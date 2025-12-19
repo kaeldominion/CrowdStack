@@ -29,7 +29,7 @@ export async function sendNotificationEmail(data: EmailNotificationData): Promis
   await logMessage(
     data.to,
     data.subject,
-    "queued",
+    "pending",
     "Email notification queued (in-app notification sent instead)"
   );
 }
