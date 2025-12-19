@@ -225,21 +225,16 @@ export default function RegisterPage() {
 
   // Show Typeform signup (will handle email verification internally)
   if (!authenticated && !loading) {
+    // Construct redirect URL using current window location
     const redirectUrl = typeof window !== "undefined"
-      ? new URL(window.location.origin)
+      ? window.location.href
       : null;
-    if (redirectUrl) {
-      redirectUrl.pathname = `/e/${eventSlug}/register`;
-      if (ref) {
-        redirectUrl.searchParams.set("ref", ref);
-      }
-    }
     
     return (
       <TypeformSignup
         onSubmit={handleSignupSubmit}
         isLoading={loading}
-        redirectUrl={redirectUrl?.toString() || `/e/${eventSlug}/register`}
+        redirectUrl={redirectUrl || undefined}
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
       />

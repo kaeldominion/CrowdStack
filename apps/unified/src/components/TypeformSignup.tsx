@@ -112,7 +112,9 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
     try {
       const supabase = createBrowserClient();
-      const redirect = redirectUrl || window.location.href;
+      // Use current window location origin and pathname to construct redirect URL
+      const currentUrl = new URL(window.location.href);
+      const redirect = redirectUrl || currentUrl.toString();
       
       const { error } = await supabase.auth.signInWithOtp({
         email: formData.email,
