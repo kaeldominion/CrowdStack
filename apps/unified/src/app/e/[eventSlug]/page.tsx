@@ -7,7 +7,7 @@ import { ShareButton } from "@/components/ShareButton";
 
 async function getEvent(slug: string) {
   try {
-    const response = await fetch(`/api/events/${slug}`, {
+    const response = await fetch(`/api/events/by-slug/${slug}`, {
       cache: "no-store",
     });
 

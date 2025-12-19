@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 /**
- * GET /api/events/[slug]
+ * GET /api/events/by-slug/[slug]
  * Get event by slug (public route - only returns published events)
  * This is the canonical route used by the event page component
  */

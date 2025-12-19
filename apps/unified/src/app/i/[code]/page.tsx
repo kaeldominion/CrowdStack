@@ -45,7 +45,7 @@ export default function InviteCodePage() {
 
     try {
       // Register for event with referral attribution
-      const response = await fetch(`/api/events/${event.slug}/register?ref=${code}`, {
+      const response = await fetch(`/api/events/by-slug/${event.slug}/register?ref=${code}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

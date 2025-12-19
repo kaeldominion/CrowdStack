@@ -6,7 +6,7 @@ import type { RegisterEventRequest } from "@crowdstack/shared";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventSlug: string } }
+  { params }: { params: { slug: string } }
 ) {
   try {
     const supabase = createServiceRoleClient();
@@ -18,7 +18,7 @@ export async function POST(
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select("*")
-      .eq("slug", params.eventSlug)
+      .eq("slug", params.slug)
       .eq("status", "published")
       .single();
 
