@@ -4,19 +4,38 @@ import { Calendar, MapPin, Users, Clock } from "lucide-react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 async function getEvent(slug: string) {
   try {
-    const response = await fetch(`/api/events/by-slug/${slug}`, {
-      cache: "no-store",
-    });
+    const supabase = createServiceRoleClient();
 
-    if (!response.ok) {
+    // Get published event by slug
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .select(`
+        *,
+        organizer:organizers(id, name),
+        venue:venues(id, name, address, city, state, country)
+      `)
+      .eq("slug", slug)
+      .eq("status", "published")
+      .single();
+
+    if (eventError || !event) {
       return null;
     }
 
-    const data = await response.json();
-    return data.event;
+    // Get registration count
+    const { count: registrationCount } = await supabase
+      .from("registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", event.id);
+
+    return {
+      ...event,
+      registration_count: registrationCount || 0,
+    };
   } catch (error) {
     console.error("Failed to fetch event:", error);
     return null;

@@ -31,6 +31,8 @@ import {
   CheckCircle2,
   Globe,
   EyeOff,
+  QrCode,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -251,14 +253,32 @@ export default function AdminEventDetailPage() {
               {getApprovalStatusBadge()}
             </div>
             {event.slug && (
-              <a
-                href={`/e/${event.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-              >
-                View Public Page <ExternalLink className="h-3 w-3" />
-              </a>
+              <div className="flex items-center gap-4">
+                <a
+                  href={`/e/${event.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  View Public Page <ExternalLink className="h-3 w-3" />
+                </a>
+                <a
+                  href={`/door/${event.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <QrCode className="h-3 w-3" /> Door Scanner
+                </a>
+                <a
+                  href={`/app/organizer/live/${event.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <Radio className="h-3 w-3" /> Live Control
+                </a>
+              </div>
             )}
           </div>
 
