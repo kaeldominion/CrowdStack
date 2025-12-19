@@ -42,6 +42,8 @@ interface UserProfile {
   xp_points: number;
 }
 
+type EventStatus = "happening_now" | "today" | "upcoming" | "past";
+
 // QR Pass button component
 function QRPassButton({ registrationId, eventSlug }: { registrationId: string; eventSlug: string }) {
   const [loading, setLoading] = useState(false);
@@ -83,6 +85,8 @@ export default function MePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [happeningNowEvents, setHappeningNowEvents] = useState<Registration[]>([]);
+  const [todayEvents, setTodayEvents] = useState<Registration[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Registration[]>([]);
   const [pastEvents, setPastEvents] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,30 +165,75 @@ export default function MePage() {
 
       if (registrations) {
         const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1);
+        
+        const happeningNow: Registration[] = [];
+        const today: Registration[] = [];
         const upcoming: Registration[] = [];
         const past: Registration[] = [];
 
         registrations.forEach((reg: any) => {
           if (!reg.event) return;
-          const eventDate = new Date(reg.event.start_time);
+          
           // Handle array response from Supabase
           const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
           const venue = event?.venue ? (Array.isArray(event.venue) ? event.venue[0] : event.venue) : null;
           
+          if (!event) return;
+          
+          const startTime = new Date(event.start_time);
+          const endTime = event.end_time ? new Date(event.end_time) : null;
+          
           const normalizedReg = {
             ...reg,
-            event: event ? { ...event, venue } : null,
+            event: { ...event, venue },
           };
 
-          if (eventDate > now) {
+          // Determine event status
+          const hasStarted = startTime <= now;
+          const hasEnded = endTime ? endTime < now : false;
+          const isToday = startTime >= todayStart && startTime < todayEnd;
+          
+          // Event is still "active" if it hasn't ended (or has no end time)
+          // Long-running events without end_time are considered active until manually ended
+          
+          if (hasEnded) {
+            // Event has ended
+            past.push(normalizedReg);
+          } else if (hasStarted && !hasEnded) {
+            // Event has started but not ended - happening now!
+            happeningNow.push(normalizedReg);
+          } else if (isToday) {
+            // Event starts today but hasn't started yet
+            today.push(normalizedReg);
+          } else if (startTime > now) {
+            // Event is in the future
             upcoming.push(normalizedReg);
           } else {
-            past.push(normalizedReg);
+            // Fallback - should not reach here
+            upcoming.push(normalizedReg);
           }
         });
 
+        // Sort each category
+        happeningNow.sort((a, b) => new Date(a.event?.start_time || 0).getTime() - new Date(b.event?.start_time || 0).getTime());
+        today.sort((a, b) => new Date(a.event?.start_time || 0).getTime() - new Date(b.event?.start_time || 0).getTime());
+        upcoming.sort((a, b) => new Date(a.event?.start_time || 0).getTime() - new Date(b.event?.start_time || 0).getTime());
+        past.sort((a, b) => new Date(b.event?.start_time || 0).getTime() - new Date(a.event?.start_time || 0).getTime());
+
+        setHappeningNowEvents(happeningNow);
+        setTodayEvents(today);
         setUpcomingEvents(upcoming);
         setPastEvents(past);
+        
+        console.log("[Me] Event categorization:", {
+          happeningNow: happeningNow.length,
+          today: today.length,
+          upcoming: upcoming.length,
+          past: past.length,
+        });
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -284,8 +333,8 @@ export default function MePage() {
                 <Calendar className="h-5 w-5 text-green-400" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">{upcomingEvents.length}</p>
-            <p className="text-sm text-white/50">Upcoming</p>
+            <p className="text-2xl sm:text-3xl font-bold text-white">{happeningNowEvents.length + todayEvents.length + upcomingEvents.length}</p>
+            <p className="text-sm text-white/50">Active</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/20 to-orange-500/10 p-4 sm:p-6">
@@ -298,6 +347,132 @@ export default function MePage() {
             <p className="text-sm text-white/50">Attended</p>
           </div>
         </div>
+
+        {/* Happening Now - Most prominent */}
+        {happeningNowEvents.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
+              <h2 className="text-xl font-semibold text-white">Happening Now</h2>
+            </div>
+
+            <div className="space-y-3">
+              {happeningNowEvents.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="rounded-2xl border-2 border-green-500/50 bg-gradient-to-r from-green-500/10 to-emerald-500/5 overflow-hidden"
+                >
+                  <Link
+                    href={`/e/${reg.event?.slug}`}
+                    className="block hover:bg-white/5 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-4 p-4">
+                      <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-500/30 to-emerald-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {reg.event?.cover_image_url ? (
+                          <img
+                            src={reg.event.cover_image_url}
+                            alt={reg.event.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Ticket className="h-8 w-8 text-white/40" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white group-hover:text-green-400 transition-colors truncate">
+                          {reg.event?.name}
+                        </h3>
+                        {reg.event?.venue && (
+                          <div className="flex items-center gap-1 mt-1 text-sm text-white/60">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {reg.event.venue.name}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        <span className="px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-sm font-medium animate-pulse">
+                          LIVE
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  <div className="px-4 pb-4">
+                    <QRPassButton registrationId={reg.id} eventSlug={reg.event?.slug || ""} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Today's Events */}
+        {todayEvents.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-3 w-3 rounded-full bg-amber-500" />
+              <h2 className="text-xl font-semibold text-white">Today</h2>
+            </div>
+
+            <div className="space-y-3">
+              {todayEvents.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 overflow-hidden"
+                >
+                  <Link
+                    href={`/e/${reg.event?.slug}`}
+                    className="block hover:bg-white/5 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-4 p-4">
+                      <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {reg.event?.cover_image_url ? (
+                          <img
+                            src={reg.event.cover_image_url}
+                            alt={reg.event.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <Ticket className="h-8 w-8 text-white/40" />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors truncate">
+                          {reg.event?.name}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-1 text-sm text-white/50">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            Starts at {formatEventTime(reg.event?.start_time || "")}
+                          </span>
+                        </div>
+                        {reg.event?.venue && (
+                          <div className="flex items-center gap-1 mt-1 text-sm text-white/40">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {reg.event.venue.name}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-shrink-0">
+                        <span className="px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-400 text-sm font-medium">
+                          TODAY
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  <div className="px-4 pb-4">
+                    <QRPassButton registrationId={reg.id} eventSlug={reg.event?.slug || ""} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Upcoming Events */}
         <div className="mb-8">
