@@ -21,7 +21,9 @@
     "clean": "pnpm -r clean && rm -rf node_modules",
     "check-fix": "node scripts/watch-and-fix.js",
     "check-fix:sh": "./scripts/check-and-fix.sh",
-    "watch-fix": "node scripts/auto-fix-watch.js"
+    "watch-fix": "node scripts/auto-fix-watch.js",
+    "pre-push": "./scripts/pre-push-check.sh",
+    "typecheck:unified": "cd apps/unified && npx tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
