@@ -15,6 +15,7 @@ import {
   X,
   QrCode,
   UserPlus,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -244,8 +245,14 @@ export default function VenueEventDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/door/${eventId}`} target="_blank">
+          <Link href={`/app/venue/live/${eventId}`}>
             <Button variant="primary">
+              <Radio className="h-4 w-4 mr-2" />
+              Live Control
+            </Button>
+          </Link>
+          <Link href={`/door/${eventId}`} target="_blank">
+            <Button variant="secondary">
               <QrCode className="h-4 w-4 mr-2" />
               Door Scanner
             </Button>
