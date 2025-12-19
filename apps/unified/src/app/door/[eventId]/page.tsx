@@ -214,12 +214,20 @@ export default function DoorScannerPage() {
   const startScanning = async () => {
     setCameraError(null);
     
+    // Set scanning to true FIRST so the container is visible
+    setScanning(true);
+    
+    // Wait for DOM to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
       
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
 
+      console.log("[Door Scanner] Starting camera...");
+      
       await scanner.start(
         { facingMode: "environment" },
         {
@@ -251,7 +259,7 @@ export default function DoorScannerPage() {
         }
       );
 
-      setScanning(true);
+      console.log("[Door Scanner] Camera started successfully");
     } catch (err: any) {
       console.error("[Door Scanner] Camera error:", err);
       setCameraError(err.message || "Failed to access camera");
@@ -428,10 +436,14 @@ export default function DoorScannerPage() {
 
         {/* QR Scanner */}
         <div className="mb-6">
+          {/* QR Reader container - always rendered but visibility controlled */}
           <div 
             id="qr-reader" 
-            className={`rounded-lg overflow-hidden bg-black ${scanning ? "block" : "hidden"}`}
-            style={{ minHeight: scanning ? "300px" : "0" }}
+            className="rounded-lg overflow-hidden bg-black"
+            style={{ 
+              minHeight: scanning ? "300px" : "0",
+              display: scanning ? "block" : "none",
+            }}
           />
           
           {!scanning ? (
