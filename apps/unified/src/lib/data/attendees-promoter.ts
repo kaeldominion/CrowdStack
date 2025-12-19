@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { maskEmail, maskPhone } from "./mask-pii";
 
 export interface PromoterAttendee {
   id: string;
@@ -132,8 +133,8 @@ export async function getPromoterAttendees(
     const attendeeData: PromoterAttendee = {
       id: attendee.id,
       name: attendee.name,
-      email: attendee.email,
-      phone: attendee.phone,
+      email: maskEmail(attendee.email),
+      phone: maskPhone(attendee.phone) || "",
       referral_count: existing?.referral_count
         ? existing.referral_count + 1
         : (attendee.registrations?.length || 0),
@@ -162,8 +163,8 @@ export async function getPromoterAttendees(
     const attendeeData: PromoterAttendee = {
       id: attendee.id,
       name: attendee.name,
-      email: attendee.email,
-      phone: attendee.phone,
+      email: maskEmail(attendee.email),
+      phone: maskPhone(attendee.phone) || "",
       referral_count: existing?.referral_count || 0,
       upcoming_signups: existing?.upcoming_signups
         ? existing.upcoming_signups + upcomingEvents.length
@@ -247,7 +248,11 @@ export async function getPromoterAttendeeDetails(attendeeId: string, promoterId:
     .neq("event.status", "ended");
 
   return {
-    attendee,
+    attendee: attendee ? {
+      ...attendee,
+      email: maskEmail(attendee.email),
+      phone: maskPhone(attendee.phone) || attendee.phone,
+    } : null,
     referral_events: referralRegistrations || [],
     upcoming_events: upcomingRegistrations || [],
   };

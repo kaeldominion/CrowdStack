@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { createServiceRoleClient } from "@crowdstack/shared";
 
 async function getUser(request: NextRequest) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -75,34 +75,51 @@ export async function GET(
       .eq("id", params.eventId)
       .single();
 
-    if (error || !event) {
+    if (error) {
+      console.error("Error fetching event:", error);
+      return NextResponse.json({ error: "Event not found", details: error.message }, { status: 404 });
+    }
+
+    if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Get stats
+    // Get registration count
     const { count: registrationsCount } = await supabase
       .from("registrations")
       .select("*", { count: "exact", head: true })
       .eq("event_id", params.eventId);
 
-    const { count: checkinsCount } = await supabase
-      .from("checkins")
-      .select("*", { count: "exact", head: true })
-      .eq("registration_id", params.eventId);
+    // Get check-ins count through registrations
+    const { data: registrations } = await supabase
+      .from("registrations")
+      .select("id")
+      .eq("event_id", params.eventId);
+    
+    let checkinsCount = 0;
+    const regIds = registrations?.map((r) => r.id) || [];
+    
+    if (regIds.length > 0) {
+      const { count } = await supabase
+        .from("checkins")
+        .select("*", { count: "exact", head: true })
+        .in("registration_id", regIds)
+        .is("undo_at", null);
+      checkinsCount = count || 0;
+    }
 
     return NextResponse.json({
       event,
       stats: {
         registrations_count: registrationsCount || 0,
-        checkins_count: checkinsCount || 0,
+        checkins_count: checkinsCount,
       },
     });
   } catch (error) {
     console.error("Error fetching event:", error);
     return NextResponse.json(
-      { error: "Failed to fetch event" },
+      { error: "Failed to fetch event", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
 }
-

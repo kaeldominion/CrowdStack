@@ -260,6 +260,24 @@ export interface MessageLog {
   created_at: string;
 }
 
+export type AudienceType = "venue" | "organizer" | "promoter" | "event";
+export type AudienceMessageStatus = "queued" | "processing" | "sent" | "failed";
+
+export interface AudienceMessage {
+  id: string;
+  sender_id: string;
+  audience_type: AudienceType;
+  audience_id: string;
+  subject: string;
+  body: string;
+  recipient_count: number;
+  status: AudienceMessageStatus;
+  sent_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type OutboxEventType =
   | "event_created"
   | "registration_created"

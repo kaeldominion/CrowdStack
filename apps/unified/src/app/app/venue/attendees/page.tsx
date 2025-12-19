@@ -92,11 +92,22 @@ export default function VenueAttendeesPage() {
             All attendees who have registered or checked in to events at your venue
           </p>
         </div>
-        <Button variant="secondary" onClick={() => {/* Export CSV */}}>
+        <Button variant="secondary" disabled title="Export functionality is disabled to protect attendee privacy. Use messaging features to communicate with your audience.">
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          Export (Disabled)
         </Button>
       </div>
+
+      {/* Access Scope Explanation */}
+      <Card className="bg-blue-500/10 border-blue-500/20">
+        <div className="p-4">
+          <p className="text-sm text-white/80">
+            <strong>Privacy Protection:</strong> You're viewing attendees who registered or checked in at your venue.
+            CrowdStack protects attendee privacy - you only see guests who interacted with you directly.
+            Contact details are masked for security. Use our messaging features to communicate with your audience.
+          </p>
+        </div>
+      </Card>
 
       {/* Search and Filters */}
       <Card>

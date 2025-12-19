@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { maskEmail, maskPhone } from "./mask-pii";
 
 export interface VenueAttendee {
   id: string;
@@ -120,8 +121,8 @@ export async function getVenueAttendees(
     const attendeeData: VenueAttendee = {
       id: attendee.id,
       name: attendee.name,
-      email: attendee.email,
-      phone: attendee.phone,
+      email: maskEmail(attendee.email),
+      phone: maskPhone(attendee.phone) || "",
       user_id: attendee.user_id,
       events_attended: attendeeRegs.length,
       total_check_ins: checkins.length,
@@ -192,7 +193,11 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
     .single();
 
   return {
-    attendee,
+    attendee: attendee ? {
+      ...attendee,
+      email: maskEmail(attendee.email),
+      phone: maskPhone(attendee.phone) || attendee.phone,
+    } : null,
     events: registrations || [],
     flags: flags || null,
   };

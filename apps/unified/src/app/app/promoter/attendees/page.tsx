@@ -70,11 +70,22 @@ export default function PromoterAttendeesPage() {
             People who registered through your referrals or are signed up for upcoming events
           </p>
         </div>
-        <Button variant="secondary" onClick={() => {/* Export CSV */}}>
+        <Button variant="secondary" disabled title="Export functionality is disabled to protect attendee privacy. Use messaging features to communicate with your audience.">
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          Export (Disabled)
         </Button>
       </div>
+
+      {/* Access Scope Explanation */}
+      <Card className="bg-blue-500/10 border-blue-500/20">
+        <div className="p-4">
+          <p className="text-sm text-white/80">
+            <strong>Privacy Protection:</strong> You're viewing attendees who registered through your referrals.
+            CrowdStack protects attendee privacy - you only see guests who registered via your promotion links.
+            Contact details are masked for security. Use our messaging features to communicate with your audience.
+          </p>
+        </div>
+      </Card>
 
       <Card>
         <div className="p-6 space-y-4">
