@@ -79,7 +79,7 @@ export default function MePage() {
       // Load profile
       const { data: attendee } = await supabase
         .from("attendees")
-        .select("name, email")
+        .select("id, name, email")
         .eq("user_id", currentUser.id)
         .single();
 
