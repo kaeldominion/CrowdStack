@@ -3,6 +3,8 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 export interface LiveMetrics {
   event_id: string;
+  event_name: string;
+  venue_name: string | null;
   current_attendance: number;
   total_registrations: number;
   capacity: number | null;
@@ -42,10 +44,17 @@ export interface VIPArrival {
 export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | null> {
   const supabase = createServiceRoleClient();
 
-  // Get event details
+  // Get event details with venue
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, capacity, start_time, end_time")
+    .select(`
+      id, 
+      name, 
+      capacity, 
+      start_time, 
+      end_time,
+      venue:venues(name)
+    `)
     .eq("id", eventId)
     .single();
 
@@ -158,6 +167,8 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
 
   return {
     event_id: eventId,
+    event_name: event.name,
+    venue_name: (event.venue as any)?.name || null,
     current_attendance: currentAttendance,
     total_registrations: totalRegistrations || 0,
     capacity: event.capacity,

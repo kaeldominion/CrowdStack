@@ -43,6 +43,9 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
 
   // Use Next.js pathname if component is mounted, otherwise use empty string to avoid hydration mismatch
   const currentPathname = mounted ? (nextPathname || (typeof window !== "undefined" ? window.location.pathname : "")) : "";
+  
+  // Check if this is a live mission control page (hide sidebar and header)
+  const isLivePage = currentPathname.includes("/live/");
 
   // Update user roles if they change
   useEffect(() => {
@@ -129,13 +132,14 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
+      {/* Sidebar - hidden on live pages */}
+      {!isLivePage && (
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-border">
@@ -208,11 +212,12 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
               ]}
             />
           </div>
-        </div>
-      </aside>
+          </div>
+        </aside>
+      )}
 
       {/* Overlay for mobile */}
-      {sidebarOpen && (
+      {!isLivePage && sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
@@ -220,9 +225,10 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       )}
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-[80] bg-background/80 backdrop-blur-sm border-b border-border">
+      <div className={cn("flex flex-1 flex-col", !isLivePage && "lg:pl-64")}>
+        {/* Top bar - hidden on live pages */}
+        {!isLivePage && (
+          <header className="sticky top-0 z-[80] bg-background/80 backdrop-blur-sm border-b border-border">
           <div className="flex h-14 items-center gap-3 px-4 lg:px-8">
             {/* Mobile menu button */}
             <button
@@ -281,12 +287,16 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
             </div>
           </div>
         </header>
+        )}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <div className="mx-auto max-w-7xl">
-            {children}
-          </div>
+        <main className={cn("flex-1 overflow-y-auto", !isLivePage && "p-4 lg:p-8")}>
+          {!isLivePage && (
+            <div className="mx-auto max-w-7xl">
+              {children}
+            </div>
+          )}
+          {isLivePage && children}
         </main>
       </div>
 
