@@ -19,7 +19,7 @@ import {
 interface Registration {
   id: string;
   event_id: string;
-  created_at: string;
+  registered_at: string;
   qr_pass_token?: string;
   event: {
     id: string;
@@ -146,7 +146,7 @@ export default function MePage() {
         .select(`
           id,
           event_id,
-          created_at,
+          registered_at,
           event:events(
             id,
             name,
@@ -159,7 +159,7 @@ export default function MePage() {
           checkins(checked_in_at)
         `)
         .eq("attendee_id", attendee?.id || "")
-        .order("created_at", { ascending: false });
+        .order("registered_at", { ascending: false });
       
       console.log("[Me] Registrations result:", registrations, "Error:", regError);
 

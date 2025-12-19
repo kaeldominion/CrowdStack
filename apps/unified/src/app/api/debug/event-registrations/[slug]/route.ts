@@ -29,7 +29,7 @@ export async function GET(
       .select(`
         id,
         attendee_id,
-        created_at,
+        registered_at,
         attendee:attendees(id, name, email, user_id)
       `)
       .eq("event_id", event.id);
