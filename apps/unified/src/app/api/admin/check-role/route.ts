@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
  * Debug endpoint to check user roles
  * This endpoint also checks for localhost custom cookie format
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // First, try to get user with regular client
     const supabase = await createClient();
