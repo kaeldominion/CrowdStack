@@ -1,7 +1,0 @@
-{
-  "buildCommand": "cd ../.. && npx -y pnpm@8.15.0 build:app",
-  "devCommand": "cd ../.. && pnpm dev:app",
-  "installCommand": "cd ../.. && npx -y pnpm@8.15.0 install",
-  "framework": "nextjs"
-}
-

@@ -7,14 +7,9 @@
   "scripts": {
     "dev": "pnpm --filter unified dev",
     "dev:unified": "pnpm --filter unified dev",
-    "dev:web": "pnpm --filter web dev",
-    "dev:app": "pnpm --filter app dev",
-    "dev:all": "concurrently -n \"WEB,APP\" -c \"cyan,magenta\" \"pnpm --filter web dev\" \"pnpm --filter app dev\"",
     "start": "./scripts/start-dev.sh",
     "build": "pnpm -r build",
     "build:unified": "npx -y pnpm@8.15.0 --filter unified build",
-    "build:web": "npx -y pnpm@8.15.0 --filter web build",
-    "build:app": "npx -y pnpm@8.15.0 --filter app build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
@@ -35,4 +30,3 @@
     "pnpm": ">=8.0.0"
   }
 }
-
