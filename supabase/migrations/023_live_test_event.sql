@@ -61,11 +61,11 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Assign promoters to the live event
-INSERT INTO public.event_promoters (event_id, promoter_id)
+INSERT INTO public.event_promoters (event_id, promoter_id, commission_type, commission_config)
 VALUES 
-  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888881'),
-  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888882'),
-  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888883')
+  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888881', 'flat_per_head', '{"amount_per_head": 5}'::jsonb),
+  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888882', 'flat_per_head', '{"amount_per_head": 5}'::jsonb),
+  ('e1111111-1111-1111-1111-111111111111', 'b8888888-8888-8888-8888-888888888883', 'flat_per_head', '{"amount_per_head": 5}'::jsonb)
 ON CONFLICT (event_id, promoter_id) DO NOTHING;
 
 -- Create test attendees
