@@ -63,95 +63,94 @@ export default function VenueGuestFlagsPage() {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading flags...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-foreground-muted">Loading flags...</div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">Guest Flags & Bans</h1>
-            <p className="mt-2 text-sm text-white/60">
-              Manage flagged attendees and track strikes
-            </p>
-          </div>
-          <Button onClick={() => setShowFlagModal(true)}>
-            <Flag className="h-4 w-4 mr-2" />
-            Flag Attendee
-          </Button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">Guest Flags & Bans</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Manage flagged attendees and track strikes
+          </p>
         </div>
+        <Button onClick={() => setShowFlagModal(true)}>
+          <Flag className="h-4 w-4 mr-2" />
+          Flag Attendee
+        </Button>
+      </div>
 
-        <Card>
-          <div className="p-6">
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full"
-            />
-          </div>
-        </Card>
-
-        <div className="text-sm text-white/60">
-          Showing {filteredFlags.length} flagged attendees
+      <Card>
+        <div className="p-6">
+          <Input
+            placeholder="Search by name, email, or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full"
+          />
         </div>
+      </Card>
 
-        <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+      <div className="text-sm text-white/60">
+        Showing {filteredFlags.length} flagged attendees
+      </div>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Attendee</TableHead>
+                <TableHead>Strikes</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Flagged</TableHead>
+                <TableHead>Expires</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredFlags.length === 0 ? (
                 <TableRow>
-                  <TableHead>Attendee</TableHead>
-                  <TableHead>Strikes</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Flagged</TableHead>
-                  <TableHead>Expires</TableHead>
+                  <TableCell className="text-center py-8 text-foreground-muted">
+                    No flagged attendees
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredFlags.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
-                      No flagged attendees
+              ) : (
+                filteredFlags.map((flag: any) => (
+                  <TableRow key={flag.id} hover>
+                    <TableCell className="font-medium">
+                      {flag.attendee?.name || "Unknown"}
+                      {flag.attendee?.email && (
+                        <div className="text-sm text-foreground-muted">{flag.attendee.email}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {flag.strike_count || 0}
+                        {flag.strike_count >= 3 && (
+                          <AlertTriangle className="h-4 w-4 text-error" />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStrikeBadge(flag.strike_count, flag.permanent_ban)}</TableCell>
+                    <TableCell className="text-sm text-foreground-muted">{flag.reason}</TableCell>
+                    <TableCell className="text-sm text-foreground-muted">
+                      {new Date(flag.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-sm text-foreground-muted">
+                      {flag.expires_at ? new Date(flag.expires_at).toLocaleDateString() : "Never"}
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredFlags.map((flag: any) => (
-                    <TableRow key={flag.id} hover>
-                      <TableCell className="font-medium">
-                        {flag.attendee?.name || "Unknown"}
-                        {flag.attendee?.email && (
-                          <div className="text-sm text-foreground-muted">{flag.attendee.email}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {flag.strike_count || 0}
-                          {flag.strike_count >= 3 && (
-                            <AlertTriangle className="h-4 w-4 text-error" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStrikeBadge(flag.strike_count, flag.permanent_ban)}</TableCell>
-                      <TableCell className="text-sm text-foreground-muted">{flag.reason}</TableCell>
-                      <TableCell className="text-sm text-foreground-muted">
-                        {new Date(flag.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-sm text-foreground-muted">
-                        {flag.expires_at ? new Date(flag.expires_at).toLocaleDateString() : "Never"}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }

@@ -77,154 +77,152 @@ export default function VenueAttendeesPage() {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading attendees...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-foreground-muted">Loading attendees...</div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
-            <p className="mt-2 text-sm text-white/60">
-              All attendees who have registered or checked in to events at your venue
-            </p>
-          </div>
-          <Button variant="secondary" onClick={() => {/* Export CSV */}}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
+          <p className="mt-2 text-sm text-white/60">
+            All attendees who have registered or checked in to events at your venue
+          </p>
         </div>
+        <Button variant="secondary" onClick={() => {/* Export CSV */}}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      </div>
 
-        {/* Search and Filters */}
-        <Card>
-          <div className="p-6 space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={filters.has_check_in === true ? "primary" : "secondary"}
-                  onClick={() =>
-                    setFilters({
-                      ...filters,
-                      has_check_in: filters.has_check_in === true ? undefined : true,
-                    })
-                  }
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Checked In
-                </Button>
-                <Button
-                  variant={filters.is_flagged === true ? "primary" : "secondary"}
-                  onClick={() =>
-                    setFilters({
-                      ...filters,
-                      is_flagged: filters.is_flagged === true ? undefined : true,
-                    })
-                  }
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  Flagged
-                </Button>
-              </div>
+      {/* Search and Filters */}
+      <Card>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by name, email, or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={filters.has_check_in === true ? "primary" : "secondary"}
+                onClick={() =>
+                  setFilters({
+                    ...filters,
+                    has_check_in: filters.has_check_in === true ? undefined : true,
+                  })
+                }
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Checked In
+              </Button>
+              <Button
+                variant={filters.is_flagged === true ? "primary" : "secondary"}
+                onClick={() =>
+                  setFilters({
+                    ...filters,
+                    is_flagged: filters.is_flagged === true ? undefined : true,
+                  })
+                }
+              >
+                <Flag className="h-4 w-4 mr-2" />
+                Flagged
+              </Button>
             </div>
           </div>
-        </Card>
-
-        {/* Results Count */}
-        <div className="text-sm text-white/60">
-          Showing {filteredAttendees.length} of {attendees.length} attendees
         </div>
+      </Card>
 
-        {/* Attendees Table */}
-        <Card>
-          <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Events</TableHead>
-                    <TableHead>Check-ins</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Event</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-              <TableBody>
-                  {filteredAttendees.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-foreground-muted">
-                        No attendees found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredAttendees.map((attendee) => (
-                      <TableRow key={attendee.id} hover>
-                        <TableCell className="font-medium">{attendee.name}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {attendee.email && (
-                              <div className="text-sm text-foreground-muted">{attendee.email}</div>
-                            )}
-                            <div className="text-sm text-foreground-muted">{attendee.phone}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {attendee.user_id ? (
-                            <div className="flex items-center gap-1">
-                              <UserCheck className="h-4 w-4 text-success" />
-                              <span className="text-xs text-foreground-muted">Linked</span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-foreground-muted">No account</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{attendee.events_attended}</TableCell>
-                      <TableCell>{attendee.total_check_ins}</TableCell>
-                      <TableCell>{getStrikeBadge(attendee.strike_count)}</TableCell>
-                      <TableCell className="text-sm text-foreground-muted">
-                        {attendee.last_event_at
-                          ? new Date(attendee.last_event_at).toLocaleDateString()
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {/* View details */}}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {/* Flag attendee */}}
-                          >
-                            <Flag className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
+      {/* Results Count */}
+      <div className="text-sm text-white/60">
+        Showing {filteredAttendees.length} of {attendees.length} attendees
       </div>
+
+      {/* Attendees Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Events</TableHead>
+                <TableHead>Check-ins</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Event</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAttendees.length === 0 ? (
+                <TableRow>
+                  <TableCell className="text-center py-8 text-foreground-muted">
+                    No attendees found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredAttendees.map((attendee) => (
+                  <TableRow key={attendee.id} hover>
+                    <TableCell className="font-medium">{attendee.name}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {attendee.email && (
+                          <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                        )}
+                        <div className="text-sm text-foreground-muted">{attendee.phone}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {attendee.user_id ? (
+                        <div className="flex items-center gap-1">
+                          <UserCheck className="h-4 w-4 text-success" />
+                          <span className="text-xs text-foreground-muted">Linked</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-foreground-muted">No account</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{attendee.events_attended}</TableCell>
+                    <TableCell>{attendee.total_check_ins}</TableCell>
+                    <TableCell>{getStrikeBadge(attendee.strike_count)}</TableCell>
+                    <TableCell className="text-sm text-foreground-muted">
+                      {attendee.last_event_at
+                        ? new Date(attendee.last_event_at).toLocaleDateString()
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {/* View details */}}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {/* Flag attendee */}}
+                        >
+                          <Flag className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }
-
