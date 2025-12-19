@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // If no user from Supabase client, try reading from localhost cookie
     if (!userId) {
       const { getUserId } = await import("@/lib/auth/check-role");
-      userId = await getUserId();
+      userId = (await getUserId()) ?? undefined;
     }
 
     if (!userId) {
