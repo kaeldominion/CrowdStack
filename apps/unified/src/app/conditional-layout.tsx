@@ -31,12 +31,21 @@ const shouldHideNav = (pathname: string) => {
   );
 };
 
+// Routes that are standalone (no nav, no footer) - self-contained experiences
+const isStandaloneRoute = (pathname: string) => {
+  // Event registration and pass pages are standalone mobile-first experiences
+  if (pathname.match(/^\/e\/[^/]+\/register/)) return true; // /e/[slug]/register
+  if (pathname.match(/^\/e\/[^/]+\/pass/)) return true; // /e/[slug]/pass
+  return false;
+};
+
 // Routes that should show public marketing navigation
 const shouldShowPublicNav = (pathname: string) => {
   if (shouldHideNav(pathname)) return false;
   if (isAttendeeRoute(pathname)) return false; // Attendee routes get their own nav
+  if (isStandaloneRoute(pathname)) return false; // Standalone pages get no nav
   if (publicMarketingRoutes.includes(pathname)) return true;
-  if (pathname.startsWith("/e/")) return true; // Event pages
+  if (pathname.startsWith("/e/")) return true; // Event landing pages (not register/pass)
   if (pathname.startsWith("/invite/")) return true; // Invite pages
   if (pathname.startsWith("/i/")) return true; // Invite code pages
   if (pathname.startsWith("/checkin/")) return true; // Check-in pages
