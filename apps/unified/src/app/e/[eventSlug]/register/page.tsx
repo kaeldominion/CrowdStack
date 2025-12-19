@@ -291,7 +291,7 @@ export default function RegisterPage() {
     return false;
   };
 
-  // Debug current state
+  // Debug current state (v2)
   console.log("[Register] Render state:", { loading, authenticated, showSignup, success, hasEventDetails: !!eventDetails, error });
 
   // Show success screen if registration is complete (check this FIRST)
