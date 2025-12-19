@@ -8,17 +8,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  console.log("[Register API] POST request for slug:", params.slug);
+  
   try {
     // Check if user is authenticated
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    console.log("[Register API] User:", user?.email || "not authenticated");
     
     const serviceSupabase = createServiceRoleClient();
     const body: RegisterEventRequest = await request.json();
+    console.log("[Register API] Request body:", JSON.stringify(body, null, 2));
+    
     const { searchParams } = new URL(request.url);
     const ref = searchParams.get("ref"); // referral promoter ID
 
     // Get event by slug
+    console.log("[Register API] Looking for event:", params.slug);
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .select("*")
@@ -26,12 +32,23 @@ export async function POST(
       .eq("status", "published")
       .single();
 
-    if (eventError || !event) {
+    if (eventError) {
+      console.error("[Register API] Event error:", eventError);
+      return NextResponse.json(
+        { error: `Event not found: ${eventError.message}` },
+        { status: 404 }
+      );
+    }
+    
+    if (!event) {
+      console.error("[Register API] Event not found for slug:", params.slug);
       return NextResponse.json(
         { error: "Event not found" },
         { status: 404 }
       );
     }
+    
+    console.log("[Register API] Found event:", event.id, event.name);
 
     // Find or create attendee (dedupe by phone/email or user_id if authenticated)
     let attendee;
@@ -39,26 +56,46 @@ export async function POST(
     
     // If user is authenticated, try to find attendee by user_id first
     if (user?.id) {
-      const { data: userAttendee } = await serviceSupabase
+      console.log("[Register API] Looking for attendee by user_id:", user.id);
+      const { data: userAttendee, error: userAttendeeError } = await serviceSupabase
         .from("attendees")
         .select("*")
         .eq("user_id", user.id)
         .single();
+      
+      if (userAttendeeError && userAttendeeError.code !== "PGRST116") {
+        console.error("[Register API] Error finding attendee by user_id:", userAttendeeError);
+      }
       existingAttendee = userAttendee;
+      console.log("[Register API] Found attendee by user_id:", !!existingAttendee);
     }
     
-    // If not found by user_id, try by phone/email
-    if (!existingAttendee) {
-      const { data: phoneEmailAttendee } = await serviceSupabase
-        .from("attendees")
-        .select("*")
-        .or(
-          body.phone
-            ? `phone.eq.${body.phone}${body.email ? ",email.eq." + body.email : ""}`
-            : `email.eq.${body.email}`
-        )
-        .single();
-      existingAttendee = phoneEmailAttendee;
+    // If not found by user_id, try by phone/email (only if we have valid values)
+    if (!existingAttendee && (body.phone || body.email)) {
+      console.log("[Register API] Looking for attendee by phone/email:", body.phone, body.email);
+      
+      let orQuery = "";
+      if (body.phone && body.email) {
+        orQuery = `phone.eq.${body.phone},email.eq.${body.email}`;
+      } else if (body.phone) {
+        orQuery = `phone.eq.${body.phone}`;
+      } else if (body.email) {
+        orQuery = `email.eq.${body.email}`;
+      }
+      
+      if (orQuery) {
+        const { data: phoneEmailAttendee, error: phoneEmailError } = await serviceSupabase
+          .from("attendees")
+          .select("*")
+          .or(orQuery)
+          .single();
+        
+        if (phoneEmailError && phoneEmailError.code !== "PGRST116") {
+          console.error("[Register API] Error finding attendee by phone/email:", phoneEmailError);
+        }
+        existingAttendee = phoneEmailAttendee;
+        console.log("[Register API] Found attendee by phone/email:", !!existingAttendee);
+      }
     }
 
     // Prepare attendee data (only include fields that are provided)
@@ -73,6 +110,9 @@ export async function POST(
     if (body.date_of_birth) attendeeData.date_of_birth = body.date_of_birth;
     if (body.instagram_handle) attendeeData.instagram_handle = body.instagram_handle.replace("@", "");
     if (body.tiktok_handle) attendeeData.tiktok_handle = body.tiktok_handle.replace("@", "");
+
+    console.log("[Register API] Existing attendee:", existingAttendee?.id);
+    console.log("[Register API] Attendee data to save:", attendeeData);
 
     if (existingAttendee) {
       // Update existing attendee (only update provided fields)
@@ -90,6 +130,7 @@ export async function POST(
         updateData.user_id = user.id;
       }
 
+      console.log("[Register API] Updating attendee with:", updateData);
       const { data: updated, error: updateError } = await serviceSupabase
         .from("attendees")
         .update(updateData)
@@ -98,12 +139,15 @@ export async function POST(
         .single();
 
       if (updateError) {
-        throw updateError;
+        console.error("[Register API] Error updating attendee:", updateError);
+        throw new Error(`Failed to update attendee: ${updateError.message}`);
       }
       attendee = updated;
+      console.log("[Register API] Updated attendee:", attendee.id);
     } else {
       // Create new attendee (phone is required for new attendees)
       if (!body.phone && !body.whatsapp) {
+        console.error("[Register API] Missing phone/whatsapp for new attendee");
         throw new Error("Phone number or WhatsApp is required");
       }
       if (!body.phone && body.whatsapp) {
@@ -113,7 +157,12 @@ export async function POST(
       if (user?.id) {
         attendeeData.user_id = user.id;
       }
+      // Ensure email is set if we have it
+      if (!attendeeData.email && body.email) {
+        attendeeData.email = body.email;
+      }
 
+      console.log("[Register API] Creating new attendee with:", attendeeData);
       const { data: created, error: createError } = await serviceSupabase
         .from("attendees")
         .insert(attendeeData)
@@ -121,9 +170,11 @@ export async function POST(
         .single();
 
       if (createError) {
-        throw createError;
+        console.error("[Register API] Error creating attendee:", createError);
+        throw new Error(`Failed to create attendee: ${createError.message}`);
       }
       attendee = created;
+      console.log("[Register API] Created attendee:", attendee.id);
     }
 
     // Check if already registered
@@ -232,8 +283,9 @@ export async function POST(
       },
     });
   } catch (error: any) {
+    console.error("[Register API] Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to register" },
+      { error: error.message || "Failed to register", details: error.toString() },
       { status: 500 }
     );
   }
