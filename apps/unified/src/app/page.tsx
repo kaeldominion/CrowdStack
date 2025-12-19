@@ -12,7 +12,14 @@ import {
   Clock,
   CheckCircle2,
   Activity,
-  Sparkles
+  Sparkles,
+  Shield,
+  Bell,
+  Calendar,
+  Building2,
+  UserCheck,
+  Wallet,
+  LineChart
 } from "lucide-react";
 import Link from "next/link";
 import { BentoGrid, BentoCard, MovingBorder } from "@crowdstack/ui";
@@ -25,28 +32,91 @@ export default function HomePage() {
 
   const features = [
     {
-      title: "Fast Signups",
-      description: "Optimized forms that convert visitors into attendees in seconds. One-click social login included.",
-      icon: <Zap className="h-5 w-5" />,
-      gradient: "from-yellow-400 to-orange-500",
-    },
-    {
-      title: "Smart QR Check-in",
-      description: "Scan tickets instantly with our lightning-fast entry app. Works offline for reliable entry.",
+      title: "Instant QR Check-in",
+      description: "Lightning-fast entry scanning that works offline. Door staff can check in hundreds of guests per hour with real-time sync.",
       icon: <QrCode className="h-5 w-5" />,
       gradient: "from-indigo-500 to-purple-500",
     },
     {
-      title: "Promoter Leaderboards",
-      description: "Track promoter performance in real-time. Gamify sales with automated rewards and tiers.",
+      title: "Promoter Attribution",
+      description: "Track every guest back to the promoter who brought them. Automatic commission calculations and transparent payouts.",
       icon: <Trophy className="h-5 w-5" />,
       gradient: "from-amber-400 to-orange-500",
     },
     {
-      title: "Venue Analytics",
-      description: "Deep dive into attendance data. Know your peak times, demographics, and spend per head.",
+      title: "Venue Dashboard",
+      description: "Complete visibility into attendance, revenue, and trends. Compare events, track peak times, and optimize capacity.",
       icon: <BarChart3 className="h-5 w-5" />,
       gradient: "from-emerald-400 to-teal-500",
+    },
+    {
+      title: "Event Approval Flow",
+      description: "Venues approve events before they go live. Pre-approve trusted organizers for seamless recurring events.",
+      icon: <Shield className="h-5 w-5" />,
+      gradient: "from-blue-400 to-cyan-500",
+    },
+    {
+      title: "Smart Notifications",
+      description: "Real-time alerts for pending approvals, check-in milestones, and event updates. Never miss an important moment.",
+      icon: <Bell className="h-5 w-5" />,
+      gradient: "from-pink-400 to-rose-500",
+    },
+    {
+      title: "Frictionless Registration",
+      description: "Magic link authentication means no passwords. Guests sign up in seconds with just their phone number.",
+      icon: <Zap className="h-5 w-5" />,
+      gradient: "from-yellow-400 to-orange-500",
+    },
+  ];
+
+  const roles = [
+    {
+      title: "Venues",
+      description: "Own your data. See every event, every guest, every promoter performance across your space.",
+      icon: <Building2 className="h-6 w-6" />,
+      features: ["Approve events", "Track attendance", "Manage door staff", "View analytics"],
+    },
+    {
+      title: "Organizers",
+      description: "Create events, manage promoter teams, and get real-time insights into ticket sales and check-ins.",
+      icon: <Calendar className="h-6 w-6" />,
+      features: ["Create events", "Invite promoters", "Set commissions", "Generate reports"],
+    },
+    {
+      title: "Promoters",
+      description: "Get your own tracking links, see your stats, and get paid automatically based on check-ins.",
+      icon: <Users className="h-6 w-6" />,
+      features: ["Personal QR codes", "Real-time stats", "Commission tracking", "Leaderboard rank"],
+    },
+  ];
+
+  const stats = [
+    { value: "50K+", label: "Guests Checked In" },
+    { value: "200+", label: "Events Managed" },
+    { value: "98%", label: "Check-in Accuracy" },
+    { value: "<2s", label: "Avg Check-in Time" },
+  ];
+
+  const howItWorks = [
+    {
+      step: "01",
+      title: "Create Your Event",
+      description: "Set up your event with venue, date, capacity, and promoter commission structure.",
+    },
+    {
+      step: "02",
+      title: "Invite Your Team",
+      description: "Add promoters who get unique tracking links to share with their networks.",
+    },
+    {
+      step: "03",
+      title: "Guests Register",
+      description: "Attendees sign up via magic link — no app download, no password needed.",
+    },
+    {
+      step: "04",
+      title: "Scan & Track",
+      description: "Door staff scan QR codes. Every check-in is attributed and commissions calculated.",
     },
   ];
 
@@ -137,16 +207,6 @@ export default function HomePage() {
                     whileTap={{ scale: 0.95 }}
                   >
                     Book a demo
-                  </motion.button>
-                </Link>
-                <Link href="/pricing">
-                  <motion.button
-                    className="px-6 py-3 text-base font-medium border border-white/10 bg-black/50 backdrop-blur-md text-white rounded-md transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-black/70"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    See how it works
-                    <ArrowRight className="inline ml-2 h-4 w-4" />
                   </motion.button>
                 </Link>
               </motion.div>
@@ -359,6 +419,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Stats Section */}
+      <section className="py-16 border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                className="text-center"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <motion.div
+                  className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2"
+                  initial={{ scale: 0.5 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
+                >
+                  {stat.value}
+                </motion.div>
+                <div className="text-sm text-white/60">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section - Bento Grid */}
       <section id="features" className="py-32 relative overflow-hidden">
         {/* Animated background gradient */}
@@ -393,12 +482,12 @@ export default function HomePage() {
               Everything you need to manage your crowd
             </h2>
             <p className="text-xl text-white/60 max-w-2xl mx-auto">
-              Our platform provides the end-to-end tools you need to streamline operations, boost revenue, and understand your audience.
+              End-to-end tools to streamline operations, track performance, and grow your events.
             </p>
           </motion.div>
 
           {/* Aceternity UI Bento Grid with Moving Borders */}
-          <BentoGrid className="md:auto-rows-[20rem]">
+          <BentoGrid className="md:grid-cols-3 md:auto-rows-[18rem]">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -421,7 +510,7 @@ export default function HomePage() {
                         {feature.icon}
                       </div>
                     }
-                    rows={index === 0 ? 2 : 1}
+                    rows={1}
                     cols={1}
                     className="h-full"
                   />
@@ -429,6 +518,161 @@ export default function HomePage() {
               </motion.div>
             ))}
           </BentoGrid>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-32 border-t border-white/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/5 to-transparent" />
+        
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            className="text-center mb-20"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
+              Simple Process
+            </span>
+            <h2 className="text-5xl font-bold tracking-tighter text-white mb-6">
+              How it works
+            </h2>
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Get started in minutes. No complex setup required.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {howItWorks.map((item, index) => (
+              <motion.div
+                key={item.step}
+                className="relative"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+              >
+                {/* Connector line */}
+                {index < howItWorks.length - 1 && (
+                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-white/20 to-transparent z-0" />
+                )}
+                
+                <div className="relative z-10 p-6 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm h-full">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                    {item.step}
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-sm text-white/60">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Built for Everyone Section */}
+      <section id="solutions" className="py-32 border-t border-white/10 relative overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            className="text-center mb-20"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
+              One Platform, Every Role
+            </span>
+            <h2 className="text-5xl font-bold tracking-tighter text-white mb-6">
+              Built for everyone in the event ecosystem
+            </h2>
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Whether you're a venue owner, event organizer, or promoter — CrowdStack gives you the tools you need.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {roles.map((role, index) => (
+              <motion.div
+                key={role.title}
+                className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
+                whileHover={{ borderColor: "rgba(99, 102, 241, 0.5)" }}
+              >
+                {/* Hover gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white mb-6">
+                    {role.icon}
+                  </div>
+                  <h3 className="text-2xl font-semibold text-white mb-3">{role.title}</h3>
+                  <p className="text-white/60 mb-6">{role.description}</p>
+                  <ul className="space-y-2">
+                    {role.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-white/80">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial / Social Proof Section */}
+      <section className="py-32 border-t border-white/10 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.div
+              className="mb-8"
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Sparkles className="h-12 w-12 mx-auto text-indigo-400" />
+            </motion.div>
+            <blockquote className="text-3xl md:text-4xl font-medium text-white leading-relaxed mb-8">
+              "CrowdStack eliminated all the spreadsheets and guesswork. Now we know exactly which promoters are delivering and can pay them fairly based on actual check-ins."
+            </blockquote>
+            <div className="flex items-center justify-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500" />
+              <div className="text-left">
+                <div className="text-white font-medium">Jordan Chen</div>
+                <div className="text-white/60 text-sm">Operations Manager, Arena Events</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -473,7 +717,7 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              Ready to get started?
+              Ready to run smarter events?
             </motion.h2>
             <motion.p
               className="text-xl text-white/60 mb-10"
@@ -482,7 +726,7 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Join venues and organizers using CrowdStack to streamline their events
+              Join venues and organizers using CrowdStack to streamline their operations
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
@@ -505,16 +749,6 @@ export default function HomePage() {
                   >
                     <ArrowRight className="h-4 w-4 inline" />
                   </motion.div>
-                </motion.button>
-              </Link>
-              <Link href="/pricing">
-                <motion.button
-                  className="px-8 py-4 text-base font-medium border border-white/10 bg-black/50 backdrop-blur-md text-white rounded-md transition-all duration-300 hover:scale-105 hover:border-white/20 hover:bg-black/70"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  See Pricing
-                  <ArrowRight className="inline ml-2 h-4 w-4" />
                 </motion.button>
               </Link>
             </motion.div>

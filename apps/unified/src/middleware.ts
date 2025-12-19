@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 
 /**
  * Unified middleware that handles authentication for all routes
- * - Public routes: homepage, login, pricing, contact, event pages, health
+ * - Public routes: homepage, login, contact, event pages, health
  * - Protected routes: admin, app (B2B dashboards), door scanner
  * - Uses standard Supabase SSR (no proxying needed - single origin)
  */
@@ -17,7 +17,6 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     "/",
     "/login",
-    "/pricing",
     "/contact",
     "/legal",
     "/health",
