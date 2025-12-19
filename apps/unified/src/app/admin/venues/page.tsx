@@ -229,7 +229,7 @@ export default function AdminVenuesPage() {
                     Cancel
                   </Button>
                   <Button
-                    variant="error"
+                    variant="destructive"
                     onClick={async () => {
                       try {
                         const response = await fetch(`/api/admin/venues/${deletingVenue.id}`, {
