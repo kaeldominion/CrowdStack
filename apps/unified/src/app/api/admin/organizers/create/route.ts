@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, phone, website, description } = body;
+    const { name, email, phone, company_name } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -30,8 +30,7 @@ export async function POST(request: Request) {
         name,
         email: email || null,
         phone: phone || null,
-        website: website || null,
-        description: description || null,
+        company_name: company_name || null,
         created_by: userId,
       })
       .select()

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Button, Input, Textarea } from "@crowdstack/ui";
+import { Modal, Button, Input } from "@crowdstack/ui";
 import { Trash2, AlertTriangle } from "lucide-react";
 
 interface EditOrganizerModalProps {
@@ -21,8 +21,7 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
     name: "",
     email: "",
     phone: "",
-    website: "",
-    description: "",
+    company_name: "",
   });
 
   useEffect(() => {
@@ -31,8 +30,7 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
         name: organizer.name || "",
         email: organizer.email || "",
         phone: organizer.phone || "",
-        website: organizer.website || "",
-        description: organizer.description || "",
+        company_name: organizer.company_name || "",
       });
       // Reset delete state when modal opens
       setDeleteStep(0);
@@ -100,6 +98,13 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
           required
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="DJ Marcus"
+        />
+
+        <Input
+          label="Company Name"
+          value={formData.company_name}
+          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
           placeholder="Event Productions Inc."
         />
 
@@ -118,22 +123,6 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
             placeholder="+1 (555) 123-4567"
           />
         </div>
-
-        <Input
-          label="Website"
-          type="url"
-          value={formData.website}
-          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-          placeholder="https://organizer.com"
-        />
-
-        <Textarea
-          label="Description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Brief description of the organizer..."
-          rows={3}
-        />
 
         <div className="flex justify-between items-center pt-4 border-t border-border">
           {/* Delete Section */}

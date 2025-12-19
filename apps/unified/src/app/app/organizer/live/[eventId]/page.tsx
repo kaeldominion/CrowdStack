@@ -6,6 +6,8 @@ import { BentoCard } from "@/components/BentoCard";
 import { Badge, Logo, Button, Input } from "@crowdstack/ui";
 import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2 } from "lucide-react";
 import type { LiveMetrics } from "@/lib/data/live-metrics";
+import { Avatar } from "@/components/Avatar";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface EventMessage {
   id: string;
@@ -13,6 +15,7 @@ interface EventMessage {
   sender_id: string;
   sender_name: string;
   sender_email: string | null;
+  sender_avatar_url?: string | null;
   message: string;
   created_at: string;
   updated_at: string;
@@ -28,11 +31,16 @@ export default function OrganizerLiveMissionControlPage() {
   const [sending, setSending] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const swipeStartX = useRef<number | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const [swipingId, setSwipingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadMetrics();
     loadMessages();
+    loadCurrentUser();
     const metricsInterval = setInterval(loadMetrics, 5000); // Poll metrics every 5 seconds
     const messagesInterval = setInterval(loadMessages, 3000); // Poll messages every 3 seconds
     return () => {
@@ -40,6 +48,16 @@ export default function OrganizerLiveMissionControlPage() {
       clearInterval(messagesInterval);
     };
   }, [eventId]);
+
+  const loadCurrentUser = async () => {
+    try {
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    } catch (error) {
+      console.error("Error loading current user:", error);
+    }
+  };
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages arrive
@@ -122,8 +140,6 @@ export default function OrganizerLiveMissionControlPage() {
   };
 
   const handleDeleteMessage = async (messageId: string) => {
-    if (!confirm("Are you sure you want to delete this message?")) return;
-
     try {
       const response = await fetch(`/api/events/${eventId}/messages/${messageId}`, {
         method: "DELETE",
@@ -135,10 +151,50 @@ export default function OrganizerLiveMissionControlPage() {
       }
 
       loadMessages();
+      setSwipingId(null);
     } catch (error: any) {
       alert(error.message || "Failed to delete message");
+      setSwipingId(null);
     }
   };
+
+  // Swipe handlers for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent, messageId: string, isOwnMessage: boolean) => {
+    if (!isOwnMessage) return;
+    swipeStartX.current = e.touches[0].clientX;
+    setSwipingId(messageId);
+    setSwipeOffset(0);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent, isOwnMessage: boolean) => {
+    if (!isOwnMessage || !swipingId || !swipeStartX.current) return;
+    const currentX = e.touches[0].clientX;
+    const deltaX = currentX - swipeStartX.current;
+    // Only allow swiping left (negative deltaX)
+    if (deltaX < 0) {
+      setSwipeOffset(Math.max(deltaX, -100));
+    }
+  }, [swipingId]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent, messageId: string) => {
+    if (!swipingId || swipingId !== messageId) {
+      setSwipingId(null);
+      setSwipeOffset(0);
+      swipeStartX.current = null;
+      return;
+    }
+    
+    // If swiped left more than 80px, delete
+    if (swipeOffset < -80) {
+      handleDeleteMessage(messageId);
+    } else {
+      // Snap back
+      setSwipeOffset(0);
+      setSwipingId(null);
+    }
+    
+    swipeStartX.current = null;
+  }, [swipingId, swipeOffset, handleDeleteMessage]);
 
   if (loading || !metrics) {
     return (
@@ -149,7 +205,7 @@ export default function OrganizerLiveMissionControlPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black w-full">
+    <div className="min-h-screen bg-black w-full" style={{ paddingBottom: "env(safe-area-inset-bottom, 80px)" }}>
       <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-6">
         {/* Header with Branding */}
         <div className="mb-6 text-center sm:text-left">
@@ -319,79 +375,126 @@ export default function OrganizerLiveMissionControlPage() {
                 {messages.length === 0 ? (
                   <p className="text-sm text-white/40 text-center py-8">No messages yet. Be the first to post!</p>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className="p-3 rounded-md bg-white/5 border border-white/10"
-                    >
-                      {editingId === msg.id ? (
-                        <div className="space-y-2">
-                          <Input
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            placeholder="Edit message..."
-                            className="bg-white/10 border-white/20 text-white"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => handleEditMessage(msg.id)}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => {
-                                setEditingId(null);
-                                setEditText("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
+                  messages.map((msg) => {
+                    const isOwnMessage = currentUserId === msg.sender_id;
+                    return (
+                      <div
+                        key={msg.id}
+                        className="relative group"
+                        onTouchStart={(e) => handleTouchStart(e, msg.id, isOwnMessage)}
+                        onTouchMove={(e) => handleTouchMove(e, isOwnMessage)}
+                        onTouchEnd={(e) => handleTouchEnd(e, msg.id)}
+                        style={{ touchAction: isOwnMessage ? "pan-y" : "auto" }}
+                      >
+                        {/* Swipe delete indicator */}
+                        {isOwnMessage && (
+                          <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-r-md pointer-events-none">
+                            <Trash2 className="h-5 w-5 text-red-400" />
                           </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-white">{msg.sender_name}</p>
-                              <p className="text-xs text-white/40">
-                                {new Date(msg.created_at).toLocaleString()}
-                                {msg.updated_at !== msg.created_at && " (edited)"}
-                              </p>
+                        )}
+                        
+                        <div
+                          className={`p-3 rounded-md bg-white/5 border border-white/10 ${
+                            swipingId === msg.id ? "" : "transition-transform duration-200"
+                          } ${
+                            editingId === msg.id ? "" : "flex gap-3"
+                          }`}
+                          style={{ 
+                            transform: swipingId === msg.id 
+                              ? `translateX(${swipeOffset}px)` 
+                              : "translateX(0)" 
+                          }}
+                        >
+                          {editingId === msg.id ? (
+                            <div className="space-y-2 w-full">
+                              <Input
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                placeholder="Edit message..."
+                                className="bg-white/10 border-white/20 text-white"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={() => handleEditMessage(msg.id)}
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setEditingId(null);
+                                    setEditText("");
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => {
-                                  setEditingId(msg.id);
-                                  setEditText(msg.message);
-                                }}
-                                className="p-1 text-white/40 hover:text-white transition-colors"
-                                title="Edit message"
-                              >
-                                <Edit2 className="h-3 w-3" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMessage(msg.id)}
-                                className="p-1 text-white/40 hover:text-red-400 transition-colors"
-                                title="Delete message"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-sm text-white/80 whitespace-pre-wrap">{msg.message}</p>
+                          ) : (
+                            <>
+                              {/* Avatar */}
+                              <div className="flex-shrink-0">
+                                <Avatar
+                                  name={msg.sender_name}
+                                  email={msg.sender_email}
+                                  avatarUrl={msg.sender_avatar_url}
+                                  size="sm"
+                                />
+                              </div>
+                              
+                              {/* Message content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-xs text-white/60">
+                                    {new Date(msg.created_at).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {msg.updated_at !== msg.created_at && (
+                                      <span className="ml-1 text-white/40">(edited)</span>
+                                    )}
+                                  </p>
+                                  {isOwnMessage && (
+                                    <div className="flex gap-1 ml-auto">
+                                      <button
+                                        onClick={() => {
+                                          setEditingId(msg.id);
+                                          setEditText(msg.message);
+                                        }}
+                                        className="p-1 text-white/40 hover:text-white transition-colors"
+                                        title="Edit message"
+                                      >
+                                        <Edit2 className="h-3 w-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteMessage(msg.id)}
+                                        className="p-1 text-white/40 hover:text-red-400 transition-colors"
+                                        title="Delete message"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-sm text-white/90 whitespace-pre-wrap break-words">{msg.message}</p>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))
+                      </div>
+                    );
+                  })
                 )}
               </div>
 
-              {/* New Message Input */}
-              <div className="flex gap-2 pt-2 border-t border-white/10">
+              {/* New Message Input - Fixed at bottom for mobile */}
+              <div 
+                className="sticky bottom-0 bg-black/95 backdrop-blur-sm -mx-4 px-4 py-3 border-t border-white/10 flex gap-2 z-10"
+                style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
+              >
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}

@@ -23,6 +23,7 @@ export async function GET(
     const serviceSupabase = createServiceRoleClient();
 
     // Fetch messages for this event
+    // If avatar_url is not stored, try to get it from auth.users metadata
     const { data: messages, error } = await serviceSupabase
       .from("event_message_board")
       .select("*")
@@ -35,19 +36,47 @@ export async function GET(
       throw error;
     }
 
-    // Map to match EventMessage interface
-    const formattedMessages = (messages || []).map((msg: any) => ({
-      id: msg.id,
-      event_id: msg.event_id,
-      sender_id: msg.author_id,
-      sender_name: msg.author_name,
-      sender_email: msg.author_email,
-      message: msg.message,
-      created_at: msg.created_at,
-      updated_at: msg.updated_at,
-    }));
+    // Get avatar URLs from auth.users for messages that don't have one stored
+    const messagesWithAvatars = await Promise.all(
+      (messages || []).map(async (msg: any) => {
+        let avatarUrl = msg.author_avatar_url;
+        
+        // If no avatar stored, try to get from auth.users metadata
+        if (!avatarUrl) {
+          try {
+            const { data: userData } = await serviceSupabase.auth.admin.getUserById(msg.author_id);
+            avatarUrl = userData?.user?.user_metadata?.avatar_url || 
+                       userData?.user?.user_metadata?.avatar || 
+                       null;
+            
+            // Update the message with the avatar URL for future queries
+            if (avatarUrl) {
+              await serviceSupabase
+                .from("event_message_board")
+                .update({ author_avatar_url: avatarUrl })
+                .eq("id", msg.id);
+            }
+          } catch (err) {
+            // Ignore errors fetching user metadata
+            console.error("Error fetching user avatar:", err);
+          }
+        }
+        
+        return {
+          id: msg.id,
+          event_id: msg.event_id,
+          sender_id: msg.author_id,
+          sender_name: msg.author_name,
+          sender_email: msg.author_email,
+          sender_avatar_url: avatarUrl,
+          message: msg.message,
+          created_at: msg.created_at,
+          updated_at: msg.updated_at,
+        };
+      })
+    );
 
-    return NextResponse.json({ messages: formattedMessages });
+    return NextResponse.json({ messages: messagesWithAvatars });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch messages" },
@@ -86,9 +115,10 @@ export async function POST(
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get user email for denormalization
+    // Get user email and avatar for denormalization
     const authorEmail = user.email || "";
     const authorName = user.user_metadata?.name || authorEmail.split("@")[0] || "User";
+    const authorAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.avatar || null;
 
     // Insert message
     const { data: newMessage, error } = await serviceSupabase
@@ -98,6 +128,7 @@ export async function POST(
         author_id: user.id,
         author_email: authorEmail,
         author_name: authorName,
+        author_avatar_url: authorAvatarUrl,
         message: message.trim(),
       })
       .select()

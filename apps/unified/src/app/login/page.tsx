@@ -285,12 +285,14 @@ function LoginContent() {
       
       // Use CLIENT-SIDE page for callback - this allows access to localStorage
       // where the browser client stores the PKCE code verifier
+      // Use window.location.origin to ensure correct domain (beta.crowdstack.app, not localhost)
       const callbackUrl = `${window.location.origin}/auth/callback`;
       const redirectTo = redirectParam 
         ? `${callbackUrl}?redirect=${encodeURIComponent(redirectParam)}`
         : callbackUrl;
       
       console.log("[Login] Requesting magic link for:", email);
+      console.log("[Login] Using redirect URL:", redirectTo);
       const { data, error: magicError } = await supabase.auth.signInWithOtp({
         email,
         options: {

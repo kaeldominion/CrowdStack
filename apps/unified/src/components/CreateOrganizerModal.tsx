@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Button, Input, Textarea } from "@crowdstack/ui";
+import { Modal, Button, Input } from "@crowdstack/ui";
 
 interface CreateOrganizerModalProps {
   isOpen: boolean;
@@ -15,8 +15,7 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
     name: "",
     email: "",
     phone: "",
-    website: "",
-    description: "",
+    company_name: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,8 +39,7 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
         name: "",
         email: "",
         phone: "",
-        website: "",
-        description: "",
+        company_name: "",
       });
 
       onSuccess();
@@ -61,6 +59,13 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
           required
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="DJ Marcus"
+        />
+
+        <Input
+          label="Company Name"
+          value={formData.company_name}
+          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
           placeholder="Event Productions Inc."
         />
 
@@ -79,22 +84,6 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
             placeholder="+1 (555) 123-4567"
           />
         </div>
-
-        <Input
-          label="Website"
-          type="url"
-          value={formData.website}
-          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-          placeholder="https://organizer.com"
-        />
-
-        <Textarea
-          label="Description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Brief description of the organizer..."
-          rows={3}
-        />
 
         <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="ghost" onClick={onClose}>

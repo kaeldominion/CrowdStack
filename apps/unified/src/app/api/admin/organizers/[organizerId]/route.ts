@@ -15,7 +15,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, email, phone, website, description } = body;
+    const { name, email, phone, company_name } = body;
 
     const serviceSupabase = createServiceRoleClient();
 
@@ -25,8 +25,7 @@ export async function PATCH(
         name,
         email: email || null,
         phone: phone || null,
-        website: website || null,
-        description: description || null,
+        company_name: company_name || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", organizerId)

@@ -54,12 +54,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Determine callback URL
+    // Determine callback URL - use request origin to ensure correct domain
+    // This ensures beta.crowdstack.app uses beta.crowdstack.app, not localhost
     const origin = request.nextUrl.origin;
     const callbackUrl = `${origin}/api/auth/callback`;
     const redirectTo = redirect 
       ? `${callbackUrl}?redirect=${encodeURIComponent(redirect)}`
       : callbackUrl;
+    
+    console.log("[Magic Link API] Using redirect URL:", redirectTo);
 
     // Log cookies before request
     const cookiesBefore = request.cookies.getAll();
