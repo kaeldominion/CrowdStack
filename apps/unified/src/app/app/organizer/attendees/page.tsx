@@ -59,111 +59,109 @@ export default function OrganizerAttendeesPage() {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading attendees...</div>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-foreground-muted">Loading attendees...</div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
-            <p className="mt-2 text-sm text-white/60">
-              All attendees who have registered or checked in to your events
-            </p>
-          </div>
-          <Button variant="secondary" onClick={() => {/* Export CSV */}}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
+          <p className="mt-2 text-sm text-white/60">
+            All attendees who have registered or checked in to your events
+          </p>
         </div>
+        <Button variant="secondary" onClick={() => {/* Export CSV */}}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
+      </div>
 
-        <Card>
-          <div className="p-6 space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <Button
-                variant={filters.has_check_in === true ? "primary" : "secondary"}
-                onClick={() =>
-                  setFilters({
-                    ...filters,
-                    has_check_in: filters.has_check_in === true ? undefined : true,
-                  })
-                }
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Checked In
-              </Button>
+      <Card>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by name, email, or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full"
+              />
             </div>
+            <Button
+              variant={filters.has_check_in === true ? "primary" : "secondary"}
+              onClick={() =>
+                setFilters({
+                  ...filters,
+                  has_check_in: filters.has_check_in === true ? undefined : true,
+                })
+              }
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Checked In
+            </Button>
           </div>
-        </Card>
-
-        <div className="text-sm text-white/60">
-          Showing {filteredAttendees.length} of {attendees.length} attendees
         </div>
+      </Card>
 
-        <Card>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+      <div className="text-sm text-white/60">
+        Showing {filteredAttendees.length} of {attendees.length} attendees
+      </div>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Events</TableHead>
+                <TableHead>Check-ins</TableHead>
+                <TableHead>Last Event</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAttendees.length === 0 ? (
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Events</TableHead>
-                  <TableHead>Check-ins</TableHead>
-                  <TableHead>Last Event</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
+                    No attendees found
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAttendees.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
-                      No attendees found
+              ) : (
+                filteredAttendees.map((attendee) => (
+                  <TableRow key={attendee.id} hover>
+                    <TableCell className="font-medium">{attendee.name}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {attendee.email && (
+                          <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                        )}
+                        <div className="text-sm text-foreground-muted">{attendee.phone}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{attendee.events_attended}</TableCell>
+                    <TableCell>{attendee.total_check_ins}</TableCell>
+                    <TableCell className="text-sm text-foreground-muted">
+                      {attendee.last_event_at
+                        ? new Date(attendee.last_event_at).toLocaleDateString()
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => {/* View details */}}>
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  filteredAttendees.map((attendee) => (
-                    <TableRow key={attendee.id} hover>
-                      <TableCell className="font-medium">{attendee.name}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {attendee.email && (
-                            <div className="text-sm text-foreground-muted">{attendee.email}</div>
-                          )}
-                          <div className="text-sm text-foreground-muted">{attendee.phone}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{attendee.events_attended}</TableCell>
-                      <TableCell>{attendee.total_check_ins}</TableCell>
-                      <TableCell className="text-sm text-foreground-muted">
-                        {attendee.last_event_at
-                          ? new Date(attendee.last_event_at).toLocaleDateString()
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => {/* View details */}}>
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }
-
