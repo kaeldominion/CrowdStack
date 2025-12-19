@@ -230,6 +230,7 @@ export default function RegisterPage() {
       setQrToken(data.qr_pass_token);
       setShowSignup(false); // Hide signup form when registration succeeds
       setSuccess(true);
+      setLoading(false); // Set loading to false after success
     } catch (err: any) {
       setError(err.message || "Registration failed");
       setLoading(false);
