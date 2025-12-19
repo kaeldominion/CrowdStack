@@ -52,15 +52,15 @@ export function Avatar({ name, email, avatarUrl, size = "md", className }: Avata
   const bgColor = getColor();
 
   if (avatarUrl) {
-    return (
-      <img
-        src={avatarUrl}
-        alt={displayName}
-        className={cn(
-          "rounded-full object-cover border-2 border-white/20",
-          sizeClasses[size],
-          className
-        )}
+      return (
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          className={cn(
+            "rounded-full object-cover border-2 border-border",
+            sizeClasses[size],
+            className
+          )}
         onError={(e) => {
           // Fallback to initials if image fails to load
           const target = e.target as HTMLImageElement;
@@ -85,7 +85,7 @@ export function Avatar({ name, email, avatarUrl, size = "md", className }: Avata
   return (
     <div
       className={cn(
-        "rounded-full flex items-center justify-center font-semibold text-white",
+        "rounded-full flex items-center justify-center font-semibold text-white border-2 border-border",
         sizeClasses[size],
         className
       )}

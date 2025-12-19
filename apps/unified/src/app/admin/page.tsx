@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, LogOut, Home, Radio, MapPin, UserCheck } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, LogOut, Home, Radio, MapPin, UserCheck, User } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 
 interface LiveEvent {
@@ -192,6 +192,13 @@ export default function AdminDashboardPage() {
                   {userEmail}
                 </span>
               )}
+              <Link
+                href="/me/profile"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-foreground-muted hover:text-foreground hover:bg-surface rounded-md transition-colors"
+              >
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Profile</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 disabled={loggingOut}
@@ -227,8 +234,12 @@ export default function AdminDashboardPage() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {liveEvents.map((event) => (
-                  <Link key={event.id} href={`/admin/events/${event.id}`}>
-                    <Card hover className="h-full border-l-4 border-l-red-500">
+                  <Card 
+                    key={event.id} 
+                    hover 
+                    className="h-full border-l-4 border-l-red-500 cursor-pointer"
+                    onClick={() => router.push(`/admin/events/${event.id}`)}
+                  >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-foreground truncate">
@@ -289,7 +300,6 @@ export default function AdminDashboardPage() {
                         </Link>
                       </div>
                     </Card>
-                  </Link>
                 ))}
               </div>
             </div>

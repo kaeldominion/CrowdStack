@@ -41,15 +41,34 @@ export async function POST(
       )
       .single();
 
+    // Prepare attendee data (only include fields that are provided)
+    const attendeeData: any = {
+      name: body.name,
+    };
+
+    if (body.surname) attendeeData.surname = body.surname;
+    if (body.email) attendeeData.email = body.email;
+    if (body.phone) attendeeData.phone = body.phone;
+    if (body.whatsapp) attendeeData.whatsapp = body.whatsapp;
+    if (body.date_of_birth) attendeeData.date_of_birth = body.date_of_birth;
+    if (body.instagram_handle) attendeeData.instagram_handle = body.instagram_handle.replace("@", "");
+    if (body.tiktok_handle) attendeeData.tiktok_handle = body.tiktok_handle.replace("@", "");
+
     if (existingAttendee) {
-      // Update existing attendee
+      // Update existing attendee (only update provided fields)
+      const updateData: any = { ...attendeeData };
+      // Preserve email if not provided in update
+      if (!body.email && existingAttendee.email) {
+        updateData.email = existingAttendee.email;
+      }
+      // Preserve phone if not provided in update (phone is required)
+      if (!body.phone && existingAttendee.phone) {
+        updateData.phone = existingAttendee.phone;
+      }
+
       const { data: updated, error: updateError } = await supabase
         .from("attendees")
-        .update({
-          name: body.name,
-          email: body.email || existingAttendee.email,
-          phone: body.phone,
-        })
+        .update(updateData)
         .eq("id", existingAttendee.id)
         .select()
         .single();
@@ -59,14 +78,17 @@ export async function POST(
       }
       attendee = updated;
     } else {
-      // Create new attendee
+      // Create new attendee (phone is required for new attendees)
+      if (!body.phone && !body.whatsapp) {
+        throw new Error("Phone number or WhatsApp is required");
+      }
+      if (!body.phone && body.whatsapp) {
+        attendeeData.phone = body.whatsapp; // Use WhatsApp as phone if phone not provided
+      }
+
       const { data: created, error: createError } = await supabase
         .from("attendees")
-        .insert({
-          name: body.name,
-          email: body.email || null,
-          phone: body.phone,
-        })
+        .insert(attendeeData)
         .select()
         .single();
 

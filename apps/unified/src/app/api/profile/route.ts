@@ -1,0 +1,166 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+
+/**
+ * GET /api/profile
+ * Get current user's profile
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get attendee profile linked to this user
+    const { data: attendee, error } = await serviceSupabase
+      .from("attendees")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      // PGRST116 is "not found" - that's ok, attendee might not exist yet
+      throw error;
+    }
+
+    // Return profile data (or null if attendee doesn't exist yet)
+    return NextResponse.json({ 
+      attendee: attendee || null,
+      email: user.email,
+    });
+  } catch (error: any) {
+    console.error("Error fetching profile:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch profile" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/profile
+ * Update current user's profile
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const {
+      name,
+      surname,
+      date_of_birth,
+      bio,
+      instagram_handle,
+      tiktok_handle,
+      whatsapp,
+    } = body;
+
+    const serviceSupabase = createServiceRoleClient();
+
+    // Check if attendee exists
+    const { data: existingAttendee } = await serviceSupabase
+      .from("attendees")
+      .select("id, phone")
+      .eq("user_id", user.id)
+      .single();
+
+    // Prepare update data
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (surname !== undefined) updateData.surname = surname;
+    if (date_of_birth !== undefined) updateData.date_of_birth = date_of_birth || null;
+    if (bio !== undefined) updateData.bio = bio || null;
+    if (instagram_handle !== undefined) {
+      updateData.instagram_handle = instagram_handle ? instagram_handle.replace("@", "") : null;
+    }
+    if (tiktok_handle !== undefined) {
+      updateData.tiktok_handle = tiktok_handle ? tiktok_handle.replace("@", "") : null;
+    }
+    if (whatsapp !== undefined) {
+      updateData.whatsapp = whatsapp || null;
+      // Phone and WhatsApp are the same - set phone to whatsapp value
+      // (phone is required NOT NULL, so if whatsapp is empty, preserve existing phone)
+      // Only update phone if whatsapp has a value
+      if (whatsapp && whatsapp.trim()) {
+        updateData.phone = whatsapp;
+      }
+      // If whatsapp is empty/null, don't update phone (preserve existing)
+    }
+
+    if (existingAttendee) {
+      // Update existing attendee
+      // Phone is required NOT NULL - ensure we never set it to null
+      // If whatsapp was provided and has a value, phone is already set in updateData above
+      // If whatsapp was not provided or is empty, phone won't be in updateData (preserves existing)
+
+      const { data: updated, error: updateError } = await serviceSupabase
+        .from("attendees")
+        .update(updateData)
+        .eq("id", existingAttendee.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return NextResponse.json({ attendee: updated });
+    } else {
+      // Create new attendee record
+      // Phone is required (NOT NULL), use whatsapp value (they're the same thing)
+      // For WhatsApp-first platform: phone = whatsapp
+      const phoneValue = whatsapp || updateData.whatsapp;
+      
+      if (!phoneValue) {
+        // Phone is required but whatsapp not provided - return error
+        return NextResponse.json(
+          { error: "WhatsApp/Phone number is required" },
+          { status: 400 }
+        );
+      }
+      
+      const insertData = {
+        user_id: user.id,
+        name: name || user.user_metadata?.name || user.email?.split("@")[0] || "User",
+        email: user.email || null,
+        phone: phoneValue, // Phone = whatsapp (same thing)
+        whatsapp: phoneValue, // Also set whatsapp field
+        ...updateData,
+      };
+
+      const { data: created, error: createError } = await serviceSupabase
+        .from("attendees")
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+
+      return NextResponse.json({ attendee: created });
+    }
+  } catch (error: any) {
+    console.error("Error updating profile:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to update profile" },
+      { status: 500 }
+    );
+  }
+}
+

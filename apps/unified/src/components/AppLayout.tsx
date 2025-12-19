@@ -8,14 +8,18 @@ import {
   X,
   LogOut,
   User,
+  Settings,
+  CreditCard,
+  Shield,
 } from "lucide-react";
 import { Logo, Dropdown, cn } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
 import type { UserRole } from "@crowdstack/shared";
 import { getNavItemsForUser } from "@/lib/navigation";
-import { UserProfileModal } from "./UserProfileModal";
 import { ImprovedEntitySwitcher as EntitySwitcher, getImpersonation } from "./ImprovedEntitySwitcher";
 import { NotificationBell } from "./NotificationBell";
+import { Avatar } from "./Avatar";
+import { useRouter } from "next/navigation";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -25,12 +29,14 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>(roles);
   const [envBadge, setEnvBadge] = useState<{ label: string; color: string } | null>(null);
   const [impersonation, setImpersonation] = useState<{ role: UserRole | "all" | null; entityId: string | null }>({ role: null, entityId: null });
   const [mounted, setMounted] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const supabase = createBrowserClient();
 
   // Always call hook at top level (required by React)
@@ -43,7 +49,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
 
   // Use Next.js pathname if component is mounted, otherwise use empty string to avoid hydration mismatch
   const currentPathname = mounted ? (nextPathname || (typeof window !== "undefined" ? window.location.pathname : "")) : "";
-  
+
   // Check if this is a live mission control page (hide sidebar and header)
   const isLivePage = currentPathname.includes("/live/");
 
@@ -67,6 +73,41 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       loadRoles();
     }
   }, [roles, supabase]);
+
+  // Load user avatar and name from profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Try to get avatar from user metadata first (fastest)
+          const metadataAvatar = user.user_metadata?.avatar_url;
+          if (metadataAvatar) {
+            setAvatarUrl(metadataAvatar);
+          }
+
+          // Also fetch from attendee profile to get name and ensure we have latest avatar
+          const { data: profile } = await supabase
+            .from("attendees")
+            .select("avatar_url, name")
+            .eq("user_id", user.id)
+            .single();
+
+          if (profile) {
+            if (profile.avatar_url) {
+              setAvatarUrl(profile.avatar_url);
+            }
+            if (profile.name) {
+              setUserName(profile.name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      }
+    };
+    loadProfile();
+  }, [supabase]);
 
   // Set environment badge client-side only (to avoid hydration mismatch)
   useEffect(() => {
@@ -134,12 +175,12 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
     <div className="flex h-screen bg-background">
       {/* Sidebar - hidden on live pages */}
       {!isLivePage && (
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          )}
-        >
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-surface border-r border-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-border">
@@ -178,42 +219,8 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
               );
             })}
           </nav>
-
-          {/* User section */}
-          <div className="border-t border-border p-4">
-            <Dropdown
-              trigger={
-                <div className="flex items-center gap-3 w-full text-left">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
-                    {userEmail?.[0]?.toUpperCase() || "U"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {userEmail || "User"}
-                    </p>
-                    <p className="text-xs text-foreground-muted truncate">
-                      {formatRoles(userRoles)}
-                    </p>
-                  </div>
-                </div>
-              }
-              items={[
-                {
-                  label: "Profile & Settings",
-                  onClick: () => setProfileModalOpen(true),
-                  icon: <User className="h-4 w-4" />,
-                },
-                {
-                  label: "Sign out",
-                  onClick: handleSignOut,
-                  icon: <LogOut className="h-4 w-4" />,
-                  destructive: true,
-                },
-              ]}
-            />
-          </div>
-          </div>
-        </aside>
+        </div>
+      </aside>
       )}
 
       {/* Overlay for mobile */}
@@ -228,7 +235,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       <div className={cn("flex flex-1 flex-col", !isLivePage && "lg:pl-64")}>
         {/* Top bar - hidden on live pages */}
         {!isLivePage && (
-          <header className="sticky top-0 z-[80] bg-background/80 backdrop-blur-sm border-b border-border">
+        <header className="sticky top-0 z-[80] bg-background/80 backdrop-blur-sm border-b border-border">
           <div className="flex h-14 items-center gap-3 px-4 lg:px-8">
             {/* Mobile menu button */}
             <button
@@ -262,19 +269,37 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
               <Dropdown
                 trigger={
                   <div className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-surface transition-colors cursor-pointer">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium">
-                      {userEmail?.[0]?.toUpperCase() || "U"}
-                    </div>
+                    <Avatar
+                      name={userName || undefined}
+                      email={userEmail || undefined}
+                      avatarUrl={avatarUrl}
+                      size="sm"
+                    />
                     <span className="hidden sm:block text-sm text-foreground truncate max-w-32">
-                      {userEmail || "User"}
+                      {userName || userEmail || "User"}
                     </span>
                   </div>
                 }
                 items={[
                   {
-                    label: "Profile & Settings",
-                    onClick: () => setProfileModalOpen(true),
+                    label: "Profile",
+                    onClick: () => router.push("/me/profile"),
                     icon: <User className="h-4 w-4" />,
+                  },
+                  {
+                    label: "Settings",
+                    onClick: () => router.push("/me/settings"),
+                    icon: <Settings className="h-4 w-4" />,
+                  },
+                  {
+                    label: "Billing",
+                    onClick: () => router.push("/me/billing"),
+                    icon: <CreditCard className="h-4 w-4" />,
+                  },
+                  {
+                    label: "Security",
+                    onClick: () => router.push("/me/security"),
+                    icon: <Shield className="h-4 w-4" />,
                   },
                   {
                     label: "Sign out",
@@ -292,21 +317,13 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
         {/* Page content */}
         <main className={cn("flex-1 overflow-y-auto", !isLivePage && "p-4 lg:p-8")}>
           {!isLivePage && (
-            <div className="mx-auto max-w-7xl">
-              {children}
-            </div>
+          <div className="mx-auto max-w-7xl">
+            {children}
+          </div>
           )}
           {isLivePage && children}
         </main>
       </div>
-
-      {/* User Profile Modal */}
-      <UserProfileModal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        userEmail={userEmail}
-        userRoles={userRoles}
-      />
     </div>
   );
 }

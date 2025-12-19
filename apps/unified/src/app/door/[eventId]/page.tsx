@@ -30,7 +30,7 @@ interface EventInfo {
   id: string;
   name: string;
   slug: string;
-  venue?: { name: string };
+  venue?: { id?: string; name: string };
 }
 
 interface SearchResult {
@@ -597,9 +597,16 @@ export default function DoorScannerPage() {
             <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-                  typeof window !== "undefined" 
-                    ? `${window.location.origin}/e/${eventInfo.slug}/register`
-                    : `/e/${eventInfo.slug}/register`
+                  (() => {
+                    const baseUrl = typeof window !== "undefined" 
+                      ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                      : `/e/${eventInfo.slug}/register`;
+                    // Add venue referral if available (venue-owned QR code)
+                    if (eventInfo.venue?.id) {
+                      return `${baseUrl}?ref=venue_${eventInfo.venue.id}`;
+                    }
+                    return baseUrl;
+                  })()
                 )}`}
                 alt="Event Registration QR Code"
                 className="w-64 h-64"

@@ -53,17 +53,17 @@ export async function GET(
     // Filter by query (name, email, phone) if query provided
     let filtered = registrations || [];
     if (query) {
-      const searchLower = query.toLowerCase();
+    const searchLower = query.toLowerCase();
       filtered = filtered.filter((reg) => {
         const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
-        if (!attendee) return false;
-        
-        return (
-          attendee.name?.toLowerCase().includes(searchLower) ||
-          attendee.email?.toLowerCase().includes(searchLower) ||
-          attendee.phone?.includes(query)
-        );
-      });
+      if (!attendee) return false;
+      
+      return (
+        attendee.name?.toLowerCase().includes(searchLower) ||
+        attendee.email?.toLowerCase().includes(searchLower) ||
+        attendee.phone?.includes(query)
+      );
+    });
     }
 
     // Get check-in status for each
@@ -78,11 +78,11 @@ export async function GET(
     const results = filtered.map((reg) => {
       const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
       return {
-        registration_id: reg.id,
+      registration_id: reg.id,
         attendee_name: attendee?.name || "Unknown",
         attendee_email: attendee?.email || null,
         attendee_phone: attendee?.phone || null,
-        checked_in: checkedInIds.has(reg.id),
+      checked_in: checkedInIds.has(reg.id),
       };
     });
 

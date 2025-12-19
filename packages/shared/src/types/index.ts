@@ -93,8 +93,15 @@ export interface Promoter {
 export interface Attendee {
   id: string;
   name: string;
+  surname?: string | null;
   email: string | null;
   phone: string;
+  whatsapp?: string | null;
+  date_of_birth?: string | null; // ISO date string
+  avatar_url?: string | null;
+  bio?: string | null;
+  instagram_handle?: string | null;
+  tiktok_handle?: string | null;
   user_id: string | null;
   created_at: string;
   updated_at: string;
@@ -300,8 +307,13 @@ export interface EventOutbox {
 
 export interface RegisterEventRequest {
   name: string;
+  surname?: string;
   email?: string;
-  phone: string;
+  phone?: string;
+  whatsapp?: string;
+  date_of_birth?: string; // ISO date string
+  instagram_handle?: string;
+  tiktok_handle?: string;
   answers?: Record<string, string | string[]>;
 }
 

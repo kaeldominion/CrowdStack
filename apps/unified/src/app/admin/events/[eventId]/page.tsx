@@ -254,14 +254,14 @@ export default function AdminEventDetailPage() {
             </div>
             {event.slug && (
               <div className="flex items-center gap-4">
-                <a
-                  href={`/e/${event.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  View Public Page <ExternalLink className="h-3 w-3" />
-                </a>
+              <a
+                href={`/e/${event.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
+                View Public Page <ExternalLink className="h-3 w-3" />
+              </a>
                 <a
                   href={`/door/${event.id}`}
                   target="_blank"
@@ -285,24 +285,24 @@ export default function AdminEventDetailPage() {
           {/* Approval & Publish Actions */}
           <div className="flex items-center gap-2">
             {/* Venue Approval Actions */}
-            {event.venue_id && (
+          {event.venue_id && (
               <>
-                {event.venue_approval_status !== "approved" && (
-                  <Button
-                    variant="primary"
-                    onClick={() => openApprovalModal("approve")}
-                  >
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Approve Event
-                  </Button>
-                )}
-                {event.venue_approval_status !== "rejected" && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => openApprovalModal("reject")}
-                  >
-                    <ShieldX className="h-4 w-4 mr-2" />
-                    Reject Event
+              {event.venue_approval_status !== "approved" && (
+                <Button
+                  variant="primary"
+                  onClick={() => openApprovalModal("approve")}
+                >
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Approve Event
+                </Button>
+              )}
+              {event.venue_approval_status !== "rejected" && (
+                <Button
+                  variant="secondary"
+                  onClick={() => openApprovalModal("reject")}
+                >
+                  <ShieldX className="h-4 w-4 mr-2" />
+                  Reject Event
                   </Button>
                 )}
               </>
@@ -328,9 +328,9 @@ export default function AdminEventDetailPage() {
               >
                 <Globe className="h-4 w-4 mr-2" />
                 Publish Event
-              </Button>
-            )}
-          </div>
+                </Button>
+              )}
+            </div>
         </div>
       </div>
 

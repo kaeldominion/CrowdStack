@@ -33,9 +33,11 @@ export default function OrganizerLiveMissionControlPage() {
   const [editText, setEditText] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const swipeStartX = useRef<number | null>(null);
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const [swipingId, setSwipingId] = useState<string | null>(null);
+  const userScrolledUp = useRef<boolean>(false);
 
   useEffect(() => {
     loadMetrics();
@@ -60,9 +62,39 @@ export default function OrganizerLiveMissionControlPage() {
   };
 
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Only auto-scroll to bottom if user is near the bottom (within 100px)
+    // This prevents interrupting manual scrolling
+    // Skip scrolling if we're currently sending a message to avoid layout shifts
+    if (!messagesContainerRef.current || userScrolledUp.current || sending) return;
+    
+    // Use requestAnimationFrame to ensure DOM is updated before scrolling
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!messagesContainerRef.current || sending) return;
+        const container = messagesContainerRef.current;
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+        
+        if (isNearBottom) {
+          // Use scrollTop for more predictable behavior
+          container.scrollTop = container.scrollHeight;
+        }
+      });
+    });
+  }, [messages, sending]);
+
+  // Track if user manually scrolled up
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      userScrolledUp.current = !isNearBottom;
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const loadMetrics = async () => {
     try {
@@ -91,12 +123,16 @@ export default function OrganizerLiveMissionControlPage() {
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
+    const messageText = newMessage.trim();
     setSending(true);
+    // Reset scroll flag so we'll auto-scroll to bottom after sending
+    userScrolledUp.current = false;
+    
     try {
       const response = await fetch(`/api/events/${eventId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: newMessage }),
+        body: JSON.stringify({ message: messageText }),
       });
 
       if (!response.ok) {
@@ -104,8 +140,11 @@ export default function OrganizerLiveMissionControlPage() {
         throw new Error(data.error || "Failed to send message");
       }
 
+      // Clear input immediately for better UX
       setNewMessage("");
-      loadMessages(); // Reload messages
+      
+      // Reload messages - the useEffect will handle scrolling smoothly
+      loadMessages();
     } catch (error: any) {
       alert(error.message || "Failed to send message");
     } finally {
@@ -205,15 +244,15 @@ export default function OrganizerLiveMissionControlPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black w-full" style={{ paddingBottom: "env(safe-area-inset-bottom, 80px)" }}>
-      <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <div className="min-h-screen bg-black w-full">
+      <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-24 sm:pb-6">
         {/* Header with Branding */}
         <div className="mb-6 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
             <Logo variant="full" size="md" className="text-white" animated={false} />
           </div>
           <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
-            <div>
+        <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tighter text-white">Live Mission Control</h1>
               <div className="mt-1 sm:mt-2 space-y-0.5">
                 <p className="text-sm font-medium text-white">{metrics.event_name}</p>
@@ -221,18 +260,18 @@ export default function OrganizerLiveMissionControlPage() {
                   <p className="text-sm text-white/60">{metrics.venue_name}</p>
                 )}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm text-white/60">Live</span>
-            </div>
-          </div>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-sm text-white/60">Live</span>
+            </div>
+        </div>
+      </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Hero Metric - Live Attendance */}
-          <BentoCard span={4}>
-            <div className="flex items-center justify-between">
+      {/* Hero Metric - Live Attendance */}
+      <BentoCard span={4}>
+        <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">
               Live Attendance
@@ -259,13 +298,13 @@ export default function OrganizerLiveMissionControlPage() {
               </div>
             )}
           </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 border border-green-500/50">
-                <Activity className="h-8 w-8 text-green-400 animate-pulse" />
-              </div>
-            </div>
-          </BentoCard>
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 border border-green-500/50">
+            <Activity className="h-8 w-8 text-green-400 animate-pulse" />
+          </div>
+        </div>
+      </BentoCard>
 
-          {/* Flow Rate Cards */}
+      {/* Flow Rate Cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <BentoCard>
           <div className="space-y-2">
@@ -304,8 +343,8 @@ export default function OrganizerLiveMissionControlPage() {
         </BentoCard>
       </div>
 
-          {/* Promoter Leaderboard */}
-          <BentoCard span={2}>
+      {/* Promoter Leaderboard */}
+      <BentoCard span={2}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-white">Promoter Leaderboard</p>
@@ -332,37 +371,37 @@ export default function OrganizerLiveMissionControlPage() {
         </div>
       </BentoCard>
 
-          {/* Recent Activity */}
-          <BentoCard span={2}>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white">Recent Activity</p>
-                <Clock className="h-4 w-4 text-white/40" />
+      {/* Recent Activity */}
+      <BentoCard span={2}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">Recent Activity</p>
+            <Clock className="h-4 w-4 text-white/40" />
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {metrics.recent_checkins.slice(0, 10).map((checkin) => (
+              <div
+                key={checkin.id}
+                className="flex items-center justify-between p-2 rounded-md bg-white/5"
+              >
+                <div>
+                  <p className="text-sm font-medium text-white">{checkin.attendee_name}</p>
+                  {checkin.promoter_name && (
+                    <p className="text-xs text-white/40">via {checkin.promoter_name}</p>
+                  )}
+                </div>
+                <p className="text-xs text-white/40">
+                  {new Date(checkin.checked_in_at).toLocaleTimeString()}
+                </p>
               </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {metrics.recent_checkins.slice(0, 10).map((checkin) => (
-                  <div
-                    key={checkin.id}
-                    className="flex items-center justify-between p-2 rounded-md bg-white/5"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-white">{checkin.attendee_name}</p>
-                      {checkin.promoter_name && (
-                        <p className="text-xs text-white/40">via {checkin.promoter_name}</p>
-                      )}
-                    </div>
-                    <p className="text-xs text-white/40">
-                      {new Date(checkin.checked_in_at).toLocaleTimeString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </BentoCard>
+            ))}
+          </div>
+        </div>
+      </BentoCard>
 
           {/* Message Board */}
           <BentoCard span={4}>
-            <div className="space-y-4">
+            <div className="space-y-4 relative" style={{ paddingBottom: "80px" }}>
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-white flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
@@ -371,7 +410,10 @@ export default function OrganizerLiveMissionControlPage() {
               </div>
 
               {/* Messages List */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div 
+                ref={messagesContainerRef}
+                className="space-y-3 max-h-96 overflow-y-auto"
+              >
                 {messages.length === 0 ? (
                   <p className="text-sm text-white/40 text-center py-8">No messages yet. Be the first to post!</p>
                 ) : (
@@ -492,8 +534,12 @@ export default function OrganizerLiveMissionControlPage() {
 
               {/* New Message Input - Fixed at bottom for mobile */}
               <div 
-                className="sticky bottom-0 bg-black/95 backdrop-blur-sm -mx-4 px-4 py-3 border-t border-white/10 flex gap-2 z-10"
-                style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))" }}
+                className="absolute bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm px-4 py-3 border-t border-white/10 flex gap-2 z-10"
+                style={{ 
+                  paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+                  marginLeft: "-1rem",
+                  marginRight: "-1rem",
+                }}
               >
                 <Input
                   value={newMessage}

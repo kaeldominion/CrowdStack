@@ -1,106 +1,271 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@crowdstack/shared";
+import { useRouter } from "next/navigation";
+import { Container, Section, Card, Input, Textarea, Button } from "@crowdstack/ui";
+import { AvatarUpload } from "@/components/AvatarUpload";
+import { Save, ArrowLeft } from "lucide-react";
+import type { Attendee } from "@crowdstack/shared";
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [profile, setProfile] = useState<Partial<Attendee>>({
+    name: "",
+    surname: "",
+    date_of_birth: "",
+    bio: "",
+    instagram_handle: "",
+    tiktok_handle: "",
+    whatsapp: "",
+    avatar_url: null,
+  });
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const supabase = createBrowserClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        // TODO: Fetch attendee profile
-        setProfile({
-          name: "",
-          email: user.email || "",
-          phone: "",
-        });
-      }
-      setLoading(false);
-    };
-
     loadProfile();
   }, []);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/profile");
+      
+      if (!response.ok) {
+        throw new Error("Failed to load profile");
+      }
+
+      const data = await response.json();
+      setEmail(data.email || "");
+      
+      if (data.attendee) {
+        setProfile({
+          name: data.attendee.name || "",
+          surname: data.attendee.surname || "",
+          date_of_birth: data.attendee.date_of_birth || "",
+          bio: data.attendee.bio || "",
+          instagram_handle: data.attendee.instagram_handle || "",
+          tiktok_handle: data.attendee.tiktok_handle || "",
+          whatsapp: data.attendee.whatsapp || "",
+          avatar_url: data.attendee.avatar_url || null,
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    // TODO: Update profile
-    setSaving(false);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update profile");
+      }
+
+      setSuccess(true);
+      setProfile({ ...profile, ...data.attendee });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = (avatarUrl: string) => {
+    setProfile({ ...profile, avatar_url: avatarUrl });
+    // Optionally auto-save on avatar upload
+    // handleSubmit(new Event('submit'));
   };
 
   if (loading) {
-    return <div className="mx-auto max-w-md px-4 py-16">Loading...</div>;
+    return (
+      <Section spacing="xl">
+        <Container size="sm">
+          <div className="text-center py-16">
+            <div className="text-foreground-muted">Loading profile...</div>
+          </div>
+        </Container>
+      </Section>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-          My Profile
-        </h1>
-      </div>
-
-      <form onSubmit={handleSubmit} className="mt-12 space-y-6">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={profile.name}
-            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-          />
+    <Section spacing="xl">
+      <Container size="sm">
+        <div className="mb-8">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.back()}
+            className="mb-4 flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+            My Profile
+          </h1>
+          <p className="mt-2 text-foreground-muted">
+            Manage your profile information and preferences
+          </p>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={profile.email}
-            disabled
-            className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm"
-          />
-        </div>
+        <Card className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {error && (
+              <div className="rounded-md bg-error/10 border border-error/20 p-4">
+                <p className="text-sm text-error">{error}</p>
+              </div>
+            )}
 
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            value={profile.phone}
-            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-          />
-        </div>
+            {success && (
+              <div className="rounded-md bg-success/10 border border-success/20 p-4">
+                <p className="text-sm text-success">Profile updated successfully!</p>
+              </div>
+            )}
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save Profile"}
-        </button>
-      </form>
-    </div>
+            {/* Avatar Upload */}
+            <div className="flex justify-center">
+              <AvatarUpload
+                currentAvatarUrl={profile.avatar_url || null}
+                name={profile.name || undefined}
+                email={email}
+                onUploadComplete={handleAvatarUpload}
+                size="lg"
+              />
+            </div>
+
+            {/* Basic Information */}
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-4">Basic Information</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="First Name"
+                      value={profile.name || ""}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      placeholder="John"
+                      required
+                    />
+
+                    <Input
+                      label="Last Name"
+                      value={profile.surname || ""}
+                      onChange={(e) => setProfile({ ...profile, surname: e.target.value })}
+                      placeholder="Doe"
+                    />
+                  </div>
+
+                  <Input
+                    label="Email"
+                    value={email}
+                    disabled
+                    className="bg-background-muted"
+                    helperText="Email cannot be changed"
+                  />
+
+                  <Input
+                    type="date"
+                    label="Date of Birth"
+                    value={profile.date_of_birth || ""}
+                    onChange={(e) => setProfile({ ...profile, date_of_birth: e.target.value })}
+                    helperText="We'll use this to verify age requirements for events"
+                  />
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-4">About You</h2>
+                <Textarea
+                  label="Bio"
+                  value={profile.bio || ""}
+                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  placeholder="Tell us a bit about yourself..."
+                  rows={4}
+                  maxLength={500}
+                  helperText={`${(profile.bio || "").length}/500 characters`}
+                />
+              </div>
+
+              {/* Social & Contact */}
+              <div>
+                <h2 className="text-lg font-semibold text-foreground mb-4">Contact & Social</h2>
+                <div className="space-y-4">
+                  <Input
+                    label="WhatsApp"
+                    type="tel"
+                    value={profile.whatsapp || ""}
+                    onChange={(e) => setProfile({ ...profile, whatsapp: e.target.value })}
+                    placeholder="+1234567890"
+                    helperText="We'll use WhatsApp for event updates (preparing for WhatsApp-first platform)"
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Instagram"
+                      value={profile.instagram_handle || ""}
+                      onChange={(e) => {
+                        const handle = e.target.value.replace("@", "");
+                        setProfile({ ...profile, instagram_handle: handle });
+                      }}
+                      placeholder="username"
+                      helperText="We'll tag you in event photos"
+                    />
+
+                    <Input
+                      label="TikTok"
+                      value={profile.tiktok_handle || ""}
+                      onChange={(e) => {
+                        const handle = e.target.value.replace("@", "");
+                        setProfile({ ...profile, tiktok_handle: handle });
+                      }}
+                      placeholder="username"
+                      helperText="Your TikTok username"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end pt-4 border-t border-border">
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={saving}
+                loading={saving}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save Profile
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </Container>
+    </Section>
   );
 }
-

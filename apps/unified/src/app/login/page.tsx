@@ -194,39 +194,47 @@ function LoginContent() {
       // Check user roles for automatic app redirect (B2B users)
       const user = data.user;
       if (user) {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id);
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id);
 
-        if (roles && roles.length > 0) {
-          const roleNames = roles.map((r: any) => r.role);
-          
-          // B2B roles go to app
-          if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
-              roleNames.includes("promoter") || roleNames.includes("door_staff") ||
-              roleNames.includes("superadmin")) {
+          // If query fails, log but don't block login - user will go to default /me
+          if (rolesError) {
+            console.warn("[Login] Could not fetch user roles:", rolesError.message);
+          } else if (roles && roles.length > 0) {
+            const roleNames = roles.map((r: any) => r.role);
             
-            // Determine target path based on role
-            let targetPath = "/admin";
-            if (roleNames.includes("superadmin")) {
-              targetPath = "/admin";
-            } else if (roleNames.includes("venue_admin")) {
-              targetPath = "/app/venue";
-            } else if (roleNames.includes("event_organizer")) {
-              targetPath = "/app/organizer";
-            } else if (roleNames.includes("promoter")) {
-              targetPath = "/app/promoter";
-            } else if (roleNames.includes("door_staff")) {
-              targetPath = "/door";
+            // B2B roles go to app
+            if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
+                roleNames.includes("promoter") || roleNames.includes("door_staff") ||
+                roleNames.includes("superadmin")) {
+              
+              // Determine target path based on role
+              let targetPath = "/admin";
+              if (roleNames.includes("superadmin")) {
+                targetPath = "/admin";
+              } else if (roleNames.includes("venue_admin")) {
+                targetPath = "/app/venue";
+              } else if (roleNames.includes("event_organizer")) {
+                targetPath = "/app/organizer";
+              } else if (roleNames.includes("promoter")) {
+                targetPath = "/app/promoter";
+              } else if (roleNames.includes("door_staff")) {
+                targetPath = "/door";
+              }
+              
+              console.log("[Login] Redirecting B2B user to:", targetPath);
+              // Small delay to ensure cookies are fully set before redirect
+              await new Promise(resolve => setTimeout(resolve, 300));
+              window.location.href = targetPath;
+              return;
             }
-            
-            console.log("[Login] Redirecting B2B user to:", targetPath);
-            // Small delay to ensure cookies are fully set before redirect
-            await new Promise(resolve => setTimeout(resolve, 300));
-            window.location.href = targetPath;
-            return;
           }
+        } catch (rolesErr: any) {
+          // If roles check fails, continue to default redirect (/me)
+          console.warn("[Login] Error checking user roles, redirecting to default:", rolesErr.message);
         }
       }
       
