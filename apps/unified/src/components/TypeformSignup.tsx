@@ -368,10 +368,10 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 sm:p-6" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
-      <div className="w-full max-w-2xl">
+    <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 sm:p-6" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
+      <div className="w-full max-w-2xl flex flex-col" style={{ maxHeight: "100vh" }}>
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-6 flex-shrink-0">
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-primary/80"
@@ -394,7 +394,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 sm:p-8 md:p-12 shadow-2xl"
+          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 sm:p-8 md:p-12 shadow-2xl flex-shrink-0 overflow-y-auto"
+          style={{ maxHeight: "calc(100vh - 12rem)" }}
         >
           {/* Question */}
           <motion.h2

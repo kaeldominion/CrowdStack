@@ -39,23 +39,30 @@ export default function RegisterPage() {
         setAuthenticated(true);
         setUserEmail(user.email);
         
-        // Check if already registered
-        const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
-        if (checkResponse.ok) {
-          const checkData = await checkResponse.json();
-          if (checkData.registered && checkData.event) {
-            setSuccess(true);
-            setQrToken(checkData.qr_pass_token);
-            setEventDetails({
-              name: checkData.event.name,
-              venue: checkData.event.venue,
-              start_time: checkData.event.start_time,
-            });
-            setLoading(false);
-            return;
+        // Always check if already registered first (whether from QR code or direct link)
+        try {
+          const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+          if (checkResponse.ok) {
+            const checkData = await checkResponse.json();
+            if (checkData.registered && checkData.event) {
+              // User is already registered - show success screen immediately
+              setSuccess(true);
+              setQrToken(checkData.qr_pass_token);
+              setEventDetails({
+                name: checkData.event.name,
+                venue: checkData.event.venue,
+                start_time: checkData.event.start_time,
+              });
+              setLoading(false);
+              return;
+            }
           }
+        } catch (checkErr) {
+          console.error("Error checking registration:", checkErr);
+          // Continue to signup form if check fails
         }
         
+        // Not registered yet - show signup form
         setShowSignup(true);
       } else {
         setAuthenticated(false);
