@@ -5,15 +5,20 @@ import { usePathname } from "next/navigation";
 import { Footer, Logo } from "@crowdstack/ui";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { AttendeeNavigation } from "@/components/AttendeeNavigation";
 
-// Routes that should show public navigation and footer
-const publicRoutes = [
+// Routes that should show public navigation and footer (marketing pages)
+const publicMarketingRoutes = [
   "/",
   "/login",
   "/contact",
   "/legal",
-  "/me", // Attendee dashboard
 ];
+
+// Routes that should show attendee navigation (logged-in user pages)
+const isAttendeeRoute = (pathname: string) => {
+  return pathname.startsWith("/me");
+};
 
 // Routes that should NOT show navigation/footer (admin, app, door routes)
 const shouldHideNav = (pathname: string) => {
@@ -26,10 +31,11 @@ const shouldHideNav = (pathname: string) => {
   );
 };
 
-// Routes that should show navigation (public routes or event pages)
-const shouldShowNav = (pathname: string) => {
+// Routes that should show public marketing navigation
+const shouldShowPublicNav = (pathname: string) => {
   if (shouldHideNav(pathname)) return false;
-  if (publicRoutes.includes(pathname)) return true;
+  if (isAttendeeRoute(pathname)) return false; // Attendee routes get their own nav
+  if (publicMarketingRoutes.includes(pathname)) return true;
   if (pathname.startsWith("/e/")) return true; // Event pages
   if (pathname.startsWith("/invite/")) return true; // Invite pages
   if (pathname.startsWith("/i/")) return true; // Invite code pages
@@ -44,13 +50,18 @@ export function ConditionalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showNav = shouldShowNav(pathname);
+  const showPublicNav = shouldShowPublicNav(pathname);
+  const showAttendeeNav = isAttendeeRoute(pathname);
+  const showFooter = showPublicNav; // Only show footer on public marketing pages
 
   return (
     <div className="flex min-h-screen flex-col">
-      {showNav && <PublicNavigation />}
-      <main className={showNav ? "flex-1 pt-20" : "flex-1"}>{children}</main>
-      {showNav && <PublicFooter />}
+      {showPublicNav && <PublicNavigation />}
+      {showAttendeeNav && <AttendeeNavigation />}
+      <main className={(showPublicNav || showAttendeeNav) ? "flex-1 pt-20" : "flex-1"}>
+        {children}
+      </main>
+      {showFooter && <PublicFooter />}
     </div>
   );
 }

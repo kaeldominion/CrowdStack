@@ -1,6 +1,8 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Zap, 
   QrCode, 
@@ -23,8 +25,23 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BentoGrid, BentoCard, MovingBorder } from "@crowdstack/ui";
+import { createBrowserClient } from "@crowdstack/shared";
 
 export default function HomePage() {
+  const router = useRouter();
+
+  // Check if user is already logged in and redirect to /me
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // User is logged in, redirect to their dashboard
+        router.push("/me");
+      }
+    };
+    checkAuth();
+  }, [router]);
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, 100]);
   const y2 = useTransform(scrollY, [0, 300], [0, -80]);

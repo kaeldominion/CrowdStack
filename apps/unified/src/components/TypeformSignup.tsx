@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button } from "@crowdstack/ui";
 import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2 } from "lucide-react";
@@ -12,6 +12,13 @@ interface TypeformSignupProps {
   redirectUrl?: string; // URL to redirect to after magic link
   onEmailVerified?: () => Promise<boolean>; // Callback when email is verified, return true if already registered
   eventSlug?: string; // Event slug for checking registration
+  existingProfile?: { // Existing profile data to pre-fill and skip fields
+    name?: string | null;
+    surname?: string | null;
+    date_of_birth?: string | null;
+    whatsapp?: string | null;
+    instagram_handle?: string | null;
+  } | null;
 }
 
 export interface SignupData {
@@ -34,20 +41,39 @@ const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
 
-export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug }: TypeformSignupProps) {
+export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingMagicLink, setSendingMagicLink] = useState(false);
   const [formData, setFormData] = useState<SignupData>({
     email: "",
-    name: "",
-    surname: "",
-    date_of_birth: "",
-    whatsapp: "",
-    instagram_handle: "",
+    name: existingProfile?.name || "",
+    surname: existingProfile?.surname || "",
+    date_of_birth: existingProfile?.date_of_birth || "",
+    whatsapp: existingProfile?.whatsapp || "",
+    instagram_handle: existingProfile?.instagram_handle || "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof SignupData, string>>>({});
+
+  // Determine which steps to show based on existing profile and email verification status
+  const visibleSteps = useMemo(() => {
+    const visible: StepId[] = [];
+    
+    // Always show email step if not verified
+    if (!emailVerified) {
+      visible.push("email");
+    }
+    
+    // Only show fields that are missing
+    if (!existingProfile?.name) visible.push("name");
+    if (!existingProfile?.surname) visible.push("surname");
+    if (!existingProfile?.date_of_birth) visible.push("date_of_birth");
+    if (!existingProfile?.whatsapp) visible.push("whatsapp");
+    if (!existingProfile?.instagram_handle) visible.push("instagram_handle");
+    
+    return visible;
+  }, [emailVerified, existingProfile]);
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -57,15 +83,26 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       if (user?.email) {
         setFormData(prev => ({ ...prev, email: user.email! }));
         setEmailVerified(true);
-        // Skip email step if already authenticated
-        setCurrentStep(1);
       }
     };
     checkAuth();
   }, []);
 
+  // Reset current step when visible steps change (e.g., when email is verified)
+  useEffect(() => {
+    if (visibleSteps.length > 0) {
+      // If email was just verified and it was the first step, move to next step
+      if (emailVerified && visibleSteps[0] === "email" && currentStep === 0) {
+        setCurrentStep(1);
+      } else if (emailVerified && visibleSteps[0] !== "email") {
+        // Email is verified and not in visible steps, start at step 0
+        setCurrentStep(0);
+      }
+    }
+  }, [emailVerified, visibleSteps.length]);
+
   const validateStep = (step: number): boolean => {
-    const stepKey = steps[step].id as keyof SignupData;
+    const stepKey = visibleSteps[step] as keyof SignupData;
     const value = formData[stepKey];
 
     if (!value || !value.trim()) {
@@ -139,13 +176,14 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   const handleNext = async () => {
     // Special handling for email step
-    if (currentStep === 0 && !emailVerified) {
+    if (visibleSteps[currentStep] === "email" && !emailVerified) {
       await handleSendMagicLink();
       return;
     }
 
+    const stepKey = visibleSteps[currentStep];
     if (validateStep(currentStep)) {
-      if (currentStep < steps.length - 1) {
+      if (currentStep < visibleSteps.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
         await handleSubmit();
@@ -184,7 +222,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const getInputComponent = () => {
-    const stepKey = steps[currentStep].id as keyof SignupData;
+    const stepKey = visibleSteps[currentStep] as keyof SignupData;
     const value = formData[stepKey];
     const error = errors[stepKey];
 
@@ -373,13 +411,15 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const stepProgress = emailVerified 
-    ? ((currentStep) / (steps.length - 1)) * 100 
-    : ((currentStep + 1) / steps.length) * 100;
+    ? ((currentStep + 1) / visibleSteps.length) * 100 
+    : ((currentStep + 1) / visibleSteps.length) * 100;
 
   // Use mobile-optimized label on small screens
   const getLabel = () => {
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-    const step = steps[currentStep];
+    const stepId = visibleSteps[currentStep];
+    const step = steps.find(s => s.id === stepId);
+    if (!step) return "";
     return isMobile && step.mobileLabel ? step.mobileLabel : step.label;
   };
 
@@ -408,8 +448,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           </div>
           <p className="text-xs text-white/40 mt-2 text-center">
             {emailVerified 
-              ? `Step ${currentStep} of ${steps.length - 1}`
-              : `Step ${currentStep + 1} of ${steps.length}`}
+              ? `Step ${currentStep + 1} of ${visibleSteps.length}`
+              : `Step ${currentStep + 1} of ${visibleSteps.length}`}
           </p>
         </div>
 
@@ -447,19 +487,19 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             transition={{ duration: 0.3, delay: 0.2 }}
           >
             {getInputComponent()}
-            {errors[steps[currentStep].id as keyof SignupData] && (
+            {errors[visibleSteps[currentStep] as keyof SignupData] && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-red-400 text-sm mt-2 text-center"
               >
-                {errors[steps[currentStep].id as keyof SignupData]}
+                {errors[visibleSteps[currentStep] as keyof SignupData]}
               </motion.p>
             )}
           </motion.div>
 
           {/* Navigation */}
-          {(currentStep !== 0 || emailVerified) && !magicLinkSent && (
+          {(visibleSteps[currentStep] !== "email" || emailVerified) && !magicLinkSent && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -469,7 +509,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               <Button
                 variant="secondary"
                 onClick={handleBack}
-                disabled={(currentStep === (emailVerified ? 1 : 0)) || isLoading || sendingMagicLink}
+                disabled={currentStep === 0 || isLoading || sendingMagicLink}
                 className="flex items-center gap-2 flex-1 sm:flex-initial text-base sm:text-sm py-3 sm:py-2"
               >
                 Back
@@ -478,7 +518,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               <Button
                 variant="primary"
                 onClick={() => {
-                  if (currentStep === steps.length - 1) {
+                  if (currentStep === visibleSteps.length - 1) {
                     // On last step, directly call handleSubmit instead of handleNext
                     handleSubmit();
                   } else {
@@ -486,10 +526,10 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   }
                 }}
                 disabled={isLoading || sendingMagicLink}
-                loading={isLoading && currentStep === steps.length - 1}
+                loading={isLoading && currentStep === visibleSteps.length - 1}
                 className="flex items-center gap-2 flex-1 sm:flex-initial text-base sm:text-sm py-3 sm:py-2"
               >
-                {currentStep === steps.length - 1 ? (
+                {currentStep === visibleSteps.length - 1 ? (
                   <>
                     Complete <Check className="h-5 w-5 sm:h-4 sm:w-4" />
                   </>
@@ -503,7 +543,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           )}
 
           {/* Send magic link button for email step */}
-          {currentStep === 0 && !emailVerified && !magicLinkSent && (
+          {visibleSteps[currentStep] === "email" && !emailVerified && !magicLinkSent && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

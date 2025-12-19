@@ -20,6 +20,13 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [qrToken, setQrToken] = useState("");
   const [error, setError] = useState("");
+  const [existingProfile, setExistingProfile] = useState<{
+    name?: string | null;
+    surname?: string | null;
+    date_of_birth?: string | null;
+    whatsapp?: string | null;
+    instagram_handle?: string | null;
+  } | null>(null);
   const [eventDetails, setEventDetails] = useState<{
     name: string;
     venue?: { name: string } | null;
@@ -59,10 +66,54 @@ export default function RegisterPage() {
           }
         } catch (checkErr) {
           console.error("Error checking registration:", checkErr);
-          // Continue to signup form if check fails
+          // Continue to registration if check fails
         }
         
-        // Not registered yet - show signup form
+        // Not registered yet - check if user has existing profile
+        try {
+          const profileResponse = await fetch("/api/profile");
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const attendee = profileData.attendee;
+            
+            if (attendee) {
+              // Store existing profile to pre-fill form
+              setExistingProfile({
+                name: attendee.name,
+                surname: attendee.surname,
+                date_of_birth: attendee.date_of_birth,
+                whatsapp: attendee.whatsapp,
+                instagram_handle: attendee.instagram_handle,
+              });
+              
+              // Check if profile has all required fields
+              const hasRequiredFields = 
+                attendee.name && 
+                attendee.whatsapp && 
+                attendee.surname && 
+                attendee.date_of_birth && 
+                attendee.instagram_handle;
+              
+              if (hasRequiredFields) {
+                // Profile is complete - register them automatically
+                await handleSignupSubmit({
+                  email: user.email,
+                  name: attendee.name,
+                  surname: attendee.surname,
+                  date_of_birth: attendee.date_of_birth,
+                  whatsapp: attendee.whatsapp,
+                  instagram_handle: attendee.instagram_handle,
+                });
+                return;
+              }
+            }
+          }
+        } catch (profileErr) {
+          console.error("Error checking profile:", profileErr);
+          // Continue to signup form if profile check fails
+        }
+        
+        // Profile incomplete or check failed - show signup form
         setShowSignup(true);
       } else {
         setAuthenticated(false);
@@ -206,7 +257,7 @@ export default function RegisterPage() {
     return false;
   };
 
-  // If authenticated, show Typeform signup (skip email step)
+  // If authenticated, show Typeform signup (skip email step, only show missing fields)
   if (authenticated && userEmail && showSignup) {
     const redirectUrl = typeof window !== "undefined" 
       ? window.location.href 
@@ -219,6 +270,7 @@ export default function RegisterPage() {
         redirectUrl={redirectUrl}
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
+        existingProfile={existingProfile}
       />
     );
   }

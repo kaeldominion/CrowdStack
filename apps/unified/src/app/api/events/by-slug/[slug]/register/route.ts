@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { generateQRPassToken } from "@crowdstack/shared/qr/generate";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import type { RegisterEventRequest } from "@crowdstack/shared";
@@ -9,13 +9,17 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const supabase = createServiceRoleClient();
+    // Check if user is authenticated
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const serviceSupabase = createServiceRoleClient();
     const body: RegisterEventRequest = await request.json();
     const { searchParams } = new URL(request.url);
     const ref = searchParams.get("ref"); // referral promoter ID
 
     // Get event by slug
-    const { data: event, error: eventError } = await supabase
+    const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .select("*")
       .eq("slug", params.slug)
@@ -29,17 +33,33 @@ export async function POST(
       );
     }
 
-    // Find or create attendee (dedupe by phone/email)
+    // Find or create attendee (dedupe by phone/email or user_id if authenticated)
     let attendee;
-    const { data: existingAttendee } = await supabase
-      .from("attendees")
-      .select("*")
-      .or(
-        body.phone
-          ? `phone.eq.${body.phone}${body.email ? ",email.eq." + body.email : ""}`
-          : `email.eq.${body.email}`
-      )
-      .single();
+    let existingAttendee = null;
+    
+    // If user is authenticated, try to find attendee by user_id first
+    if (user?.id) {
+      const { data: userAttendee } = await serviceSupabase
+        .from("attendees")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      existingAttendee = userAttendee;
+    }
+    
+    // If not found by user_id, try by phone/email
+    if (!existingAttendee) {
+      const { data: phoneEmailAttendee } = await serviceSupabase
+        .from("attendees")
+        .select("*")
+        .or(
+          body.phone
+            ? `phone.eq.${body.phone}${body.email ? ",email.eq." + body.email : ""}`
+            : `email.eq.${body.email}`
+        )
+        .single();
+      existingAttendee = phoneEmailAttendee;
+    }
 
     // Prepare attendee data (only include fields that are provided)
     const attendeeData: any = {
@@ -65,8 +85,12 @@ export async function POST(
       if (!body.phone && existingAttendee.phone) {
         updateData.phone = existingAttendee.phone;
       }
+      // Link to user if authenticated and not already linked
+      if (user?.id && !existingAttendee.user_id) {
+        updateData.user_id = user.id;
+      }
 
-      const { data: updated, error: updateError } = await supabase
+      const { data: updated, error: updateError } = await serviceSupabase
         .from("attendees")
         .update(updateData)
         .eq("id", existingAttendee.id)
@@ -85,8 +109,12 @@ export async function POST(
       if (!body.phone && body.whatsapp) {
         attendeeData.phone = body.whatsapp; // Use WhatsApp as phone if phone not provided
       }
+      // Link to user if authenticated
+      if (user?.id) {
+        attendeeData.user_id = user.id;
+      }
 
-      const { data: created, error: createError } = await supabase
+      const { data: created, error: createError } = await serviceSupabase
         .from("attendees")
         .insert(attendeeData)
         .select()
@@ -99,7 +127,7 @@ export async function POST(
     }
 
     // Check if already registered
-    const { data: existingRegistration } = await supabase
+    const { data: existingRegistration } = await serviceSupabase
       .from("registrations")
       .select("*")
       .eq("attendee_id", attendee.id)
@@ -122,7 +150,7 @@ export async function POST(
     }
 
     // Create registration
-    const { data: registration, error: regError } = await supabase
+    const { data: registration, error: regError } = await serviceSupabase
       .from("registrations")
       .insert({
         attendee_id: attendee.id,
@@ -152,7 +180,7 @@ export async function POST(
           answer_json: typeof answer === "object" ? answer : null,
         }));
 
-        await supabase.from("event_answers").insert(answers);
+        await serviceSupabase.from("event_answers").insert(answers);
       }
     }
 
@@ -175,7 +203,7 @@ export async function POST(
     let organizer = null;
     
     if (event.venue_id) {
-      const { data: venueData } = await supabase
+      const { data: venueData } = await serviceSupabase
         .from("venues")
         .select("id, name")
         .eq("id", event.venue_id)
@@ -183,7 +211,7 @@ export async function POST(
       venue = venueData;
     }
 
-    const { data: organizerData } = await supabase
+    const { data: organizerData } = await serviceSupabase
       .from("organizers")
       .select("id, name")
       .eq("id", event.organizer_id)
