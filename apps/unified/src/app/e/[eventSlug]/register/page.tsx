@@ -227,10 +227,11 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
-      console.log("Registration response:", data);
+      console.log("[Register] Registration response:", JSON.stringify(data, null, 2));
 
       if (!response.ok) {
-        throw new Error(data.error || "Registration failed");
+        console.error("[Register] Registration failed:", data.error, data.details);
+        throw new Error(data.error || data.details || "Registration failed");
       }
 
       // Always set event details, even if data.event is missing (will fetch if needed)
