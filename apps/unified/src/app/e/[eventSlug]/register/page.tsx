@@ -228,15 +228,15 @@ export default function RegisterPage() {
       }
       
       setQrToken(data.qr_pass_token);
+      setShowSignup(false); // Hide signup form when registration succeeds
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Registration failed");
-    } finally {
       setLoading(false);
     }
   };
 
-  if (loading && !authenticated) {
+  if (loading && !authenticated && !success) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white/60">Loading...</div>
