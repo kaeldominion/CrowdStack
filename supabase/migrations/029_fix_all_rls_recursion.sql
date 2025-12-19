@@ -8,8 +8,13 @@
 -- HELPER FUNCTIONS (Security Definer to bypass RLS)
 -- ============================================
 
+-- Drop existing functions first to allow return type changes
+DROP FUNCTION IF EXISTS public.user_is_organizer_member(uuid, uuid);
+DROP FUNCTION IF EXISTS public.get_user_organizer_ids(uuid);
+DROP FUNCTION IF EXISTS public.get_user_venue_ids(uuid);
+
 -- Check if user is assigned to an organizer (bypasses RLS)
-CREATE OR REPLACE FUNCTION public.user_is_organizer_member(p_user_id uuid, p_organizer_id uuid)
+CREATE FUNCTION public.user_is_organizer_member(p_user_id uuid, p_organizer_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
@@ -23,7 +28,7 @@ AS $$
 $$;
 
 -- Get user's organizer IDs (bypasses RLS)
-CREATE OR REPLACE FUNCTION public.get_user_organizer_ids(p_user_id uuid)
+CREATE FUNCTION public.get_user_organizer_ids(p_user_id uuid)
 RETURNS uuid[]
 LANGUAGE sql
 SECURITY DEFINER
@@ -35,7 +40,7 @@ AS $$
 $$;
 
 -- Get user's venue IDs (bypasses RLS)
-CREATE OR REPLACE FUNCTION public.get_user_venue_ids(p_user_id uuid)
+CREATE FUNCTION public.get_user_venue_ids(p_user_id uuid)
 RETURNS uuid[]
 LANGUAGE sql
 SECURITY DEFINER
