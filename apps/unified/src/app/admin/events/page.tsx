@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Calendar, Plus, Search, ExternalLink, ChevronRight } from "lucide-react";
+import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminEventsPage() {
@@ -65,6 +65,37 @@ export default function AdminEventsPage() {
         return <Badge variant="default">Ended</Badge>;
       default:
         return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getApprovalBadge = (approvalStatus: string | null, hasVenue: boolean) => {
+    if (!hasVenue) {
+      return <Badge variant="default">—</Badge>;
+    }
+    switch (approvalStatus) {
+      case "approved":
+        return (
+          <Badge variant="success" className="flex items-center gap-1">
+            <ShieldCheck className="h-3 w-3" />
+            Approved
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge variant="danger" className="flex items-center gap-1">
+            <ShieldX className="h-3 w-3" />
+            Rejected
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge variant="warning" className="flex items-center gap-1">
+            <ShieldAlert className="h-3 w-3" />
+            Pending
+          </Badge>
+        );
+      default:
+        return <Badge variant="default">—</Badge>;
     }
   };
 
@@ -137,6 +168,7 @@ export default function AdminEventsPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Registrations</TableHead>
                     <TableHead>Check-ins</TableHead>
+                    <TableHead>Approval</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -144,7 +176,7 @@ export default function AdminEventsPage() {
                 <TableBody>
                   {filteredEvents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={9} className="text-center py-8 text-foreground-muted">
                         No events found
                       </TableCell>
                     </TableRow>
@@ -154,7 +186,7 @@ export default function AdminEventsPage() {
                         key={event.id} 
                         hover
                         className="cursor-pointer"
-                        onClick={() => router.push(`/app/organizer/events/${event.id}`)}
+                        onClick={() => router.push(`/admin/events/${event.id}`)}
                       >
                         <TableCell className="font-medium">
                           {event.name}
@@ -180,6 +212,7 @@ export default function AdminEventsPage() {
                         </TableCell>
                         <TableCell>{event.registrations_count || 0}</TableCell>
                         <TableCell>{event.checkins_count || 0}</TableCell>
+                        <TableCell>{getApprovalBadge(event.venue_approval_status, !!event.venue_id)}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
                           <ChevronRight className="h-4 w-4 text-foreground-muted" />

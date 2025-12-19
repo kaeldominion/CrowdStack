@@ -339,7 +339,7 @@ export default function OrganizerEventDetailPage() {
               Unpublish
             </Button>
           )}
-          <Link href={`/app/organizer/events/${eventId}/live`}>
+          <Link href={`/app/organizer/live/${eventId}`}>
             <Button variant="primary">
               <Radio className="h-4 w-4 mr-2" />
               Live Control
