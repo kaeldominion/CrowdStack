@@ -273,7 +273,8 @@ export default function RegisterPage() {
     );
   }
 
-  if (loading && !authenticated && !success) {
+  // Show loading state for any loading scenario (authenticated or not)
+  if (loading && !success) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-white/60">Loading...</div>
