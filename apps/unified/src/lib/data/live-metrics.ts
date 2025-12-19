@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 export interface LiveMetrics {
   event_id: string;
   current_attendance: number;
+  total_registrations: number;
   capacity: number | null;
   capacity_percentage: number;
   check_ins_last_hour: number;
@@ -51,6 +52,12 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   if (!event) {
     return null;
   }
+
+  // Get total registrations for this event
+  const { count: totalRegistrations } = await supabase
+    .from("registrations")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
 
   // Get current check-in count
   const { data: checkins, error: checkinsError } = await supabase
@@ -152,6 +159,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   return {
     event_id: eventId,
     current_attendance: currentAttendance,
+    total_registrations: totalRegistrations || 0,
     capacity: event.capacity,
     capacity_percentage: capacityPercentage,
     check_ins_last_hour: checkInsLastHour,

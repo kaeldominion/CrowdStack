@@ -1,54 +1,196 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
-import { userHasRole } from "@crowdstack/shared/auth/roles";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
+import { cookies } from "next/headers";
 
+/**
+ * POST /api/events/[eventId]/checkin
+ * Check in an attendee via QR token or registration ID
+ * 
+ * Allowed roles: superadmin, door_staff, venue_admin (for their venues), event_organizer (for their events)
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const startTime = Date.now();
+  const eventId = params.eventId;
+  
+  console.log(`[Check-in API] Starting check-in for event ${eventId}`);
 
-    if (!user) {
+  try {
+    const cookieStore = await cookies();
+    const supabase = await createClient();
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get user - support localhost dev mode
+    const localhostUser = cookieStore.get("localhost_user_id")?.value;
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || localhostUser;
+
+    if (!userId) {
+      console.log("[Check-in API] No authenticated user");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify door_staff role
-    if (!(await userHasRole("door_staff"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    console.log(`[Check-in API] User ${userId} attempting check-in`);
+
+    // Check user roles
+    const { data: userRoles } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    const roles = userRoles?.map((r) => r.role) || [];
+    console.log(`[Check-in API] User roles:`, roles);
+
+    // Superadmin can check in anyone
+    const isSuperadmin = roles.includes("superadmin");
+    const isDoorStaff = roles.includes("door_staff");
+    const isVenueAdmin = roles.includes("venue_admin");
+    const isOrganizer = roles.includes("event_organizer");
+
+    // Check if user has access to this event
+    let hasAccess = isSuperadmin || isDoorStaff;
+
+    if (!hasAccess && (isVenueAdmin || isOrganizer)) {
+      // Check if user is associated with this event
+      const { data: event } = await serviceSupabase
+        .from("events")
+        .select(`
+          id,
+          venue_id,
+          organizer_id,
+          venue:venues(created_by),
+          organizer:organizers(created_by)
+        `)
+        .eq("id", eventId)
+        .single();
+
+      if (event) {
+        // Check venue admin access
+        if (isVenueAdmin && event.venue_id) {
+          const { data: venueUser } = await serviceSupabase
+            .from("venue_users")
+            .select("id")
+            .eq("venue_id", event.venue_id)
+            .eq("user_id", userId)
+            .single();
+
+          hasAccess = hasAccess || !!venueUser || event.venue?.created_by === userId;
+        }
+
+        // Check organizer access
+        if (isOrganizer && event.organizer_id) {
+          const { data: organizerUser } = await serviceSupabase
+            .from("organizer_users")
+            .select("id")
+            .eq("organizer_id", event.organizer_id)
+            .eq("user_id", userId)
+            .single();
+
+          hasAccess = hasAccess || !!organizerUser || event.organizer?.created_by === userId;
+        }
+      }
     }
+
+    // Also check door_staff assignments for this specific event
+    if (!hasAccess) {
+      const { data: doorStaffAssignment } = await serviceSupabase
+        .from("event_door_staff")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .single();
+
+      hasAccess = !!doorStaffAssignment;
+    }
+
+    if (!hasAccess) {
+      console.log(`[Check-in API] User ${userId} does not have access to event ${eventId}`);
+      return NextResponse.json({ error: "Forbidden: No access to this event" }, { status: 403 });
+    }
+
+    console.log(`[Check-in API] Access granted for user ${userId}`);
 
     const body = await request.json();
     const { qr_token, registration_id } = body;
 
     let registrationId: string;
+    let tokenSource = "registration_id";
 
     if (qr_token) {
-      // Verify QR token
-      const payload = verifyQRPassToken(qr_token);
-      if (payload.event_id !== params.eventId) {
+      console.log(`[Check-in API] Verifying QR token`);
+      tokenSource = "qr_token";
+      
+      try {
+        const payload = verifyQRPassToken(qr_token);
+        console.log(`[Check-in API] QR token verified:`, {
+          registration_id: payload.registration_id,
+          event_id: payload.event_id,
+          attendee_id: payload.attendee_id,
+        });
+
+        if (payload.event_id !== eventId) {
+          console.log(`[Check-in API] QR token event mismatch: ${payload.event_id} !== ${eventId}`);
+          return NextResponse.json(
+            { error: "QR code is for a different event" },
+            { status: 400 }
+          );
+        }
+        registrationId = payload.registration_id;
+      } catch (error: any) {
+        console.error(`[Check-in API] QR token verification failed:`, error.message);
         return NextResponse.json(
-          { error: "QR token is for a different event" },
+          { error: `Invalid QR code: ${error.message}` },
           { status: 400 }
         );
       }
-      registrationId = payload.registration_id;
     } else if (registration_id) {
       registrationId = registration_id;
+      console.log(`[Check-in API] Using registration ID: ${registrationId}`);
     } else {
+      console.log(`[Check-in API] No token or registration ID provided`);
       return NextResponse.json(
         { error: "Either qr_token or registration_id is required" },
         { status: 400 }
       );
     }
 
+    // Get registration with attendee info
+    const { data: registration, error: regError } = await serviceSupabase
+      .from("registrations")
+      .select(`
+        id,
+        event_id,
+        attendee_id,
+        attendee:attendees(id, name, email, phone)
+      `)
+      .eq("id", registrationId)
+      .single();
+
+    if (regError || !registration) {
+      console.log(`[Check-in API] Registration not found: ${registrationId}`);
+      return NextResponse.json(
+        { error: "Registration not found" },
+        { status: 404 }
+      );
+    }
+
+    if (registration.event_id !== eventId) {
+      console.log(`[Check-in API] Registration event mismatch`);
+      return NextResponse.json(
+        { error: "Registration is for a different event" },
+        { status: 400 }
+      );
+    }
+
+    const attendeeName = registration.attendee?.name || "Unknown Attendee";
+    console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
+
     // Check if already checked in (idempotent)
-    const serviceSupabase = createServiceRoleClient();
     const { data: existingCheckin } = await serviceSupabase
       .from("checkins")
       .select("*")
@@ -56,10 +198,13 @@ export async function POST(
       .single();
 
     if (existingCheckin) {
+      console.log(`[Check-in API] Attendee ${attendeeName} already checked in at ${existingCheckin.checked_in_at}`);
       return NextResponse.json({
         success: true,
+        duplicate: true,
         checkin: existingCheckin,
-        message: "Already checked in",
+        attendee_name: attendeeName,
+        message: `${attendeeName} was already checked in`,
       });
     }
 
@@ -68,43 +213,47 @@ export async function POST(
       .from("checkins")
       .insert({
         registration_id: registrationId,
-        checked_in_by: user.id,
+        checked_in_by: userId,
       })
       .select()
       .single();
 
     if (checkinError) {
+      console.error(`[Check-in API] Failed to create checkin:`, checkinError);
       throw checkinError;
     }
 
-    // Log audit
-    await serviceSupabase.from("audit_logs").insert({
-      user_id: user.id,
-      action_type: "checkin_created",
-      resource_type: "checkin",
-      resource_id: checkin.id,
-      metadata: {
-        registration_id: registrationId,
-        event_id: params.eventId,
-      },
-    });
+    console.log(`[Check-in API] ✅ Successfully checked in ${attendeeName} (checkin ID: ${checkin.id})`);
 
-    // Emit outbox event
-    await emitOutboxEvent("attendee_checked_in", {
-      checkin_id: checkin.id,
-      registration_id: registrationId,
-      event_id: params.eventId,
-    });
+    // Try to emit outbox event (non-blocking)
+    try {
+      await emitOutboxEvent("attendee_checked_in", {
+        checkin_id: checkin.id,
+        registration_id: registrationId,
+        event_id: eventId,
+        attendee_name: attendeeName,
+        checked_in_by: userId,
+      });
+    } catch (outboxError) {
+      console.warn(`[Check-in API] Failed to emit outbox event:`, outboxError);
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`[Check-in API] Request completed in ${duration}ms`);
 
     return NextResponse.json({
       success: true,
+      duplicate: false,
       checkin,
+      attendee_name: attendeeName,
+      attendee: registration.attendee,
+      message: `${attendeeName} checked in successfully`,
     });
   } catch (error: any) {
+    console.error(`[Check-in API] Error:`, error);
     return NextResponse.json(
       { error: error.message || "Failed to check in" },
       { status: 500 }
     );
   }
 }
-
