@@ -116,7 +116,7 @@ CREATE POLICY "Superadmins can manage all door staff invites"
   WITH CHECK (public.user_has_role(auth.uid(), 'superadmin'::user_role));
 
 -- Venue admins can manage invites for events at their venues
-CREATE POLICY "Venue admins can manage door staff invites for their venue events"
+CREATE POLICY "Venue admins manage door staff invites"
   ON public.door_staff_invites
   FOR ALL
   USING (
@@ -191,6 +191,15 @@ CREATE TRIGGER on_door_staff_assigned
   AFTER INSERT ON public.event_door_staff
   FOR EACH ROW
   EXECUTE FUNCTION public.trigger_ensure_door_staff_role();
+
+-- Create set_updated_at function if it doesn't exist
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Add updated_at trigger
 CREATE TRIGGER set_event_door_staff_updated_at
