@@ -131,3 +131,65 @@ export async function GET(
     );
   }
 }
+
+/**
+ * PATCH /api/admin/events/[eventId]
+ * Update event (superadmin only)
+ * Allows superadmins to update event status including publishing
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { eventId: string } }
+) {
+  try {
+    const userId = await getUserId();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!(await isSuperadmin(userId))) {
+      return NextResponse.json({ error: "Forbidden - Superadmin only" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const supabase = createServiceRoleClient();
+
+    // Verify event exists
+    const { data: existingEvent } = await supabase
+      .from("events")
+      .select("id, status")
+      .eq("id", params.eventId)
+      .single();
+
+    if (!existingEvent) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Superadmins can update any field, including status (can bypass venue approval if needed)
+    const { data: updatedEvent, error: updateError } = await supabase
+      .from("events")
+      .update({
+        ...body,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", params.eventId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("Error updating event:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update event", details: updateError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ event: updatedEvent });
+  } catch (error) {
+    console.error("Error updating event:", error);
+    return NextResponse.json(
+      { error: "Failed to update event", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    );
+  }
+}

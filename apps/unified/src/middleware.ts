@@ -35,6 +35,7 @@ export async function middleware(request: NextRequest) {
     "/i/", // Invite code pages
     "/p/", // Photo pages
     "/checkin/", // Check-in pages
+    "/door/invite/", // Door staff invite pages (viewing only, accepting requires auth)
   ];
 
   // Check if route is public

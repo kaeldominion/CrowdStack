@@ -41,8 +41,10 @@ import {
   ShieldX,
   ShieldAlert,
   History,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
+import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 interface EventData {
@@ -120,6 +122,7 @@ export default function OrganizerEventDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
 
   useEffect(() => {
@@ -339,8 +342,18 @@ export default function OrganizerEventDetailPage() {
               Unpublish
             </Button>
           )}
-          <Link href={`/app/organizer/live/${eventId}`}>
+          <Link href={`/door/${eventId}`} target="_blank">
             <Button variant="primary">
+              <QrCode className="h-4 w-4 mr-2" />
+              Door Scanner
+            </Button>
+          </Link>
+          <Button variant="secondary" onClick={() => setShowDoorStaffModal(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Door Staff
+          </Button>
+          <Link href={`/app/organizer/live/${eventId}`}>
+            <Button variant="secondary">
               <Radio className="h-4 w-4 mr-2" />
               Live Control
             </Button>
@@ -804,6 +817,16 @@ export default function OrganizerEventDetailPage() {
         </div>
       </div>
     </Modal>
+
+    {/* Door Staff Modal */}
+    {event && (
+      <DoorStaffModal
+        isOpen={showDoorStaffModal}
+        onClose={() => setShowDoorStaffModal(false)}
+        eventId={event.id}
+        eventName={event.name}
+      />
+    )}
     </div>
   );
 }

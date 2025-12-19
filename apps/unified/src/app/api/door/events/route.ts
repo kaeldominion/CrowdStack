@@ -1,6 +1,34 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRole } from "@crowdstack/shared/auth/roles";
+import { cookies } from "next/headers";
+
+async function getUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let userId = user?.id;
+
+  if (!userId) {
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+    const authCookieName = `sb-${projectRef}-auth-token`;
+    const authCookie = cookieStore.get(authCookieName);
+
+    if (authCookie) {
+      try {
+        const cookieValue = decodeURIComponent(authCookie.value);
+        const parsed = JSON.parse(cookieValue);
+        if (parsed.user?.id) {
+          userId = parsed.user.id;
+        }
+      } catch (e) {}
+    }
+  }
+
+  return userId || null;
+}
 
 export async function GET() {
   try {
@@ -9,40 +37,170 @@ export async function GET() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    const userId = await getUserId();
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check door_staff role
     if (!(await userHasRole("door_staff"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden - door_staff role required" }, { status: 403 });
     }
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get all published events (door staff can access any published event)
-    // In the future, you might want to restrict this to events assigned to specific door staff
-    const { data: events } = await serviceSupabase
-      .from("events")
-      .select(`
-        id,
-        name,
-        slug,
-        start_time,
-        end_time,
-        capacity,
-        status,
-        venue:venues(name)
-      `)
-      .eq("status", "published")
-      .gte("start_time", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Events from last 24 hours onwards
-      .order("start_time", { ascending: true })
-      .limit(50);
+    // Check if user is a superadmin (can access all events)
+    const { data: superadminRole } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "superadmin")
+      .single();
+
+    const isSuperadmin = !!superadminRole;
+
+    // Check if user is a venue admin or organizer (can access their events)
+    const { data: venueAdminRole } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "venue_admin")
+      .single();
+
+    const { data: organizerRole } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "event_organizer")
+      .single();
+
+    const isVenueAdmin = !!venueAdminRole;
+    const isOrganizer = !!organizerRole;
+
+    let events: any[] = [];
+
+    if (isSuperadmin) {
+      // Superadmins can see all published events
+      const { data } = await serviceSupabase
+        .from("events")
+        .select(`
+          id,
+          name,
+          slug,
+          start_time,
+          end_time,
+          capacity,
+          status,
+          venue:venues(name)
+        `)
+        .eq("status", "published")
+        .gte("start_time", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order("start_time", { ascending: true })
+        .limit(50);
+      events = data || [];
+    } else {
+      // Get events user is assigned to as door staff
+      const { data: doorStaffAssignments } = await serviceSupabase
+        .from("event_door_staff")
+        .select("event_id")
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      const assignedEventIds = doorStaffAssignments?.map((a) => a.event_id) || [];
+
+      // Also get events from venues/organizers they belong to (if they're venue admin or organizer)
+      let additionalEventIds: string[] = [];
+
+      if (isVenueAdmin) {
+        // Get events at venues they manage
+        const { data: venueIds } = await serviceSupabase
+          .from("venue_users")
+          .select("venue_id")
+          .eq("user_id", userId);
+        
+        const { data: createdVenues } = await serviceSupabase
+          .from("venues")
+          .select("id")
+          .eq("created_by", userId);
+
+        const allVenueIds = [
+          ...(venueIds?.map((v) => v.venue_id) || []),
+          ...(createdVenues?.map((v) => v.id) || []),
+        ];
+
+        if (allVenueIds.length > 0) {
+          const { data: venueEvents } = await serviceSupabase
+            .from("events")
+            .select("id")
+            .in("venue_id", allVenueIds)
+            .eq("status", "published");
+          additionalEventIds.push(...(venueEvents?.map((e) => e.id) || []));
+        }
+      }
+
+      if (isOrganizer) {
+        // Get events from organizers they belong to
+        const { data: organizerIds } = await serviceSupabase
+          .from("organizer_users")
+          .select("organizer_id")
+          .eq("user_id", userId);
+        
+        const { data: createdOrganizers } = await serviceSupabase
+          .from("organizers")
+          .select("id")
+          .eq("created_by", userId);
+
+        const allOrganizerIds = [
+          ...(organizerIds?.map((o) => o.organizer_id) || []),
+          ...(createdOrganizers?.map((o) => o.id) || []),
+        ];
+
+        if (allOrganizerIds.length > 0) {
+          const { data: organizerEvents } = await serviceSupabase
+            .from("events")
+            .select("id")
+            .in("organizer_id", allOrganizerIds)
+            .eq("status", "published");
+          additionalEventIds.push(...(organizerEvents?.map((e) => e.id) || []));
+        }
+      }
+
+      // Combine all event IDs
+      const allEventIds = [...new Set([...assignedEventIds, ...additionalEventIds])];
+
+      if (allEventIds.length === 0) {
+        return NextResponse.json({ 
+          events: [],
+          message: "No events assigned. Contact your venue or organizer to get access."
+        });
+      }
+
+      // Fetch event details
+      const { data } = await serviceSupabase
+        .from("events")
+        .select(`
+          id,
+          name,
+          slug,
+          start_time,
+          end_time,
+          capacity,
+          status,
+          venue:venues(name)
+        `)
+        .in("id", allEventIds)
+        .eq("status", "published")
+        .gte("start_time", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order("start_time", { ascending: true })
+        .limit(50);
+      
+      events = data || [];
+    }
 
     // Get current attendance for each event
     const eventsWithStats = await Promise.all(
-      (events || []).map(async (event: any) => {
-        // Get registrations for this event
+      events.map(async (event: any) => {
         const { data: registrations } = await serviceSupabase
           .from("registrations")
           .select("id")
@@ -69,10 +227,10 @@ export async function GET() {
 
     return NextResponse.json({ events: eventsWithStats });
   } catch (error: any) {
+    console.error("Error fetching door events:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch events" },
       { status: 500 }
     );
   }
 }
-

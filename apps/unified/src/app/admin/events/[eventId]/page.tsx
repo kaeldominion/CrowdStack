@@ -29,6 +29,8 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle2,
+  Globe,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -80,6 +82,9 @@ export default function AdminEventDetailPage() {
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
   const [rejectionReason, setRejectionReason] = useState("");
   const [approving, setApproving] = useState(false);
+  
+  // Publish state
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     loadEvent();
@@ -136,6 +141,32 @@ export default function AdminEventDetailPage() {
     setApprovalAction(action);
     setRejectionReason("");
     setShowApprovalModal(true);
+  };
+
+  const handlePublishToggle = async () => {
+    if (!event) return;
+
+    setPublishing(true);
+    try {
+      const newStatus = event.status === "published" ? "draft" : "published";
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update event status");
+      }
+
+      // Reload event data
+      await loadEvent();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const getApprovalStatusBadge = () => {
@@ -231,29 +262,55 @@ export default function AdminEventDetailPage() {
             )}
           </div>
 
-          {/* Approval Actions */}
-          {event.venue_id && (
-            <div className="flex items-center gap-2">
-              {event.venue_approval_status !== "approved" && (
-                <Button
-                  variant="primary"
-                  onClick={() => openApprovalModal("approve")}
-                >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Approve Event
-                </Button>
-              )}
-              {event.venue_approval_status !== "rejected" && (
-                <Button
-                  variant="secondary"
-                  onClick={() => openApprovalModal("reject")}
-                >
-                  <ShieldX className="h-4 w-4 mr-2" />
-                  Reject Event
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Approval & Publish Actions */}
+          <div className="flex items-center gap-2">
+            {/* Venue Approval Actions */}
+            {event.venue_id && (
+              <>
+                {event.venue_approval_status !== "approved" && (
+                  <Button
+                    variant="primary"
+                    onClick={() => openApprovalModal("approve")}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Approve Event
+                  </Button>
+                )}
+                {event.venue_approval_status !== "rejected" && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => openApprovalModal("reject")}
+                  >
+                    <ShieldX className="h-4 w-4 mr-2" />
+                    Reject Event
+                  </Button>
+                )}
+              </>
+            )}
+            
+            {/* Publish/Unpublish Action */}
+            {event.status === "published" ? (
+              <Button
+                variant="secondary"
+                onClick={handlePublishToggle}
+                disabled={publishing}
+                loading={publishing}
+              >
+                <EyeOff className="h-4 w-4 mr-2" />
+                Unpublish Event
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={handlePublishToggle}
+                disabled={publishing}
+                loading={publishing}
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                Publish Event
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

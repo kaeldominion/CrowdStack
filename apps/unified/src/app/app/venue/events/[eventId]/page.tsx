@@ -13,8 +13,11 @@ import {
   Users,
   Check,
   X,
+  QrCode,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
+import { DoorStaffModal } from "@/components/DoorStaffModal";
 
 interface Event {
   id: string;
@@ -48,6 +51,7 @@ export default function VenueEventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -239,12 +243,22 @@ export default function VenueEventDetailPage() {
             {getApprovalBadge(event.venue_approval_status)}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/door/${eventId}`} target="_blank">
+            <Button variant="primary">
+              <QrCode className="h-4 w-4 mr-2" />
+              Door Scanner
+            </Button>
+          </Link>
+          <Button variant="secondary" onClick={() => setShowDoorStaffModal(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Door Staff
+          </Button>
           <Button variant="secondary" onClick={handleOpenHistory}>
             <History className="h-4 w-4 mr-2" />
             Edit History
           </Button>
-          <Button variant="primary" onClick={() => setShowEditModal(true)}>
+          <Button variant="secondary" onClick={() => setShowEditModal(true)}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Event
           </Button>
@@ -430,6 +444,16 @@ export default function VenueEventDetailPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Door Staff Modal */}
+      {event && (
+        <DoorStaffModal
+          isOpen={showDoorStaffModal}
+          onClose={() => setShowDoorStaffModal(false)}
+          eventId={event.id}
+          eventName={event.name}
+        />
+      )}
     </div>
   );
 }
