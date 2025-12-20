@@ -88,7 +88,7 @@ export default function EventInvitesPage() {
     }
   };
 
-  const copyInviteLink = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean) => {
+  const copyInviteLink = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean | null) => {
     // If it's a promoter code or self-promote and we have event slug, link directly to registration
     // Otherwise, use the invite code page
     let url: string;
@@ -102,7 +102,7 @@ export default function EventInvitesPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getQRCodeUrl = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean) => {
+  const getQRCodeUrl = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean | null) => {
     // If it's a promoter code or self-promote and we have event slug, link directly to registration
     // Otherwise, use the invite code page
     let targetUrl: string;
