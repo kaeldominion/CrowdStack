@@ -128,6 +128,17 @@ export default async function AuthenticatedLayout({
     redirect("/door");
   }
 
+  // If user only has promoter role (or promoter + attendee), redirect to /me
+  const nonPromoterB2BRoles = effectiveRoles.filter(
+    (r) => r !== "promoter" && r !== "attendee" && r !== "door_staff"
+  );
+  if (effectiveRoles.includes("promoter") && nonPromoterB2BRoles.length === 0 && !hasSuperadmin) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[App Layout] Only promoter role (with optional attendee), redirecting to /me");
+    }
+    redirect("/me");
+  }
+
   // If user has no roles or only attendee role, redirect to login
   const b2bRoles = effectiveRoles.filter(
     (r) => r !== "attendee" && r !== "door_staff"

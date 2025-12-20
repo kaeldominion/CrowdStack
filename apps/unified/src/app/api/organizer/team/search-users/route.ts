@@ -32,15 +32,33 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Search for user by email
+    // Search for user by email (fuzzy matching)
     const { data: authUsers, error: userError } = await serviceSupabase.auth.admin.listUsers();
     if (userError) {
       throw userError;
     }
 
-    const matchingUser = authUsers.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase().trim()
+    const searchTerm = email.toLowerCase().trim();
+    
+    // First try exact match
+    let matchingUser = authUsers.users.find(
+      (u) => u.email?.toLowerCase() === searchTerm
     );
+
+    // If no exact match, try fuzzy matching (email contains search term)
+    if (!matchingUser) {
+      matchingUser = authUsers.users.find(
+        (u) => u.email?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // If still no match, try matching the part before @ (username part)
+    if (!matchingUser && searchTerm.includes("@")) {
+      const usernamePart = searchTerm.split("@")[0];
+      matchingUser = authUsers.users.find(
+        (u) => u.email?.toLowerCase().split("@")[0].includes(usernamePart)
+      );
+    }
 
     if (!matchingUser) {
       return NextResponse.json({

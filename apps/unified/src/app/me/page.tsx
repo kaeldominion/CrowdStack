@@ -16,6 +16,9 @@ import {
   Sparkles,
   UserPlus,
   AlertCircle,
+  Users,
+  DollarSign,
+  Target,
 } from "lucide-react";
 
 interface Registration {
@@ -95,6 +98,13 @@ export default function MePage() {
   const [pastEvents, setPastEvents] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
+  const [promoterStats, setPromoterStats] = useState<{
+    totalCheckIns: number;
+    conversionRate: number;
+    totalEarnings: number;
+    referrals: number;
+    eventsPromoted: number;
+  } | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -119,7 +129,27 @@ export default function MePage() {
         .eq("user_id", currentUser.id);
 
       if (userRoles) {
-        setRoles(userRoles.map((r: any) => r.role));
+        const roleList = userRoles.map((r: any) => r.role);
+        setRoles(roleList);
+        
+        // Load promoter stats if user is a promoter
+        if (roleList.includes("promoter")) {
+          try {
+            const statsResponse = await fetch("/api/promoter/dashboard-stats");
+            if (statsResponse.ok) {
+              const statsData = await statsResponse.json();
+              setPromoterStats({
+                totalCheckIns: statsData.stats?.totalCheckIns || 0,
+                conversionRate: statsData.stats?.conversionRate || 0,
+                totalEarnings: statsData.stats?.totalEarnings || 0,
+                referrals: statsData.stats?.referrals || 0,
+                eventsPromoted: 0, // Not in stats, but we can calculate from event_promoters if needed
+              });
+            }
+          } catch (error) {
+            console.error("Error loading promoter stats:", error);
+          }
+        }
       }
 
       // Load profile
@@ -306,7 +336,7 @@ export default function MePage() {
           {/* Role-based dashboard links */}
           {(roles.includes("superadmin") || roles.includes("venue_admin") || roles.includes("event_organizer") || roles.includes("promoter")) && (
             <div className="mt-4 flex flex-wrap gap-3">
-              {(roles.includes("venue_admin") || roles.includes("event_organizer") || roles.includes("promoter")) && (
+              {(roles.includes("venue_admin") || roles.includes("event_organizer")) && (
                 <Link
                   href="/app"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-full text-sm font-medium hover:bg-indigo-500/30 transition-colors"
@@ -326,6 +356,65 @@ export default function MePage() {
             </div>
           )}
         </div>
+
+        {/* Promoter Badge and Stats */}
+        {roles.includes("promoter") && promoterStats && (
+          <div className="mb-8 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/5 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-semibold">
+                    Promoter
+                  </div>
+                </div>
+                <p className="text-sm text-white/70">
+                  You're promoting events! Here's your performance overview.
+                </p>
+              </div>
+              <Link
+                href="/app/promoter"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30 transition-colors"
+              >
+                View Full Dashboard
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-purple-400" />
+                  <p className="text-xs text-white/60 uppercase tracking-wide">Referrals</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{promoterStats.referrals}</p>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-4 w-4 text-green-400" />
+                  <p className="text-xs text-white/60 uppercase tracking-wide">Check-ins</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{promoterStats.totalCheckIns}</p>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-blue-400" />
+                  <p className="text-xs text-white/60 uppercase tracking-wide">Conversion</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{promoterStats.conversionRate}%</p>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="h-4 w-4 text-amber-400" />
+                  <p className="text-xs text-white/60 uppercase tracking-wide">Earnings</p>
+                </div>
+                <p className="text-2xl font-bold text-white">${promoterStats.totalEarnings.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Profile Completion Prompt */}
         {!isProfileComplete(profile) && (

@@ -20,6 +20,8 @@ interface Promoter {
   name: string;
   email: string | null;
   phone: string | null;
+  type?: "promoter" | "user";
+  user_id?: string;
 }
 
 interface EventPromoter {
@@ -47,7 +49,9 @@ export function PromoterManagementModal({
 }: PromoterManagementModalProps) {
   const [eventPromoters, setEventPromoters] = useState<EventPromoter[]>([]);
   const [availablePromoters, setAvailablePromoters] = useState<Promoter[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<Promoter & { type?: "promoter" | "user"; user_id?: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddSection, setShowAddSection] = useState(false);
   const [addingPromoterId, setAddingPromoterId] = useState<string | null>(null);
@@ -61,6 +65,18 @@ export function PromoterManagementModal({
       loadAvailablePromoters();
     }
   }, [isOpen, eventId]);
+
+  useEffect(() => {
+    // Debounced search
+    if (searchQuery.length >= 2) {
+      const timeoutId = setTimeout(() => {
+        searchPromotersAndUsers();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery, eventId]);
 
   const loadEventPromoters = async () => {
     try {
@@ -92,21 +108,51 @@ export function PromoterManagementModal({
     }
   };
 
-  const addPromoter = async (promoterId: string) => {
+  const searchPromotersAndUsers = async () => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
     try {
-      setAddingPromoterId(promoterId);
+      setSearching(true);
+      const response = await fetch(`/api/events/${eventId}/promoters/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!response.ok) throw new Error("Failed to search");
+      const data = await response.json();
+      setSearchResults(data.results || []);
+    } catch (error) {
+      console.error("Error searching promoters/users:", error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const addPromoter = async (promoter: Promoter & { type?: "promoter" | "user"; user_id?: string }) => {
+    try {
+      const identifier = promoter.id.startsWith("user-") ? promoter.user_id : promoter.id;
+      setAddingPromoterId(identifier || promoter.id);
+      
+      const body: any = {
+        commission_type: commissionType,
+        commission_config:
+          commissionType === "flat_per_head"
+            ? { amount_per_head: parseFloat(commissionAmount) || 5 }
+            : { tiers: [] },
+        assigned_by: context,
+      };
+
+      // If it's a user (not yet a promoter), send user_id; otherwise send promoter_id
+      if (promoter.type === "user" && promoter.user_id) {
+        body.user_id = promoter.user_id;
+      } else {
+        body.promoter_id = promoter.id;
+      }
+
       const response = await fetch(`/api/events/${eventId}/promoters`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          promoter_id: promoterId,
-          commission_type: commissionType,
-          commission_config:
-            commissionType === "flat_per_head"
-              ? { amount_per_head: parseFloat(commissionAmount) || 5 }
-              : { tiers: [] },
-          assigned_by: context, // Explicitly set who is assigning
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -115,6 +161,9 @@ export function PromoterManagementModal({
       }
 
       await loadEventPromoters();
+      await loadAvailablePromoters(); // Refresh available promoters list
+      setSearchQuery(""); // Clear search
+      setSearchResults([]);
       setShowAddSection(false);
       onUpdate?.();
     } catch (error: any) {
@@ -155,16 +204,19 @@ export function PromoterManagementModal({
     eventPromoters.map((ep) => ep.promoter?.id).filter(Boolean)
   );
 
-  const filteredAvailablePromoters = availablePromoters.filter((p) => {
-    if (assignedPromoterIds.has(p.id)) return false;
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(query) ||
-      p.email?.toLowerCase().includes(query) ||
-      p.phone?.includes(query)
-    );
-  });
+  // If we have search results, use those; otherwise use available promoters (filtered)
+  const displayPromoters = searchQuery.length >= 2 
+    ? searchResults.filter((p) => !assignedPromoterIds.has(p.id))
+    : availablePromoters.filter((p) => {
+        if (assignedPromoterIds.has(p.id)) return false;
+        if (!searchQuery) return true;
+        const query = searchQuery.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(query) ||
+          p.email?.toLowerCase().includes(query) ||
+          p.phone?.includes(query)
+        );
+      });
 
   return (
     <Modal
@@ -294,25 +346,39 @@ export function PromoterManagementModal({
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
               <Input
-                placeholder="Search promoters by name or email..."
+                placeholder="Search promoters by name, email, or phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
+              {searchQuery.length >= 2 && (
+                <p className="mt-2 text-xs text-foreground-muted">
+                  Searching existing promoters and users...
+                </p>
+              )}
             </div>
 
             {/* Available Promoters List */}
             <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
-              {filteredAvailablePromoters.length > 0 ? (
+              {searching ? (
+                <div className="text-center py-8 text-foreground-muted">
+                  Searching...
+                </div>
+              ) : displayPromoters.length > 0 ? (
                 <div className="divide-y divide-border">
-                  {filteredAvailablePromoters.slice(0, 20).map((promoter) => (
+                  {displayPromoters.slice(0, 20).map((promoter) => (
                     <div
                       key={promoter.id}
                       className="flex items-center justify-between p-3 hover:bg-background-secondary"
                     >
-                      <div>
-                        <div className="font-medium text-foreground">
+                      <div className="flex-1">
+                        <div className="font-medium text-foreground flex items-center gap-2">
                           {promoter.name}
+                          {promoter.type === "user" && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">
+                              New
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-foreground-muted">
                           {promoter.email || promoter.phone || "No contact info"}
@@ -321,9 +387,9 @@ export function PromoterManagementModal({
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => addPromoter(promoter.id)}
-                        disabled={addingPromoterId === promoter.id}
-                        loading={addingPromoterId === promoter.id}
+                        onClick={() => addPromoter(promoter)}
+                        disabled={addingPromoterId === (promoter.user_id || promoter.id)}
+                        loading={addingPromoterId === (promoter.user_id || promoter.id)}
                       >
                         Add
                       </Button>
@@ -332,8 +398,10 @@ export function PromoterManagementModal({
                 </div>
               ) : (
                 <div className="text-center py-8 text-foreground-muted">
-                  {searchQuery
-                    ? "No promoters found matching your search"
+                  {searchQuery.length >= 2
+                    ? "No promoters or users found matching your search"
+                    : searchQuery
+                    ? "Type at least 2 characters to search"
                     : "No more promoters available to add"}
                 </div>
               )}

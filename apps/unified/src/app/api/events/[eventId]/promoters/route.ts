@@ -3,6 +3,7 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
+import { assignUserRole } from "@crowdstack/shared/auth/roles";
 
 // GET - List all promoters for an event
 export async function GET(
@@ -93,27 +94,111 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { promoter_id, commission_type, commission_config, assigned_by } = body;
+    const { promoter_id, user_id, commission_type, commission_config, assigned_by } = body;
 
-    if (!promoter_id) {
+    if (!promoter_id && !user_id) {
       return NextResponse.json(
-        { error: "Promoter ID is required" },
+        { error: "Either promoter_id or user_id is required" },
         { status: 400 }
       );
     }
 
-    // Check if promoter exists
-    const { data: promoter, error: promoterError } = await serviceSupabase
-      .from("promoters")
-      .select("id, name")
-      .eq("id", promoter_id)
-      .single();
+    let promoter: { id: string; name: string; created_by: string | null } | null = null;
 
-    if (promoterError || !promoter) {
-      return NextResponse.json(
-        { error: "Promoter not found" },
-        { status: 404 }
-      );
+    // If user_id is provided, create or find promoter profile for that user
+    if (user_id) {
+      // Check if user already has a promoter profile
+      const { data: existingPromoter } = await serviceSupabase
+        .from("promoters")
+        .select("id, name, created_by")
+        .eq("created_by", user_id)
+        .maybeSingle();
+
+      if (existingPromoter) {
+        promoter = existingPromoter;
+      } else {
+        // Get user details to create promoter profile
+        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
+        const user = authUsers.users.find((u) => u.id === user_id);
+        
+        if (!user) {
+          return NextResponse.json(
+            { error: "User not found" },
+            { status: 404 }
+          );
+        }
+
+        // Get attendee name if available
+        const { data: attendee } = await serviceSupabase
+          .from("attendees")
+          .select("name")
+          .eq("user_id", user_id)
+          .maybeSingle();
+
+        const promoterName = attendee?.name || 
+                            user.user_metadata?.full_name || 
+                            user.email?.split("@")[0] || 
+                            "Unknown";
+
+        // Create promoter profile
+        const { data: newPromoter, error: createError } = await serviceSupabase
+          .from("promoters")
+          .insert({
+            name: promoterName,
+            email: user.email || null,
+            created_by: user_id,
+          })
+          .select("id, name, created_by")
+          .single();
+
+        if (createError || !newPromoter) {
+          return NextResponse.json(
+            { error: "Failed to create promoter profile" },
+            { status: 500 }
+          );
+        }
+
+        promoter = newPromoter;
+      }
+    } else {
+      // promoter_id was provided, fetch the promoter
+      const { data: fetchedPromoter, error: promoterError } = await serviceSupabase
+        .from("promoters")
+        .select("id, name, created_by")
+        .eq("id", promoter_id)
+        .single();
+
+      if (promoterError || !fetchedPromoter) {
+        return NextResponse.json(
+          { error: "Promoter not found" },
+          { status: 404 }
+        );
+      }
+
+      promoter = fetchedPromoter;
+    }
+
+    // Auto-upgrade user to promoter role if they have a user account but don't have the role yet
+    if (promoter.created_by) {
+      const { data: existingRoles } = await serviceSupabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", promoter.created_by)
+        .eq("role", "promoter");
+
+      if (!existingRoles || existingRoles.length === 0) {
+        // User doesn't have promoter role, assign it
+        try {
+          await assignUserRole(promoter.created_by, "promoter", {
+            assigned_by: userId,
+            assigned_via: "event_assignment",
+            promoter_id: promoter.id,
+          });
+        } catch (roleError: any) {
+          // Log but don't fail the request - promoter can still be added to event
+          console.warn("Failed to assign promoter role to user:", roleError.message);
+        }
+      }
     }
 
     // Check if already assigned
@@ -121,7 +206,7 @@ export async function POST(
       .from("event_promoters")
       .select("id")
       .eq("event_id", eventId)
-      .eq("promoter_id", promoter_id)
+      .eq("promoter_id", promoter.id)
       .single();
 
     if (existing) {
@@ -160,7 +245,7 @@ export async function POST(
       .from("event_promoters")
       .insert({
         event_id: eventId,
-        promoter_id,
+        promoter_id: promoter.id,
         commission_type: commission_type || "flat_per_head",
         commission_config: commission_config || { amount_per_head: 5 },
         assigned_by: finalAssignedBy || "organizer",

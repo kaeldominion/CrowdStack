@@ -49,12 +49,24 @@ export default function AdminPromotersPage() {
     let filtered = [...promoters];
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchLower) ||
-          p.email?.toLowerCase().includes(searchLower) ||
-          p.phone?.includes(search)
-      );
+      filtered = filtered.filter((p) => {
+        // Match name
+        if (p.name.toLowerCase().includes(searchLower)) return true;
+        
+        // Match email (full or username part)
+        if (p.email) {
+          const emailLower = p.email.toLowerCase();
+          if (emailLower.includes(searchLower)) return true;
+          // Also check username part (before @)
+          const usernamePart = emailLower.split("@")[0];
+          if (usernamePart.includes(searchLower)) return true;
+        }
+        
+        // Match phone
+        if (p.phone?.includes(search)) return true;
+        
+        return false;
+      });
     }
     setFilteredPromoters(filtered);
   };
