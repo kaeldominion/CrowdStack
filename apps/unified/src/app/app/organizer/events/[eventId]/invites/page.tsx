@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Card, Button, Input, Badge } from "@crowdstack/ui";
+import { Card, Button, Input, Badge, Select } from "@crowdstack/ui";
 import { QrCode, Plus, Copy, Check } from "lucide-react";
 import type { InviteQRCode } from "@/lib/data/invite-codes";
 
@@ -13,10 +13,29 @@ export default function EventInvitesPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [eventPromoters, setEventPromoters] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
 
   useEffect(() => {
     loadInviteQRCodes();
+    loadEventPromoters();
   }, [eventId]);
+
+  const loadEventPromoters = async () => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/promoters`);
+      if (response.ok) {
+        const data = await response.json();
+        const promoters = (data.promoters || []).map((ep: any) => ({
+          id: ep.promoter?.id,
+          name: ep.promoter?.name || "Unknown",
+        })).filter((p: any) => p.id);
+        setEventPromoters(promoters);
+      }
+    } catch (error) {
+      console.error("Error loading event promoters:", error);
+    }
+  };
 
   const loadInviteQRCodes = async () => {
     try {
@@ -33,14 +52,20 @@ export default function EventInvitesPage() {
 
   const createInviteQR = async (maxUses?: number, expiresAt?: string) => {
     try {
+      const body: any = { max_uses: maxUses, expires_at: expiresAt };
+      if (selectedPromoterId) {
+        body.promoter_id = selectedPromoterId;
+      }
+      
       const response = await fetch(`/api/events/${eventId}/invites/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ max_uses: maxUses, expires_at: expiresAt }),
+        body: JSON.stringify(body),
       });
       if (!response.ok) throw new Error("Failed to create invite QR");
       await loadInviteQRCodes();
       setShowCreate(false);
+      setSelectedPromoterId(""); // Reset selection
     } catch (error) {
       console.error("Error creating invite QR:", error);
     }
@@ -87,9 +112,35 @@ export default function EventInvitesPage() {
         <Card>
           <div className="p-6 space-y-4">
             <h3 className="text-lg font-semibold text-white">Create Invite QR Code</h3>
+            
+            {eventPromoters.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-foreground-muted mb-2">
+                  Assign to Promoter (Optional)
+                </label>
+                <Select
+                  value={selectedPromoterId}
+                  onChange={(e) => setSelectedPromoterId(e.target.value)}
+                  options={[
+                    { value: "", label: "None (General Invite)" },
+                    ...eventPromoters.map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                  helperText="Select a promoter to attribute registrations to them, or leave as 'None' for general invite"
+                />
+              </div>
+            )}
+
             <div className="flex gap-4">
-              <Button onClick={() => createInviteQR()}>Create (Unlimited)</Button>
-              <Button variant="secondary" onClick={() => setShowCreate(false)}>
+              <Button onClick={() => createInviteQR()}>
+                {selectedPromoterId ? "Create for Promoter" : "Create (Unlimited)"}
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  setShowCreate(false);
+                  setSelectedPromoterId("");
+                }}
+              >
                 Cancel
               </Button>
             </div>
@@ -107,8 +158,10 @@ export default function EventInvitesPage() {
                   <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
                   {inviteQR.owner_name && (
                     <p className="text-xs text-white/40 mt-1">
-                      {inviteQR.creator_role === "event_organizer" && "Organizer: "}
-                      {inviteQR.creator_role === "venue_admin" && "Venue: "}
+                      {inviteQR.promoter_id && inviteQR.creator_role === "event_organizer" && "For Promoter: "}
+                      {inviteQR.promoter_id && inviteQR.creator_role === "venue_admin" && "For Promoter: "}
+                      {!inviteQR.promoter_id && inviteQR.creator_role === "event_organizer" && "Organizer: "}
+                      {!inviteQR.promoter_id && inviteQR.creator_role === "venue_admin" && "Venue: "}
                       {inviteQR.creator_role === "promoter" && "Promoter: "}
                       {inviteQR.owner_name}
                     </p>

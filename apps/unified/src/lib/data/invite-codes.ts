@@ -14,6 +14,7 @@ export interface InviteQRCode {
   expires_at: string | null;
   created_at: string;
   owner_name?: string; // Name of the owner (organizer, venue, or promoter)
+  promoter_id?: string | null; // Optional: specific promoter this code is for (when organizer creates code for a promoter)
 }
 
 /**
@@ -36,6 +37,7 @@ export async function createInviteQRCode(
   options: {
     max_uses?: number;
     expires_at?: string;
+    promoter_id?: string; // Optional: if organizer wants to create code for specific promoter
   } = {}
 ): Promise<InviteQRCode> {
   const supabase = await createClient();
@@ -54,10 +56,22 @@ export async function createInviteQRCode(
   const roles = await getUserRoles();
   let creatorRole: "venue_admin" | "event_organizer" | "promoter" = "event_organizer";
 
+  // If promoter_id is specified, the creator is still the organizer/venue, but the code is for that promoter
+  let finalPromoterId: string | null = options.promoter_id || null;
+  
   if (roles.includes("venue_admin")) {
     creatorRole = "venue_admin";
-  } else if (roles.includes("promoter")) {
+  } else if (roles.includes("promoter") && !finalPromoterId) {
+    // If user is a promoter and no specific promoter_id was provided, use their promoter profile
     creatorRole = "promoter";
+    const { data: promoter } = await serviceSupabase
+      .from("promoters")
+      .select("id")
+      .eq("created_by", user.id)
+      .single();
+    if (promoter) {
+      finalPromoterId = promoter.id;
+    }
   }
 
   // Generate unique invite code and token
@@ -94,6 +108,7 @@ export async function createInviteQRCode(
       max_uses: options.max_uses || null,
       expires_at: options.expires_at || null,
       used_count: 0,
+      promoter_id: finalPromoterId || null,
     })
     .select()
     .single();
@@ -113,7 +128,7 @@ export async function getEventInviteQRCodes(eventId: string): Promise<InviteQRCo
 
   const { data: inviteCodes, error } = await supabase
     .from("invite_qr_codes")
-    .select("*")
+    .select("*, promoter:promoters(id, name)")
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
 
@@ -156,9 +171,28 @@ export async function getEventInviteQRCodes(eventId: string): Promise<InviteQRCo
         ownerName = promoter?.name;
       }
 
+      // If promoter_id is set (organizer created code for specific promoter), use that promoter's name
+      if (code.promoter_id) {
+        const promoter = Array.isArray(code.promoter) ? code.promoter[0] : code.promoter;
+        if (promoter?.name) {
+          ownerName = promoter.name;
+        } else {
+          // Fallback: query promoter directly if join didn't work
+          const { data: promoterData } = await supabase
+            .from("promoters")
+            .select("name")
+            .eq("id", code.promoter_id)
+            .single();
+          if (promoterData?.name) {
+            ownerName = promoterData.name;
+          }
+        }
+      }
+
       return {
         ...code,
         owner_name: ownerName,
+        promoter_id: code.promoter_id || undefined,
       };
     })
   );

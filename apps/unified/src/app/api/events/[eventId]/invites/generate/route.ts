@@ -17,11 +17,12 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { max_uses, expires_at } = body;
+    const { max_uses, expires_at, promoter_id } = body;
 
     const inviteQR = await createInviteQRCode(params.eventId, {
       max_uses,
       expires_at,
+      promoter_id,
     });
 
     return NextResponse.json({ invite_qr: inviteQR });

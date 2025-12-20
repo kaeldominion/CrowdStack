@@ -21,13 +21,12 @@ export async function POST(
     console.log("[Register API] Request body:", JSON.stringify(body, null, 2));
     
     const { searchParams } = new URL(request.url);
-    const ref = searchParams.get("ref"); // referral promoter ID
+    const ref = searchParams.get("ref"); // referral promoter ID or invite code
     
-    // Validate ref is a valid UUID (promoter ID must be UUID)
-    // If ref has a prefix like "venue_" or "organizer_", ignore it
+    // Validate ref - could be a UUID (promoter ID) or an invite code (e.g., INV-XXXXXX)
     let referralPromoterId: string | null = null;
     if (ref) {
-      // Check if ref is a valid UUID format (without prefix)
+      // Check if ref is a valid UUID format (promoter ID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(ref)) {
         referralPromoterId = ref;
@@ -35,6 +34,37 @@ export async function POST(
         // Ignore venue/organizer refs - they're not promoter IDs
         console.log("[Register API] Ignoring non-promoter ref:", ref);
         referralPromoterId = null;
+      } else if (ref.startsWith("INV-")) {
+        // This is an invite code - look up the associated promoter
+        console.log("[Register API] Looking up invite code:", ref);
+        const { data: inviteQR } = await serviceSupabase
+          .from("invite_qr_codes")
+          .select("promoter_id, creator_role, created_by")
+          .eq("invite_code", ref)
+          .single();
+
+        if (inviteQR) {
+          // If promoter_id is set, use that (organizer created code for specific promoter)
+          if (inviteQR.promoter_id) {
+            referralPromoterId = inviteQR.promoter_id;
+            console.log("[Register API] Found promoter from invite code promoter_id:", referralPromoterId);
+          } 
+          // Otherwise, if creator is a promoter, get their promoter ID
+          else if (inviteQR.creator_role === "promoter") {
+            const { data: promoter } = await serviceSupabase
+              .from("promoters")
+              .select("id")
+              .eq("created_by", inviteQR.created_by)
+              .single();
+            
+            if (promoter) {
+              referralPromoterId = promoter.id;
+              console.log("[Register API] Found promoter from invite code creator:", referralPromoterId);
+            }
+          }
+        } else {
+          console.warn("[Register API] Invite code not found:", ref);
+        }
       } else {
         // Try to extract UUID if there's a prefix
         const uuidMatch = ref.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
