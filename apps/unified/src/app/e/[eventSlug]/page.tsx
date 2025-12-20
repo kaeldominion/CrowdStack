@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Container, Section, Button, Card, Badge } from "@crowdstack/ui";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, Image as ImageIcon, ArrowRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
@@ -231,6 +231,29 @@ export default async function EventPage({
                 </div>
               </Card>
             </div>
+
+            {/* Photo Gallery Section */}
+            <Card>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <ImageIcon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-foreground">Event Photos</h2>
+                    <p className="text-sm text-foreground-muted mt-1">
+                      View photos from this event
+                    </p>
+                  </div>
+                </div>
+                <Link href={`/p/${params.eventSlug}`}>
+                  <Button variant="primary">
+                    View Gallery
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
           </div>
         </Container>
       </Section>

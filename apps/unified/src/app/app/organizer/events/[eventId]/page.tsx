@@ -42,6 +42,8 @@ import {
   ShieldAlert,
   History,
   UserPlus,
+  Image as ImageIcon,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -362,7 +364,21 @@ export default function OrganizerEventDetailPage() {
           </Link>
           <Button
             variant="ghost"
-            onClick={() => navigator.clipboard.writeText(eventUrl)}
+            onClick={async () => {
+              try {
+                const fullUrl = `${window.location.origin}${eventUrl}`;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  await navigator.clipboard.writeText(fullUrl);
+                  alert("Event link copied to clipboard!");
+                } else {
+                  prompt("Copy this link:", fullUrl);
+                }
+              } catch (err) {
+                console.error("Failed to copy:", err);
+                const fullUrl = `${window.location.origin}${eventUrl}`;
+                prompt("Copy this link:", fullUrl);
+              }
+            }}
           >
             <Share2 className="h-4 w-4 mr-2" />
             Share
@@ -512,6 +528,10 @@ export default function OrganizerEventDetailPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="attendees">Attendees ({attendees.length})</TabsTrigger>
           <TabsTrigger value="promoters">Promoters</TabsTrigger>
+          <TabsTrigger value="photos">
+            <ImageIcon className="h-4 w-4 mr-1" />
+            Photos
+          </TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -722,6 +742,38 @@ export default function OrganizerEventDetailPage() {
               No promoters assigned to this event
             </div>
           )}
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="photos" className="space-y-4">
+        <Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">Photo Album</h2>
+              <Link href={`/app/organizer/events/${eventId}/photos`}>
+                <Button variant="primary">
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Manage Photos
+                </Button>
+              </Link>
+            </div>
+            <p className="text-foreground-muted">
+              Upload and manage photos for this event. Once published, attendees can view them on the public gallery.
+            </p>
+            {event.slug && (
+              <div className="pt-4 border-t border-border">
+                <p className="text-sm text-foreground-muted mb-2">Public Photo Gallery:</p>
+                <Link 
+                  href={`/p/${event.slug}`}
+                  target="_blank"
+                  className="text-primary hover:underline text-sm inline-flex items-center gap-1"
+                >
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/p/{event.slug}
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            )}
+          </div>
         </Card>
       </TabsContent>
 

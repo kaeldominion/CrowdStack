@@ -35,8 +35,10 @@ export async function GET() {
         venue_rejection_reason,
         capacity,
         cover_image_url,
+        flier_url,
         created_at,
-        venue:venues(id, name)
+        venue:venues(id, name, logo_url, cover_image_url, city, state),
+        organizer:organizers(id, name, logo_url)
       `)
       .eq("organizer_id", organizerId)
       .order("start_time", { ascending: false });

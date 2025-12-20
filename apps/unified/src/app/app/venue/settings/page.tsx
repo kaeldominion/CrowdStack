@@ -1,11 +1,1015 @@
-export default async function VenueSettingsPage() {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-gray-900">Venue Settings</h1>
-      <div className="mt-8">
-        <p className="text-gray-500">Settings form coming soon.</p>
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal } from "@crowdstack/ui";
+import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check } from "lucide-react";
+import Image from "next/image";
+import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
+
+interface VenueSettingsData {
+  venue: Venue;
+  gallery: VenueGalleryType[];
+  tags: VenueTag[];
+}
+
+const PRESET_COLORS = [
+  { name: "Blue", value: "#3B82F6" },
+  { name: "Purple", value: "#8B5CF6" },
+  { name: "Red", value: "#EF4444" },
+  { name: "Green", value: "#10B981" },
+  { name: "Orange", value: "#F59E0B" },
+  { name: "Pink", value: "#EC4899" },
+];
+
+const TAG_OPTIONS = {
+  music: ["Electronic", "Hip-Hop", "House", "Techno", "R&B", "Pop", "Rock", "Jazz", "Latin", "Reggae"],
+  dress_code: ["Casual", "Smart Casual", "Dressy", "Formal", "Black Tie", "No Dress Code"],
+  crowd_type: ["Young Professional", "College", "Mixed", "Mature", "LGBTQ+", "International"],
+  price_range: ["$", "$$", "$$$", "$$$$"],
+};
+
+export default function VenueSettingsPage() {
+  const searchParams = useSearchParams();
+  const venueId = searchParams.get("venueId");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [data, setData] = useState<VenueSettingsData | null>(null);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState(false);
+  const [savedTab, setSavedTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadSettings();
+  }, [venueId]);
+
+  const loadSettings = async () => {
+    try {
+      const url = venueId ? `/api/venue/settings?venueId=${venueId}` : "/api/venue/settings";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to load settings");
+      const result = await response.json();
+      // Handle nested structure from API
+      const venueData = result.venue || result;
+      setData({
+        venue: venueData,
+        gallery: venueData.gallery || [],
+        tags: venueData.tags || [],
+      });
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSettings = async (tab: string) => {
+    if (!data) return;
+
+    setSaving(true);
+    setErrors({});
+
+    try {
+      const payload: any = { venue: data.venue };
+      
+      // Include tags if on tags tab
+      if (tab === "tags") {
+        payload.tags = data.tags;
+      }
+
+      const url = venueId ? `/api/venue/settings?venueId=${venueId}` : "/api/venue/settings";
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to save");
+      }
+
+      // Reload to get updated data
+      await loadSettings();
+      
+      // Show success indicator
+      setSavedTab(tab);
+      setTimeout(() => {
+        setSavedTab(null);
+      }, 3000); // Hide after 3 seconds
+    } catch (error: any) {
+      setErrors({ save: error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateVenueField = (field: string, value: any) => {
+    if (!data) return;
+    setData({
+      ...data,
+      venue: {
+        ...data.venue,
+        [field]: value,
+      },
+    });
+  };
+
+  const generateSlug = () => {
+    if (!data) return;
+    const slug = data.venue.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    updateVenueField("slug", slug);
+  };
+
+  const handleImageUpload = async (type: "logo" | "cover", file: File) => {
+    if (!data) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+
+    try {
+      // For now, we'll use a simple approach - in production, upload to storage first
+      // This would need to be implemented with proper storage upload
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const url = reader.result as string;
+        updateVenueField(type === "logo" ? "logo_url" : "cover_image_url", url);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+    }
+  };
+
+  const handleGalleryUpload = async (file: File) => {
+    if (!data) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const url = venueId 
+        ? `/api/venue/gallery?venueId=${venueId}` 
+        : "/api/venue/gallery";
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Failed to upload");
+      const result = await response.json();
+      await loadSettings();
+    } catch (error) {
+      console.error("Failed to upload gallery image:", error);
+    }
+  };
+
+  const handleSetHero = async (imageId: string) => {
+    try {
+      const response = await fetch(`/api/venue/gallery/${imageId}/hero`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error("Failed to set hero");
+      await loadSettings();
+    } catch (error) {
+      console.error("Failed to set hero image:", error);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!confirm("Are you sure you want to delete this image?")) return;
+
+    try {
+      const response = await fetch(`/api/venue/gallery/${imageId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete");
+      await loadSettings();
+    } catch (error) {
+      console.error("Failed to delete image:", error);
+    }
+  };
+
+  const handleTagToggle = (type: VenueTag["tag_type"], value: string) => {
+    if (!data) return;
+
+    const existingTag = data.tags.find((t) => t.tag_type === type && t.tag_value === value);
+    const newTags = existingTag
+      ? data.tags.filter((t) => t.id !== existingTag.id)
+      : [
+          ...data.tags,
+          {
+            id: `temp-${Date.now()}`,
+            venue_id: data.venue.id,
+            tag_type: type,
+            tag_value: value,
+            created_at: new Date().toISOString(),
+          },
+        ];
+
+    setData({ ...data, tags: newTags });
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-8 pt-4">
+        <div className="text-center py-12">
+          <p className="text-white/60">Loading settings...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="space-y-8 pt-4">
+        <div className="text-center py-12">
+          <p className="text-white/60">Failed to load settings</p>
+        </div>
+      </div>
+    );
+  }
+
+  const publicVenueUrl = data?.venue?.slug 
+    ? `${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/v/${data.venue.slug}`
+    : null;
+
+  return (
+    <div className="space-y-8 pt-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">Venue Settings</h1>
+          <p className="mt-2 text-sm text-white/60">
+            {venueId ? "Managing venue settings" : "Manage your venue profile and preferences"}
+          </p>
+          {data?.venue && (
+            <p className="mt-1 text-sm font-medium text-white">{data.venue.name}</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={() => setShowPreview(true)}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
+          {publicVenueUrl && (
+            <Link href={publicVenueUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="secondary" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                View Live Page
+                <ExternalLink className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="location">Location</TabsTrigger>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
+          <TabsTrigger value="tags">Tags</TabsTrigger>
+          <TabsTrigger value="policies">Policies</TabsTrigger>
+          <TabsTrigger value="defaults">Defaults</TabsTrigger>
+        </TabsList>
+
+        {/* Profile Tab */}
+        <TabsContent value="profile">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Profile Information</h2>
+
+              <Input
+                label="Venue Name"
+                value={data.venue.name || ""}
+                onChange={(e) => updateVenueField("name", e.target.value)}
+                required
+              />
+
+              <div className="flex gap-2">
+                <Input
+                  label="Slug"
+                  value={data.venue.slug || ""}
+                  onChange={(e) => updateVenueField("slug", e.target.value)}
+                  helperText="URL-friendly identifier (e.g., 'my-venue')"
+                  className="flex-1"
+                />
+                <Button variant="secondary" onClick={generateSlug} className="mt-8">
+                  Generate
+                </Button>
+              </div>
+
+              <Input
+                label="Tagline"
+                value={data.venue.tagline || ""}
+                onChange={(e) => updateVenueField("tagline", e.target.value)}
+                placeholder="Short description"
+              />
+
+              <Textarea
+                label="Description"
+                value={data.venue.description || ""}
+                onChange={(e) => updateVenueField("description", e.target.value)}
+                rows={6}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Website"
+                  type="url"
+                  value={data.venue.website || ""}
+                  onChange={(e) => updateVenueField("website", e.target.value)}
+                  placeholder="https://example.com"
+                />
+                <Input
+                  label="Instagram"
+                  type="text"
+                  value={data.venue.instagram_url || ""}
+                  onChange={(e) => updateVenueField("instagram_url", e.target.value)}
+                  placeholder="@username or https://instagram.com/username"
+                  helperText="Instagram handle or full URL"
+                />
+                <Input
+                  label="Phone"
+                  type="tel"
+                  value={data.venue.phone || ""}
+                  onChange={(e) => updateVenueField("phone", e.target.value)}
+                />
+                <Input
+                  label="Email"
+                  type="email"
+                  value={data.venue.email || ""}
+                  onChange={(e) => updateVenueField("email", e.target.value)}
+                />
+              </div>
+
+              {errors.save && <p className="text-error text-sm">{errors.save}</p>}
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("profile")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Profile
+                </Button>
+                {savedTab === "profile" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Location Tab */}
+        <TabsContent value="location">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Location</h2>
+
+              <Input
+                label="Google Maps URL"
+                type="url"
+                value={data.venue.google_maps_url || ""}
+                onChange={(e) => updateVenueField("google_maps_url", e.target.value)}
+                placeholder="https://www.google.com/maps/place/..."
+                helperText="Paste the Google Maps URL for your venue. This will be used for the map display and location link."
+              />
+
+              {/* Map Preview */}
+              {data.venue.google_maps_url && (() => {
+                const getEmbedUrl = () => {
+                  const url = data.venue.google_maps_url;
+
+                  // Extract coordinates from URL (most reliable method)
+                  // Pattern: @lat,lng or @lat,lng,zoom
+                  const coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+                  if (coordsMatch) {
+                    const lat = coordsMatch[1];
+                    const lng = coordsMatch[2];
+                    
+                    // Try API key approach first (better quality)
+                    const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+                    if (googleMapsApiKey) {
+                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${lat},${lng}&zoom=15`;
+                    }
+                    
+                    // Fallback: Use simple embed format (works without API key but may have limitations)
+                    return `https://www.google.com/maps?q=${lat},${lng}&hl=en&z=15&output=embed`;
+                  }
+
+                  // Try API key approach for place names or queries
+                  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+                  if (googleMapsApiKey) {
+                    // Try to extract place name
+                    const placeMatch = url.match(/\/place\/([^/@?]+)/);
+                    if (placeMatch) {
+                      const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
+                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(placeName)}&zoom=15`;
+                    }
+
+                    // Try query parameter
+                    const queryMatch = url.match(/[?&]q=([^&]+)/);
+                    if (queryMatch) {
+                      const query = decodeURIComponent(queryMatch[1]);
+                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(query)}&zoom=15`;
+                    }
+                  }
+
+                  return null;
+                };
+
+                const embedUrl = getEmbedUrl();
+
+                return (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-foreground">Map Preview</p>
+                    {embedUrl ? (
+                      <div className="w-full h-64 border-2 border-border overflow-hidden">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          loading="lazy"
+                          allowFullScreen
+                          referrerPolicy="no-referrer-when-downgrade"
+                          src={embedUrl}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-64 border-2 border-border bg-surface flex items-center justify-center">
+                        <div className="text-center space-y-2 px-4">
+                          <p className="text-foreground-muted text-sm font-medium">
+                            Map preview unavailable
+                          </p>
+                          <p className="text-foreground-muted text-xs">
+                            Unable to extract location from this URL format
+                          </p>
+                          <p className="text-foreground-muted text-xs mt-2">
+                            The URL will still work for the "Open in Google Maps" button on your public page
+                          </p>
+                          <p className="text-foreground-muted text-xs mt-3 pt-3 border-t border-border">
+                            <strong>Tip:</strong> Use a Google Maps URL with coordinates:
+                            <br />
+                            <code className="text-xs bg-surface px-2 py-1 mt-1 inline-block border border-border">
+                              https://www.google.com/maps/place/Venue/@40.7128,-74.0060
+                            </code>
+                            <br />
+                            <span className="text-xs mt-1 block">
+                              (Right-click on Google Maps → "Share" → "Copy link" to get the correct format)
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <a
+                      href={data.venue.google_maps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline text-sm inline-flex items-center gap-1 break-all"
+                    >
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{data.venue.google_maps_url}</span>
+                    </a>
+                  </div>
+                );
+              })()}
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("location")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Location
+                </Button>
+                {savedTab === "location" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Branding Tab */}
+        <TabsContent value="branding">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Branding</h2>
+
+              {/* Logo Upload */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Logo</label>
+                <p className="text-xs text-foreground-muted mb-3">
+                  Recommended: 512×512px (square), PNG with transparent background. Max 2MB.
+                </p>
+                {data.venue.logo_url ? (
+                  <div className="relative w-32 h-32 border-2 border-border mb-2">
+                    <Image src={data.venue.logo_url} alt="Logo" fill className="object-contain" />
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload("logo", file);
+                  }}
+                  className="text-sm"
+                />
+              </div>
+
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Cover Image</label>
+                <p className="text-xs text-foreground-muted mb-3">
+                  Recommended: 1920×640px (3:1 aspect ratio), JPG or PNG. Max 5MB. This image appears at the top of your public venue page.
+                </p>
+                {data.venue.cover_image_url ? (
+                  <div className="relative w-full h-48 border-2 border-border mb-2">
+                    <Image src={data.venue.cover_image_url} alt="Cover" fill className="object-cover" />
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload("cover", file);
+                  }}
+                  className="text-sm"
+                />
+              </div>
+
+              {/* Accent Color */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Accent Color</label>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => updateVenueField("accent_color", color.value)}
+                        className={`w-12 h-12 border-2 ${
+                          data.venue.accent_color === color.value
+                            ? "border-primary"
+                            : "border-border"
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                  <Input
+                    label="Custom Color (Hex)"
+                    value={data.venue.accent_color || ""}
+                    onChange={(e) => updateVenueField("accent_color", e.target.value)}
+                    placeholder="#3B82F6"
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                  />
+                  {data.venue.accent_color && (
+                    <div
+                      className="w-full h-12 border-2 border-border"
+                      style={{ backgroundColor: data.venue.accent_color }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("branding")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Branding
+                </Button>
+                {savedTab === "branding" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Media Tab */}
+        <TabsContent value="media">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Gallery</h2>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Upload Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleGalleryUpload(file);
+                  }}
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {(data.gallery || []).map((image) => {
+                  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+                  const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+                  const imageUrl = image.storage_path.startsWith("http")
+                    ? image.storage_path
+                    : supabaseProjectRef
+                    ? `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
+                    : image.storage_path;
+
+                  return (
+                    <div key={image.id} className="relative group border-2 border-border">
+                      <div className="relative aspect-square">
+                        <Image
+                          src={imageUrl}
+                          alt={image.caption || "Gallery image"}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        {!image.is_hero && (
+                          <button
+                            onClick={() => handleSetHero(image.id)}
+                            className="p-2 bg-primary text-white"
+                            title="Set as hero"
+                          >
+                            <Star className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteImage(image.id)}
+                          className="p-2 bg-error text-white"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {image.is_hero && (
+                        <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 text-xs">
+                          Hero
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Tags Tab */}
+        <TabsContent value="tags">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Vibe Tags</h2>
+
+              {Object.entries(TAG_OPTIONS).map(([type, options]) => {
+                const typeTags = data.tags.filter((t) => t.tag_type === type);
+                return (
+                  <div key={type} className="space-y-2">
+                    <label className="block text-sm font-medium text-foreground capitalize">
+                      {type.replace("_", " ")}
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map((option) => {
+                        const isSelected = typeTags.some((t) => t.tag_value === option);
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => handleTagToggle(type as VenueTag["tag_type"], option)}
+                            className={`px-3 py-1 text-sm border-2 transition-colors ${
+                              isSelected
+                                ? "bg-primary text-white border-primary"
+                                : "bg-surface text-foreground border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("tags")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Tags
+                </Button>
+                {savedTab === "tags" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Policies Tab */}
+        <TabsContent value="policies">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Policies</h2>
+
+              <Input
+                label="Dress Code"
+                value={data.venue.dress_code || ""}
+                onChange={(e) => updateVenueField("dress_code", e.target.value)}
+                placeholder="e.g., Smart Casual, No Dress Code"
+              />
+
+              <Input
+                label="Age Restriction"
+                value={data.venue.age_restriction || ""}
+                onChange={(e) => updateVenueField("age_restriction", e.target.value)}
+                placeholder="e.g., 21+, 18+, All Ages"
+              />
+
+              <Textarea
+                label="Entry Notes"
+                value={data.venue.entry_notes || ""}
+                onChange={(e) => updateVenueField("entry_notes", e.target.value)}
+                rows={4}
+                placeholder="Important information for attendees"
+              />
+
+              <Textarea
+                label="Table & VIP Notes"
+                value={data.venue.table_min_spend_notes || ""}
+                onChange={(e) => updateVenueField("table_min_spend_notes", e.target.value)}
+                rows={4}
+                placeholder="Information about table reservations and VIP options"
+              />
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("policies")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Policies
+                </Button>
+                {savedTab === "policies" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* Defaults Tab */}
+        <TabsContent value="defaults">
+          <Card>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-semibold text-foreground">Default Settings</h2>
+
+              <Textarea
+                label="Default Registration Questions (JSON)"
+                value={JSON.stringify(data.venue.default_registration_questions || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    updateVenueField("default_registration_questions", parsed);
+                  } catch {
+                    // Invalid JSON, ignore
+                  }
+                }}
+                rows={8}
+                className="font-mono text-xs"
+              />
+
+              <Textarea
+                label="Default Commission Rules (JSON)"
+                value={JSON.stringify(data.venue.default_commission_rules || {}, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    updateVenueField("default_commission_rules", parsed);
+                  } catch {
+                    // Invalid JSON, ignore
+                  }
+                }}
+                rows={8}
+                className="font-mono text-xs"
+              />
+
+              <Textarea
+                label="Default Message Templates (JSON)"
+                value={JSON.stringify(data.venue.default_message_templates || {}, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    updateVenueField("default_message_templates", parsed);
+                  } catch {
+                    // Invalid JSON, ignore
+                  }
+                }}
+                rows={8}
+                className="font-mono text-xs"
+              />
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  onClick={() => saveSettings("defaults")}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Defaults
+                </Button>
+                {savedTab === "defaults" && (
+                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                    <Check className="h-4 w-4" />
+                    <span className="text-sm font-medium">Saved!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Preview Modal */}
+      {data && (
+        <Modal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          title="Preview Public Venue Page"
+          size="xl"
+        >
+          <div className="max-h-[80vh] overflow-y-auto bg-background">
+            <div className="space-y-6">
+              {/* Preview Header */}
+              {data.venue.cover_image_url && (
+                <div className="relative h-48 w-full overflow-hidden border-2 border-border">
+                  <Image
+                    src={data.venue.cover_image_url}
+                    alt={data.venue.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-4">
+                {data.venue.logo_url && (
+                  <div className="relative h-24 w-24 flex-shrink-0 border-2 border-border">
+                    <Image
+                      src={data.venue.logo_url}
+                      alt={`${data.venue.name} logo`}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h1
+                    className="text-3xl font-bold tracking-tight text-foreground"
+                    style={data.venue.accent_color ? { color: data.venue.accent_color } : undefined}
+                  >
+                    {data.venue.name || "Venue Name"}
+                  </h1>
+                  {data.venue.tagline && (
+                    <p className="text-lg text-foreground-muted mt-2">{data.venue.tagline}</p>
+                  )}
+                  {data.venue.description && (
+                    <p className="text-foreground-muted mt-3 leading-relaxed">{data.venue.description}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Preview */}
+              {data.venue.google_maps_url && (
+                <div className="border-2 border-border p-4">
+                  <h3 className="font-semibold text-foreground mb-2">Location</h3>
+                  <a
+                    href={data.venue.google_maps_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline text-sm break-all"
+                  >
+                    {data.venue.google_maps_url}
+                  </a>
+                </div>
+              )}
+
+              {/* Tags Preview */}
+              {data.tags.length > 0 && (
+                <div className="border-2 border-border p-4">
+                  <h3 className="font-semibold text-foreground mb-3">Vibe</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {data.tags.map((tag) => (
+                      <Badge key={tag.id} variant="default" size="sm">
+                        {tag.tag_value}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Policies Preview */}
+              {(data.venue.dress_code || data.venue.age_restriction) && (
+                <div className="border-2 border-border p-4">
+                  <h3 className="font-semibold text-foreground mb-3">Policies</h3>
+                  <div className="space-y-2 text-sm">
+                    {data.venue.dress_code && (
+                      <div>
+                        <span className="font-medium text-foreground-muted">Dress Code: </span>
+                        <span className="text-foreground">{data.venue.dress_code}</span>
+                      </div>
+                    )}
+                    {data.venue.age_restriction && (
+                      <div>
+                        <span className="font-medium text-foreground-muted">Age: </span>
+                        <span className="text-foreground">{data.venue.age_restriction}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Gallery Preview */}
+              {data.gallery.length > 0 && (
+                <div className="border-2 border-border p-4">
+                  <h3 className="font-semibold text-foreground mb-3">Gallery</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {data.gallery.slice(0, 6).map((image) => {
+                      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+                      const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+                      const imageUrl = image.storage_path.startsWith("http")
+                        ? image.storage_path
+                        : supabaseProjectRef
+                        ? `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
+                        : image.storage_path;
+                      return (
+                        <div key={image.id} className="relative aspect-square border-2 border-border">
+                          <Image
+                            src={imageUrl}
+                            alt={image.caption || "Gallery image"}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center text-sm text-foreground-muted pt-4 border-t border-border">
+                <p>This is a preview. Changes are not saved until you click "Save" in each tab.</p>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
-

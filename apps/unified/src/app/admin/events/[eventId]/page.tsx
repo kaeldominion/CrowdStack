@@ -33,6 +33,7 @@ import {
   EyeOff,
   QrCode,
   Radio,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -278,6 +279,12 @@ export default function AdminEventDetailPage() {
                 >
                   <Radio className="h-3 w-3" /> Live Control
                 </a>
+                <Link
+                  href={`/app/organizer/events/${event.id}/photos`}
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <ImageIcon className="h-3 w-3" /> Manage Photos
+                </Link>
               </div>
             )}
           </div>
@@ -473,6 +480,32 @@ export default function AdminEventDetailPage() {
               </div>
             </Card>
           )}
+
+          {/* Photos */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Photo Album</h2>
+            <div className="space-y-3">
+              <p className="text-sm text-foreground-muted">
+                Upload and manage photos for this event. Once published, attendees can view them on the public gallery.
+              </p>
+              <Link href={`/app/organizer/events/${event.id}/photos`}>
+                <Button variant="primary" className="w-full">
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Manage Photos
+                </Button>
+              </Link>
+              {event.slug && (
+                <Link
+                  href={`/p/${event.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  View Public Gallery <ExternalLink className="h-3 w-3" />
+                </Link>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
 

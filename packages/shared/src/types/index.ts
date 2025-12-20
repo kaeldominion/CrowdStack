@@ -56,6 +56,9 @@ export interface InviteToken {
 export interface Venue {
   id: string;
   name: string;
+  slug: string | null;
+  tagline: string | null;
+  description: string | null;
   address: string | null;
   city: string | null;
   state: string | null;
@@ -63,9 +66,44 @@ export interface Venue {
   phone: string | null;
   email: string | null;
   website: string | null;
+  logo_url: string | null;
+  cover_image_url: string | null;
+  accent_color: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  google_maps_url: string | null;
+  dress_code: string | null;
+  age_restriction: string | null;
+  entry_notes: string | null;
+  table_min_spend_notes: string | null;
+  default_registration_questions: Record<string, any> | null;
+  default_commission_rules: Record<string, any> | null;
+  default_message_templates: Record<string, any> | null;
+  instagram_url: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface VenueGallery {
+  id: string;
+  venue_id: string;
+  storage_path: string;
+  thumbnail_path: string | null;
+  caption: string | null;
+  is_hero: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export type VenueTagType = "music" | "dress_code" | "crowd_type" | "price_range";
+
+export interface VenueTag {
+  id: string;
+  venue_id: string;
+  tag_type: VenueTagType;
+  tag_value: string;
+  created_at: string;
 }
 
 export interface Organizer {
@@ -74,7 +112,26 @@ export interface Organizer {
   email: string | null;
   phone: string | null;
   company_name: string | null;
+  logo_url: string | null;
+  bio: string | null;
+  website: string | null;
+  instagram_url: string | null;
+  twitter_url: string | null;
+  facebook_url: string | null;
+  team_members?: OrganizerTeamMember[];
   created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrganizerTeamMember {
+  id: string;
+  organizer_id: string;
+  name: string;
+  role: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  display_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -120,6 +177,7 @@ export interface Event {
   end_time: string | null;
   status: EventStatus;
   capacity: number | null;
+  flier_url: string | null;
   cover_image_url: string | null;
   created_at: string;
   updated_at: string;

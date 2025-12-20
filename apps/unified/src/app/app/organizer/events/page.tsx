@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button, EmptyState, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
+import { Button, EmptyState, Badge } from "@crowdstack/ui";
 import { Plus, Calendar, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { EventCard } from "@/components/events/EventCard";
+import type { Organizer, Venue } from "@crowdstack/shared/types";
 
 interface Event {
   id: string;
@@ -17,7 +19,10 @@ interface Event {
   venue_rejection_reason: string | null;
   registrations: number;
   checkins: number;
-  venue: { id: string; name: string } | null;
+  flier_url: string | null;
+  cover_image_url: string | null;
+  venue: Venue | null;
+  organizer: Organizer | null;
 }
 
 export default function OrganizerEventsPage() {
@@ -43,43 +48,6 @@ export default function OrganizerEventsPage() {
     }
   };
 
-  const getApprovalBadge = (status: string, rejectionReason?: string | null) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge variant="warning" title="Waiting for venue approval">
-            Pending Approval
-          </Badge>
-        );
-      case "approved":
-        return <Badge variant="success">Approved</Badge>;
-      case "rejected":
-        return (
-          <Badge variant="danger" title={rejectionReason || "Rejected by venue"}>
-            Rejected
-          </Badge>
-        );
-      case "not_required":
-        return <Badge variant="secondary">No Venue</Badge>;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
-      case "published":
-        return <Badge variant="success">Published</Badge>;
-      case "cancelled":
-        return <Badge variant="danger">Cancelled</Badge>;
-      case "completed":
-        return <Badge variant="secondary">Completed</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
 
   if (loading) {
     return (
@@ -151,45 +119,15 @@ export default function OrganizerEventsPage() {
           }}
         />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Event Name</TableHead>
-              <TableHead>Venue</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Registrations</TableHead>
-              <TableHead>Check-ins</TableHead>
-              <TableHead>Venue Approval</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.map((event) => (
-              <TableRow 
-                key={event.id} 
-                hover
-                className="cursor-pointer"
-                onClick={() => router.push(`/app/organizer/events/${event.id}`)}
-              >
-                <TableCell className="font-medium">{event.name}</TableCell>
-                <TableCell className="text-foreground-muted">
-                  {event.venue?.name || "—"}
-                </TableCell>
-                <TableCell>
-                  {new Date(event.start_time).toLocaleDateString()}
-                </TableCell>
-                <TableCell>{event.registrations}</TableCell>
-                <TableCell>{event.checkins}</TableCell>
-                <TableCell>
-                  {getApprovalBadge(event.venue_approval_status, event.venue_rejection_reason)}
-                </TableCell>
-                <TableCell>
-                  {getStatusBadge(event.status)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              onClick={() => router.push(`/app/organizer/events/${event.id}`)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
 import { Search, Filter, Download, User } from "lucide-react";
 import type { OrganizerAttendee } from "@/lib/data/attendees-organizer";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 export default function OrganizerAttendeesPage() {
   const [attendees, setAttendees] = useState<OrganizerAttendee[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<OrganizerAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     has_check_in: undefined as boolean | undefined,
   });
@@ -132,19 +134,22 @@ export default function OrganizerAttendeesPage() {
                 <TableHead>Events</TableHead>
                 <TableHead>Check-ins</TableHead>
                 <TableHead>Last Event</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAttendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
+                  <TableCell colSpan={5} className="text-center py-8 text-foreground-muted">
                     No attendees found
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredAttendees.map((attendee) => (
-                  <TableRow key={attendee.id} hover>
+                  <TableRow 
+                    key={attendee.id} 
+                    hover 
+                    onClick={() => setSelectedAttendeeId(attendee.id)}
+                  >
                     <TableCell className="font-medium">{attendee.name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -161,11 +166,6 @@ export default function OrganizerAttendeesPage() {
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}
                     </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => {/* View details */}}>
-                        View
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -173,6 +173,13 @@ export default function OrganizerAttendeesPage() {
           </Table>
         </div>
       </Card>
+
+      <AttendeeDetailModal
+        isOpen={!!selectedAttendeeId}
+        onClose={() => setSelectedAttendeeId(null)}
+        attendeeId={selectedAttendeeId || ""}
+        role="organizer"
+      />
     </div>
   );
 }

@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
 import { Search, Filter, Download, Flag, User, UserCheck } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 export default function VenueAttendeesPage() {
   const [attendees, setAttendees] = useState<VenueAttendee[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<VenueAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     has_check_in: undefined as boolean | undefined,
     is_flagged: undefined as boolean | undefined,
@@ -181,7 +183,11 @@ export default function VenueAttendeesPage() {
                 </TableRow>
               ) : (
                 filteredAttendees.map((attendee) => (
-                  <TableRow key={attendee.id} hover>
+                  <TableRow 
+                    key={attendee.id} 
+                    hover 
+                    onClick={() => setSelectedAttendeeId(attendee.id)}
+                  >
                     <TableCell className="font-medium">{attendee.name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -209,23 +215,14 @@ export default function VenueAttendeesPage() {
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {/* View details */}}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {/* Flag attendee */}}
-                        >
-                          <Flag className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {/* Flag attendee - TODO: implement flag modal */}}
+                      >
+                        <Flag className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -234,6 +231,13 @@ export default function VenueAttendeesPage() {
           </Table>
         </div>
       </Card>
+
+      <AttendeeDetailModal
+        isOpen={!!selectedAttendeeId}
+        onClose={() => setSelectedAttendeeId(null)}
+        attendeeId={selectedAttendeeId || ""}
+        role="venue"
+      />
     </div>
   );
 }

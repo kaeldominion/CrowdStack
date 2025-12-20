@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
 import { Search, Download, User, TrendingUp } from "lucide-react";
 import type { PromoterAttendee } from "@/lib/data/attendees-promoter";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 export default function PromoterAttendeesPage() {
   const [attendees, setAttendees] = useState<PromoterAttendee[]>([]);
   const [filteredAttendees, setFilteredAttendees] = useState<PromoterAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
   const [category, setCategory] = useState<"referrals" | "upcoming" | "all">("all");
 
   useEffect(() => {
@@ -120,7 +122,6 @@ export default function PromoterAttendeesPage() {
                 <TableHead>Upcoming</TableHead>
                 <TableHead>Check-ins</TableHead>
                 <TableHead>Last Event</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,7 +133,11 @@ export default function PromoterAttendeesPage() {
                 </TableRow>
               ) : (
                 filteredAttendees.map((attendee) => (
-                  <TableRow key={attendee.id} hover>
+                  <TableRow 
+                    key={attendee.id} 
+                    hover 
+                    onClick={() => setSelectedAttendeeId(attendee.id)}
+                  >
                     <TableCell className="font-medium">{attendee.name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
@@ -158,11 +163,6 @@ export default function PromoterAttendeesPage() {
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}
                     </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => {/* View details */}}>
-                        View
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -170,6 +170,13 @@ export default function PromoterAttendeesPage() {
           </Table>
         </div>
       </Card>
+
+      <AttendeeDetailModal
+        isOpen={!!selectedAttendeeId}
+        onClose={() => setSelectedAttendeeId(null)}
+        attendeeId={selectedAttendeeId || ""}
+        role="promoter"
+      />
     </div>
   );
 }

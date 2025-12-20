@@ -18,14 +18,10 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify organizer role
-    if (!(await userHasRole("event_organizer"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const serviceSupabase = createServiceRoleClient();
+    const isSuperadmin = await userHasRole("superadmin");
 
-    // Get event and verify organizer
+    // Get event
     const { data: event } = await serviceSupabase
       .from("events")
       .select("*, organizer_id")
@@ -36,14 +32,23 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    const { data: organizer } = await serviceSupabase
-      .from("organizers")
-      .select("id")
-      .eq("created_by", user.id)
-      .single();
+    // Superadmin can publish any album, otherwise verify organizer role
+    if (!isSuperadmin) {
+      // Verify organizer role
+      if (!(await userHasRole("event_organizer"))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
 
-    if (!organizer || event.organizer_id !== organizer.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      // Verify user is the organizer of this event
+      const { data: organizer } = await serviceSupabase
+        .from("organizers")
+        .select("id")
+        .eq("created_by", user.id)
+        .single();
+
+      if (!organizer || event.organizer_id !== organizer.id) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     // Update album to published

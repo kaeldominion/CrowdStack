@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
-import { Building2, Plus, Search, ChevronRight } from "lucide-react";
+import { Building2, Plus, Search, ChevronRight, ExternalLink } from "lucide-react";
 import { CreateVenueModal } from "@/components/CreateVenueModal";
 import { EditVenueModal } from "@/components/EditVenueModal";
 
@@ -145,10 +146,15 @@ export default function AdminVenuesPage() {
                       <TableRow 
                         key={venue.id} 
                         hover
-                        className="cursor-pointer"
-                        onClick={() => setEditingVenue(venue)}
                       >
-                        <TableCell className="font-medium">{venue.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <Link 
+                            href={`/app/venue/settings?venueId=${venue.id}`}
+                            className="hover:text-primary transition-colors"
+                          >
+                            {venue.name}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           {venue.city && venue.state ? `${venue.city}, ${venue.state}` : "—"}
                         </TableCell>
@@ -167,7 +173,25 @@ export default function AdminVenuesPage() {
                           {new Date(venue.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          <div className="flex items-center gap-3">
+                            {venue.slug && (
+                              <Link
+                                href={`${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/v/${venue.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline text-sm flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Public
+                              </Link>
+                            )}
+                            <Link
+                              href={`/app/venue/settings?venueId=${venue.id}`}
+                              className="text-foreground-muted hover:text-foreground"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))

@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
-import { User, Mail, Phone, Save, Check, AlertCircle } from "lucide-react";
+import { User, Mail, Phone, Save, Check, AlertCircle, Calendar, Instagram, MessageCircle, FileText, ArrowLeft } from "lucide-react";
+import { AvatarUpload } from "@/components/AvatarUpload";
+import { Button } from "@crowdstack/ui";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -14,8 +17,15 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
+    surname: "",
     email: "",
     phone: "",
+    whatsapp: "",
+    date_of_birth: "",
+    bio: "",
+    instagram_handle: "",
+    tiktok_handle: "",
+    avatar_url: "",
   });
 
   useEffect(() => {
@@ -35,23 +45,50 @@ export default function ProfilePage() {
       setUser(authUser);
 
       // Try to get attendee profile
-      const { data: attendee } = await supabase
-        .from("attendees")
-        .select("*")
-        .eq("user_id", authUser.id)
-        .single();
-
-      if (attendee) {
-        setFormData({
-          name: attendee.name || "",
-          email: attendee.email || authUser.email || "",
-          phone: attendee.phone || "",
-        });
+      const profileResponse = await fetch("/api/profile");
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        const attendee = profileData.attendee;
+        
+        if (attendee) {
+          setFormData({
+            name: attendee.name || "",
+            surname: attendee.surname || "",
+            email: attendee.email || authUser.email || "",
+            phone: attendee.phone || "",
+            whatsapp: attendee.whatsapp || attendee.phone || "",
+            date_of_birth: attendee.date_of_birth || "",
+            bio: attendee.bio || "",
+            instagram_handle: attendee.instagram_handle || "",
+            tiktok_handle: attendee.tiktok_handle || "",
+            avatar_url: attendee.avatar_url || "",
+          });
+        } else {
+          setFormData({
+            name: authUser.user_metadata?.name || "",
+            surname: "",
+            email: authUser.email || "",
+            phone: "",
+            whatsapp: "",
+            date_of_birth: "",
+            bio: "",
+            instagram_handle: "",
+            tiktok_handle: "",
+            avatar_url: "",
+          });
+        }
       } else {
         setFormData({
           name: authUser.user_metadata?.name || "",
+          surname: "",
           email: authUser.email || "",
           phone: "",
+          whatsapp: "",
+          date_of_birth: "",
+          bio: "",
+          instagram_handle: "",
+          tiktok_handle: "",
+          avatar_url: "",
         });
       }
     } catch (error) {
@@ -68,10 +105,18 @@ export default function ProfilePage() {
     setSaved(false);
 
     try {
-      const response = await fetch("/api/me/profile", {
-        method: "PUT",
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          surname: formData.surname,
+          date_of_birth: formData.date_of_birth || null,
+          whatsapp: formData.whatsapp,
+          bio: formData.bio || null,
+          instagram_handle: formData.instagram_handle || null,
+          tiktok_handle: formData.tiktok_handle || null,
+        }),
       });
 
       if (!response.ok) {
@@ -81,11 +126,19 @@ export default function ProfilePage() {
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      // Reload profile to get updated data
+      await loadProfile();
     } catch (error: any) {
       setError(error.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAvatarUpload = (avatarUrl: string) => {
+    setFormData({ ...formData, avatar_url: avatarUrl });
+    // Reload profile to get updated avatar
+    loadProfile();
   };
 
   if (loading) {
@@ -101,6 +154,10 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
+          <Link href="/me" className="inline-flex items-center text-white/60 hover:text-white mb-4 transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-white">
             Edit Profile
           </h1>
@@ -111,24 +168,22 @@ export default function ProfilePage() {
 
         {/* Profile Form */}
         <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 sm:p-8">
-          {/* Avatar */}
-          <div className="flex items-center gap-4 mb-8 pb-8 border-b border-white/10">
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-              {formData.name?.[0]?.toUpperCase() || formData.email?.[0]?.toUpperCase() || "U"}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-white">
-                {formData.name || "Add your name"}
-              </h2>
-              <p className="text-white/60">{user?.email}</p>
-            </div>
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center mb-8 pb-8 border-b border-white/10">
+            <AvatarUpload
+              currentAvatarUrl={formData.avatar_url}
+              name={formData.name}
+              email={user?.email}
+              onUploadComplete={handleAvatarUpload}
+              size="lg"
+            />
           </div>
 
           <form onSubmit={handleSave} className="space-y-6">
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Full Name
+                First Name
               </label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
@@ -136,8 +191,27 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter your name"
+                  placeholder="Enter your first name"
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Surname */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Last Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <input
+                  type="text"
+                  value={formData.surname}
+                  onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                  placeholder="Enter your last name"
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  required
                 />
               </div>
             </div>
@@ -152,33 +226,114 @@ export default function ProfilePage() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="your@email.com"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  disabled
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/60 cursor-not-allowed"
                 />
               </div>
               <p className="mt-1 text-xs text-white/40">
-                This email is used for event notifications
+                Email cannot be changed here. Contact support to update your email.
               </p>
             </div>
 
-            {/* Phone */}
+            {/* WhatsApp */}
             <div>
               <label className="block text-sm font-medium text-white/80 mb-2">
-                Phone Number
+                WhatsApp Number
               </label>
               <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
                 <input
                   type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+1 (555) 000-0000"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                  placeholder="+1234567890"
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/40">
+                Your WhatsApp number for event updates and communications
+              </p>
+            </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Date of Birth
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <input
+                  type="date"
+                  value={formData.date_of_birth}
+                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split('T')[0]}
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/40">
+                Required for age verification
+              </p>
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Bio
+              </label>
+              <div className="relative">
+                <FileText className="absolute left-4 top-4 h-5 w-5 text-white/40" />
+                <textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  placeholder="Tell us a bit about yourself..."
+                  rows={4}
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/40">
+                Optional - A short bio about yourself
+              </p>
+            </div>
+
+            {/* Instagram Handle */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Instagram Handle
+              </label>
+              <div className="relative">
+                <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <input
+                  type="text"
+                  value={formData.instagram_handle}
+                  onChange={(e) => setFormData({ ...formData, instagram_handle: e.target.value.replace("@", "") })}
+                  placeholder="username (without @)"
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
               <p className="mt-1 text-xs text-white/40">
-                Optional - for event reminders via SMS
+                Optional - Your Instagram username
+              </p>
+            </div>
+
+            {/* TikTok Handle */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                TikTok Handle
+              </label>
+              <div className="relative">
+                <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                <input
+                  type="text"
+                  value={formData.tiktok_handle}
+                  onChange={(e) => setFormData({ ...formData, tiktok_handle: e.target.value.replace("@", "") })}
+                  placeholder="username (without @)"
+                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                />
+              </div>
+              <p className="mt-1 text-xs text-white/40">
+                Optional - Your TikTok username
               </p>
             </div>
 

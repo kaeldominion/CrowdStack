@@ -7,9 +7,10 @@ interface ShareButtonProps {
   title: string;
   text?: string;
   url: string;
+  label?: string;
 }
 
-export function ShareButton({ title, text, url }: ShareButtonProps) {
+export function ShareButton({ title, text, url, label = "Share" }: ShareButtonProps) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -29,9 +30,9 @@ export function ShareButton({ title, text, url }: ShareButtonProps) {
   };
 
   return (
-    <Button variant="ghost" size="lg" className="w-full" onClick={handleShare}>
+    <Button variant="secondary" size="lg" onClick={handleShare}>
       <Share2 className="h-4 w-4 mr-2" />
-      Share Event
+      {label}
     </Button>
   );
 }

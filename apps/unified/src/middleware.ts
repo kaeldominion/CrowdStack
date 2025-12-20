@@ -28,9 +28,18 @@ export async function middleware(request: NextRequest) {
     "/auth/magic", // Legacy magic link page
   ];
 
+  // Public API route patterns (specific endpoints that should be accessible)
+  const publicApiPatterns = [
+    "/api/events/by-slug/", // Public event pages
+    "/api/events/", // Photos GET route - handled by route itself, but allow through middleware
+    "/api/venues/by-slug/", // Public venue pages
+    "/api/venues/", // Venue events route
+  ];
+
   // Public route patterns
   const publicPatterns = [
     "/e/", // Event pages
+    "/v/", // Venue pages
     "/invite/", // Invite pages
     "/i/", // Invite code pages
     "/p/", // Photo pages
@@ -40,7 +49,8 @@ export async function middleware(request: NextRequest) {
 
   // Check if route is public
   const isPublicRoute = publicRoutes.some((route) => pathname === route) ||
-    publicPatterns.some((pattern) => pathname.startsWith(pattern));
+    publicPatterns.some((pattern) => pathname.startsWith(pattern)) ||
+    publicApiPatterns.some((pattern) => pathname.startsWith(pattern));
 
   if (isPublicRoute) {
     console.log("[Middleware] Public route, allowing:", pathname);
