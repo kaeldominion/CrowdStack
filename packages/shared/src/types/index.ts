@@ -186,14 +186,18 @@ export interface Organizer {
 
 export interface OrganizerTeamMember {
   id: string;
-  organizer_id: string;
+  organizer_id?: string;
+  user_id?: string; // User ID from organizer_users (when linked to actual user)
   name: string;
   role: string | null;
-  avatar_url: string | null;
+  avatar_url?: string | null;
   email: string | null;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
+  display_order?: number;
+  created_at?: string;
+  updated_at?: string;
+  assigned_at?: string; // From organizer_users
+  assigned_by?: string; // From organizer_users
+  permissions?: any; // From organizer_users
 }
 
 export interface Promoter {

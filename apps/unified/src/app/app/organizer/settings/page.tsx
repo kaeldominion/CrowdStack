@@ -157,19 +157,23 @@ export default function OrganizerSettingsPage() {
     }
   };
 
-  const handleDeleteTeamMember = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this team member?")) return;
+  const handleDeleteTeamMember = async (id: string, userId?: string) => {
+    if (!confirm("Are you sure you want to remove this team member? They will lose access to the organizer dashboard.")) return;
 
     try {
-      const response = await fetch(`/api/organizer/team?id=${id}`, {
+      const url = userId 
+        ? `/api/organizer/team?id=${id}&user_id=${userId}`
+        : `/api/organizer/team?id=${id}`;
+      const response = await fetch(url, {
         method: "DELETE",
       });
 
       if (!response.ok) throw new Error("Failed to delete team member");
 
       await loadSettings();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete team member:", error);
+      alert(error.message || "Failed to delete team member");
     }
   };
 
@@ -371,20 +375,12 @@ export default function OrganizerSettingsPage() {
                     >
                       <TeamMemberCard member={member} size="md" />
                       <div className="flex items-center gap-2">
+                        {/* Edit button removed - users from organizer_users are managed differently */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setEditingMember(member);
-                            setShowMemberForm(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTeamMember(member.id)}
+                          onClick={() => handleDeleteTeamMember(member.id, member.user_id)}
+                          title={member.user_id ? "Remove user access" : "Delete team member"}
                         >
                           <Trash2 className="h-4 w-4 text-error" />
                         </Button>

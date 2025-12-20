@@ -47,13 +47,49 @@ export async function GET() {
       );
     }
 
-    // Get team members
-    const { data: teamMembers } = await serviceSupabase
-      .from("organizer_team_members")
+    // Get users with access to this organizer (from organizer_users)
+    const { data: organizerUsers } = await serviceSupabase
+      .from("organizer_users")
       .select("*")
       .eq("organizer_id", organizerId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true });
+      .order("assigned_at", { ascending: true });
+
+    // Get user details from auth.users using admin API
+    const userIds = (organizerUsers || []).map((ou: any) => ou.user_id);
+    const userMap = new Map<string, { email: string; name: string }>();
+
+    if (userIds.length > 0) {
+      // Use admin API to get user emails (more efficient than individual calls)
+      const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
+      
+      if (authUsers?.users) {
+        authUsers.users.forEach((authUser) => {
+          if (userIds.includes(authUser.id)) {
+            const email = authUser.email || "";
+            const name = authUser.user_metadata?.name || 
+                        authUser.user_metadata?.full_name || 
+                        email.split("@")[0] || 
+                        "Unknown";
+            userMap.set(authUser.id, { email, name });
+          }
+        });
+      }
+    }
+
+    // Format team members with user info
+    const teamMembers = (organizerUsers || []).map((ou: any) => {
+      const userInfo = userMap.get(ou.user_id) || { email: null, name: "Unknown" };
+      return {
+        id: ou.id,
+        user_id: ou.user_id,
+        name: userInfo.name,
+        email: userInfo.email,
+        role: ou.role || "admin",
+        assigned_at: ou.assigned_at,
+        assigned_by: ou.assigned_by,
+        permissions: ou.permissions,
+      };
+    });
 
     return NextResponse.json({
       organizer: {

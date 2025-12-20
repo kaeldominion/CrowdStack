@@ -68,11 +68,47 @@ export async function POST(request: NextRequest) {
 
         if (assignError) {
           console.error("Failed to assign user to organizer:", assignError);
-          // Continue anyway - we'll still create the team member entry
+          return NextResponse.json(
+            { error: "Failed to assign user to organizer" },
+            { status: 500 }
+          );
+        }
+
+        // Assign event_organizer role to the user
+        const { assignUserRole } = await import("@crowdstack/shared/auth/roles");
+        try {
+          await assignUserRole(user_id, "event_organizer", {
+            organizer_id: organizerId,
+            assigned_by: user.id,
+          });
+        } catch (roleError: any) {
+          console.error("Failed to assign event_organizer role:", roleError);
+          // Continue anyway - organizer_users entry was created, role assignment can be retried
+        }
+      } else {
+        // User already assigned, but ensure they have the event_organizer role
+        const { assignUserRole } = await import("@crowdstack/shared/auth/roles");
+        try {
+          await assignUserRole(user_id, "event_organizer", {
+            organizer_id: organizerId,
+            assigned_by: user.id,
+          });
+        } catch (roleError: any) {
+          console.error("Failed to assign event_organizer role:", roleError);
+          // Continue - role might already exist
         }
       }
+      
+      // Return success - user is now assigned to organizer with role
+      // No need to create organizer_team_members entry when user_id is provided
+      return NextResponse.json({ 
+        success: true,
+        message: "User added to organizer team successfully"
+      });
     }
 
+    // If no user_id provided, create a display-only team member (for public display purposes)
+    // This is a legacy path - ideally all team members should be actual users
     // Get current max display_order
     const { data: existingMembers } = await serviceSupabase
       .from("organizer_team_members")
@@ -228,16 +264,53 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const userId = searchParams.get("user_id");
 
-    if (!id) {
+    if (!id && !userId) {
       return NextResponse.json(
-        { error: "Team member ID is required" },
+        { error: "Team member ID or user_id is required" },
         { status: 400 }
       );
     }
 
     const serviceSupabase = createServiceRoleClient();
 
+    // If user_id is provided, remove from organizer_users
+    if (userId) {
+      // Verify user belongs to this organizer
+      const { data: existing } = await serviceSupabase
+        .from("organizer_users")
+        .select("id, user_id")
+        .eq("organizer_id", organizerId)
+        .eq("user_id", userId)
+        .single();
+
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Team member not found" },
+          { status: 404 }
+        );
+      }
+
+      // Remove user from organizer_users (this removes their access)
+      // Note: We don't remove the event_organizer role here because they might have access to other organizers
+      // If you want to remove the role when they're removed from all organizers, that logic would go elsewhere
+      const { error } = await serviceSupabase
+        .from("organizer_users")
+        .delete()
+        .eq("id", existing.id);
+
+      if (error) {
+        return NextResponse.json(
+          { error: "Failed to remove team member" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // Legacy path: Delete from organizer_team_members (display-only entries)
     // Verify team member belongs to this organizer
     const { data: existing } = await serviceSupabase
       .from("organizer_team_members")
