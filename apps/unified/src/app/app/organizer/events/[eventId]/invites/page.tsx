@@ -105,6 +105,14 @@ export default function EventInvitesPage() {
                 <div>
                   <p className="font-mono text-sm font-semibold text-white">{inviteQR.invite_code}</p>
                   <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
+                  {inviteQR.owner_name && (
+                    <p className="text-xs text-white/40 mt-1">
+                      {inviteQR.creator_role === "event_organizer" && "Organizer: "}
+                      {inviteQR.creator_role === "venue_admin" && "Venue: "}
+                      {inviteQR.creator_role === "promoter" && "Promoter: "}
+                      {inviteQR.owner_name}
+                    </p>
+                  )}
                 </div>
                 {inviteQR.max_uses && (
                   <Badge variant="warning">

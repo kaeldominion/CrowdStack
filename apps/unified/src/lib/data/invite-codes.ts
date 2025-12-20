@@ -13,6 +13,7 @@ export interface InviteQRCode {
   used_count: number;
   expires_at: string | null;
   created_at: string;
+  owner_name?: string; // Name of the owner (organizer, venue, or promoter)
 }
 
 /**
@@ -110,7 +111,7 @@ export async function createInviteQRCode(
 export async function getEventInviteQRCodes(eventId: string): Promise<InviteQRCode[]> {
   const supabase = createServiceRoleClient();
 
-  const { data, error } = await supabase
+  const { data: inviteCodes, error } = await supabase
     .from("invite_qr_codes")
     .select("*")
     .eq("event_id", eventId)
@@ -120,7 +121,49 @@ export async function getEventInviteQRCodes(eventId: string): Promise<InviteQRCo
     throw error;
   }
 
-  return data || [];
+  if (!inviteCodes || inviteCodes.length === 0) {
+    return [];
+  }
+
+  // Enrich invite codes with owner names based on creator_role and created_by
+  const enrichedCodes = await Promise.all(
+    inviteCodes.map(async (code) => {
+      let ownerName: string | undefined;
+
+      if (code.creator_role === "event_organizer") {
+        // Get organizer name by created_by user_id
+        const { data: organizer } = await supabase
+          .from("organizers")
+          .select("name")
+          .eq("created_by", code.created_by)
+          .single();
+        ownerName = organizer?.name;
+      } else if (code.creator_role === "venue_admin") {
+        // Get venue name by created_by user_id
+        const { data: venue } = await supabase
+          .from("venues")
+          .select("name")
+          .eq("created_by", code.created_by)
+          .single();
+        ownerName = venue?.name;
+      } else if (code.creator_role === "promoter") {
+        // Get promoter name by created_by user_id
+        const { data: promoter } = await supabase
+          .from("promoters")
+          .select("name")
+          .eq("created_by", code.created_by)
+          .single();
+        ownerName = promoter?.name;
+      }
+
+      return {
+        ...code,
+        owner_name: ownerName,
+      };
+    })
+  );
+
+  return enrichedCodes;
 }
 
 /**
