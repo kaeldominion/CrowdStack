@@ -255,25 +255,26 @@ export default function VenueOrganizersPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  if (!confirm("Remove pre-approved status? Their future events will need manual approval.")) {
-                                    return;
-                                  }
-                                  try {
-                                    const response = await fetch(
-                                      `/api/venue/organizers/preapproved?id=${organizer.partnership_id}`,
-                                      { method: "DELETE" }
-                                    );
-                                    if (response.ok) {
-                                      loadOrganizers();
-                                    } else {
-                                      const data = await response.json();
-                                      alert(data.error || "Failed to remove pre-approved status");
+                                onClick={() => {
+                                  (async () => {
+                                    if (!confirm("Remove pre-approved status? Their future events will need manual approval.")) {
+                                      return;
                                     }
-                                  } catch (error) {
-                                    alert("Failed to remove pre-approved status");
-                                  }
+                                    try {
+                                      const response = await fetch(
+                                        `/api/venue/organizers/preapproved?id=${organizer.partnership_id}`,
+                                        { method: "DELETE" }
+                                      );
+                                      if (response.ok) {
+                                        loadOrganizers();
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || "Failed to remove pre-approved status");
+                                      }
+                                    } catch (error) {
+                                      alert("Failed to remove pre-approved status");
+                                    }
+                                  })();
                                 }}
                                 className="text-foreground-muted hover:text-foreground"
                               >
@@ -284,23 +285,24 @@ export default function VenueOrganizersPage() {
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const response = await fetch("/api/venue/organizers/preapproved", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ organizer_id: organizer.id }),
-                                    });
-                                    if (response.ok) {
-                                      loadOrganizers();
-                                    } else {
-                                      const data = await response.json();
-                                      alert(data.error || "Failed to pre-approve organizer");
+                                onClick={() => {
+                                  (async () => {
+                                    try {
+                                      const response = await fetch("/api/venue/organizers/preapproved", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ organizer_id: organizer.id }),
+                                      });
+                                      if (response.ok) {
+                                        loadOrganizers();
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || "Failed to pre-approve organizer");
+                                      }
+                                    } catch (error) {
+                                      alert("Failed to pre-approve organizer");
                                     }
-                                  } catch (error) {
-                                    alert("Failed to pre-approve organizer");
-                                  }
+                                  })();
                                 }}
                               >
                                 <Star className="h-4 w-4 mr-1" />
