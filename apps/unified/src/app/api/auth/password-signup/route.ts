@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
       email,
       password,
       email_confirm: true, // Auto-confirm email to bypass rate limits
+      user_metadata: {
+        // Add any metadata if needed
+      },
     });
 
     if (createError) {
@@ -64,7 +67,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return user info (client will sign in with password)
+    // Return user info (client will sign in with password after a brief delay)
+    // Note: There may be a small delay before the password is available for sign-in
     return NextResponse.json({
       success: true,
       userExists: false,
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
         id: newUser.user.id,
         email: newUser.user.email,
       },
-      message: "Account created successfully. You can now sign in.",
+      message: "Account created successfully.",
     });
   } catch (error: any) {
     console.error("Failed to create account:", error);

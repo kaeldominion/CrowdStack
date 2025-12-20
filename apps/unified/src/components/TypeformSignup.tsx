@@ -238,15 +238,38 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         throw new Error(data.error || "Failed to create account");
       }
 
-      // Account created or already exists - now sign in with password
+      // Account created - now sign in with password
+      // Add a small delay to ensure user is fully created
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const supabase = createBrowserClient();
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password,
-      });
+      
+      // Try to sign in with password (retry up to 3 times)
+      let signInSuccess = false;
+      let signInError = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          // Wait longer between retries
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+        
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password,
+        });
 
-      if (signInError) {
-        throw new Error("Account created but failed to sign in. Please try logging in manually.");
+        if (!signInErr && signInData.session) {
+          signInSuccess = true;
+          break;
+        }
+        
+        signInError = signInErr;
+      }
+
+      if (!signInSuccess) {
+        console.error("Failed to sign in after account creation:", signInError);
+        throw new Error(`Account created but failed to sign in: ${signInError?.message || "Unknown error"}. Please try logging in manually with your email and password.`);
       }
 
       // Successfully signed in
