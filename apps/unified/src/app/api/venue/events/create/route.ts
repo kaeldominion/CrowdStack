@@ -77,11 +77,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure slug is unique - generate unique slug if needed
+    let finalSlug = body.slug;
+    if (finalSlug) {
+      const { data: existingEvent } = await serviceSupabase
+        .from("events")
+        .select("id")
+        .eq("slug", finalSlug)
+        .single();
+
+      if (existingEvent) {
+        // Slug exists, generate a unique one
+        let counter = 2;
+        let candidateSlug = `${finalSlug}-${counter}`;
+        while (true) {
+          const { data: existingWithNumber } = await serviceSupabase
+            .from("events")
+            .select("id")
+            .eq("slug", candidateSlug)
+            .single();
+
+          if (!existingWithNumber) {
+            finalSlug = candidateSlug;
+            break;
+          }
+
+          counter++;
+          candidateSlug = `${finalSlug}-${counter}`;
+
+          // Safety check
+          if (counter > 1000) {
+            finalSlug = `${finalSlug}-${Date.now()}`;
+            break;
+          }
+        }
+      }
+    } else {
+      // Generate slug from name if not provided
+      finalSlug = body.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      // Ensure it's unique
+      const { data: existingEvent } = await serviceSupabase
+        .from("events")
+        .select("id")
+        .eq("slug", finalSlug)
+        .single();
+
+      if (existingEvent) {
+        let counter = 2;
+        let candidateSlug = `${finalSlug}-${counter}`;
+        while (true) {
+          const { data: existingWithNumber } = await serviceSupabase
+            .from("events")
+            .select("id")
+            .eq("slug", candidateSlug)
+            .single();
+
+          if (!existingWithNumber) {
+            finalSlug = candidateSlug;
+            break;
+          }
+
+          counter++;
+          candidateSlug = `${finalSlug}-${counter}`;
+
+          if (counter > 1000) {
+            finalSlug = `${finalSlug}-${Date.now()}`;
+            break;
+          }
+        }
+      }
+    }
+
     // Create event
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .insert({
-        slug: body.slug,
+        slug: finalSlug,
         name: body.name,
         description: body.description || null,
         venue_id: venueId,
@@ -89,6 +164,7 @@ export async function POST(request: NextRequest) {
         start_time: body.start_time,
         end_time: body.end_time || null,
         capacity: body.capacity || null,
+        timezone: body.timezone || "America/New_York",
         status: "draft",
         promoter_access_type: "public", // Default for venue-created events
       })

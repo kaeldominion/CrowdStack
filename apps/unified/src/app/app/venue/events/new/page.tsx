@@ -53,18 +53,44 @@ export default function VenueNewEventPage() {
     }
   };
 
-  const generateSlug = (name: string) => {
+  const generateSlugFromName = (name: string) => {
     return name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
   };
 
-  const handleNameChange = (name: string) => {
+  const generateUniqueSlug = async (name: string) => {
+    try {
+      const response = await fetch("/api/events/generate-slug", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate unique slug");
+      }
+
+      const data = await response.json();
+      return data.slug;
+    } catch (error) {
+      console.error("Error generating unique slug:", error);
+      // Fallback to basic slug generation
+      return generateSlugFromName(name);
+    }
+  };
+
+  const handleNameChange = async (name: string) => {
+    const baseSlug = generateSlugFromName(name);
+    
+    // Generate unique slug asynchronously
+    const uniqueSlug = await generateUniqueSlug(name);
+    
     setFormData({
       ...formData,
       name,
-      slug: generateSlug(name),
+      slug: uniqueSlug,
     });
   };
 
