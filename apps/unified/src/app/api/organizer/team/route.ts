@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, role, avatar_url, email } = body;
+    const { name, role, avatar_url, email, user_id } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -42,6 +42,36 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceSupabase = createServiceRoleClient();
+
+    // If user_id is provided, add user to organizer_users (gives them access)
+    if (user_id) {
+      // Check if already assigned
+      const { data: existingAssignment } = await serviceSupabase
+        .from("organizer_users")
+        .select("id")
+        .eq("organizer_id", organizerId)
+        .eq("user_id", user_id)
+        .maybeSingle();
+
+      if (!existingAssignment) {
+        // Add user to organizer_users with default permissions
+        const { FULL_ADMIN_ORGANIZER_PERMISSIONS } = await import("@crowdstack/shared/constants/permissions");
+        const { error: assignError } = await serviceSupabase
+          .from("organizer_users")
+          .insert({
+            organizer_id: organizerId,
+            user_id: user_id,
+            role: "admin",
+            permissions: FULL_ADMIN_ORGANIZER_PERMISSIONS,
+            assigned_by: user.id,
+          });
+
+        if (assignError) {
+          console.error("Failed to assign user to organizer:", assignError);
+          // Continue anyway - we'll still create the team member entry
+        }
+      }
+    }
 
     // Get current max display_order
     const { data: existingMembers } = await serviceSupabase

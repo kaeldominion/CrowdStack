@@ -112,6 +112,7 @@ export default function OrganizerSettingsPage() {
     role?: string;
     email?: string;
     avatar_url?: string;
+    user_id?: string;
   }) => {
     try {
       const response = await fetch("/api/organizer/team", {
@@ -120,13 +121,17 @@ export default function OrganizerSettingsPage() {
         body: JSON.stringify(memberData),
       });
 
-      if (!response.ok) throw new Error("Failed to add team member");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add team member");
+      }
 
       await loadSettings();
       setShowMemberForm(false);
       setEditingMember(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to add team member:", error);
+      alert(error.message || "Failed to add team member");
     }
   };
 
@@ -402,26 +407,148 @@ function TeamMemberForm({
   onCancel,
 }: {
   member: OrganizerTeamMember | null;
-  onSave: (data: { name: string; role?: string; email?: string }) => void;
+  onSave: (data: { name: string; role?: string; email?: string; user_id?: string; avatar_url?: string }) => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(member?.name || "");
   const [role, setRole] = useState(member?.role || "");
   const [email, setEmail] = useState(member?.email || "");
+  const [searchEmail, setSearchEmail] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<{
+    found: boolean;
+    alreadyAdded?: boolean;
+    message?: string;
+    user?: { id: string; email: string; name: string; avatar_url?: string | null };
+  } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string; name: string; avatar_url?: string | null } | null>(null);
+
+  const handleSearch = async () => {
+    if (!searchEmail.trim()) return;
+
+    setSearching(true);
+    setSearchResult(null);
+    setSelectedUser(null);
+
+    try {
+      const response = await fetch(`/api/organizer/team/search-users?email=${encodeURIComponent(searchEmail.trim())}`);
+      const data = await response.json();
+
+      if (data.found) {
+        setSearchResult(data);
+        if (!data.alreadyAdded && data.user) {
+          setSelectedUser(data.user);
+          setName(data.user.name);
+          setEmail(data.user.email);
+        }
+      } else {
+        setSearchResult(data);
+      }
+    } catch (error) {
+      console.error("Failed to search users:", error);
+      setSearchResult({ found: false, message: "Failed to search users" });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchEmail("");
+    setSearchResult(null);
+    setSelectedUser(null);
+    setName(member?.name || "");
+    setEmail(member?.email || "");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name: name.trim(), role: role.trim() || undefined, email: email.trim() || undefined });
+    
+    onSave({
+      name: name.trim(),
+      role: role.trim() || undefined,
+      email: email.trim() || undefined,
+      user_id: selectedUser?.id,
+      avatar_url: selectedUser?.avatar_url || undefined,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-2 border-border space-y-4">
+      {!member && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Search for Existing User (by email)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={searchEmail}
+                onChange={(e) => setSearchEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+                placeholder="user@example.com"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleSearch}
+                disabled={searching || !searchEmail.trim()}
+              >
+                {searching ? "Searching..." : "Search"}
+              </Button>
+              {searchResult && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearSearch}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {searchResult && (
+              <div className={`mt-2 p-3 rounded-md text-sm ${
+                searchResult.found && !searchResult.alreadyAdded
+                  ? "bg-success/10 border border-success/20 text-success"
+                  : searchResult.alreadyAdded
+                  ? "bg-warning/10 border border-warning/20 text-warning"
+                  : "bg-background-secondary border border-border text-foreground-muted"
+              }`}>
+                {searchResult.found && searchResult.user && !searchResult.alreadyAdded && (
+                  <p>✓ Found user: {searchResult.user.name} ({searchResult.user.email})</p>
+                )}
+                {searchResult.alreadyAdded && (
+                  <p>{searchResult.message}</p>
+                )}
+                {!searchResult.found && (
+                  <p>{searchResult.message || "User not found. You can add them manually below (they'll need to sign up later)."}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="border-t border-border pt-4">
+            <p className="text-xs text-foreground-muted mb-3">
+              Or enter team member details manually:
+            </p>
+          </div>
+        </>
+      )}
+      
       <Input
         label="Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
+        disabled={!!selectedUser}
       />
       <Input
         label="Role"
@@ -433,9 +560,22 @@ function TeamMemberForm({
         label="Email"
         type="email"
         value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Optional"
+        onChange={(e) => {
+          setEmail(e.target.value);
+          if (selectedUser) {
+            setSelectedUser(null);
+          }
+        }}
+        placeholder={member ? "Optional" : "Enter email to search or add manually"}
+        disabled={!!selectedUser}
       />
+      
+      {selectedUser && (
+        <div className="text-xs text-foreground-muted">
+          This team member will be linked to an existing user account and have access to the organizer dashboard.
+        </div>
+      )}
+      
       <div className="flex items-center gap-2">
         <Button type="submit" variant="primary" size="sm">
           <Save className="h-4 w-4 mr-2" />
