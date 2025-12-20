@@ -16,6 +16,13 @@ export default function AdminPromotersPage() {
   const [convertMethod, setConvertMethod] = useState<"email" | "attendeeId">("email");
   const [converting, setConverting] = useState(false);
   const [convertResult, setConvertResult] = useState<{ success: boolean; message: string; promoter?: any } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
+  const [createParentId, setCreateParentId] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createResult, setCreateResult] = useState<{ success: boolean; message: string; promoter?: any } | null>(null);
 
   useEffect(() => {
     loadPromoters();
@@ -110,6 +117,63 @@ export default function AdminPromotersPage() {
     }
   };
 
+  const handleCreatePromoter = async () => {
+    if (!createName.trim()) {
+      setCreateResult({ success: false, message: "Name is required" });
+      return;
+    }
+    if (!createEmail.trim() && !createPhone.trim()) {
+      setCreateResult({ success: false, message: "Either email or phone is required" });
+      return;
+    }
+
+    setCreating(true);
+    setCreateResult(null);
+
+    try {
+      const response = await fetch("/api/admin/promoters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createName.trim(),
+          email: createEmail.trim() || null,
+          phone: createPhone.trim() || null,
+          parent_promoter_id: createParentId.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setCreateResult({ success: false, message: data.error || "Failed to create promoter" });
+        return;
+      }
+
+      setCreateResult({
+        success: true,
+        message: "Promoter created successfully",
+        promoter: data.promoter,
+      });
+
+      // Reload promoters list
+      await loadPromoters();
+
+      // Clear form after successful creation
+      setTimeout(() => {
+        setCreateName("");
+        setCreateEmail("");
+        setCreatePhone("");
+        setCreateParentId("");
+        setCreateResult(null);
+        setShowCreateModal(false);
+      }, 2000);
+    } catch (error: any) {
+      setCreateResult({ success: false, message: error.message || "Failed to create promoter" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (loading) {
     return (
       <Container>
@@ -131,19 +195,37 @@ export default function AdminPromotersPage() {
                 View all promoters and their performance metrics
               </p>
             </div>
-            <Button
-              onClick={() => {
-                setShowConvertModal(true);
-                setConvertResult(null);
-                setConvertEmail("");
-                setConvertAttendeeId("");
-                setConvertMethod("email");
-              }}
-              className="flex items-center gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              Convert to Promoter
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setShowCreateModal(true);
+                  setCreateResult(null);
+                  setCreateName("");
+                  setCreateEmail("");
+                  setCreatePhone("");
+                  setCreateParentId("");
+                }}
+                className="flex items-center gap-2"
+                variant="primary"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create Promoter
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowConvertModal(true);
+                  setConvertResult(null);
+                  setConvertEmail("");
+                  setConvertAttendeeId("");
+                  setConvertMethod("email");
+                }}
+                className="flex items-center gap-2"
+                variant="secondary"
+              >
+                <UserPlus className="h-4 w-4" />
+                Convert to Promoter
+              </Button>
+            </div>
           </div>
 
           <Card>
@@ -217,6 +299,159 @@ export default function AdminPromotersPage() {
               </Table>
             </div>
           </Card>
+
+          {/* Create Promoter Modal */}
+          <Modal
+            isOpen={showCreateModal}
+            onClose={() => {
+              setShowCreateModal(false);
+              setCreateResult(null);
+              setCreateName("");
+              setCreateEmail("");
+              setCreatePhone("");
+              setCreateParentId("");
+            }}
+            title="Create New Promoter"
+            size="md"
+          >
+            <div className="space-y-4">
+              <p className="text-sm text-foreground-muted">
+                Create a new promoter profile from scratch. This creates a promoter profile without requiring an existing user or attendee account.
+              </p>
+
+              {/* Name Field */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="John Doe"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  placeholder="john@example.com"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                />
+                <p className="text-xs text-foreground-muted mt-1">
+                  Either email or phone is required
+                </p>
+              </div>
+
+              {/* Phone Field */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Phone
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="+1234567890"
+                  value={createPhone}
+                  onChange={(e) => setCreatePhone(e.target.value)}
+                />
+                <p className="text-xs text-foreground-muted mt-1">
+                  Either email or phone is required
+                </p>
+              </div>
+
+              {/* Parent Promoter Field (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Parent Promoter ID <span className="text-foreground-muted">(optional)</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="UUID of parent promoter"
+                  value={createParentId}
+                  onChange={(e) => setCreateParentId(e.target.value)}
+                />
+                <p className="text-xs text-foreground-muted mt-1">
+                  Leave empty if this is a top-level promoter
+                </p>
+              </div>
+
+              {/* Result Message */}
+              {createResult && (
+                <div
+                  className={`p-4 rounded-md flex items-start gap-3 ${
+                    createResult.success
+                      ? "bg-success/10 border border-success/20"
+                      : "bg-warning/10 border border-warning/20"
+                  }`}
+                >
+                  {createResult.success ? (
+                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p
+                      className={`text-sm ${
+                        createResult.success ? "text-success" : "text-warning"
+                      }`}
+                    >
+                      {createResult.message}
+                    </p>
+                    {createResult.success && createResult.promoter && (
+                      <div className="mt-2 text-xs text-foreground-muted">
+                        <p>
+                          <strong>Name:</strong> {createResult.promoter.name}
+                        </p>
+                        {createResult.promoter.email && (
+                          <p>
+                            <strong>Email:</strong> {createResult.promoter.email}
+                          </p>
+                        )}
+                        {createResult.promoter.phone && (
+                          <p>
+                            <strong>Phone:</strong> {createResult.promoter.phone}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setCreateResult(null);
+                    setCreateName("");
+                    setCreateEmail("");
+                    setCreatePhone("");
+                    setCreateParentId("");
+                  }}
+                  disabled={creating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreatePromoter}
+                  disabled={
+                    creating ||
+                    !createName.trim() ||
+                    (!createEmail.trim() && !createPhone.trim())
+                  }
+                >
+                  {creating ? "Creating..." : "Create Promoter"}
+                </Button>
+              </div>
+            </div>
+          </Modal>
 
           {/* Convert to Promoter Modal */}
           <Modal
