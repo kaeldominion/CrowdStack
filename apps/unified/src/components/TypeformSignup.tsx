@@ -222,50 +222,34 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     setErrors({});
 
     try {
-      const supabase = createBrowserClient();
-      
-      // Try to sign up with password
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl || window.location.href,
-        },
+      // Use API endpoint to create account (bypasses email confirmation and rate limits)
+      const response = await fetch("/api/auth/password-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password,
+        }),
       });
 
-      if (signUpError) {
-        // If user already exists, try signing in instead
-        if (signUpError.message.includes("already registered") || signUpError.message.includes("already exists")) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password,
-          });
+      const data = await response.json();
 
-          if (signInError) {
-            throw new Error("An account with this email already exists. Please use password login or try a different email.");
-          }
-
-          // Successfully signed in
-          setEmailVerified(true);
-          setShowPasswordFallback(false);
-          
-          // Check if already registered (if callback provided)
-          if (onEmailVerified) {
-            const alreadyRegistered = await onEmailVerified();
-            if (alreadyRegistered) {
-              return; // Parent component will handle showing success
-            }
-          }
-          
-          if (visibleSteps.length > 1) {
-            setCurrentStep(1); // Move to next step
-          }
-          return;
-        }
-        throw signUpError;
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account");
       }
 
-      // Account created successfully - verify email and continue
+      // Account created or already exists - now sign in with password
+      const supabase = createBrowserClient();
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password,
+      });
+
+      if (signInError) {
+        throw new Error("Account created but failed to sign in. Please try logging in manually.");
+      }
+
+      // Successfully signed in
       setEmailVerified(true);
       setShowPasswordFallback(false);
       
