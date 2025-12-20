@@ -19,6 +19,23 @@ export function Logo({ variant = "full", size = "md", className = "", animated =
   const iconSize = sizeClasses[size];
 
   const StackIcon = () => {
+    // Animation variants for each stack line - appears from bottom to top
+    const lineVariants = {
+      hidden: { 
+        opacity: 0, 
+        scaleX: 0,
+        transformOrigin: "center"
+      },
+      visible: { 
+        opacity: 1, 
+        scaleX: 1,
+        transition: {
+          duration: 0.5,
+          ease: [0.4, 0, 0.2, 1] // Custom easing for smooth animation
+        }
+      }
+    };
+
     const svgContent = (
       <svg
         viewBox="0 0 32 32"
@@ -26,25 +43,118 @@ export function Logo({ variant = "full", size = "md", className = "", animated =
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Abstract stack - layers representing data/events */}
-        <rect x="4" y="20" width="24" height="3" rx="1" fill="currentColor" opacity="0.4" />
-        <rect x="6" y="14" width="20" height="3" rx="1" fill="currentColor" opacity="0.6" />
-        <rect x="8" y="8" width="16" height="3" rx="1" fill="currentColor" opacity="0.8" />
-        {/* Signal indicator - top layer with accent color */}
-        <rect x="10" y="2" width="12" height="3" rx="1" fill="#3B82F6" />
-        {/* Grid lines - data structure */}
+        {/* Grid lines - data structure (static, no animation) */}
         <line x1="16" y1="2" x2="16" y2="23" stroke="currentColor" strokeWidth="0.5" opacity="0.2" />
         <line x1="8" y1="11" x2="24" y2="11" stroke="currentColor" strokeWidth="0.5" opacity="0.2" />
         <line x1="8" y1="17" x2="24" y2="17" stroke="currentColor" strokeWidth="0.5" opacity="0.2" />
+        
+        {/* Abstract stack - layers representing data/events */}
+        {/* Bottom layer - appears first */}
+        {animated ? (
+          <motion.rect
+            x="4"
+            y="20"
+            width="24"
+            height="3"
+            rx="1"
+            fill="currentColor"
+            initial="hidden"
+            animate="visible"
+            variants={lineVariants}
+            style={{ opacity: 0.4 }}
+          />
+        ) : (
+          <rect x="4" y="20" width="24" height="3" rx="1" fill="currentColor" opacity="0.4" />
+        )}
+        
+        {/* Third layer - appears second */}
+        {animated ? (
+          <motion.rect
+            x="6"
+            y="14"
+            width="20"
+            height="3"
+            rx="1"
+            fill="currentColor"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              ...lineVariants,
+              visible: {
+                ...lineVariants.visible,
+                transition: {
+                  ...lineVariants.visible.transition,
+                  delay: 0.2
+                }
+              }
+            }}
+            style={{ opacity: 0.6 }}
+          />
+        ) : (
+          <rect x="6" y="14" width="20" height="3" rx="1" fill="currentColor" opacity="0.6" />
+        )}
+        
+        {/* Second layer - appears third */}
+        {animated ? (
+          <motion.rect
+            x="8"
+            y="8"
+            width="16"
+            height="3"
+            rx="1"
+            fill="currentColor"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              ...lineVariants,
+              visible: {
+                ...lineVariants.visible,
+                transition: {
+                  ...lineVariants.visible.transition,
+                  delay: 0.4
+                }
+              }
+            }}
+            style={{ opacity: 0.8 }}
+          />
+        ) : (
+          <rect x="8" y="8" width="16" height="3" rx="1" fill="currentColor" opacity="0.8" />
+        )}
+        
+        {/* Signal indicator - top layer with accent color - appears last */}
+        {animated ? (
+          <motion.rect
+            x="10"
+            y="2"
+            width="12"
+            height="3"
+            rx="1"
+            fill="#3B82F6"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              ...lineVariants,
+              visible: {
+                ...lineVariants.visible,
+                transition: {
+                  ...lineVariants.visible.transition,
+                  delay: 0.6
+                }
+              }
+            }}
+          />
+        ) : (
+          <rect x="10" y="2" width="12" height="3" rx="1" fill="#3B82F6" />
+        )}
       </svg>
     );
 
     if (animated) {
       return (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
         >
           {svgContent}
         </motion.div>
