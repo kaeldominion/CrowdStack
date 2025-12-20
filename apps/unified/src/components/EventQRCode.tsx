@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@crowdstack/ui";
-import { QrCode, Ticket } from "lucide-react";
-import Link from "next/link";
+import { QrCode } from "lucide-react";
 
 interface EventQRCodeProps {
   eventSlug: string;
@@ -11,79 +9,72 @@ interface EventQRCodeProps {
 
 export function EventQRCode({ eventSlug }: EventQRCodeProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [qrToken, setQrToken] = useState<string | null>(null);
+  const [registrationUrl, setRegistrationUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
-    const checkRegistration = async () => {
+    const loadPromotionQR = async () => {
       try {
-        const response = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+        const response = await fetch(`/api/events/by-slug/${eventSlug}/promotion-qr`);
         if (response.ok) {
           const data = await response.json();
-          if (data.registered && data.qr_pass_token) {
-            setRegistered(true);
-            setQrToken(data.qr_pass_token);
-            // Generate QR code URL using qrserver.com API
-            const qrData = encodeURIComponent(data.qr_pass_token);
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
-            setQrCodeUrl(qrUrl);
+          if (data.qr_url) {
+            setRegistrationUrl(data.qr_url);
+            // Generate QR code image URL using qrserver.com API
+            const qrData = encodeURIComponent(data.qr_url);
+            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
+            setQrCodeUrl(qrImageUrl);
           }
         }
       } catch (error) {
-        console.error("Failed to check registration:", error);
+        console.error("Failed to load promotion QR:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkRegistration();
+    loadPromotionQR();
   }, [eventSlug]);
 
   if (loading) {
-    return null; // Don't show anything while loading
-  }
-
-  if (!registered) {
     return (
       <div className="pt-4 border-t border-border">
-        <p className="text-sm text-foreground-muted text-center mb-3">
-          Register to get your QR pass
-        </p>
+        <div className="text-center text-foreground-muted text-sm">
+          Loading QR code...
+        </div>
       </div>
     );
+  }
+
+  if (!qrCodeUrl || !registrationUrl) {
+    return null;
   }
 
   return (
     <div className="pt-4 border-t border-border space-y-4">
       <div className="text-center">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-2">
-          <Ticket className="h-4 w-4" />
-          Your Event Pass
+          <QrCode className="h-4 w-4" />
+          Promotion QR Code
         </h3>
-        {qrCodeUrl && (
-          <div className="flex flex-col items-center space-y-3">
-            <div className="bg-white p-3 rounded-lg border-2 border-border">
-              <img 
-                src={qrCodeUrl} 
-                alt="Event QR Pass" 
-                className="w-40 h-40"
-                style={{ imageRendering: "pixelated" }}
-              />
-            </div>
-            <p className="text-xs text-foreground-muted text-center">
-              Show this QR code at the event entrance
-            </p>
-            {qrToken && (
-              <Link href={`/e/${eventSlug}/pass?token=${encodeURIComponent(qrToken)}`}>
-                <Button variant="secondary" size="sm">
-                  <QrCode className="h-4 w-4 mr-2" />
-                  View Full Pass
-                </Button>
-              </Link>
-            )}
+        <div className="flex flex-col items-center space-y-3">
+          <div className="bg-white p-4 rounded-lg border-2 border-border shadow-lg">
+            <img 
+              src={qrCodeUrl} 
+              alt="Event Promotion QR Code" 
+              className="w-48 h-48"
+              style={{ imageRendering: "pixelated" }}
+            />
           </div>
-        )}
+          <div className="space-y-2">
+            <p className="text-xs text-foreground-muted text-center max-w-sm">
+              Scan this QR code to register for the event. Registrations will be attributed to the event organizer.
+            </p>
+            <p className="text-xs text-foreground-muted text-center italic">
+              Save this QR code to share with others
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
