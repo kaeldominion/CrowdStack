@@ -19,8 +19,9 @@ export default function NewEventPage() {
     start_time: "",
     end_time: "",
     capacity: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     promoter_access_type: "public" as "public" | "invite_only",
-    self_promote: false,
+    self_promote: true,
     selected_promoters: [] as string[],
   });
 
@@ -81,7 +82,9 @@ export default function NewEventPage() {
         start_time: new Date(formData.start_time).toISOString(),
         end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
         capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+        timezone: formData.timezone,
         promoter_access_type: formData.promoter_access_type,
+        self_promote: formData.self_promote,
       };
 
       // Add promoters if selected
@@ -177,6 +180,35 @@ export default function NewEventPage() {
               value={formData.end_time}
               onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Timezone
+            </label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+              className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+            >
+              <option value="America/New_York">Eastern Time (ET)</option>
+              <option value="America/Chicago">Central Time (CT)</option>
+              <option value="America/Denver">Mountain Time (MT)</option>
+              <option value="America/Los_Angeles">Pacific Time (PT)</option>
+              <option value="America/Anchorage">Alaska Time (AKT)</option>
+              <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
+              <option value="America/Toronto">Toronto (ET)</option>
+              <option value="America/Vancouver">Vancouver (PT)</option>
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Europe/Paris">Paris (CET/CEST)</option>
+              <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Shanghai (CST)</option>
+              <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+            </select>
+            <p className="mt-1 text-xs text-foreground-muted">
+              Timezone for event times
+            </p>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

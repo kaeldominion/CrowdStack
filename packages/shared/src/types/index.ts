@@ -244,6 +244,7 @@ export interface Event {
   capacity: number | null;
   flier_url: string | null;
   cover_image_url: string | null;
+  timezone: string | null;
   created_at: string;
   updated_at: string;
   locked_at: string | null;
@@ -470,6 +471,7 @@ export interface CreateEventRequest {
   end_time?: string;
   capacity?: number;
   cover_image_url?: string;
+  timezone?: string;
   promoter_access_type?: PromoterAccessType;
   self_promote?: boolean;
   promoters?: Array<{

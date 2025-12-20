@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
         end_time: body.end_time || null,
         capacity: body.capacity || null,
         cover_image_url: body.cover_image_url || null,
+        timezone: body.timezone || "America/New_York",
         status: "draft",
         promoter_access_type: body.promoter_access_type || "public",
         venue_approval_status: venueApprovalStatus,
@@ -218,8 +219,9 @@ export async function POST(request: NextRequest) {
       await serviceSupabase.from("event_promoters").insert(eventPromoters);
     }
 
-    // Handle self-promotion if enabled
-    if (body.self_promote) {
+    // Handle self-promotion (default to true)
+    const selfPromote = body.self_promote !== undefined ? body.self_promote : true;
+    if (selfPromote) {
       // Check if organizer has a promoter profile
       const { data: organizerPromoter } = await serviceSupabase
         .from("promoters")

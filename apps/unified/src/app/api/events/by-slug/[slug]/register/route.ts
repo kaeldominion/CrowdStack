@@ -225,13 +225,60 @@ export async function POST(
       });
     }
 
+    // Determine default attribution if no referral promoter ID provided
+    let defaultPromoterId: string | null = referralPromoterId;
+    
+    if (!defaultPromoterId) {
+      // Try to attribute to organizer's promoter profile first
+      const { data: organizer } = await serviceSupabase
+        .from("organizers")
+        .select("created_by")
+        .eq("id", event.organizer_id)
+        .single();
+      
+      if (organizer?.created_by) {
+        // Check if organizer has a promoter profile
+        const { data: organizerPromoter } = await serviceSupabase
+          .from("promoters")
+          .select("id")
+          .eq("created_by", organizer.created_by)
+          .single();
+        
+        if (organizerPromoter) {
+          defaultPromoterId = organizerPromoter.id;
+        }
+      }
+      
+      // If no organizer promoter, try venue promoter
+      if (!defaultPromoterId && event.venue_id) {
+        const { data: venue } = await serviceSupabase
+          .from("venues")
+          .select("created_by")
+          .eq("id", event.venue_id)
+          .single();
+        
+        if (venue?.created_by) {
+          // Check if venue has a promoter profile
+          const { data: venuePromoter } = await serviceSupabase
+            .from("promoters")
+            .select("id")
+            .eq("created_by", venue.created_by)
+            .single();
+          
+          if (venuePromoter) {
+            defaultPromoterId = venuePromoter.id;
+          }
+        }
+      }
+    }
+
     // Create registration
     const { data: registration, error: regError } = await serviceSupabase
       .from("registrations")
       .insert({
         attendee_id: attendee.id,
         event_id: event.id,
-        referral_promoter_id: referralPromoterId,
+        referral_promoter_id: defaultPromoterId,
       })
       .select()
       .single();

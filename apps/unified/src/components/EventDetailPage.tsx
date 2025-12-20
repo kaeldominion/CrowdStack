@@ -219,6 +219,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     end_time: "",
     capacity: "",
     status: "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     reason: "",
   });
 
@@ -261,6 +262,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             end_time: data.event.end_time?.slice(0, 16) || "",
             capacity: data.event.capacity?.toString() || "",
             status: data.event.status || "",
+            timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
             reason: "",
           });
         }
@@ -333,6 +335,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) updates.end_time = editForm.end_time || null;
       if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
+      if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
 
       if (Object.keys(updates).length === 0) {
         alert("No changes to save");
@@ -1547,6 +1550,34 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   ]}
                 />
               )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Timezone
+              </label>
+              <select
+                value={editForm.timezone}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, timezone: e.target.value }))}
+                className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+              >
+                <option value="America/New_York">Eastern Time (ET)</option>
+                <option value="America/Chicago">Central Time (CT)</option>
+                <option value="America/Denver">Mountain Time (MT)</option>
+                <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                <option value="America/Anchorage">Alaska Time (AKT)</option>
+                <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
+                <option value="America/Toronto">Toronto (ET)</option>
+                <option value="America/Vancouver">Vancouver (PT)</option>
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Europe/Paris">Paris (CET/CEST)</option>
+                <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Asia/Shanghai">Shanghai (CST)</option>
+                <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+              </select>
+              <p className="mt-1 text-xs text-foreground-muted">
+                Timezone for event times
+              </p>
             </div>
             {config.role === "venue" && (
               <Textarea
