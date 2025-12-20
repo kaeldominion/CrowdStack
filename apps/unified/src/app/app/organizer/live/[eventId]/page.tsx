@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { BentoCard } from "@/components/BentoCard";
-import { Badge, Logo, Button, Input } from "@crowdstack/ui";
-import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2 } from "lucide-react";
+import { Badge, Logo, Button, Input, Modal } from "@crowdstack/ui";
+import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2, User, Mail, Phone, Instagram, ExternalLink } from "lucide-react";
 import type { LiveMetrics } from "@/lib/data/live-metrics";
 import { Avatar } from "@/components/Avatar";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
@@ -39,6 +38,9 @@ export default function OrganizerLiveMissionControlPage() {
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const [swipingId, setSwipingId] = useState<string | null>(null);
   const userScrolledUp = useRef<boolean>(false);
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
+  const [attendeeDetails, setAttendeeDetails] = useState<any | null>(null);
+  const [loadingAttendee, setLoadingAttendee] = useState(false);
 
   useEffect(() => {
     loadMetrics();
@@ -60,6 +62,33 @@ export default function OrganizerLiveMissionControlPage() {
     } catch (error) {
       console.error("Error loading current user:", error);
     }
+  };
+
+  const loadAttendeeDetails = async (attendeeId: string) => {
+    setLoadingAttendee(true);
+    setSelectedAttendeeId(attendeeId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/attendee/${attendeeId}`);
+      if (!response.ok) {
+        throw new Error("Failed to load attendee details");
+      }
+      const data = await response.json();
+      setAttendeeDetails(data);
+    } catch (error) {
+      console.error("Error loading attendee details:", error);
+      setAttendeeDetails(null);
+    } finally {
+      setLoadingAttendee(false);
+    }
+  };
+
+  const handleAttendeeClick = (attendeeId: string) => {
+    loadAttendeeDetails(attendeeId);
+  };
+
+  const handleCloseAttendeeModal = () => {
+    setSelectedAttendeeId(null);
+    setAttendeeDetails(null);
   };
 
   useEffect(() => {
@@ -405,12 +434,12 @@ export default function OrganizerLiveMissionControlPage() {
                   )}
                   <div>
                     {activity.attendee_id ? (
-                      <Link 
-                        href={`/admin/attendees?attendeeId=${activity.attendee_id}`}
-                        className="text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer"
+                      <button
+                        onClick={() => handleAttendeeClick(activity.attendee_id)}
+                        className="text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer text-left"
                       >
                         {activity.attendee_name}
-                      </Link>
+                      </button>
                     ) : (
                       <p className="text-sm font-medium text-white">{activity.attendee_name}</p>
                     )}
@@ -606,6 +635,117 @@ export default function OrganizerLiveMissionControlPage() {
           </BentoCard>
         </div>
       </div>
+
+      {/* Attendee Profile Modal */}
+      <Modal
+        isOpen={selectedAttendeeId !== null}
+        onClose={handleCloseAttendeeModal}
+        title="Attendee Profile"
+        size="md"
+      >
+        {loadingAttendee ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-foreground-muted">Loading profile...</div>
+          </div>
+        ) : attendeeDetails?.attendee ? (
+          <div className="space-y-6">
+            {/* Profile Header */}
+            <div className="flex items-center gap-4">
+              <Avatar
+                src={attendeeDetails.attendee.avatar_url}
+                name={attendeeDetails.attendee.name || ""}
+                size="lg"
+              />
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {attendeeDetails.attendee.name} {attendeeDetails.attendee.surname || ""}
+                </h3>
+                {attendeeDetails.registration && (
+                  <p className="text-sm text-foreground-muted">
+                    Registered {new Date(attendeeDetails.registration.registered_at).toLocaleDateString()}
+                  </p>
+                )}
+                {attendeeDetails.checkin && (
+                  <p className="text-sm text-green-500">
+                    Checked in {new Date(attendeeDetails.checkin.checked_in_at).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="space-y-3 border-t border-border pt-4">
+              {attendeeDetails.attendee.email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-foreground-muted" />
+                  <a
+                    href={`mailto:${attendeeDetails.attendee.email}`}
+                    className="text-sm text-foreground hover:text-primary transition-colors"
+                  >
+                    {attendeeDetails.attendee.email}
+                  </a>
+                </div>
+              )}
+              {attendeeDetails.attendee.phone && (
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-foreground-muted" />
+                  <a
+                    href={`tel:${attendeeDetails.attendee.phone}`}
+                    className="text-sm text-foreground hover:text-primary transition-colors"
+                  >
+                    {attendeeDetails.attendee.phone}
+                  </a>
+                </div>
+              )}
+              {attendeeDetails.attendee.instagram_handle && (
+                <div className="flex items-center gap-3">
+                  <Instagram className="h-4 w-4 text-foreground-muted" />
+                  <a
+                    href={`https://instagram.com/${attendeeDetails.attendee.instagram_handle.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                  >
+                    @{attendeeDetails.attendee.instagram_handle.replace(/^@/, "")}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Previous Events */}
+            {attendeeDetails.previous_events && attendeeDetails.previous_events.length > 0 && (
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-foreground mb-3">Previous Events</h4>
+                <div className="space-y-2">
+                  {attendeeDetails.previous_events.map((event: any) => (
+                    <div
+                      key={event.id}
+                      className="flex items-center justify-between p-2 rounded-md bg-surface border border-border"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{event.name}</p>
+                        <p className="text-xs text-foreground-muted">
+                          {new Date(event.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {event.attended && (
+                        <Badge variant="success" className="text-xs">
+                          Attended
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-foreground-muted">Failed to load profile</div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
