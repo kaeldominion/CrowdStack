@@ -267,6 +267,13 @@ export async function getVenueDashboardStats(): Promise<{
   repeatRate: number;
   avgAttendance: number;
   topEvent: string;
+  venue: {
+    id: string;
+    name: string;
+    slug: string | null;
+    logo_url: string | null;
+    cover_image_url: string | null;
+  } | null;
 }> {
   const venueId = await getUserVenueId();
   if (!venueId) {
@@ -277,6 +284,7 @@ export async function getVenueDashboardStats(): Promise<{
       repeatRate: 0,
       avgAttendance: 0,
       topEvent: "N/A",
+      venue: null,
     };
   }
 
