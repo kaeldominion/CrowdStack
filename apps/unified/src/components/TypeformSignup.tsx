@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Input, Button } from "@crowdstack/ui";
-import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2 } from "lucide-react";
+import { Input, Button, Logo } from "@crowdstack/ui";
+import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2, MapPin, Users } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface TypeformSignupProps {
@@ -20,6 +20,12 @@ interface TypeformSignupProps {
     instagram_handle?: string | null;
   } | null;
   forcePasswordFallback?: boolean; // If true, show password fallback immediately
+  eventName?: string; // Event name to display throughout registration
+  eventDetails?: {
+    venueName?: string | null;
+    startTime?: string | null;
+    registrationCount?: number;
+  };
 }
 
 export interface SignupData {
@@ -44,7 +50,7 @@ const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
 
-export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false }: TypeformSignupProps) {
+export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false, eventName, eventDetails }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -749,13 +755,59 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         height: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
       }}
     >
+      {/* Subtle Logo - Top Left */}
+      <div className="fixed top-3 left-3 sm:top-6 sm:left-6 z-10 opacity-20 hover:opacity-30 transition-opacity">
+        <Logo variant="icon" size="sm" animated={false} className="text-white" />
+      </div>
+
       <div className="w-full max-w-2xl flex flex-col justify-center" style={{ 
         maxHeight: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
         minHeight: 0,
       }}>
-        {/* Progress Bar */}
+        {/* Event Context Badge */}
+        {eventName && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-4 sm:mb-6 flex-shrink-0"
+          >
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-white/50 mb-1">Registering for</p>
+                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white break-words">{eventName}</h3>
+                  {(eventDetails?.venueName || eventDetails?.startTime) && (
+                    <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-white/60 flex-wrap">
+                      {eventDetails.venueName && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate max-w-[200px] sm:max-w-none">{eventDetails.venueName}</span>
+                        </div>
+                      )}
+                      {eventDetails.startTime && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                          <span>{new Date(eventDetails.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {eventDetails?.registrationCount !== undefined && eventDetails.registrationCount > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10 self-start sm:self-auto">
+                    <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{eventDetails.registrationCount} {eventDetails.registrationCount === 1 ? 'person' : 'people'} registered</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Enhanced Progress Bar with Step Dots */}
         <div className="mb-3 sm:mb-6 flex-shrink-0">
-          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-primary/80"
               initial={{ width: 0 }}
@@ -763,11 +815,35 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               transition={{ duration: 0.3, ease: "easeOut" }}
             />
           </div>
-          <p className="text-xs text-white/40 mt-2 text-center">
-            {emailVerified 
-              ? `Step ${currentStep + 1} of ${visibleSteps.length}`
-              : `Step ${currentStep + 1} of ${visibleSteps.length}`}
-          </p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs sm:text-sm text-white/60 font-medium">
+              Step {currentStep + 1} of {visibleSteps.length}
+            </p>
+            {visibleSteps.length > 1 && (
+              <p className="text-xs text-white/40">
+                ~{Math.max(1, Math.ceil((visibleSteps.length - currentStep - 1) * 0.5))} min left
+              </p>
+            )}
+          </div>
+          {/* Step Dots */}
+          {visibleSteps.length <= 7 && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              {visibleSteps.map((_, index) => (
+                <motion.div
+                  key={index}
+                  className={`h-1.5 w-1.5 rounded-full transition-all ${
+                    index <= currentStep ? "bg-primary" : "bg-white/20"
+                  }`}
+                  initial={{ scale: 0.8 }}
+                  animate={{ 
+                    scale: index === currentStep ? 1.2 : index < currentStep ? 1 : 0.8,
+                    opacity: index <= currentStep ? 1 : 0.4
+                  }}
+                  transition={{ duration: 0.2 }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Form Container */}
