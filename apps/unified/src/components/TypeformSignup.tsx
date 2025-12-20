@@ -46,6 +46,9 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingMagicLink, setSendingMagicLink] = useState(false);
+  const [showPasswordFallback, setShowPasswordFallback] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState<SignupData>({
     email: "",
     name: existingProfile?.name || "",
@@ -177,12 +180,103 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send magic link");
+        const errorMsg = data.error || "Failed to send magic link";
+        const errorMsgLower = errorMsg.toLowerCase();
+        
+        // Check if it's a rate limit error
+        if (errorMsgLower.includes("rate limit") || 
+            errorMsgLower.includes("too many") ||
+            errorMsgLower.includes("email rate limit")) {
+          // Show password fallback instead of error
+          setShowPasswordFallback(true);
+          return;
+        }
+        throw new Error(errorMsg);
       }
 
       setMagicLinkSent(true);
     } catch (err: any) {
       setErrors({ email: err.message || "Failed to send magic link" });
+    } finally {
+      setSendingMagicLink(false);
+    }
+  };
+
+  const handlePasswordSignup = async () => {
+    if (password.length < 6) {
+      setErrors({ email: "Password must be at least 6 characters" });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrors({ email: "Passwords do not match" });
+      return;
+    }
+
+    setSendingMagicLink(true);
+    setErrors({});
+
+    try {
+      const supabase = createBrowserClient();
+      
+      // Try to sign up with password
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl || window.location.href,
+        },
+      });
+
+      if (signUpError) {
+        // If user already exists, try signing in instead
+        if (signUpError.message.includes("already registered") || signUpError.message.includes("already exists")) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password,
+          });
+
+          if (signInError) {
+            throw new Error("An account with this email already exists. Please use password login or try a different email.");
+          }
+
+          // Successfully signed in
+          setEmailVerified(true);
+          setShowPasswordFallback(false);
+          
+          // Check if already registered (if callback provided)
+          if (onEmailVerified) {
+            const alreadyRegistered = await onEmailVerified();
+            if (alreadyRegistered) {
+              return; // Parent component will handle showing success
+            }
+          }
+          
+          if (visibleSteps.length > 1) {
+            setCurrentStep(1); // Move to next step
+          }
+          return;
+        }
+        throw signUpError;
+      }
+
+      // Account created successfully - verify email and continue
+      setEmailVerified(true);
+      setShowPasswordFallback(false);
+      
+      // Check if already registered (if callback provided)
+      if (onEmailVerified) {
+        const alreadyRegistered = await onEmailVerified();
+        if (alreadyRegistered) {
+          return; // Parent component will handle showing success
+        }
+      }
+      
+      if (visibleSteps.length > 1) {
+        setCurrentStep(1); // Move to next step
+      }
+    } catch (err: any) {
+      setErrors({ email: err.message || "Failed to create account" });
     } finally {
       setSendingMagicLink(false);
     }
@@ -278,6 +372,59 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
     // Email step with magic link
     if (stepKey === "email") {
+      // Show password fallback if rate limited
+      if (showPasswordFallback) {
+        return (
+          <div className="space-y-4">
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+              <p className="text-yellow-400 text-sm text-center">
+                Email rate limit reached. Please set a password to continue.
+              </p>
+            </div>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.email) setErrors({ ...errors, email: undefined });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6) {
+                  e.preventDefault();
+                  handlePasswordSignup();
+                }
+              }}
+              placeholder="Password (min 6 characters)"
+              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-primary w-full"
+              autoFocus
+              autoComplete="new-password"
+              minLength={6}
+            />
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.email) setErrors({ ...errors, email: undefined });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6) {
+                  e.preventDefault();
+                  handlePasswordSignup();
+                }
+              }}
+              placeholder="Confirm password"
+              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-primary w-full"
+              autoComplete="new-password"
+              minLength={6}
+            />
+            <p className="text-xs text-white/60 text-center px-4">
+              Your account will be created and you can continue registration
+            </p>
+          </div>
+        );
+      }
+
       if (magicLinkSent && !emailVerified) {
         return (
           <div className="space-y-6">
@@ -593,7 +740,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           )}
 
           {/* Send magic link button for email step */}
-          {visibleSteps[currentStep] === "email" && !emailVerified && !magicLinkSent && (
+          {visibleSteps[currentStep] === "email" && !emailVerified && !magicLinkSent && !showPasswordFallback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -614,6 +761,34 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 ) : (
                   <>
                     Send Magic Link <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Password signup button when rate limited */}
+          {visibleSteps[currentStep] === "email" && showPasswordFallback && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+              className="mt-4 sm:mt-6 md:mt-8 flex-shrink-0"
+            >
+              <Button
+                variant="primary"
+                onClick={handlePasswordSignup}
+                disabled={sendingMagicLink || password.length < 6 || password !== confirmPassword}
+                loading={sendingMagicLink}
+                className="w-full text-base sm:text-sm py-3 sm:py-2 flex items-center justify-center gap-2"
+              >
+                {sendingMagicLink ? (
+                  <>
+                    Creating account... <Loader2 className="h-5 w-5 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    Create Account & Continue <ArrowRight className="h-5 w-5" />
                   </>
                 )}
               </Button>
