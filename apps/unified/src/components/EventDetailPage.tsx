@@ -244,6 +244,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     if (config.role === "organizer") {
       loadInviteCodes();
     }
+    if (config.role === "admin") {
+      loadOrganizers();
+    }
     
     // Refresh stats every 30 seconds if viewing stats
     if (config.canViewStats && config.statsApiEndpoint) {
