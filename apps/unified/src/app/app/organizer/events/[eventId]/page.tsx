@@ -25,6 +25,7 @@ export default function OrganizerEventDetailPage() {
         canViewPhotos: true,
         canViewSettings: true,
         canViewStats: true,
+        canPublish: true,
         showVenueApproval: true,
         showEditHistory: true,
       }}

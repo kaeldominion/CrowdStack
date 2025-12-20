@@ -764,8 +764,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               )}
             </>
           )}
-          {config.canPublish && (
-            event.status === "published" ? (
+          {config.canPublish && event && (
+            (event.status || "draft") === "published" ? (
               <Button
                 variant="secondary"
                 onClick={handlePublishToggle}
