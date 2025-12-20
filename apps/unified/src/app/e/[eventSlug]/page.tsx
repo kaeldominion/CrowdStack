@@ -7,16 +7,21 @@ import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
+// Force dynamic rendering to prevent caching stale organizer data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getEvent(slug: string) {
   try {
     const supabase = createServiceRoleClient();
 
     // Get published event by slug
+    // Explicitly specify foreign key to ensure correct organizer join
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select(`
         *,
-        organizer:organizers(id, name),
+        organizer:organizers!events_organizer_id_fkey(id, name),
         venue:venues(id, name, slug, address, city, state, country)
       `)
       .eq("slug", slug)
