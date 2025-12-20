@@ -6,8 +6,8 @@
 2. Navigate to: **Settings → API**
 3. Copy the following:
    - **Project URL**: `https://fvrjcyscwibrqpsviblx.supabase.co` (already known)
-   - **anon public key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2cmpjeXNjd2licnFwc3ZpYmx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNDc5NTMsImV4cCI6MjA4MTYyMzk1M30.cpk5MaPXqzQ3-eiZFaUT58EmKbABs-cOzTvgKtGNIzU` (already known)
-   - **service_role secret key**: ⚠️ **COPY THIS FROM THE DASHBOARD** (it's different from beta)
+   - **anon public key**: `sb_publishable_9inQqEPBbE7eHTtT6cjT6A_IFI8ccjf` (already known)
+   - **service_role secret key**: `sb_secret_7HGZwimyMdImzcEGLrhjqQ_5LuA0IGg`
 
 ## Step 2: Generate JWT Secret
 
@@ -29,13 +29,13 @@ Copy the output - you'll need it for the `JWT_SECRET` variable.
 | Variable Name | Value | Notes |
 |--------------|-------|-------|
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://fvrjcyscwibrqpsviblx.supabase.co` | Production Supabase URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2cmpjeXNjd2licnFwc3ZpYmx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNDc5NTMsImV4cCI6MjA4MTYyMzk1M30.cpk5MaPXqzQ3-eiZFaUT58EmKbABs-cOzTvgKtGNIzU` | Production anon key |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_9inQqEPBbE7eHTtT6cjT6A_IFI8ccjf` | Production anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | `<paste-from-step-1>` | Production service role key (secret) |
-| `JWT_SECRET` | `<paste-from-step-2>` | Generated random hex string |
+| `JWT_SECRET` | `b8857b6383e52b5487ccf95558328a90a01a1c3c4145c264702bffef8a2df7ac` | Generated random hex string |
 | `NEXT_PUBLIC_APP_ENV` | `prod` | Environment identifier |
 | `NEXT_PUBLIC_APP_VERSION` | `$VERCEL_GIT_COMMIT_SHA` | Auto-populated by Vercel |
-| `NEXT_PUBLIC_WEB_URL` | `https://crowdstack.app` | Production web URL |
-| `NEXT_PUBLIC_APP_URL` | `https://crowdstack.app` | Production app URL (unified) |
+| `NEXT_PUBLIC_WEB_URL` | `https://crowdstack.app` | Production URL (used for venue pages, share links) |
+| `NEXT_PUBLIC_APP_URL` | `https://crowdstack.app` | Production URL (used for door staff invites, app links) |
 
 ## Step 4: Verify Variables
 
@@ -50,6 +50,7 @@ Copy the output - you'll need it for the `JWT_SECRET` variable.
 - 🔒 **SUPABASE_SERVICE_ROLE_KEY** is secret - never expose to client
 - 🔑 **JWT_SECRET** must be unique for production (different from beta)
 - 📝 **NEXT_PUBLIC_APP_VERSION** uses Vercel's built-in variable
+- 🌐 **NEXT_PUBLIC_WEB_URL and NEXT_PUBLIC_APP_URL**: Both point to the same domain since the app is unified, but they're used in different contexts (venue URLs vs door staff invites)
 
 ## After Setting Variables
 

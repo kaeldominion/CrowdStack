@@ -40,9 +40,13 @@ function getLocalhostSession(cookieStore: Awaited<ReturnType<typeof cookies>>, s
 /**
  * Create a Supabase client for use in Server Components, Server Actions, and Route Handlers
  * This client respects user authentication via cookies
+ * 
+ * @param cookieStore - Optional cookie store. If provided, cookies() won't be called again.
+ *                      This prevents OpenTelemetry context errors when cookies() is already called.
  */
-export async function createClient() {
-  const cookieStore = await cookies();
+export async function createClient(cookieStore?: Awaited<ReturnType<typeof cookies>>) {
+  // Only call cookies() if not provided - prevents multiple calls in same request
+  const store = cookieStore || await cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -54,17 +58,17 @@ export async function createClient() {
   }
 
   // Check for custom localhost auth cookie (token-sharing workaround)
-  const localhostSession = getLocalhostSession(cookieStore, supabaseUrl);
+  const localhostSession = getLocalhostSession(store, supabaseUrl);
 
   const client = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return store.getAll();
       },
       setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            store.set(name, value, options);
           });
         } catch (error) {
           // The `setAll` method was called from a Server Component.

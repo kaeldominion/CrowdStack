@@ -42,7 +42,11 @@ export default async function AuthenticatedLayout({
     console.log("[App Layout] Starting authentication check");
   }
   
-  const supabase = await createClient();
+  // Call cookies() ONCE at the top - Next.js 14 requires this
+  // Passing it to createClient() prevents double-calling cookies()
+  const cookieStore = await cookies();
+  
+  const supabase = await createClient(cookieStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -62,7 +66,6 @@ export default async function AuthenticatedLayout({
       if (process.env.NODE_ENV === "development") {
         console.log("[App Layout] No user from Supabase, checking localhost cookie");
       }
-      const cookieStore = await cookies();
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       authenticatedUser = getUserFromLocalhostCookie(cookieStore, supabaseUrl);
       if (process.env.NODE_ENV === "development") {
@@ -80,8 +83,7 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  // Check for impersonation cookies
-  const cookieStore = await cookies();
+  // Check for impersonation cookies (reuse the same cookieStore)
   const roleCookie = cookieStore.get("cs-impersonate-role");
   const entityCookie = cookieStore.get("cs-impersonate-entity-id");
   if (process.env.NODE_ENV === "development") {
