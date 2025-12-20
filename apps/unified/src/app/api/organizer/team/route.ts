@@ -81,9 +81,17 @@ export async function POST(request: NextRequest) {
             organizer_id: organizerId,
             assigned_by: user.id,
           });
+          console.log(`Successfully assigned event_organizer role to user ${user_id}`);
         } catch (roleError: any) {
           console.error("Failed to assign event_organizer role:", roleError);
-          // Continue anyway - organizer_users entry was created, role assignment can be retried
+          // Still return success since organizer_users entry was created
+          // Role assignment can be retried, but log for debugging
+          console.error("Role assignment error details:", {
+            user_id,
+            organizerId,
+            error: roleError.message,
+            stack: roleError.stack,
+          });
         }
       } else {
         // User already assigned, but ensure they have the event_organizer role
@@ -93,9 +101,16 @@ export async function POST(request: NextRequest) {
             organizer_id: organizerId,
             assigned_by: user.id,
           });
+          console.log(`Successfully assigned event_organizer role to user ${user_id} (already in organizer)`);
         } catch (roleError: any) {
           console.error("Failed to assign event_organizer role:", roleError);
-          // Continue - role might already exist
+          console.error("Role assignment error details:", {
+            user_id,
+            organizerId,
+            error: roleError.message,
+            stack: roleError.stack,
+          });
+          // Continue - role might already exist, but log for debugging
         }
       }
       

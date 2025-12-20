@@ -157,13 +157,30 @@ export async function assignUserRole(
 ): Promise<void> {
   const supabase = createServiceRoleClient();
 
-  const { error } = await supabase.from("user_roles").upsert({
-    user_id: userId,
-    role,
-    metadata,
-  });
+  // Upsert with explicit conflict resolution on (user_id, role) unique constraint
+  const { error } = await supabase
+    .from("user_roles")
+    .upsert(
+      {
+        user_id: userId,
+        role,
+        metadata,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id,role",
+      }
+    );
 
   if (error) {
+    console.error("assignUserRole error:", {
+      userId,
+      role,
+      error: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
     throw new Error(`Failed to assign role: ${error.message}`);
   }
 }
