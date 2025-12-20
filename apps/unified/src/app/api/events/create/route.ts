@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import type { CreateEventRequest } from "@crowdstack/shared";
 import { notifyVenueOfPendingEvent, notifyVenueOfAutoApprovedEvent } from "@crowdstack/shared/notifications/send";
@@ -75,11 +76,21 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
-      // Regular organizer - get their organizer record
+      // Regular organizer - get their organizer ID (checks organizer_users table first, then created_by)
+      const organizerId = await getUserOrganizerId();
+      
+      if (!organizerId) {
+        return NextResponse.json(
+          { error: "Organizer profile not found" },
+          { status: 400 }
+        );
+      }
+      
+      // Get organizer record
       const { data: org } = await serviceSupabase
         .from("organizers")
         .select("id")
-        .eq("created_by", userId)
+        .eq("id", organizerId)
         .single();
       organizer = org;
     }
