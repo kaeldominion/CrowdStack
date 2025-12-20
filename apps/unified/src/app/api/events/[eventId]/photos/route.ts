@@ -152,7 +152,7 @@ export async function POST(
       .single();
 
     if (!album) {
-      const { data: newAlbum } = await serviceSupabase
+      const { data: newAlbum, error: albumError } = await serviceSupabase
         .from("photo_albums")
         .insert({
           event_id: params.eventId,
@@ -162,7 +162,22 @@ export async function POST(
         .select()
         .single();
 
+      if (albumError || !newAlbum) {
+        return NextResponse.json(
+          { error: "Failed to create photo album" },
+          { status: 500 }
+        );
+      }
+
       album = newAlbum;
+    }
+
+    // Ensure album is not null (TypeScript guard)
+    if (!album) {
+      return NextResponse.json(
+        { error: "Photo album not found" },
+        { status: 404 }
+      );
     }
 
     // Parse form data
