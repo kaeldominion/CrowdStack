@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@crowdstack/ui";
-import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users, Plus } from "lucide-react";
+import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users, Plus, ExternalLink, Globe, Eye, Building2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function VenueDashboardPage() {
   const [stats, setStats] = useState({
@@ -15,6 +16,13 @@ export default function VenueDashboardPage() {
     avgAttendance: 0,
     topEvent: "N/A",
   });
+  const [venue, setVenue] = useState<{
+    id: string;
+    name: string;
+    slug: string | null;
+    logo_url: string | null;
+    cover_image_url: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [noVenue, setNoVenue] = useState(false);
 
@@ -33,6 +41,9 @@ export default function VenueDashboardPage() {
       }
       const data = await response.json();
       setStats(data.stats || stats);
+      if (data.venue) {
+        setVenue(data.venue);
+      }
       // Check if all stats are zero/empty, which might indicate no venue
       if (data.stats && data.stats.topEvent === "N/A" && data.stats.totalEvents === 0) {
         setNoVenue(true);
@@ -96,6 +107,119 @@ export default function VenueDashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Public Profile Card */}
+      <BentoCard span={4}>
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Venue Image/Logo Preview */}
+          <div className="flex-shrink-0">
+            {venue?.cover_image_url ? (
+              <div className="relative w-full md:w-48 h-32 rounded-lg overflow-hidden border border-white/10">
+                <Image
+                  src={venue.cover_image_url}
+                  alt={venue.name || "Venue"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ) : venue?.logo_url ? (
+              <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                <Image
+                  src={venue.logo_url}
+                  alt={venue.name || "Venue"}
+                  fill
+                  className="object-contain p-4"
+                />
+              </div>
+            ) : (
+              <div className="w-full md:w-48 h-32 rounded-lg border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                <Building2 className="h-12 w-12 text-white/40" />
+              </div>
+            )}
+          </div>
+
+          {/* Venue Info */}
+          <div className="flex-1 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="h-4 w-4 text-white/60" />
+                <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                  Public Profile
+                </p>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">{venue?.name || "Venue"}</h2>
+              {venue?.slug ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 p-2 bg-white/5 rounded-md border border-white/10">
+                    <code className="text-sm text-white/80 font-mono flex-1 truncate">
+                      {(() => {
+                        // Get web URL from current origin (replace app subdomain with web)
+                        if (typeof window !== "undefined") {
+                          const origin = window.location.origin;
+                          // Replace app subdomain with web subdomain
+                          const webUrl = origin.replace(/app(-beta)?\./, "");
+                          return `${webUrl}/v/${venue.slug}`;
+                        }
+                        return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
+                      })()}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const origin = window.location.origin;
+                        const webUrl = origin.replace(/app(-beta)?\./, "");
+                        const url = `${webUrl}/v/${venue.slug}`;
+                        navigator.clipboard.writeText(url);
+                        alert("Link copied to clipboard!");
+                      }}
+                      className="text-xs"
+                    >
+                      Copy
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <a
+                      href={(() => {
+                        if (typeof window !== "undefined") {
+                          const origin = window.location.origin;
+                          const webUrl = origin.replace(/app(-beta)?\./, "");
+                          return `${webUrl}/v/${venue.slug}`;
+                        }
+                        return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
+                      })()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="primary" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Live Profile
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                      </Button>
+                    </a>
+                    <Link href="/app/venue/settings">
+                      <Button variant="secondary" size="sm">
+                        Edit Profile
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-white/60">
+                    Set up your public profile to share your venue with event-goers
+                  </p>
+                  <Link href="/app/venue/settings">
+                    <Button variant="primary" size="sm">
+                      Set Up Public Profile
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </BentoCard>
 
       {/* Bento Grid Layout */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">

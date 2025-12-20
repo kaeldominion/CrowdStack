@@ -35,6 +35,7 @@ interface PromoterManagementModalProps {
   onClose: () => void;
   eventId: string;
   onUpdate?: () => void;
+  context?: "venue" | "organizer";
 }
 
 export function PromoterManagementModal({
@@ -42,6 +43,7 @@ export function PromoterManagementModal({
   onClose,
   eventId,
   onUpdate,
+  context = "organizer",
 }: PromoterManagementModalProps) {
   const [eventPromoters, setEventPromoters] = useState<EventPromoter[]>([]);
   const [availablePromoters, setAvailablePromoters] = useState<Promoter[]>([]);
@@ -76,7 +78,12 @@ export function PromoterManagementModal({
 
   const loadAvailablePromoters = async () => {
     try {
-      const response = await fetch("/api/admin/promoters");
+      // Use context-specific endpoint to get promoters who have worked together
+      const endpoint = context === "venue" 
+        ? "/api/venue/promoters" 
+        : "/api/organizer/promoters";
+      
+      const response = await fetch(endpoint);
       if (!response.ok) throw new Error("Failed to load available promoters");
       const data = await response.json();
       setAvailablePromoters(data.promoters || []);
@@ -98,6 +105,7 @@ export function PromoterManagementModal({
             commissionType === "flat_per_head"
               ? { amount_per_head: parseFloat(commissionAmount) || 5 }
               : { tiers: [] },
+          assigned_by: context, // Explicitly set who is assigning
         }),
       });
 

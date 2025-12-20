@@ -92,3 +92,4 @@ cookieOptions: {
 3. Configure Supabase redirect URLs
 4. Test login flow between domains
 
+

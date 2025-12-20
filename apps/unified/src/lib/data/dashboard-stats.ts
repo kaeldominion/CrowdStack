@@ -331,6 +331,13 @@ export async function getVenueDashboardStats(): Promise<{
     .limit(1)
     .single();
 
+  // Get venue info
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("id, name, slug, logo_url, cover_image_url")
+    .eq("id", venueId)
+    .single();
+
   return {
     totalEvents: totalEvents || 0,
     thisMonth: thisMonth || 0,
@@ -338,6 +345,13 @@ export async function getVenueDashboardStats(): Promise<{
     repeatRate: 0, // TODO: Calculate repeat rate
     avgAttendance,
     topEvent: topEvent?.name || "N/A",
+    venue: venue ? {
+      id: venue.id,
+      name: venue.name,
+      slug: venue.slug,
+      logo_url: venue.logo_url,
+      cover_image_url: venue.cover_image_url,
+    } : null,
   };
 }
 

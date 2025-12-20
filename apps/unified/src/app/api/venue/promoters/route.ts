@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
+import { getUserVenueId } from "@/lib/data/get-user-entity";
 
 export async function GET() {
   try {
@@ -14,19 +15,127 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Use service role client to bypass RLS and get all promoters
-    const serviceSupabase = createServiceRoleClient();
-    const { data: promoters, error } = await serviceSupabase
-      .from("promoters")
-      .select("id, name, email")
-      .order("name", { ascending: true });
-
-    if (error) {
-      throw error;
+    const venueId = await getUserVenueId();
+    if (!venueId) {
+      return NextResponse.json(
+        { error: "No venue found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ promoters: promoters || [] });
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get all events at this venue
+    const { data: venueEvents } = await serviceSupabase
+      .from("events")
+      .select("id")
+      .eq("venue_id", venueId);
+
+    const eventIds = venueEvents?.map((e) => e.id) || [];
+
+    if (eventIds.length === 0) {
+      return NextResponse.json({ promoters: [] });
+    }
+
+    // Get all promoters assigned to events at this venue
+    const { data: eventPromoters, error: epError } = await serviceSupabase
+      .from("event_promoters")
+      .select("promoter_id")
+      .in("event_id", eventIds);
+
+    if (epError) {
+      throw epError;
+    }
+
+    // Get unique promoter IDs
+    const promoterIds = [
+      ...new Set(eventPromoters?.map((ep) => ep.promoter_id) || []),
+    ];
+
+    if (promoterIds.length === 0) {
+      return NextResponse.json({ promoters: [] });
+    }
+
+    // Get promoter details
+    const { data: promoters, error: promotersError } = await serviceSupabase
+      .from("promoters")
+      .select("id, name, email, phone, created_at")
+      .in("id", promoterIds)
+      .order("name", { ascending: true });
+
+    if (promotersError) {
+      throw promotersError;
+    }
+
+    // Get stats for each promoter
+    const promotersWithStats = await Promise.all(
+      (promoters || []).map(async (promoter) => {
+        // Get events this promoter is assigned to at this venue
+        const { data: promoterEvents } = await serviceSupabase
+          .from("event_promoters")
+          .select("event_id, assigned_by")
+          .eq("promoter_id", promoter.id)
+          .in("event_id", eventIds);
+
+        const promoterEventIds =
+          promoterEvents?.map((ep) => ep.event_id) || [];
+
+        // Count registrations through this promoter's referrals
+        const { count: referralCount } = await serviceSupabase
+          .from("registrations")
+          .select("*", { count: "exact", head: true })
+          .in("event_id", promoterEventIds)
+          .eq("referral_promoter_id", promoter.id);
+
+        // Get registration IDs for referrals
+        const { data: referrals } = await serviceSupabase
+          .from("registrations")
+          .select("id")
+          .in("event_id", promoterEventIds)
+          .eq("referral_promoter_id", promoter.id);
+
+        const referralRegIds = referrals?.map((r) => r.id) || [];
+
+        // Count check-ins from referrals
+        let checkinsFromReferrals = 0;
+        if (referralRegIds.length > 0) {
+          const { count: checkinCount } = await serviceSupabase
+            .from("checkins")
+            .select("*", { count: "exact", head: true })
+            .in("registration_id", referralRegIds)
+            .is("undo_at", null);
+
+          checkinsFromReferrals = checkinCount || 0;
+        }
+
+        const conversionRate =
+          referralCount && referralCount > 0
+            ? Math.round((checkinsFromReferrals / referralCount) * 100)
+            : 0;
+
+        // Check if promoter was ever assigned directly by venue vs through organizer
+        const hasDirectAssignment = promoterEvents?.some(
+          (ep) => ep.assigned_by === "venue"
+        );
+        const hasIndirectAssignment = promoterEvents?.some(
+          (ep) => ep.assigned_by === "organizer" || ep.assigned_by === null
+        );
+
+        return {
+          ...promoter,
+          events_count: promoterEventIds.length,
+          referrals_count: referralCount || 0,
+          checkins_count: checkinsFromReferrals,
+          conversion_rate: conversionRate,
+          has_direct_assignment: hasDirectAssignment || false,
+          has_indirect_assignment: hasIndirectAssignment || false,
+        };
+      })
+    );
+
+    return NextResponse.json({ promoters: promotersWithStats });
   } catch (error: any) {
+    console.error("Error fetching venue promoters:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch promoters" },
       { status: 500 }

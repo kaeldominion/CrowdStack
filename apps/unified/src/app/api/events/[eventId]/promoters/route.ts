@@ -93,7 +93,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { promoter_id, commission_type, commission_config } = body;
+    const { promoter_id, commission_type, commission_config, assigned_by } = body;
 
     if (!promoter_id) {
       return NextResponse.json(
@@ -131,6 +131,30 @@ export async function POST(
       );
     }
 
+    // Determine assigned_by if not provided
+    let finalAssignedBy = assigned_by;
+    if (!finalAssignedBy) {
+      // Check if user is venue admin first
+      const userIsVenueAdmin = await isVenueAdmin(eventId, userId);
+      if (userIsVenueAdmin) {
+        finalAssignedBy = "venue";
+      } else {
+        // Otherwise, check if user is organizer
+        const organizerId = await getUserOrganizerId();
+        if (organizerId) {
+          const { data: event } = await serviceSupabase
+            .from("events")
+            .select("organizer_id")
+            .eq("id", eventId)
+            .single();
+          
+          if (event?.organizer_id === organizerId) {
+            finalAssignedBy = "organizer";
+          }
+        }
+      }
+    }
+
     // Add promoter to event
     const { data: eventPromoter, error } = await serviceSupabase
       .from("event_promoters")
@@ -139,6 +163,7 @@ export async function POST(
         promoter_id,
         commission_type: commission_type || "flat_per_head",
         commission_config: commission_config || { amount_per_head: 5 },
+        assigned_by: finalAssignedBy || "organizer",
       })
       .select(`
         id,
@@ -282,5 +307,37 @@ async function checkEventAccess(eventId: string, userId: string): Promise<boolea
   }
 
   return false;
+}
+
+// Helper to check if user is venue admin (not just creator)
+async function isVenueAdmin(eventId: string, userId: string): Promise<boolean> {
+  const serviceSupabase = createServiceRoleClient();
+  
+  const { data: event } = await serviceSupabase
+    .from("events")
+    .select("venue_id, venue:venues(created_by)")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.venue_id) {
+    return false;
+  }
+
+  const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+  
+  // Check if user is venue creator
+  if (venue?.created_by === userId) {
+    return true;
+  }
+
+  // Check if user is in venue_users table
+  const { data: venueUser } = await serviceSupabase
+    .from("venue_users")
+    .select("id")
+    .eq("venue_id", event.venue_id)
+    .eq("user_id", userId)
+    .single();
+
+  return !!venueUser;
 }
 

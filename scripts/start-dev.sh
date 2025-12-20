@@ -39,3 +39,4 @@ echo ""
 # Start both servers
 $PNPM_CMD dev:all
 
+

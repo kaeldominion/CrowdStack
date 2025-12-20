@@ -89,6 +89,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["venue_admin"],
   },
   {
+    label: "Users",
+    href: "/app/venue/users",
+    icon: Users,
+    roles: ["venue_admin"],
+  },
+  {
     label: "Venue Settings",
     href: "/app/venue/settings",
     icon: Settings,

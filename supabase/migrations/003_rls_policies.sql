@@ -117,6 +117,7 @@ CREATE POLICY "Organizers can manage their organizer record"
   USING (created_by = auth.uid())
   WITH CHECK (created_by = auth.uid());
 
+
 -- ============================================
 -- PROMOTERS POLICIES
 -- ============================================
@@ -136,6 +137,8 @@ CREATE POLICY "Promoters can update their promoter record"
   WITH CHECK (created_by = auth.uid());
 
 -- Venue admins and organizers can read all promoters (for assignment)
+-- NOTE: This policy will be updated in migration 037 to restrict visibility
+-- based on work history. Keeping this for backward compatibility during migration.
 CREATE POLICY "Venue admins and organizers can read promoters"
   ON public.promoters FOR SELECT
   USING (

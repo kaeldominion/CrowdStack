@@ -54,3 +54,4 @@ We need **ONE login** that works for both apps. Options:
 3. Implement single login flow (remove app login)
 4. Handle session sharing for localhost (maybe via URL params or localStorage sync)
 
+

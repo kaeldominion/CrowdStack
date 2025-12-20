@@ -3,6 +3,14 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { assignUserRole, removeUserRole } from "@crowdstack/shared/auth/roles";
+import {
+  FULL_ADMIN_VENUE_PERMISSIONS,
+  FULL_ADMIN_ORGANIZER_PERMISSIONS,
+} from "@crowdstack/shared/constants/permissions";
+import type {
+  VenuePermissions,
+  OrganizerPermissions,
+} from "@crowdstack/shared/types";
 
 export async function POST(
   request: Request,
@@ -30,17 +38,27 @@ export async function POST(
     const { data: { user: adminUser } } = await supabase.auth.getUser();
 
     if (action === "assign") {
+      // Set default permissions (full admin for admin assignments)
+      const permissions: VenuePermissions | OrganizerPermissions =
+        entityType === "venue"
+          ? FULL_ADMIN_VENUE_PERMISSIONS
+          : FULL_ADMIN_ORGANIZER_PERMISSIONS;
+
       // Assign user to venue/organizer in junction table
       const { error: junctionError } = await serviceSupabase
         .from(junctionTable)
-        .upsert({
-          user_id: userId,
-          [entityIdField]: entityId,
-          role: "admin",
-          assigned_by: adminUser?.id || null,
-        }, {
-          onConflict: `${entityIdField},user_id`,
-        });
+        .upsert(
+          {
+            user_id: userId,
+            [entityIdField]: entityId,
+            role: "admin",
+            permissions: permissions,
+            assigned_by: adminUser?.id || null,
+          },
+          {
+            onConflict: `${entityIdField},user_id`,
+          }
+        );
 
       if (junctionError) {
         return NextResponse.json({ error: junctionError.message }, { status: 500 });

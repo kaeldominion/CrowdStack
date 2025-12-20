@@ -106,6 +106,66 @@ export interface VenueTag {
   created_at: string;
 }
 
+// ============================================
+// Permissions Types
+// ============================================
+
+export interface VenuePermissions {
+  manage_users: boolean;
+  edit_profile: boolean;
+  add_events: boolean;
+  edit_events: boolean;
+  approve_events: boolean;
+  view_reports: boolean;
+  manage_promoters: boolean;
+  manage_organizers: boolean;
+  manage_guests: boolean;
+  full_admin: boolean;
+}
+
+export interface OrganizerPermissions {
+  manage_users: boolean;
+  edit_profile: boolean;
+  add_events: boolean;
+  edit_events: boolean;
+  delete_events: boolean;
+  view_reports: boolean;
+  manage_promoters: boolean;
+  publish_photos: boolean;
+  manage_payouts: boolean;
+  full_admin: boolean;
+}
+
+export interface VenueUser {
+  id: string;
+  venue_id: string;
+  user_id: string;
+  role: string;
+  permissions: VenuePermissions;
+  assigned_by: string | null;
+  assigned_at: string;
+  user?: {
+    id: string;
+    email: string;
+    created_at: string;
+  };
+}
+
+export interface OrganizerUser {
+  id: string;
+  organizer_id: string;
+  user_id: string;
+  role: string;
+  permissions: OrganizerPermissions;
+  assigned_by: string | null;
+  assigned_at: string;
+  user?: {
+    id: string;
+    email: string;
+    created_at: string;
+  };
+}
+
 export interface Organizer {
   id: string;
   name: string;

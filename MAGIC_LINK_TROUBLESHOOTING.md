@@ -114,3 +114,4 @@ Verify in Supabase Dashboard:
 4. Try password login to verify basic auth works
 5. Check if user exists in Supabase Auth (if signups are disabled)
 
+

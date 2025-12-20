@@ -26,9 +26,11 @@ import {
   ShieldAlert, 
   ShieldX,
   UserCheck,
+  X,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Event {
   id: string;
@@ -52,14 +54,29 @@ interface Event {
 
 export default function VenueEventsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const organizerFilterId = searchParams.get("organizer");
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [filteredOrganizer, setFilteredOrganizer] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    // If organizer filter is in URL, find and set the organizer info
+    if (organizerFilterId && events.length > 0) {
+      const organizer = events.find(e => e.organizer.id === organizerFilterId)?.organizer;
+      if (organizer) {
+        setFilteredOrganizer({ id: organizer.id, name: organizer.name });
+      }
+    } else {
+      setFilteredOrganizer(null);
+    }
+  }, [organizerFilterId, events]);
 
   const loadEvents = async () => {
     try {
@@ -131,6 +148,11 @@ export default function VenueEventsPage() {
 
   // Filter events
   const filteredEvents = events.filter((event) => {
+    // Organizer filter
+    if (organizerFilterId && event.organizer.id !== organizerFilterId) {
+      return false;
+    }
+    
     // Search filter
     const matchesSearch = 
       event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -150,6 +172,10 @@ export default function VenueEventsPage() {
 
     return matchesSearch && matchesTab;
   });
+
+  const clearOrganizerFilter = () => {
+    router.push("/app/venue/events");
+  };
 
   // Count for tabs
   const pendingCount = events.filter(e => e.venue_approval_status === "pending").length;
@@ -205,6 +231,29 @@ export default function VenueEventsPage() {
         </Card>
       </div>
 
+      {/* Organizer Filter Badge */}
+      {filteredOrganizer && (
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span className="text-sm text-foreground">
+                Showing events from <strong>{filteredOrganizer.name}</strong>
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearOrganizerFilter}
+              className="text-foreground-muted hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear Filter
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Tabs and Search */}
       <div className="space-y-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -237,7 +286,9 @@ export default function VenueEventsPage() {
                 No Events Found
               </h3>
               <p className="text-foreground-muted">
-                {activeTab === "pending" 
+                {filteredOrganizer
+                  ? `No events found for ${filteredOrganizer.name}.`
+                  : activeTab === "pending" 
                   ? "No events are waiting for your approval."
                   : searchQuery 
                   ? "No events match your search."

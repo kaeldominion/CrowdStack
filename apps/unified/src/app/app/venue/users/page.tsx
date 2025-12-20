@@ -1,0 +1,367 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  Card,
+  Container,
+  Section,
+  Button,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Modal,
+  Badge,
+} from "@crowdstack/ui";
+import { Plus, Trash2, Edit, User as UserIcon, Mail } from "lucide-react";
+import { PermissionsEditor } from "@/components/PermissionsEditor";
+import type { VenueUser, VenuePermissions } from "@crowdstack/shared/types";
+import { DEFAULT_VENUE_PERMISSIONS } from "@crowdstack/shared/constants/permissions";
+
+export default function VenueUsersPage() {
+  const searchParams = useSearchParams();
+  const venueId = searchParams.get("venueId");
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<VenueUser[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<VenueUser | null>(null);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPermissions, setNewUserPermissions] =
+    useState<VenuePermissions>(DEFAULT_VENUE_PERMISSIONS);
+
+  useEffect(() => {
+    loadUsers();
+  }, [venueId]);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const url = venueId 
+        ? `/api/venue/users?venueId=${venueId}`
+        : `/api/venue/users`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to load users" }));
+        throw new Error(errorData.error || "Failed to load users");
+      }
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (error: any) {
+      console.error("Error loading users:", error);
+      alert(error.message || "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUserEmail) {
+      alert("Please enter an email address");
+      return;
+    }
+
+    try {
+      const body: any = {
+        email: newUserEmail,
+        permissions: newUserPermissions,
+      };
+      
+      // Include venueId if we have it, otherwise let API figure it out
+      if (venueId) {
+        body.venueId = venueId;
+      }
+
+      const response = await fetch(`/api/venue/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to add user");
+      }
+
+      await loadUsers();
+      setShowAddModal(false);
+      setNewUserEmail("");
+      setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
+    } catch (error: any) {
+      alert(error.message || "Failed to add user");
+    }
+  };
+
+  const handleUpdatePermissions = async (
+    userId: string,
+    permissions: VenuePermissions
+  ) => {
+    try {
+      const body: any = { permissions };
+      
+      // Include venueId if we have it, otherwise let API figure it out
+      if (venueId) {
+        body.venueId = venueId;
+      }
+
+      const response = await fetch(`/api/venue/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update permissions");
+      }
+
+      await loadUsers();
+      setEditingUser(null);
+    } catch (error: any) {
+      alert(error.message || "Failed to update permissions");
+    }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to remove this user?")) return;
+
+    try {
+      const url = venueId 
+        ? `/api/venue/users/${userId}?venueId=${venueId}`
+        : `/api/venue/users/${userId}`;
+      const response = await fetch(url, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to remove user");
+      }
+
+      await loadUsers();
+    } catch (error: any) {
+      alert(error.message || "Failed to remove user");
+    }
+  };
+
+  const getPermissionBadges = (permissions: VenuePermissions) => {
+    if (permissions.full_admin) {
+      return <Badge variant="primary">Full Admin</Badge>;
+    }
+
+    const activePermissions = Object.entries(permissions)
+      .filter(([key, value]) => key !== "full_admin" && value === true)
+      .map(([key]) => key);
+
+    if (activePermissions.length === 0) {
+      return <Badge variant="secondary">No Permissions</Badge>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {activePermissions.slice(0, 3).map((perm) => (
+          <Badge key={perm} variant="secondary" size="sm">
+            {perm.replace(/_/g, " ")}
+          </Badge>
+        ))}
+        {activePermissions.length > 3 && (
+          <Badge variant="secondary" size="sm">
+            +{activePermissions.length - 3} more
+          </Badge>
+        )}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Container>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-foreground-muted">Loading users...</div>
+        </div>
+      </Container>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Section spacing="lg">
+        <Container>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Venue Users</h1>
+              <p className="mt-2 text-sm text-foreground-muted">
+                Manage users who can access this venue and their permissions
+              </p>
+            </div>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Permissions</TableHead>
+                    <TableHead>Assigned</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-foreground-muted"
+                      >
+                        No users assigned yet
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((venueUser) => (
+                      <TableRow key={venueUser.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <UserIcon className="h-4 w-4 text-foreground-muted" />
+                            <div>
+                              <div className="font-medium">
+                                {venueUser.user?.email || "Unknown"}
+                              </div>
+                              {venueUser.user?.email && (
+                                <div className="text-xs text-foreground-muted flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {venueUser.user.email}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getPermissionBadges(venueUser.permissions)}
+                        </TableCell>
+                        <TableCell className="text-sm text-foreground-muted">
+                          {new Date(venueUser.assigned_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingUser(venueUser)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveUser(venueUser.user_id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          {/* Add User Modal */}
+          <Modal
+            isOpen={showAddModal}
+            onClose={() => {
+              setShowAddModal(false);
+              setNewUserEmail("");
+              setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
+            }}
+            title="Add User to Venue"
+            size="lg"
+          >
+            <div className="space-y-6">
+              <Input
+                label="User Email"
+                type="email"
+                value={newUserEmail}
+                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+              />
+
+              <Card>
+                <PermissionsEditor
+                  permissions={newUserPermissions}
+                  onChange={(perms) =>
+                    setNewUserPermissions(perms as VenuePermissions)
+                  }
+                  type="venue"
+                />
+              </Card>
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewUserEmail("");
+                    setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleAddUser}>
+                  Add User
+                </Button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Edit Permissions Modal */}
+          {editingUser && (
+            <Modal
+              isOpen={!!editingUser}
+              onClose={() => setEditingUser(null)}
+              title="Edit User Permissions"
+              size="lg"
+            >
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm text-foreground-muted mb-1">User</p>
+                  <p className="font-medium">{editingUser.user?.email}</p>
+                </div>
+
+                <Card>
+                  <PermissionsEditor
+                    permissions={editingUser.permissions}
+                    onChange={(perms) =>
+                      handleUpdatePermissions(
+                        editingUser.user_id,
+                        perms as VenuePermissions
+                      )
+                    }
+                    type="venue"
+                  />
+                </Card>
+
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost" onClick={() => setEditingUser(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </Modal>
+          )}
+        </Container>
+      </Section>
+    </div>
+  );
+}
+

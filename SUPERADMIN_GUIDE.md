@@ -130,3 +130,4 @@ To test as an organizer:
 
 The impersonation uses cookies (`cs-impersonate-role` and `cs-impersonate-entity-id`) to temporarily override your actual role when fetching data.
 
+

@@ -37,9 +37,12 @@ export async function GET() {
     }
 
     console.log("[Venue Dashboard Stats] Access granted. hasAccess:", hasAccess, "isImpersonating:", isImpersonating);
-    const stats = await getVenueDashboardStats();
+    const result = await getVenueDashboardStats();
 
-    return NextResponse.json({ stats });
+    // Extract venue from stats and return separately
+    const { venue, ...stats } = result as any;
+
+    return NextResponse.json({ stats, venue });
   } catch (error: any) {
     console.error("[Venue Dashboard Stats] Error:", error);
     return NextResponse.json(
