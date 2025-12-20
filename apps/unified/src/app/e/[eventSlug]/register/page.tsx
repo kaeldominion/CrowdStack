@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ref = searchParams.get("ref"); // referral code (promoter/venue ID)
+  const magicLinkError = searchParams.get("magic_link_error"); // Error from magic link callback
   const eventSlug = params.eventSlug as string;
 
   const [loading, setLoading] = useState(true);
@@ -376,6 +377,9 @@ export default function RegisterPage() {
       ? window.location.href
       : null;
     
+    // If magic link failed, show password fallback immediately
+    const shouldShowPasswordFallback = magicLinkError === "pkce" || magicLinkError === "expired" || magicLinkError === "failed";
+    
     return (
       <TypeformSignup
         onSubmit={handleSignupSubmit}
@@ -383,6 +387,7 @@ export default function RegisterPage() {
         redirectUrl={redirectUrl || undefined}
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
+        forcePasswordFallback={shouldShowPasswordFallback}
       />
     );
   }

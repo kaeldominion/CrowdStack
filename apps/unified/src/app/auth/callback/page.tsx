@@ -103,10 +103,32 @@ function AuthCallbackContent() {
           isProcessing = false;
           
           if (exchangeError.message.includes("already been used") || exchangeError.message.includes("expired")) {
+            // If there's a redirect param, go back to it with error
+            if (redirectParam) {
+              const redirectUrl = new URL(redirectParam, window.location.origin);
+              redirectUrl.searchParams.set("magic_link_error", "expired");
+              window.location.replace(redirectUrl.toString());
+              return;
+            }
             setError("This magic link has already been used or has expired. Please request a new one.");
-          } else if (exchangeError.message.includes("PKCE") || exchangeError.message.includes("verifier")) {
+          } else if (exchangeError.message.includes("PKCE") || exchangeError.message.includes("verifier") || exchangeError.message.includes("same browser")) {
+            // PKCE error - redirect back to registration page with error flag
+            // This will trigger password fallback in TypeformSignup
+            if (redirectParam) {
+              const redirectUrl = new URL(redirectParam, window.location.origin);
+              redirectUrl.searchParams.set("magic_link_error", "pkce");
+              window.location.replace(redirectUrl.toString());
+              return;
+            }
             setError("Authentication failed. Please request a new magic link in the same browser.");
           } else {
+            // Other errors - try to redirect back if we have redirect param
+            if (redirectParam) {
+              const redirectUrl = new URL(redirectParam, window.location.origin);
+              redirectUrl.searchParams.set("magic_link_error", "failed");
+              window.location.replace(redirectUrl.toString());
+              return;
+            }
             setError(`Authentication failed: ${exchangeError.message}`);
           }
           return;

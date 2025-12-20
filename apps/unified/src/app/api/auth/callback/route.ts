@@ -44,6 +44,21 @@ export async function GET(request: NextRequest) {
   if (error || !session) {
     const errorMessage = error?.message || "Unknown error";
     
+    // If there's a redirect param, redirect back to it with error flag
+    // This allows the registration page to show password fallback
+    if (redirectParam) {
+      const redirectUrl = new URL(redirectParam, origin);
+      if (errorMessage.includes("PKCE") || errorMessage.includes("verifier") || errorMessage.includes("same browser")) {
+        redirectUrl.searchParams.set("magic_link_error", "pkce");
+      } else if (errorMessage.includes("already been used") || errorMessage.includes("expired")) {
+        redirectUrl.searchParams.set("magic_link_error", "expired");
+      } else {
+        redirectUrl.searchParams.set("magic_link_error", "failed");
+      }
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // No redirect param, go to login page
     if (errorMessage.includes("PKCE") || errorMessage.includes("verifier")) {
       return NextResponse.redirect(
         new URL("/login?error=pkce_error&message=" + encodeURIComponent("Please use the magic link in the same browser where you requested it."), origin)

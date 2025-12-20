@@ -27,19 +27,33 @@ function MagicLinkContent() {
     const errorParam = searchParams.get("error");
 
     if (errorParam) {
-      // Redirect to login with error
+      // If there's a redirect, go back to it with error
+      if (redirect) {
+        const redirectUrl = new URL(redirect, window.location.origin);
+        redirectUrl.searchParams.set("magic_link_error", "failed");
+        window.location.replace(redirectUrl.toString());
+        return;
+      }
+      // Otherwise redirect to login with error
       window.location.replace(`/login?error=${encodeURIComponent(errorParam)}`);
       return;
     }
 
     if (!code) {
+      // If there's a redirect, go back to it with error
+      if (redirect) {
+        const redirectUrl = new URL(redirect, window.location.origin);
+        redirectUrl.searchParams.set("magic_link_error", "no_code");
+        window.location.replace(redirectUrl.toString());
+        return;
+      }
       // No code, redirect to login
       window.location.replace("/login?error=no_code");
       return;
     }
 
-    // Redirect to server-side API callback which handles PKCE properly
-    const callbackUrl = new URL("/api/auth/callback", window.location.origin);
+    // Redirect to client-side callback page which handles PKCE properly
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
     callbackUrl.searchParams.set("code", code);
     if (redirect) {
       callbackUrl.searchParams.set("redirect", redirect);

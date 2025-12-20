@@ -34,12 +34,41 @@ export async function POST(request: NextRequest) {
     );
 
     if (existingUser) {
-      // User exists - return success so client can try to sign in
-      return NextResponse.json({
-        success: true,
-        userExists: true,
-        message: "User account exists. Please sign in with your password.",
-      });
+      // Check if user has a password set
+      // If user was created via magic link, they might not have a password
+      // Try to update the password for them
+      try {
+        const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(
+          existingUser.id,
+          { password }
+        );
+
+        if (updateError) {
+          console.error("Failed to update password for existing user:", updateError);
+          // If update fails, user might already have a password - return success so client can try sign in
+          return NextResponse.json({
+            success: true,
+            userExists: true,
+            message: "User account exists. Please sign in with your password.",
+          });
+        }
+
+        // Password updated successfully - return success so client can sign in
+        return NextResponse.json({
+          success: true,
+          userExists: true,
+          passwordUpdated: true,
+          message: "Password set successfully. You can now sign in.",
+        });
+      } catch (updateErr: any) {
+        console.error("Error updating password:", updateErr);
+        // Return success anyway so client can try to sign in
+        return NextResponse.json({
+          success: true,
+          userExists: true,
+          message: "User account exists. Please sign in with your password.",
+        });
+      }
     }
 
     // Create new user with password (auto-confirm email to bypass rate limits)

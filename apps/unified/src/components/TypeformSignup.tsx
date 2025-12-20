@@ -19,6 +19,7 @@ interface TypeformSignupProps {
     whatsapp?: string | null;
     instagram_handle?: string | null;
   } | null;
+  forcePasswordFallback?: boolean; // If true, show password fallback immediately
 }
 
 export interface SignupData {
@@ -43,12 +44,12 @@ const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
 
-export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile }: TypeformSignupProps) {
+export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingMagicLink, setSendingMagicLink] = useState(false);
-  const [showPasswordFallback, setShowPasswordFallback] = useState(false);
+  const [showPasswordFallback, setShowPasswordFallback] = useState(forcePasswordFallback);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState<SignupData>({
@@ -94,6 +95,17 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     };
     checkAuth();
   }, []);
+
+  // If forcePasswordFallback is true or showPasswordFallback is true, restore email from sessionStorage
+  useEffect(() => {
+    if ((forcePasswordFallback || showPasswordFallback) && !formData.email && typeof window !== "undefined") {
+      // Try to restore email from sessionStorage (stored when magic link was sent)
+      const storedEmail = sessionStorage.getItem("pending_registration_email");
+      if (storedEmail) {
+        setFormData(prev => ({ ...prev, email: storedEmail }));
+      }
+    }
+  }, [forcePasswordFallback, showPasswordFallback, formData.email]);
 
   // Update formData when existingProfile changes
   useEffect(() => {
@@ -188,10 +200,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         const errorMsg = data.error || "Failed to send magic link";
         const errorMsgLower = errorMsg.toLowerCase();
         
-        // Check if it's a rate limit error
+        // Check if it's a rate limit error or PKCE/browser error
         if (errorMsgLower.includes("rate limit") || 
             errorMsgLower.includes("too many") ||
-            errorMsgLower.includes("email rate limit")) {
+            errorMsgLower.includes("email rate limit") ||
+            errorMsgLower.includes("same browser") ||
+            errorMsgLower.includes("pkce") ||
+            errorMsgLower.includes("verifier")) {
           // Show password fallback instead of error
           setShowPasswordFallback(true);
           return;
@@ -200,6 +215,10 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       }
 
       setMagicLinkSent(true);
+      // Store email in sessionStorage in case magic link fails and we need password fallback
+      if (typeof window !== "undefined" && formData.email) {
+        sessionStorage.setItem("pending_registration_email", formData.email);
+      }
     } catch (err: any) {
       setErrors({ email: err.message || "Failed to send magic link" });
     } finally {
@@ -238,19 +257,51 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         throw new Error(data.error || "Failed to create account");
       }
 
+      // If user already exists, try to sign in directly
+      if (data.userExists) {
+        console.log("[Password Signup] User already exists, attempting sign in...");
+        const supabase = createBrowserClient();
+        
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password,
+        });
+
+        if (signInErr || !signInData.session) {
+          // If sign in fails, the password might be wrong or account might need password reset
+          throw new Error(signInErr?.message || "Failed to sign in. If you forgot your password, please use the password reset option.");
+        }
+
+        // Successfully signed in with existing account
+        setEmailVerified(true);
+        setShowPasswordFallback(false);
+        
+        if (onEmailVerified) {
+          const alreadyRegistered = await onEmailVerified();
+          if (alreadyRegistered) {
+            return;
+          }
+        }
+        
+        if (visibleSteps.length > 1) {
+          setCurrentStep(1);
+        }
+        return;
+      }
+
       // Account created - now sign in with password
-      // Add a small delay to ensure user is fully created
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Add a delay to ensure user is fully created and password is set
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const supabase = createBrowserClient();
       
-      // Try to sign in with password (retry up to 3 times)
+      // Try to sign in with password (retry up to 5 times with increasing delays)
       let signInSuccess = false;
       let signInError = null;
       
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
         if (attempt > 0) {
-          // Wait longer between retries
+          // Wait longer between retries (1s, 2s, 3s, 4s)
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
         
@@ -265,16 +316,32 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         }
         
         signInError = signInErr;
+        
+        // If it's an invalid credentials error, the password might not be set yet, keep retrying
+        // If it's a different error, break early
+        if (signInErr && !signInErr.message.includes("Invalid login credentials") && !signInErr.message.includes("Email not confirmed")) {
+          break;
+        }
       }
 
       if (!signInSuccess) {
         console.error("Failed to sign in after account creation:", signInError);
-        throw new Error(`Account created but failed to sign in: ${signInError?.message || "Unknown error"}. Please try logging in manually with your email and password.`);
+        // If account was created but sign in failed, provide helpful error
+        if (data.user && data.user.id) {
+          throw new Error(`Account created but sign in failed. Please try logging in manually at /login with your email and password. Error: ${signInError?.message || "Unknown error"}`);
+        } else {
+          throw new Error(`Failed to sign in: ${signInError?.message || "Unknown error"}. Please try again.`);
+        }
       }
 
       // Successfully signed in
       setEmailVerified(true);
       setShowPasswordFallback(false);
+      
+      // Clear stored email from sessionStorage
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("pending_registration_email");
+      }
       
       // Check if already registered (if callback provided)
       if (onEmailVerified) {
@@ -386,13 +453,16 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
     // Email step with magic link
     if (stepKey === "email") {
-      // Show password fallback if rate limited
+      // Show password fallback if rate limited or magic link failed
       if (showPasswordFallback) {
         return (
           <div className="space-y-4">
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
-              <p className="text-yellow-400 text-sm text-center">
-                Email rate limit reached. Please set a password to continue.
+              <p className="text-yellow-400 text-sm text-center mb-2">
+                {formData.email ? `Creating account for ${formData.email}` : "Email rate limit reached. Please set a password to continue."}
+              </p>
+              <p className="text-yellow-300/70 text-xs text-center">
+                If you already have an account, use your existing password to sign in.
               </p>
             </div>
             <Input
