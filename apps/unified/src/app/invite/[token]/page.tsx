@@ -20,8 +20,8 @@ export default function InviteAcceptPage() {
       } = await supabase.auth.getUser();
 
       if (!currentUser) {
-        // Redirect to login
-        router.push(`/login?redirect=/invite/${token}`);
+        // Redirect to signup page (password-based, avoids magic link rate limits)
+        router.push(`/invite/${token}/signup`);
         return;
       }
 
