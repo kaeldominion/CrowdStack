@@ -1538,11 +1538,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   label="Status"
                   value={editForm.status}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="cancelled">Cancelled</option>
-                </Select>
+                  options={[
+                    { value: "draft", label: "Draft" },
+                    { value: "published", label: "Published" },
+                    { value: "cancelled", label: "Cancelled" },
+                  ]}
+                />
               )}
             </div>
             {config.role === "venue" && (
