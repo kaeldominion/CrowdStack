@@ -215,14 +215,16 @@ export default function VenueAttendeesPage() {
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {/* Flag attendee - TODO: implement flag modal */}}
-                      >
-                        <Flag className="h-4 w-4" />
-                      </Button>
+                    <TableCell>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {/* Flag attendee - TODO: implement flag modal */}}
+                        >
+                          <Flag className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
