@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { Calendar, Plus, Search, ChevronRight } from "lucide-react";
 import { CreateOrganizerModal } from "@/components/CreateOrganizerModal";
 import { EditOrganizerModal } from "@/components/EditOrganizerModal";
@@ -65,7 +65,7 @@ export default function AdminOrganizersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading organizers...</div>
+          <LoadingSpinner text="Loading organizers..." />
         </div>
       </Container>
     );

@@ -7,7 +7,8 @@ import {
   Badge, 
   Table, 
   TableHeader, 
-  TableBody, 
+  TableBody,
+  LoadingSpinner, 
   TableRow, 
   TableHead, 
   TableCell,
@@ -185,7 +186,7 @@ export default function VenueEventsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading events...</div>
+        <LoadingSpinner text="Loading events..." />
       </div>
     );
   }

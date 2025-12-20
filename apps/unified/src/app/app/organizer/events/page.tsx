@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button, EmptyState, Badge } from "@crowdstack/ui";
+import { Button, EmptyState, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { Plus, Calendar, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { EventCard } from "@/components/events/EventCard";
@@ -52,7 +52,7 @@ export default function OrganizerEventsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading events...</div>
+        <LoadingSpinner text="Loading events..." />
       </div>
     );
   }

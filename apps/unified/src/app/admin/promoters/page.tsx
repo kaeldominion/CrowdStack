@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
 import { Users, Search, ChevronRight, X, UserPlus, AlertCircle, CheckCircle } from "lucide-react";
 
 export default function AdminPromotersPage() {
@@ -178,7 +178,7 @@ export default function AdminPromotersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading promoters...</div>
+          <LoadingSpinner text="Loading promoters..." />
         </div>
       </Container>
     );

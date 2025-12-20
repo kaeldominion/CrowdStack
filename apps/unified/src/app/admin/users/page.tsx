@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
 import { User, Search, Edit, Shield, Building2, Calendar, ChevronRight, Phone, Mail, Instagram, MapPin } from "lucide-react";
 import { UserAssignmentModal } from "@/components/UserAssignmentModal";
 
@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading users...</div>
+          <LoadingSpinner text="Loading users..." />
         </div>
       </Container>
     );

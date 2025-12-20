@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
 import { Users, Search, Download, Plus, Upload, ExternalLink, User, Eye, Phone, Mail, Instagram, Calendar, MapPin, CheckCircle2, X, ChevronRight, Link as LinkIcon } from "lucide-react";
 import { AddAttendeeModal } from "@/components/AddAttendeeModal";
 import { ImportCSVModal } from "@/components/ImportCSVModal";
@@ -79,7 +79,7 @@ export default function AdminAttendeesPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading attendees...</div>
+          <LoadingSpinner text="Loading attendees..." />
         </div>
       </Container>
     );

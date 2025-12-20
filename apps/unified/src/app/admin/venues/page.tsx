@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { Building2, Plus, Search, ChevronRight, ExternalLink } from "lucide-react";
 import { CreateVenueModal } from "@/components/CreateVenueModal";
 import { EditVenueModal } from "@/components/EditVenueModal";
@@ -83,7 +83,7 @@ export default function AdminVenuesPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading venues...</div>
+          <LoadingSpinner text="Loading venues..." />
         </div>
       </Container>
     );

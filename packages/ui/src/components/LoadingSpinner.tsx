@@ -1,56 +1,61 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Logo } from "./Logo";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
   className?: string;
+  text?: string;
+  fullScreen?: boolean;
 }
 
-export function LoadingSpinner({ size = "md", className = "" }: LoadingSpinnerProps) {
+export function LoadingSpinner({
+  size = "md",
+  className = "",
+  text,
+  fullScreen = false,
+}: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-6 w-6",
-    lg: "h-8 w-8",
+    sm: "h-6",
+    md: "h-8",
+    lg: "h-12",
   };
 
-  return (
-    <motion.div
-      className={`${sizeClasses[size]} ${className}`}
-      animate={{ rotate: 360 }}
-      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-    >
-      <svg
-        className="h-full w-full"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+  const spinner = (
+    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
+      <motion.div
+        animate={{
+          rotate: 360,
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "linear",
+        }}
       >
-        <circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="32"
-          strokeDashoffset="24"
-          opacity="0.3"
-        />
-        <motion.circle
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="#3B82F6"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="32"
-          initial={{ strokeDashoffset: 32 }}
-          animate={{ strokeDashoffset: 8 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </svg>
-    </motion.div>
+        <Logo variant="icon" size={size} animated={false} />
+      </motion.div>
+      {text && (
+        <motion.p
+          className="text-sm text-foreground-muted"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {text}
+        </motion.p>
+      )}
+    </div>
   );
-}
 
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        {spinner}
+      </div>
+    );
+  }
+
+  return spinner;
+}
