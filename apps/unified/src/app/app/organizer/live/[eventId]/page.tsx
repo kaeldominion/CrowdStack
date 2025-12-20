@@ -305,7 +305,19 @@ export default function OrganizerLiveMissionControlPage() {
       </BentoCard>
 
       {/* Flow Rate Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <BentoCard>
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+              Total Registrations
+            </p>
+            <p className="text-3xl font-mono font-bold tracking-tighter text-white">
+              {metrics.total_registrations}
+            </p>
+            <p className="text-sm text-white/40">registered</p>
+          </div>
+        </BentoCard>
+
         <BentoCard>
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
@@ -379,22 +391,40 @@ export default function OrganizerLiveMissionControlPage() {
             <Clock className="h-4 w-4 text-white/40" />
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {metrics.recent_checkins.slice(0, 10).map((checkin) => (
+            {metrics.recent_activity.slice(0, 20).map((activity) => (
               <div
-                key={checkin.id}
+                key={activity.id}
                 className="flex items-center justify-between p-2 rounded-md bg-white/5"
               >
-                <div>
-                  <p className="text-sm font-medium text-white">{checkin.attendee_name}</p>
-                  {checkin.promoter_name && (
-                    <p className="text-xs text-white/40">via {checkin.promoter_name}</p>
+                <div className="flex items-center gap-2">
+                  {activity.type === "checkin" ? (
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                  ) : (
+                    <div className="h-2 w-2 rounded-full bg-blue-500" />
                   )}
+                  <div>
+                    <p className="text-sm font-medium text-white">{activity.attendee_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-white/40">
+                        {activity.type === "checkin" ? "Checked in" : "Registered"}
+                      </p>
+                      {activity.promoter_name && (
+                        <>
+                          <span className="text-xs text-white/30">•</span>
+                          <p className="text-xs text-white/40">via {activity.promoter_name}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-white/40">
-                  {new Date(checkin.checked_in_at).toLocaleTimeString()}
+                  {new Date(activity.timestamp).toLocaleTimeString()}
                 </p>
               </div>
             ))}
+            {metrics.recent_activity.length === 0 && (
+              <p className="text-sm text-white/40 text-center py-4">No recent activity</p>
+            )}
           </div>
         </div>
       </BentoCard>

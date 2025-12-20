@@ -14,6 +14,8 @@ export interface LiveMetrics {
   peak_hour: string | null;
   promoter_stats: PromoterStat[];
   recent_checkins: RecentCheckin[];
+  recent_registrations: RecentRegistration[];
+  recent_activity: RecentActivity[];
   vip_arrivals: VIPArrival[];
   updated_at: string;
 }
@@ -29,6 +31,21 @@ export interface RecentCheckin {
   id: string;
   attendee_name: string;
   checked_in_at: string;
+  promoter_name: string | null;
+}
+
+export interface RecentRegistration {
+  id: string;
+  attendee_name: string;
+  registered_at: string;
+  promoter_name: string | null;
+}
+
+export interface RecentActivity {
+  id: string;
+  type: "registration" | "checkin";
+  attendee_name: string;
+  timestamp: string;
   promoter_name: string | null;
 }
 
@@ -158,6 +175,48 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       promoter_name: c.registrations?.promoters?.name || null,
     }));
 
+  // Get recent registrations (last 50)
+  const { data: recentRegistrationsData } = await supabase
+    .from("registrations")
+    .select(`
+      id,
+      registered_at,
+      attendee:attendees(id, name),
+      referral_promoter_id,
+      promoters(name)
+    `)
+    .eq("event_id", eventId)
+    .order("registered_at", { ascending: false })
+    .limit(50);
+
+  const recentRegistrations: RecentRegistration[] = (recentRegistrationsData || [])
+    .map((r: any) => ({
+      id: r.id,
+      attendee_name: r.attendee?.name || "Unknown",
+      registered_at: r.registered_at,
+      promoter_name: r.promoters?.name || null,
+    }));
+
+  // Combine recent check-ins and registrations into unified activity feed
+  const recentActivity: RecentActivity[] = [
+    ...recentCheckins.map((c) => ({
+      id: `checkin-${c.id}`,
+      type: "checkin" as const,
+      attendee_name: c.attendee_name,
+      timestamp: c.checked_in_at,
+      promoter_name: c.promoter_name,
+    })),
+    ...recentRegistrations.map((r) => ({
+      id: `registration-${r.id}`,
+      type: "registration" as const,
+      attendee_name: r.attendee_name,
+      timestamp: r.registered_at,
+      promoter_name: r.promoter_name,
+    })),
+  ]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, 30); // Top 30 most recent activities
+
   // Get VIP arrivals (this would need a VIP flag on attendees - placeholder for now)
   const vipArrivals: VIPArrival[] = recentCheckins.slice(0, 5).map((c) => ({
     attendee_id: "",
@@ -178,6 +237,8 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     peak_hour: peakHour,
     promoter_stats: promoterStats,
     recent_checkins: recentCheckins,
+    recent_registrations: recentRegistrations,
+    recent_activity: recentActivity,
     vip_arrivals: vipArrivals,
     updated_at: new Date().toISOString(),
   };
