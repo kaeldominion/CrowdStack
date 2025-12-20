@@ -246,11 +246,11 @@ export default function AdminEventsPage() {
                             className="flex items-center gap-2"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {event.status === "published" ? (
+                            {(event.status || "draft") === "published" ? (
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => handlePublishToggle(event.id, event.status)}
+                                onClick={() => handlePublishToggle(event.id, event.status || "draft")}
                                 disabled={publishing === event.id}
                                 loading={publishing === event.id}
                               >
@@ -261,7 +261,7 @@ export default function AdminEventsPage() {
                               <Button
                                 variant="primary"
                                 size="sm"
-                                onClick={() => handlePublishToggle(event.id, event.status)}
+                                onClick={() => handlePublishToggle(event.id, event.status || "draft")}
                                 disabled={publishing === event.id}
                                 loading={publishing === event.id}
                               >
