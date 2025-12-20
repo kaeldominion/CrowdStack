@@ -14,6 +14,8 @@ import {
   QrCode,
   ChevronRight,
   Sparkles,
+  UserPlus,
+  AlertCircle,
 } from "lucide-react";
 
 interface Registration {
@@ -38,8 +40,10 @@ interface Registration {
 
 interface UserProfile {
   name: string | null;
-  email: string;
+  email: string | null;
+  phone: string | null;
   xp_points: number;
+  attendee_id: string | null;
 }
 
 type EventStatus = "happening_now" | "today" | "upcoming" | "past";
@@ -121,7 +125,7 @@ export default function MePage() {
       // Load profile
       const { data: attendee } = await supabase
         .from("attendees")
-        .select("id, name, email")
+        .select("id, name, email, phone")
         .eq("user_id", currentUser.id)
         .single();
 
@@ -135,8 +139,10 @@ export default function MePage() {
 
       setProfile({
         name: attendee?.name || currentUser.user_metadata?.name || null,
-        email: attendee?.email || currentUser.email || "",
+        email: attendee?.email || currentUser.email || null,
+        phone: attendee?.phone || null,
         xp_points: totalXp,
+        attendee_id: attendee?.id || null,
       });
 
       // Load registrations with events
@@ -271,6 +277,12 @@ export default function MePage() {
     return "Soon!";
   };
 
+  // Check if profile is complete (name, phone, email required; instagram/tiktok optional)
+  const isProfileComplete = (profile: UserProfile | null): boolean => {
+    if (!profile) return false;
+    return !!(profile.name && profile.phone && profile.email);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
@@ -314,6 +326,31 @@ export default function MePage() {
             </div>
           )}
         </div>
+
+        {/* Profile Completion Prompt */}
+        {!isProfileComplete(profile) && (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <UserPlus className="h-5 w-5 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  Complete Your Profile
+                </h3>
+                <p className="text-sm text-white/70 mb-4">
+                  Add your name, email, and phone number to get the most out of your event experience. Social handles are optional.
+                </p>
+                <Link href="/me/profile">
+                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors">
+                    Complete Profile
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
