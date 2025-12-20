@@ -51,10 +51,12 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [useMagicLink, setUseMagicLink] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
   const submittingRef = useRef(false);
 
   // Read error from URL params (from auth callback redirect)
@@ -74,18 +76,192 @@ function LoginContent() {
     }
   }, [searchParams]);
 
+  const handlePasswordSignup = async () => {
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      // Use API endpoint to create account (bypasses email confirmation and rate limits)
+      const response = await fetch("/api/auth/password-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create account");
+      }
+
+      // Account created - now sign in with password
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const supabase = createBrowserClient();
+      
+      // Try to sign in with password (retry up to 3 times)
+      let signInSuccess = false;
+      let signInError = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+        
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (!signInErr && signInData.session) {
+          signInSuccess = true;
+          // Continue with the same redirect logic as password login
+          await handleSuccessfulAuth(signInData);
+          return;
+        }
+        
+        signInError = signInErr;
+      }
+
+      if (!signInSuccess) {
+        throw new Error(`Account created but failed to sign in: ${signInError?.message || "Unknown error"}. Please try logging in manually.`);
+      }
+    } catch (err: any) {
+      console.error("[Login] Password signup error:", err);
+      setError(err.message || "Failed to create account");
+      setLoading(false);
+    }
+  };
+
+  const handleSuccessfulAuth = async (authData: any) => {
+    const supabase = createBrowserClient();
+    const session = authData.session;
+    
+    if (!session) {
+      setError("Failed to create session");
+      setLoading(false);
+      return;
+    }
+
+    // Set custom cookie for server-side auth
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+    const cookieName = `sb-${projectRef}-auth-token`;
+    
+    const cookieValue = JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at,
+      user: session.user,
+    });
+    
+    const expiresAt = session.expires_at ? new Date(session.expires_at * 1000) : undefined;
+    const cookieOptions = expiresAt 
+      ? `; expires=${expiresAt.toUTCString()}; path=/; SameSite=Lax`
+      : `; path=/; SameSite=Lax`;
+    document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
+
+    // Verify session is accessible
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const { data: { session: verifySession } } = await supabase.auth.getSession();
+    if (!verifySession) {
+      setError("Session not accessible. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    // Check for redirect param
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get("redirect");
+    
+    const isRedirectingToApp = redirect?.startsWith("/app") || 
+                                redirect?.startsWith("/door") || 
+                                redirect?.startsWith("/admin");
+    
+    if (isRedirectingToApp) {
+      let finalPath = "/admin";
+      if (redirect) {
+        try {
+          finalPath = new URL(redirect).pathname;
+        } catch {
+          finalPath = redirect.startsWith("/") ? redirect : "/admin";
+        }
+      }
+      window.location.href = finalPath;
+      return;
+    }
+    
+    // Check user roles for automatic app redirect (B2B users)
+    const user = authData.user;
+    if (user) {
+      try {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+
+        if (roles && roles.length > 0) {
+          const roleNames = roles.map((r: any) => r.role);
+          
+          if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
+              roleNames.includes("promoter") || roleNames.includes("door_staff") ||
+              roleNames.includes("superadmin")) {
+            
+            let targetPath = "/admin";
+            if (roleNames.includes("superadmin")) {
+              targetPath = "/admin";
+            } else if (roleNames.includes("venue_admin")) {
+              targetPath = "/app/venue";
+            } else if (roleNames.includes("event_organizer")) {
+              targetPath = "/app/organizer";
+            } else if (roleNames.includes("promoter")) {
+              targetPath = "/app/promoter";
+            } else if (roleNames.includes("door_staff")) {
+              targetPath = "/door";
+            }
+            
+            window.location.href = targetPath;
+            return;
+          }
+        }
+      } catch (rolesErr: any) {
+        console.warn("[Login] Error checking user roles:", rolesErr.message);
+      }
+    }
+    
+    // Default: attendee goes to /me
+    const finalRedirect = redirect && !isRedirectingToApp ? redirect : "/me";
+    window.location.href = finalRedirect;
+  };
+
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSignup) {
+      await handlePasswordSignup();
+      return;
+    }
+    
     setLoading(true);
     setError("");
     setMessage("");
 
     try {
       const supabase = createBrowserClient();
-      
-      // Note: We do NOT sign out before password login because:
-      // 1. Password login explicitly authenticates with credentials, so the right user will be authenticated
-      // 2. signOut() clears the custom localhost cookie that the server needs for auth
       
       console.log("[Login] Attempting password login for:", email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -99,6 +275,8 @@ function LoginContent() {
         setLoading(false);
         return;
       }
+
+      await handleSuccessfulAuth(data);
 
       // Use the session directly from login response (don't call getSession again)
       const session = data.session;
@@ -239,13 +417,6 @@ function LoginContent() {
         }
       }
       
-      // Default: attendee goes to /me
-      const finalRedirect = redirect && !isRedirectingToApp ? redirect : "/me";
-      console.log("[Login] Redirecting to default path:", finalRedirect);
-      
-      // Small delay to ensure cookies are fully set before redirect
-      await new Promise(resolve => setTimeout(resolve, 300));
-      window.location.href = finalRedirect;
     } catch (err: any) {
       setError(err.message || "An error occurred");
       setLoading(false);
@@ -353,11 +524,13 @@ function LoginContent() {
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">
-            {useMagicLink ? "Sign Up / Sign In" : "Sign In"}
+            {useMagicLink ? "Sign Up / Sign In" : (isSignup ? "Sign Up" : "Sign In")}
           </h1>
           <p className="mt-2 text-sm text-white/60">
             {useMagicLink 
               ? "Enter your email to receive a magic link. Works for both new signups and existing users." 
+              : isSignup
+              ? "Create a new account with email and password"
               : "Enter your email and password to sign in to your existing account"}
           </p>
         </div>
@@ -379,20 +552,40 @@ function LoginContent() {
           </div>
 
           {!useMagicLink && (
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
-                placeholder="Enter your password"
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+                  placeholder={isSignup ? "Create a password (min 6 characters)" : "Enter your password"}
+                  minLength={isSignup ? 6 : undefined}
+                />
+              </div>
+              {isSignup && (
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-2">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+                    placeholder="Confirm your password"
+                    minLength={6}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {error && (
@@ -427,21 +620,40 @@ function LoginContent() {
             className="w-full"
             size="lg"
           >
-            {useMagicLink ? "Send Magic Link (Sign Up / Sign In)" : "Sign In"}
+            {useMagicLink ? "Send Magic Link (Sign Up / Sign In)" : (isSignup ? "Create Account" : "Sign In")}
           </Button>
 
           <div className="text-center space-y-2">
-            <button
-              type="button"
-              onClick={() => {
-                setUseMagicLink(!useMagicLink);
-                setError("");
-                setMessage("");
-              }}
-              className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
-            >
-              {useMagicLink ? "Use password instead" : "Use magic link instead (Sign Up / Sign In)"}
-            </button>
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setError("");
+                  setMessage("");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+                className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+              >
+                {isSignup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+              </button>
+              {!useMagicLink && <span className="text-white/20">•</span>}
+              <button
+                type="button"
+                onClick={() => {
+                  setUseMagicLink(!useMagicLink);
+                  setIsSignup(false);
+                  setError("");
+                  setMessage("");
+                  setPassword("");
+                  setConfirmPassword("");
+                }}
+                className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+              >
+                {useMagicLink ? "Use password instead" : "Use magic link instead"}
+              </button>
+            </div>
             {useMagicLink && (
               <p className="text-xs text-white/40">
                 Magic link works for both new signups and existing users. No password needed!
