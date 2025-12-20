@@ -15,11 +15,25 @@ export default function EventInvitesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [eventPromoters, setEventPromoters] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
+  const [eventSlug, setEventSlug] = useState<string | null>(null);
 
   useEffect(() => {
     loadInviteQRCodes();
     loadEventPromoters();
+    loadEventSlug();
   }, [eventId]);
+
+  const loadEventSlug = async () => {
+    try {
+      const response = await fetch(`/api/events/${eventId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEventSlug(data.event?.slug || null);
+      }
+    } catch (error) {
+      console.error("Error loading event slug:", error);
+    }
+  };
 
   const loadEventPromoters = async () => {
     try {
@@ -71,18 +85,31 @@ export default function EventInvitesPage() {
     }
   };
 
-  const copyInviteLink = (inviteCode: string) => {
-    const url = `${window.location.origin}/i/${inviteCode}`;
+  const copyInviteLink = (inviteCode: string, promoterId?: string | null) => {
+    // If it's a promoter code and we have event slug, link directly to registration
+    // Otherwise, use the invite code page
+    let url: string;
+    if (promoterId && eventSlug) {
+      url = `${window.location.origin}/e/${eventSlug}/register?ref=${inviteCode}`;
+    } else {
+      url = `${window.location.origin}/i/${inviteCode}`;
+    }
     navigator.clipboard.writeText(url);
     setCopiedId(inviteCode);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getQRCodeUrl = (inviteCode: string) => {
+  const getQRCodeUrl = (inviteCode: string, promoterId?: string | null) => {
+    // If it's a promoter code and we have event slug, link directly to registration
+    // Otherwise, use the invite code page
+    let targetUrl: string;
+    if (promoterId && eventSlug) {
+      targetUrl = `${window.location.origin}/e/${eventSlug}/register?ref=${inviteCode}`;
+    } else {
+      targetUrl = `${window.location.origin}/i/${inviteCode}`;
+    }
     // Generate QR code URL (using a QR code service or library)
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-      `${window.location.origin}/i/${inviteCode}`
-    )}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
   };
 
   if (loading) {
@@ -113,22 +140,32 @@ export default function EventInvitesPage() {
           <div className="p-6 space-y-4">
             <h3 className="text-lg font-semibold text-white">Create Invite QR Code</h3>
             
-            {eventPromoters.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-2">
-                  Assign to Promoter (Optional)
-                </label>
-                <Select
-                  value={selectedPromoterId}
-                  onChange={(e) => setSelectedPromoterId(e.target.value)}
-                  options={[
-                    { value: "", label: "None (General Invite)" },
-                    ...eventPromoters.map((p) => ({ value: p.id, label: p.name })),
-                  ]}
-                  helperText="Select a promoter to attribute registrations to them, or leave as 'None' for general invite"
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-foreground-muted mb-2">
+                Assign to Promoter (Optional)
+              </label>
+              <Select
+                value={selectedPromoterId}
+                onChange={(e) => setSelectedPromoterId(e.target.value)}
+                options={[
+                  { value: "", label: "None (General Invite)" },
+                  ...eventPromoters.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+                helperText={
+                  eventPromoters.length === 0
+                    ? "No promoters assigned to this event yet. Add promoters in the Promoters tab first."
+                    : selectedPromoterId
+                    ? "QR code will link directly to registration page and attribute to this promoter"
+                    : "Select a promoter to create a QR code that links directly to registration"
+                }
+                disabled={eventPromoters.length === 0}
+              />
+              {eventPromoters.length === 0 && (
+                <p className="text-xs text-amber-400 mt-1">
+                  Add promoters to this event first to create promoter-specific QR codes
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-4">
               <Button onClick={() => createInviteQR()}>
@@ -157,14 +194,20 @@ export default function EventInvitesPage() {
                   <p className="font-mono text-sm font-semibold text-white">{inviteQR.invite_code}</p>
                   <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
                   {inviteQR.owner_name && (
-                    <p className="text-xs text-white/40 mt-1">
-                      {inviteQR.promoter_id && inviteQR.creator_role === "event_organizer" && "For Promoter: "}
-                      {inviteQR.promoter_id && inviteQR.creator_role === "venue_admin" && "For Promoter: "}
-                      {!inviteQR.promoter_id && inviteQR.creator_role === "event_organizer" && "Organizer: "}
-                      {!inviteQR.promoter_id && inviteQR.creator_role === "venue_admin" && "Venue: "}
-                      {inviteQR.creator_role === "promoter" && "Promoter: "}
-                      {inviteQR.owner_name}
-                    </p>
+                    <div className="mt-1">
+                      {inviteQR.promoter_id ? (
+                        <p className="text-xs text-blue-400 font-medium">
+                          🎯 For Promoter: {inviteQR.owner_name}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-white/40">
+                          {inviteQR.creator_role === "event_organizer" && "Organizer: "}
+                          {inviteQR.creator_role === "venue_admin" && "Venue: "}
+                          {inviteQR.creator_role === "promoter" && "Promoter: "}
+                          {inviteQR.owner_name}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
                 {inviteQR.max_uses && (
@@ -174,15 +217,26 @@ export default function EventInvitesPage() {
                 )}
               </div>
 
+              {inviteQR.promoter_id && (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 mb-2">
+                  <p className="text-xs text-blue-400 font-medium text-center">
+                    🎯 Promoter QR Code
+                  </p>
+                  <p className="text-xs text-blue-300/70 text-center mt-1">
+                    Links directly to registration
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center justify-center p-4 bg-white rounded-md">
-                <img src={getQRCodeUrl(inviteQR.invite_code)} alt="QR Code" className="w-32 h-32" />
+                <img src={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id)} alt="QR Code" className="w-32 h-32" />
               </div>
 
               <div className="space-y-2">
                 <Button
                   variant="secondary"
                   className="w-full"
-                  onClick={() => copyInviteLink(inviteQR.invite_code)}
+                  onClick={() => copyInviteLink(inviteQR.invite_code, inviteQR.promoter_id)}
                 >
                   {copiedId === inviteQR.invite_code ? (
                     <>
