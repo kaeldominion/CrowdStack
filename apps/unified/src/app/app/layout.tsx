@@ -128,6 +128,9 @@ export default async function AuthenticatedLayout({
     redirect("/door");
   }
 
+  // Superadmin check (needed for promoter redirect logic)
+  const hasSuperadmin = effectiveRoles.includes("superadmin");
+
   // If user only has promoter role (or promoter + attendee), redirect to /me
   const nonPromoterB2BRoles = effectiveRoles.filter(
     (r) => r !== "promoter" && r !== "attendee" && r !== "door_staff"
@@ -150,13 +153,24 @@ export default async function AuthenticatedLayout({
   // Superadmin should always have access, even if they have no other B2B roles
   const hasSuperadmin = effectiveRoles.includes("superadmin");
   
+  // If user only has promoter role (or promoter + attendee), redirect to /me
+  const nonPromoterB2BRoles = effectiveRoles.filter(
+    (r) => r !== "promoter" && r !== "attendee" && r !== "door_staff"
+  );
+  if (effectiveRoles.includes("promoter") && nonPromoterB2BRoles.length === 0 && !hasSuperadmin) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[App Layout] Only promoter role (with optional attendee), redirecting to /me");
+    }
+    redirect("/me");
+  }
+  
   if (b2bRoles.length === 0 && !hasSuperadmin) {
     if (process.env.NODE_ENV === "development") {
       console.log("[App Layout] No B2B roles and not superadmin, redirecting to login");
     }
     redirect("/login");
   }
-  
+
   // If superadmin with no other B2B roles, ensure superadmin is in the list
   const finalRoles = b2bRoles.length > 0 ? b2bRoles : (hasSuperadmin ? ["superadmin" as const] : []);
 
