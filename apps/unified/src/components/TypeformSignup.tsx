@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo } from "@crowdstack/ui";
 import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2, MapPin, Users } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+import Link from "next/link";
 
 interface TypeformSignupProps {
   onSubmit: (data: SignupData) => Promise<void>;
@@ -755,12 +756,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         height: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
       }}
     >
-      {/* Subtle Logo - Top Left */}
-      <div className="fixed top-3 left-3 sm:top-6 sm:left-6 z-10 opacity-20 hover:opacity-30 transition-opacity">
-        <Logo variant="icon" size="sm" animated={false} className="text-white" />
-      </div>
+      {/* Navigation Bar */}
+      <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
+        <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
+          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 pr-1 sm:pr-2">
+            <Logo variant="full" size="sm" animated={false} className="text-white" />
+          </Link>
+          <div className="h-4 w-px bg-white/20 hidden sm:block" />
+          <Link href="/me" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-1 sm:px-2">
+            My Events
+          </Link>
+        </div>
+      </nav>
 
-      <div className="w-full max-w-2xl flex flex-col justify-center" style={{ 
+      <div className="w-full max-w-2xl flex flex-col justify-center pt-20 sm:pt-24" style={{ 
         maxHeight: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
         minHeight: 0,
       }}>
@@ -772,22 +781,22 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             transition={{ duration: 0.3 }}
             className="mb-4 sm:mb-6 flex-shrink-0"
           >
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-3 sm:p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/50 mb-1">Registering for</p>
-                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white break-words">{eventName}</h3>
+                  <p className="text-xs sm:text-sm text-white/50 mb-2">Registering for</p>
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white break-words leading-tight">{eventName}</h3>
                   {(eventDetails?.venueName || eventDetails?.startTime) && (
-                    <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-white/60 flex-wrap">
+                    <div className="flex items-center gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-white/60 flex-wrap">
                       {eventDetails.venueName && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                           <span className="truncate max-w-[200px] sm:max-w-none">{eventDetails.venueName}</span>
                         </div>
                       )}
                       {eventDetails.startTime && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                           <span>{new Date(eventDetails.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                         </div>
                       )}
@@ -795,8 +804,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   )}
                 </div>
                 {eventDetails?.registrationCount !== undefined && eventDetails.registrationCount > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-white/60 bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/10 self-start sm:self-auto">
-                    <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 bg-white/5 px-3 py-2 rounded-lg border border-white/10 self-start sm:self-auto">
+                    <Users className="h-4 w-4 flex-shrink-0" />
                     <span className="whitespace-nowrap">{eventDetails.registrationCount} {eventDetails.registrationCount === 1 ? 'person' : 'people'} registered</span>
                   </div>
                 )}
