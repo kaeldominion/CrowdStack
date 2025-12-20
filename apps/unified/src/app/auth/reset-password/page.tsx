@@ -26,31 +26,46 @@ function ResetPasswordContent() {
         // Check if there's a hash in the URL (token from email)
         const hash = window.location.hash;
         if (hash) {
-          // Supabase automatically processes the hash and creates a session
-          // Wait a bit for Supabase to process the hash
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Parse the hash to check for recovery token
+          const hashParams = new URLSearchParams(hash.substring(1)); // Remove # and parse
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          const type = hashParams.get('type');
           
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (session && !error) {
-            setIsValidToken(true);
-          } else {
-            // Try to get the user to see if they're authenticated
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
+          // Check if this is a password recovery link
+          if (type === 'recovery' && accessToken) {
+            // Set the session using the tokens from the hash
+            const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            });
+            
+            if (session && !sessionError) {
               setIsValidToken(true);
+              // Clear the hash from URL for security
+              window.history.replaceState(null, '', window.location.pathname);
+              return;
             } else {
+              console.error("[Reset Password] Error setting session:", sessionError);
               setIsValidToken(false);
+              return;
             }
           }
-        } else {
-          // No hash, check if there's already a session
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
+          
+          // If not a recovery token, try to get existing session
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (session && !error) {
             setIsValidToken(true);
-          } else {
-            setIsValidToken(false);
+            return;
           }
+        }
+        
+        // No hash or hash didn't work, check if there's already a session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsValidToken(true);
+        } else {
+          setIsValidToken(false);
         }
       } catch (err) {
         console.error("[Reset Password] Error checking session:", err);
