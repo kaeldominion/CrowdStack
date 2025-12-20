@@ -12,15 +12,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify organizer role or superadmin
-    if (!(await userHasRoleOrSuperadmin("event_organizer"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const serviceSupabase = createServiceRoleClient();
-
-    // Get user roles to check if superadmin
-    const { data: userRoles } = await serviceSupabase
+    // Verify admin/superadmin role
+    const { data: userRoles } = await createServiceRoleClient()
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
@@ -28,28 +21,11 @@ export async function GET(
     const roles = userRoles?.map((r) => r.role) || [];
     const isSuperadmin = roles.includes("superadmin");
 
-    // Check if user can access this event
     if (!isSuperadmin) {
-      const { data: organizer } = await serviceSupabase
-        .from("organizers")
-        .select("id")
-        .eq("created_by", userId)
-        .single();
-
-      if (!organizer) {
-        return NextResponse.json({ error: "Organizer not found" }, { status: 404 });
-      }
-
-      const { data: event } = await serviceSupabase
-        .from("events")
-        .select("organizer_id")
-        .eq("id", params.eventId)
-        .single();
-
-      if (!event || event.organizer_id !== organizer.id) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const serviceSupabase = createServiceRoleClient();
 
     // Get event for capacity
     const { data: event } = await serviceSupabase
@@ -182,6 +158,7 @@ export async function GET(
       chart_data: chartData,
     });
   } catch (error: any) {
+    console.error("[Admin Stats] Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch stats" },
       { status: 500 }
