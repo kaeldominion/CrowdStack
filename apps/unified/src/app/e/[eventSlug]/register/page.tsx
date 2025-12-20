@@ -33,7 +33,49 @@ export default function RegisterPage() {
     name: string;
     venue?: { name: string } | null;
     start_time?: string | null;
+    registration_count?: number;
   } | null>(null);
+  const [eventDataForSignup, setEventDataForSignup] = useState<{
+    name: string;
+    venueName?: string | null;
+    startTime?: string | null;
+    registrationCount?: number;
+  } | null>(null);
+
+  // Fetch event data on mount
+  useEffect(() => {
+    const fetchEventData = async () => {
+      try {
+        const response = await fetch(`/api/events/by-slug/${eventSlug}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.event) {
+            setEventDataForSignup({
+              name: data.event.name,
+              venueName: data.event.venue?.name || null,
+              startTime: data.event.start_time || null,
+              registrationCount: data.event.registration_count || 0,
+            });
+            // Also update eventDetails if not already set
+            if (!eventDetails) {
+              setEventDetails({
+                name: data.event.name,
+                venue: data.event.venue,
+                start_time: data.event.start_time,
+                registration_count: data.event.registration_count || 0,
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[Register] Error fetching event data:", err);
+      }
+    };
+    
+    if (eventSlug) {
+      fetchEventData();
+    }
+  }, [eventSlug]);
 
   useEffect(() => {
     checkAuth();
@@ -366,6 +408,12 @@ export default function RegisterPage() {
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
         existingProfile={existingProfile}
+        eventName={eventDataForSignup?.name}
+        eventDetails={eventDataForSignup ? {
+          venueName: eventDataForSignup.venueName,
+          startTime: eventDataForSignup.startTime,
+          registrationCount: eventDataForSignup.registrationCount,
+        } : undefined}
       />
     );
   }
@@ -388,6 +436,12 @@ export default function RegisterPage() {
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
         forcePasswordFallback={shouldShowPasswordFallback}
+        eventName={eventDataForSignup?.name}
+        eventDetails={eventDataForSignup ? {
+          venueName: eventDataForSignup.venueName,
+          startTime: eventDataForSignup.startTime,
+          registrationCount: eventDataForSignup.registrationCount,
+        } : undefined}
       />
     );
   }
