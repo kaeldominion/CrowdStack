@@ -341,6 +341,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
       const endpoint = config.role === "venue"
         ? `/api/venue/events/${eventId}/edit`
+        : config.role === "admin"
+        ? config.eventApiEndpoint
         : `/api/events/${eventId}`;
 
       const response = await fetch(endpoint, {
@@ -1533,7 +1535,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 onChange={(e) => setEditForm((prev) => ({ ...prev, capacity: e.target.value }))}
                 placeholder="Leave empty for unlimited"
               />
-              {config.role === "venue" && (
+              {(config.role === "venue" || config.role === "admin") && (
                 <Select
                   label="Status"
                   value={editForm.status}
@@ -1541,7 +1543,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   options={[
                     { value: "draft", label: "Draft" },
                     { value: "published", label: "Published" },
-                    { value: "cancelled", label: "Cancelled" },
+                    { value: "ended", label: "Ended" },
                   ]}
                 />
               )}

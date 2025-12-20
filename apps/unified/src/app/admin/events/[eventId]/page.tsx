@@ -17,7 +17,7 @@ export default function AdminEventDetailPage() {
         approveApiEndpoint: `/api/admin/events/${eventId}/approve`,
         backUrl: "/admin/events",
         liveUrl: `/app/organizer/live/${eventId}`,
-        canEdit: false,
+        canEdit: true,
         canManagePromoters: false,
         canManageDoorStaff: false,
         canViewAttendees: true,
