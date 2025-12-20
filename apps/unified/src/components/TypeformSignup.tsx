@@ -234,6 +234,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const handlePasswordSignup = async () => {
+    // Ensure email is present
+    if (!formData.email || !formData.email.trim()) {
+      setErrors({ email: "Email is required. Please enter your email address." });
+      return;
+    }
+
     if (password.length < 6) {
       setErrors({ email: "Password must be at least 6 characters" });
       return;
@@ -253,7 +259,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password,
         }),
       });
@@ -466,11 +472,26 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           <div className="space-y-4">
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
               <p className="text-yellow-400 text-sm text-center mb-2">
-                {formData.email ? `Creating account for ${formData.email}` : "Email rate limit reached. Please set a password to continue."}
+                Email rate limit reached. Please set a password to continue.
               </p>
               <p className="text-yellow-300/70 text-xs text-center">
                 If you already have an account, use your existing password to sign in.
               </p>
+            </div>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (errors.email) setErrors({ ...errors, email: undefined });
+                }}
+                placeholder="your@email.com"
+                className="text-xl sm:text-2xl py-4 sm:py-6 pl-14 text-center border-2 focus:border-primary w-full"
+                autoComplete="email"
+                inputMode="email"
+              />
             </div>
             <Input
               type="password"
@@ -480,7 +501,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 if (errors.email) setErrors({ ...errors, email: undefined });
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6) {
+                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6 && formData.email) {
                   e.preventDefault();
                   handlePasswordSignup();
                 }
@@ -499,7 +520,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 if (errors.email) setErrors({ ...errors, email: undefined });
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6) {
+                if (e.key === "Enter" && password.length >= 6 && confirmPassword.length >= 6 && formData.email) {
                   e.preventDefault();
                   handlePasswordSignup();
                 }
