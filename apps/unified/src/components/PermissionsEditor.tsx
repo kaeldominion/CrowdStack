@@ -89,18 +89,18 @@ export function PermissionsEditor({
 
       {/* Full Admin Checkbox (special, at the top) */}
       <div className="py-2">
-        <Checkbox
-          checked={(localPermissions as any).full_admin || false}
-          onChange={(e) =>
-            handlePermissionChange("full_admin", e.target.checked)
-          }
-          disabled={disabled}
-          label={
-            <span className="font-semibold">
-              {labels.full_admin as string}
-            </span>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={(localPermissions as any).full_admin || false}
+            onChange={(e) =>
+              handlePermissionChange("full_admin", e.target.checked)
+            }
+            disabled={disabled}
+          />
+          <label className="text-sm font-semibold text-foreground cursor-pointer">
+            {labels.full_admin as string}
+          </label>
+        </div>
         {(localPermissions as any).full_admin && (
           <p className="text-xs text-foreground-muted mt-1 ml-6">
             All permissions are enabled
