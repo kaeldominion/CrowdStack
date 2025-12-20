@@ -652,7 +652,7 @@ export default function OrganizerLiveMissionControlPage() {
             {/* Profile Header */}
             <div className="flex items-center gap-4">
               <Avatar
-                src={attendeeDetails.attendee.avatar_url}
+                avatarUrl={attendeeDetails.attendee.avatar_url}
                 name={attendeeDetails.attendee.name || ""}
                 size="lg"
               />
