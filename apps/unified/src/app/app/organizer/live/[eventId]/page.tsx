@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { BentoCard } from "@/components/BentoCard";
 import { Badge, Logo, Button, Input } from "@crowdstack/ui";
 import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2 } from "lucide-react";
@@ -403,7 +404,16 @@ export default function OrganizerLiveMissionControlPage() {
                     <div className="h-2 w-2 rounded-full bg-blue-500" />
                   )}
                   <div>
-                    <p className="text-sm font-medium text-white">{activity.attendee_name}</p>
+                    {activity.attendee_id ? (
+                      <Link 
+                        href={`/admin/attendees?attendeeId=${activity.attendee_id}`}
+                        className="text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer"
+                      >
+                        {activity.attendee_name}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium text-white">{activity.attendee_name}</p>
+                    )}
                     <div className="flex items-center gap-2">
                       <p className="text-xs text-white/40">
                         {activity.type === "checkin" ? "Checked in" : "Registered"}

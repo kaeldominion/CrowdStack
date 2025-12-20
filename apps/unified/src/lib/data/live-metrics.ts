@@ -29,6 +29,7 @@ export interface PromoterStat {
 
 export interface RecentCheckin {
   id: string;
+  attendee_id: string;
   attendee_name: string;
   checked_in_at: string;
   promoter_name: string | null;
@@ -36,6 +37,7 @@ export interface RecentCheckin {
 
 export interface RecentRegistration {
   id: string;
+  attendee_id: string;
   attendee_name: string;
   registered_at: string;
   promoter_name: string | null;
@@ -44,6 +46,7 @@ export interface RecentRegistration {
 export interface RecentActivity {
   id: string;
   type: "registration" | "checkin";
+  attendee_id: string;
   attendee_name: string;
   timestamp: string;
   promoter_name: string | null;
@@ -170,6 +173,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     .slice(0, 20)
     .map((c: any) => ({
       id: c.id,
+      attendee_id: c.registrations?.attendee?.id || "",
       attendee_name: c.registrations?.attendee?.name || "Unknown",
       checked_in_at: c.checked_in_at,
       promoter_name: c.registrations?.promoters?.name || null,
@@ -192,6 +196,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   const recentRegistrations: RecentRegistration[] = (recentRegistrationsData || [])
     .map((r: any) => ({
       id: r.id,
+      attendee_id: r.attendee?.id || "",
       attendee_name: r.attendee?.name || "Unknown",
       registered_at: r.registered_at,
       promoter_name: r.promoters?.name || null,
@@ -202,6 +207,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     ...recentCheckins.map((c) => ({
       id: `checkin-${c.id}`,
       type: "checkin" as const,
+      attendee_id: c.attendee_id,
       attendee_name: c.attendee_name,
       timestamp: c.checked_in_at,
       promoter_name: c.promoter_name,
@@ -209,6 +215,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     ...recentRegistrations.map((r) => ({
       id: `registration-${r.id}`,
       type: "registration" as const,
+      attendee_id: r.attendee_id,
       attendee_name: r.attendee_name,
       timestamp: r.registered_at,
       promoter_name: r.promoter_name,
