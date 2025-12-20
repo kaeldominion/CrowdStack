@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Button, Card } from "@crowdstack/ui";
@@ -583,6 +584,16 @@ function LoginContent() {
                     placeholder="Confirm your password"
                     minLength={6}
                   />
+                </div>
+              )}
+              {!isSignup && (
+                <div className="text-right">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
               )}
             </>
