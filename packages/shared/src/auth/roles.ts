@@ -157,20 +157,13 @@ export async function assignUserRole(
 ): Promise<void> {
   const supabase = createServiceRoleClient();
 
-  // Upsert with explicit conflict resolution on (user_id, role) unique constraint
-  const { error } = await supabase
-    .from("user_roles")
-    .upsert(
-      {
-        user_id: userId,
-        role,
-        metadata,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "user_id,role",
-      }
-    );
+  // Use RPC function for reliable upsert with composite unique constraint
+  // This ensures proper conflict handling on (user_id, role)
+  const { data, error } = await supabase.rpc("assign_user_role", {
+    user_uuid: userId,
+    role_name: role,
+    metadata: metadata,
+  });
 
   if (error) {
     console.error("assignUserRole error:", {
@@ -183,6 +176,9 @@ export async function assignUserRole(
     });
     throw new Error(`Failed to assign role: ${error.message}`);
   }
+
+  // Log success for debugging
+  console.log(`Successfully assigned role ${role} to user ${userId} via RPC`);
 }
 
 /**
