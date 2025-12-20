@@ -12,10 +12,9 @@ interface CreateOrganizerModalProps {
 export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrganizerModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    name: "", // This will hold Company Name or Organizer Name
     email: "",
     phone: "",
-    company_name: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +38,6 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
         name: "",
         email: "",
         phone: "",
-        company_name: "",
       });
 
       onSuccess();
@@ -55,19 +53,15 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
     <Modal isOpen={isOpen} onClose={onClose} title="Create Organizer" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Organizer Name"
+          label="Company Name / Organizer Name"
           required
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="DJ Marcus"
+          placeholder="Event Productions Inc. or DJ Marcus"
         />
-
-        <Input
-          label="Company Name"
-          value={formData.company_name}
-          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-          placeholder="Event Productions Inc."
-        />
+        <p className="text-xs text-foreground-muted">
+          Enter the company name if they have one, otherwise enter the organizer name. The actual person's name will come from the user assigned to this organizer later.
+        </p>
 
         <div className="grid grid-cols-2 gap-4">
           <Input

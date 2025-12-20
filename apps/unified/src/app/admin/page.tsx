@@ -335,7 +335,7 @@ export default function AdminDashboardPage() {
           {/* Admin Management */}
           <div className="mb-12">
             <h2 className="text-xl font-semibold text-foreground mb-4">Management</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
               {adminManagement.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <Card hover className="h-full">

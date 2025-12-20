@@ -16,21 +16,22 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, phone, company_name } = body;
+    const { name, email, phone } = body;
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: "Company Name / Organizer Name is required" }, { status: 400 });
     }
 
     const serviceSupabase = createServiceRoleClient();
 
+    // Use the name field for both name and company_name (since name comes from assigned user later)
     const { data: organizer, error } = await serviceSupabase
       .from("organizers")
       .insert({
-        name,
-        email: email || null,
-        phone: phone || null,
-        company_name: company_name || null,
+        name: name.trim(), // This will be updated when a user is assigned
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        company_name: name.trim(), // Store as company_name as well for now
         created_by: userId,
       })
       .select()
