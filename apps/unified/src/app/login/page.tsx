@@ -317,16 +317,23 @@ function LoginContent() {
       });
 
       if (magicError) {
-        console.error("[Login] Magic link error:", magicError.message);
-        // Handle rate limit errors with helpful messaging
-        if (magicError.message.toLowerCase().includes("rate limit") || 
-            magicError.message.toLowerCase().includes("too many") ||
-            magicError.message.toLowerCase().includes("email rate limit")) {
+        console.error("[Login] Magic link error:", magicError);
+        console.error("[Login] Error code:", magicError.status);
+        console.error("[Login] Error message:", magicError.message);
+        
+        const errorMsg = magicError.message.toLowerCase();
+        
+        // Handle rate limit errors - be more specific with checks
+        if (errorMsg.includes("email rate limit exceeded") || 
+            (errorMsg.includes("rate limit") && errorMsg.includes("email")) ||
+            errorMsg.includes("too many requests") ||
+            (errorMsg.includes("too many") && errorMsg.includes("email"))) {
           setError("Email rate limit exceeded. Please wait a few minutes before requesting another magic link. You can check your email for a previous link, or try password login if you have an account.");
         } else if (magicError.message.includes("signup") || magicError.message.includes("Signup disabled")) {
           setError("New signups are currently disabled. Please contact support to create an account.");
         } else {
-          setError(magicError.message);
+          // Show the actual error message so we can debug what's really happening
+          setError(magicError.message || "An error occurred. Please try again or contact support.");
         }
       } else {
         console.log("[Login] Magic link sent successfully");

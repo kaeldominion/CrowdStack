@@ -78,14 +78,20 @@ export async function POST(request: NextRequest) {
 
     if (magicError) {
       console.error("[Magic Link API] Error:", magicError);
+      console.error("[Magic Link API] Error code:", magicError.status);
+      console.error("[Magic Link API] Error message:", magicError.message);
       
-      // Provide helpful error message for rate limits
+      const errorMsg = magicError.message.toLowerCase();
+      
+      // Provide helpful error message for rate limits - be more specific
       let errorMessage = magicError.message;
-      if (magicError.message.toLowerCase().includes("rate limit") || 
-          magicError.message.toLowerCase().includes("too many") ||
-          magicError.message.toLowerCase().includes("email rate limit")) {
+      if (errorMsg.includes("email rate limit exceeded") || 
+          (errorMsg.includes("rate limit") && errorMsg.includes("email")) ||
+          errorMsg.includes("too many requests") ||
+          (errorMsg.includes("too many") && errorMsg.includes("email"))) {
         errorMessage = "Email rate limit exceeded. Please wait a few minutes before requesting another magic link. You can check your email for a previous link, or try password login if you have an account.";
       }
+      // Otherwise, pass through the actual error message so we can see what's really happening
       
       return NextResponse.json(
         { error: errorMessage },
