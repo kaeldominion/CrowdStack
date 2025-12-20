@@ -132,6 +132,7 @@ export async function POST(
     if (body.phone) attendeeData.phone = body.phone;
     if (body.whatsapp) attendeeData.whatsapp = body.whatsapp;
     if (body.date_of_birth) attendeeData.date_of_birth = body.date_of_birth;
+    if (body.gender) attendeeData.gender = body.gender;
     if (body.instagram_handle) attendeeData.instagram_handle = body.instagram_handle.replace("@", "");
     if (body.tiktok_handle) attendeeData.tiktok_handle = body.tiktok_handle.replace("@", "");
 

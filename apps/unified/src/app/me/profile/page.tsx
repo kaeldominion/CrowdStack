@@ -22,6 +22,7 @@ export default function ProfilePage() {
     phone: "",
     whatsapp: "",
     date_of_birth: "",
+    gender: "male" as "male" | "female",
     bio: "",
     instagram_handle: "",
     tiktok_handle: "",
@@ -58,24 +59,26 @@ export default function ProfilePage() {
             phone: attendee.phone || "",
             whatsapp: attendee.whatsapp || attendee.phone || "",
             date_of_birth: attendee.date_of_birth || "",
+            gender: (attendee.gender as "male" | "female") || "male",
             bio: attendee.bio || "",
             instagram_handle: attendee.instagram_handle || "",
             tiktok_handle: attendee.tiktok_handle || "",
             avatar_url: attendee.avatar_url || "",
           });
         } else {
-          setFormData({
-            name: authUser.user_metadata?.name || "",
-            surname: "",
-            email: authUser.email || "",
-            phone: "",
-            whatsapp: "",
-            date_of_birth: "",
-            bio: "",
-            instagram_handle: "",
-            tiktok_handle: "",
-            avatar_url: "",
-          });
+        setFormData({
+          name: authUser.user_metadata?.name || "",
+          surname: "",
+          email: authUser.email || "",
+          phone: "",
+          whatsapp: "",
+          date_of_birth: "",
+          gender: "male",
+          bio: "",
+          instagram_handle: "",
+          tiktok_handle: "",
+          avatar_url: "",
+        });
         }
       } else {
         setFormData({
@@ -85,6 +88,7 @@ export default function ProfilePage() {
           phone: "",
           whatsapp: "",
           date_of_birth: "",
+          gender: "male",
           bio: "",
           instagram_handle: "",
           tiktok_handle: "",
@@ -112,6 +116,7 @@ export default function ProfilePage() {
           name: formData.name,
           surname: formData.surname,
           date_of_birth: formData.date_of_birth || null,
+          gender: formData.gender,
           whatsapp: formData.whatsapp,
           bio: formData.bio || null,
           instagram_handle: formData.instagram_handle || null,
@@ -275,6 +280,37 @@ export default function ProfilePage() {
               <p className="mt-1 text-xs text-white/40">
                 Required for age verification
               </p>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">
+                Gender
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: "male" })}
+                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                    formData.gender === "male"
+                      ? "bg-primary/20 border-primary text-white"
+                      : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                  }`}
+                >
+                  Male
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: "female" })}
+                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
+                    formData.gender === "female"
+                      ? "bg-primary/20 border-primary text-white"
+                      : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                  }`}
+                >
+                  Female
+                </button>
+              </div>
             </div>
 
             {/* Bio */}

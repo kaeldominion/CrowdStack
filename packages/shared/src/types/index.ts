@@ -215,6 +215,7 @@ export interface Attendee {
   phone: string;
   whatsapp?: string | null;
   date_of_birth?: string | null; // ISO date string
+  gender?: "male" | "female" | null;
   avatar_url?: string | null;
   bio?: string | null;
   instagram_handle?: string | null;
@@ -424,6 +425,7 @@ export interface EventOutbox {
 // ============================================
 
 export interface RegisterEventRequest {
+  gender?: "male" | "female";
   name: string;
   surname?: string;
   email?: string;

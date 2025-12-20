@@ -24,6 +24,7 @@ export default function RegisterPage() {
     name?: string | null;
     surname?: string | null;
     date_of_birth?: string | null;
+    gender?: "male" | "female" | null;
     whatsapp?: string | null;
     instagram_handle?: string | null;
   } | null>(null);
@@ -92,6 +93,7 @@ export default function RegisterPage() {
                 name: attendee.name,
                 surname: attendee.surname,
                 date_of_birth: attendee.date_of_birth,
+                gender: attendee.gender || null,
                 whatsapp: attendee.whatsapp,
                 instagram_handle: attendee.instagram_handle,
               });
@@ -102,6 +104,7 @@ export default function RegisterPage() {
                 attendee.whatsapp && 
                 attendee.surname && 
                 attendee.date_of_birth && 
+                attendee.gender &&
                 attendee.instagram_handle;
               
               console.log("[Register] Has all required fields:", hasRequiredFields, {
@@ -121,6 +124,7 @@ export default function RegisterPage() {
                     name: attendee.name,
                     surname: attendee.surname,
                     date_of_birth: attendee.date_of_birth,
+                    gender: attendee.gender || "male",
                     whatsapp: attendee.whatsapp,
                     instagram_handle: attendee.instagram_handle,
                   });

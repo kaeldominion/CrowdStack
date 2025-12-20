@@ -26,17 +26,19 @@ export interface SignupData {
   name: string;
   surname: string;
   date_of_birth: string;
+  gender: "male" | "female";
   whatsapp: string;
   instagram_handle: string;
 }
 
-type StepId = "email" | "name" | "surname" | "date_of_birth" | "whatsapp" | "instagram_handle";
+type StepId = "email" | "name" | "surname" | "date_of_birth" | "gender" | "whatsapp" | "instagram_handle";
 
 const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "email", label: "What's your email?", mobileLabel: "What's your email?" },
   { id: "name", label: "What's your first name?", mobileLabel: "First name?" },
   { id: "surname", label: "And your last name?", mobileLabel: "Last name?" },
   { id: "date_of_birth", label: "When were you born?", mobileLabel: "Date of birth?" },
+  { id: "gender", label: "What's your gender?", mobileLabel: "Gender?" },
   { id: "whatsapp", label: "What's your WhatsApp number?", mobileLabel: "WhatsApp number?" },
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
@@ -54,6 +56,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     name: existingProfile?.name || "",
     surname: existingProfile?.surname || "",
     date_of_birth: existingProfile?.date_of_birth || "",
+    gender: (existingProfile as any)?.gender || "male",
     whatsapp: existingProfile?.whatsapp || "",
     instagram_handle: existingProfile?.instagram_handle || "",
   });
@@ -72,6 +75,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     if (!existingProfile?.name) visible.push("name");
     if (!existingProfile?.surname) visible.push("surname");
     if (!existingProfile?.date_of_birth) visible.push("date_of_birth");
+    if (!(existingProfile as any)?.gender) visible.push("gender");
     if (!existingProfile?.whatsapp) visible.push("whatsapp");
     if (!existingProfile?.instagram_handle) visible.push("instagram_handle");
     
@@ -99,6 +103,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         name: prev.name || existingProfile.name || "",
         surname: prev.surname || existingProfile.surname || "",
         date_of_birth: prev.date_of_birth || existingProfile.date_of_birth || "",
+        gender: prev.gender || (existingProfile as any)?.gender || "male",
         whatsapp: prev.whatsapp || existingProfile.whatsapp || "",
         instagram_handle: prev.instagram_handle || existingProfile.instagram_handle || "",
       }));
@@ -329,17 +334,19 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         name: formData.name || existingProfile?.name || "",
         surname: formData.surname || existingProfile?.surname || "",
         date_of_birth: formData.date_of_birth || existingProfile?.date_of_birth || "",
+        gender: formData.gender || (existingProfile as any)?.gender || "male",
         whatsapp: formData.whatsapp || existingProfile?.whatsapp || "",
         instagram_handle: formData.instagram_handle || existingProfile?.instagram_handle || "",
       };
       
       // Validate that all required fields are present before submitting
-      if (!mergedData.email || !mergedData.name || !mergedData.surname || !mergedData.date_of_birth || !mergedData.whatsapp || !mergedData.instagram_handle) {
+      if (!mergedData.email || !mergedData.name || !mergedData.surname || !mergedData.date_of_birth || !mergedData.gender || !mergedData.whatsapp || !mergedData.instagram_handle) {
         const missingFields = [];
         if (!mergedData.email) missingFields.push("email");
         if (!mergedData.name) missingFields.push("name");
         if (!mergedData.surname) missingFields.push("surname");
         if (!mergedData.date_of_birth) missingFields.push("date of birth");
+        if (!mergedData.gender) missingFields.push("gender");
         if (!mergedData.whatsapp) missingFields.push("whatsapp");
         if (!mergedData.instagram_handle) missingFields.push("instagram handle");
         throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
@@ -552,6 +559,42 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
               autoFocus
             />
+          </div>
+        );
+
+      case "gender":
+        return (
+          <div className="space-y-4">
+            <div className="flex gap-4 justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, gender: "male" });
+                  if (error) setErrors({ ...errors, gender: undefined });
+                }}
+                className={`flex-1 py-6 sm:py-8 rounded-xl border-2 transition-all ${
+                  formData.gender === "male"
+                    ? "bg-primary/20 border-primary text-white"
+                    : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                }`}
+              >
+                <span className="text-xl sm:text-2xl font-semibold">Male</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, gender: "female" });
+                  if (error) setErrors({ ...errors, gender: undefined });
+                }}
+                className={`flex-1 py-6 sm:py-8 rounded-xl border-2 transition-all ${
+                  formData.gender === "female"
+                    ? "bg-primary/20 border-primary text-white"
+                    : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                }`}
+              >
+                <span className="text-xl sm:text-2xl font-semibold">Female</span>
+              </button>
+            </div>
           </div>
         );
 

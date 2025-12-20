@@ -64,6 +64,7 @@ export async function PATCH(request: NextRequest) {
       name,
       surname,
       date_of_birth,
+      gender,
       bio,
       instagram_handle,
       tiktok_handle,
@@ -84,6 +85,7 @@ export async function PATCH(request: NextRequest) {
     if (name !== undefined) updateData.name = name;
     if (surname !== undefined) updateData.surname = surname;
     if (date_of_birth !== undefined) updateData.date_of_birth = date_of_birth || null;
+    if (gender !== undefined) updateData.gender = gender || null;
     if (bio !== undefined) updateData.bio = bio || null;
     if (instagram_handle !== undefined) {
       updateData.instagram_handle = instagram_handle ? instagram_handle.replace("@", "") : null;
