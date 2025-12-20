@@ -22,6 +22,30 @@ export async function POST(
     
     const { searchParams } = new URL(request.url);
     const ref = searchParams.get("ref"); // referral promoter ID
+    
+    // Validate ref is a valid UUID (promoter ID must be UUID)
+    // If ref has a prefix like "venue_" or "organizer_", ignore it
+    let referralPromoterId: string | null = null;
+    if (ref) {
+      // Check if ref is a valid UUID format (without prefix)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(ref)) {
+        referralPromoterId = ref;
+      } else if (ref.startsWith("venue_") || ref.startsWith("organizer_")) {
+        // Ignore venue/organizer refs - they're not promoter IDs
+        console.log("[Register API] Ignoring non-promoter ref:", ref);
+        referralPromoterId = null;
+      } else {
+        // Try to extract UUID if there's a prefix
+        const uuidMatch = ref.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+        if (uuidMatch) {
+          referralPromoterId = uuidMatch[0];
+        } else {
+          console.warn("[Register API] Invalid ref format, ignoring:", ref);
+          referralPromoterId = null;
+        }
+      }
+    }
 
     // Get event by slug
     console.log("[Register API] Looking for event:", params.slug);
@@ -206,7 +230,7 @@ export async function POST(
       .insert({
         attendee_id: attendee.id,
         event_id: event.id,
-        referral_promoter_id: ref || null,
+        referral_promoter_id: referralPromoterId,
       })
       .select()
       .single();
