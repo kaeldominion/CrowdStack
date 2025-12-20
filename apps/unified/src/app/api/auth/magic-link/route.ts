@@ -78,8 +78,17 @@ export async function POST(request: NextRequest) {
 
     if (magicError) {
       console.error("[Magic Link API] Error:", magicError);
+      
+      // Provide helpful error message for rate limits
+      let errorMessage = magicError.message;
+      if (magicError.message.toLowerCase().includes("rate limit") || 
+          magicError.message.toLowerCase().includes("too many") ||
+          magicError.message.toLowerCase().includes("email rate limit")) {
+        errorMessage = "Email rate limit exceeded. Please wait a few minutes before requesting another magic link. You can check your email for a previous link, or try password login if you have an account.";
+      }
+      
       return NextResponse.json(
-        { error: magicError.message },
+        { error: errorMessage },
         { status: 400 }
       );
     }

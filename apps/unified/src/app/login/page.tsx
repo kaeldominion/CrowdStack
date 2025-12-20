@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
@@ -55,6 +55,7 @@ function LoginContent() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [useMagicLink, setUseMagicLink] = useState(false);
+  const submittingRef = useRef(false);
 
   // Read error from URL params (from auth callback redirect)
   useEffect(() => {
@@ -253,6 +254,13 @@ function LoginContent() {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (submittingRef.current || loading) {
+      return;
+    }
+    
+    submittingRef.current = true;
     setLoading(true);
     setError("");
     setMessage("");
@@ -310,8 +318,12 @@ function LoginContent() {
 
       if (magicError) {
         console.error("[Login] Magic link error:", magicError.message);
-        // If signups are disabled, try to provide helpful error
-        if (magicError.message.includes("signup") || magicError.message.includes("Signup disabled")) {
+        // Handle rate limit errors with helpful messaging
+        if (magicError.message.toLowerCase().includes("rate limit") || 
+            magicError.message.toLowerCase().includes("too many") ||
+            magicError.message.toLowerCase().includes("email rate limit")) {
+          setError("Email rate limit exceeded. Please wait a few minutes before requesting another magic link. You can check your email for a previous link, or try password login if you have an account.");
+        } else if (magicError.message.includes("signup") || magicError.message.includes("Signup disabled")) {
           setError("New signups are currently disabled. Please contact support to create an account.");
         } else {
           setError(magicError.message);
@@ -325,6 +337,7 @@ function LoginContent() {
       setError(err.message || "An error occurred");
     } finally {
       setLoading(false);
+      submittingRef.current = false;
     }
   };
 
