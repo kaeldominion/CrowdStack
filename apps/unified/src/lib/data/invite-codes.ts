@@ -15,6 +15,7 @@ export interface InviteQRCode {
   created_at: string;
   owner_name?: string; // Name of the owner (organizer, venue, or promoter)
   promoter_id?: string | null; // Optional: specific promoter this code is for (when organizer creates code for a promoter)
+  self_promote?: boolean | null; // Optional: if true, this is a self-promote QR code for the organizer
 }
 
 /**
@@ -38,6 +39,7 @@ export async function createInviteQRCode(
     max_uses?: number;
     expires_at?: string;
     promoter_id?: string; // Optional: if organizer wants to create code for specific promoter
+    self_promote?: boolean; // Optional: if true, this is a self-promote QR code for the organizer
   } = {}
 ): Promise<InviteQRCode> {
   const supabase = await createClient();
@@ -109,6 +111,7 @@ export async function createInviteQRCode(
       expires_at: options.expires_at || null,
       used_count: 0,
       promoter_id: finalPromoterId || null,
+      self_promote: options.self_promote || null,
     })
     .select()
     .single();

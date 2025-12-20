@@ -68,8 +68,10 @@ export default function EventInvitesPage() {
   const createInviteQR = async (maxUses?: number, expiresAt?: string) => {
     try {
       const body: any = { max_uses: maxUses, expires_at: expiresAt };
-      if (selectedPromoterId) {
+      if (selectedPromoterId && selectedPromoterId !== "self") {
         body.promoter_id = selectedPromoterId;
+      } else if (selectedPromoterId === "self") {
+        body.self_promote = true; // Special flag for self-promotion
       }
       
       const response = await fetch(`/api/events/${eventId}/invites/generate`, {
@@ -86,11 +88,11 @@ export default function EventInvitesPage() {
     }
   };
 
-  const copyInviteLink = (inviteCode: string, promoterId?: string | null) => {
-    // If it's a promoter code and we have event slug, link directly to registration
+  const copyInviteLink = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean) => {
+    // If it's a promoter code or self-promote and we have event slug, link directly to registration
     // Otherwise, use the invite code page
     let url: string;
-    if (promoterId && eventSlug) {
+    if ((promoterId || selfPromote) && eventSlug) {
       url = `${window.location.origin}/e/${eventSlug}/register?ref=${inviteCode}`;
     } else {
       url = `${window.location.origin}/i/${inviteCode}`;
@@ -100,11 +102,11 @@ export default function EventInvitesPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getQRCodeUrl = (inviteCode: string, promoterId?: string | null) => {
-    // If it's a promoter code and we have event slug, link directly to registration
+  const getQRCodeUrl = (inviteCode: string, promoterId?: string | null, selfPromote?: boolean) => {
+    // If it's a promoter code or self-promote and we have event slug, link directly to registration
     // Otherwise, use the invite code page
     let targetUrl: string;
-    if (promoterId && eventSlug) {
+    if ((promoterId || selfPromote) && eventSlug) {
       targetUrl = `${window.location.origin}/e/${eventSlug}/register?ref=${inviteCode}`;
     } else {
       targetUrl = `${window.location.origin}/i/${inviteCode}`;
@@ -172,27 +174,26 @@ export default function EventInvitesPage() {
                 onChange={(e) => setSelectedPromoterId(e.target.value)}
                 options={[
                   { value: "", label: "None (General Invite)" },
+                  { value: "self", label: "Self Promote (Organizer)" },
                   ...eventPromoters.map((p) => ({ value: p.id, label: p.name })),
                 ]}
                 helperText={
-                  eventPromoters.length === 0
-                    ? "No promoters assigned to this event yet. Add promoters in the Promoters tab first."
+                  selectedPromoterId === "self"
+                    ? "QR code will link directly to registration page and attribute to your organizer profile"
                     : selectedPromoterId
                     ? "QR code will link directly to registration page and attribute to this promoter"
-                    : "Select a promoter to create a QR code that links directly to registration"
+                    : "Select a promoter or 'Self Promote' to create a QR code that links directly to registration"
                 }
-                disabled={eventPromoters.length === 0}
               />
-              {eventPromoters.length === 0 && (
-                <p className="text-xs text-amber-400 mt-1">
-                  Add promoters to this event first to create promoter-specific QR codes
-                </p>
-              )}
             </div>
 
             <div className="flex gap-4">
               <Button onClick={() => createInviteQR()}>
-                {selectedPromoterId ? "Create for Promoter" : "Create (Unlimited)"}
+                {selectedPromoterId === "self" 
+                  ? "Create Self Promote QR Code" 
+                  : selectedPromoterId 
+                  ? "Create for Promoter" 
+                  : "Create (Unlimited)"}
               </Button>
               <Button 
                 variant="secondary" 
@@ -218,7 +219,11 @@ export default function EventInvitesPage() {
                   <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
                   {inviteQR.owner_name && (
                     <div className="mt-1">
-                      {inviteQR.promoter_id ? (
+                      {inviteQR.self_promote ? (
+                        <p className="text-xs text-purple-400 font-medium">
+                          🎯 Self Promote: {inviteQR.owner_name}
+                        </p>
+                      ) : inviteQR.promoter_id ? (
                         <p className="text-xs text-blue-400 font-medium">
                           🎯 For Promoter: {inviteQR.owner_name}
                         </p>
@@ -252,26 +257,26 @@ export default function EventInvitesPage() {
                 </div>
               </div>
 
-              {inviteQR.promoter_id && (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 mb-2">
-                  <p className="text-xs text-blue-400 font-medium text-center">
-                    🎯 Promoter QR Code
+              {(inviteQR.promoter_id || inviteQR.self_promote) && (
+                <div className={`${inviteQR.self_promote ? 'bg-purple-500/10 border-purple-500/20' : 'bg-blue-500/10 border-blue-500/20'} border rounded-lg p-2 mb-2`}>
+                  <p className={`text-xs ${inviteQR.self_promote ? 'text-purple-400' : 'text-blue-400'} font-medium text-center`}>
+                    🎯 {inviteQR.self_promote ? 'Self Promote' : 'Promoter'} QR Code
                   </p>
-                  <p className="text-xs text-blue-300/70 text-center mt-1">
+                  <p className={`text-xs ${inviteQR.self_promote ? 'text-purple-300/70' : 'text-blue-300/70'} text-center mt-1`}>
                     Links directly to registration
                   </p>
                 </div>
               )}
 
               <div className="flex items-center justify-center p-4 bg-white rounded-md">
-                <img src={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id)} alt="QR Code" className="w-32 h-32" />
+                <img src={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id, inviteQR.self_promote)} alt="QR Code" className="w-32 h-32" />
               </div>
 
               <div className="space-y-2">
                 <Button
                   variant="secondary"
                   className="w-full"
-                  onClick={() => copyInviteLink(inviteQR.invite_code, inviteQR.promoter_id)}
+                  onClick={() => copyInviteLink(inviteQR.invite_code, inviteQR.promoter_id, inviteQR.self_promote)}
                 >
                   {copiedId === inviteQR.invite_code ? (
                     <>
