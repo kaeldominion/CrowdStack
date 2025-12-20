@@ -211,6 +211,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
   const [publishingPhotos, setPublishingPhotos] = useState(false);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+  const [organizers, setOrganizers] = useState<any[]>([]);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -221,6 +222,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     end_time: "",
     capacity: "",
     status: "",
+    organizer_id: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     reason: "",
   });
@@ -265,6 +267,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             end_time: data.event.end_time?.slice(0, 16) || "",
             capacity: data.event.capacity?.toString() || "",
             status: data.event.status || "",
+            organizer_id: data.event.organizer_id || "",
             timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
             reason: "",
           });
@@ -339,6 +342,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) updates.end_time = editForm.end_time || null;
       if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
+      if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
       if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
 
       if (Object.keys(updates).length === 0) {
@@ -459,6 +463,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       }
     } catch (error) {
       console.error("Failed to load invite codes:", error);
+    }
+  };
+
+  const loadOrganizers = async () => {
+    try {
+      const response = await fetch("/api/admin/organizers");
+      if (response.ok) {
+        const data = await response.json();
+        setOrganizers(data.organizers || []);
+      }
+    } catch (error) {
+      console.error("Failed to load organizers:", error);
     }
   };
 
@@ -1592,6 +1608,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 />
               )}
             </div>
+            {config.role === "admin" && organizers.length > 0 && (
+              <Select
+                label="Organizer"
+                value={editForm.organizer_id}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, organizer_id: e.target.value }))}
+                options={organizers.map((org) => ({
+                  value: org.id,
+                  label: org.name,
+                }))}
+                required
+              />
+            )}
             <Select
               label="Timezone"
               value={editForm.timezone}
