@@ -268,3 +268,102 @@ export async function getInviteCodeDetails(inviteCode: string): Promise<InviteQR
   return data as any;
 }
 
+/**
+ * Delete an invite QR code
+ */
+export async function deleteInviteQRCode(
+  inviteQRCodeId: string,
+  eventId: string
+): Promise<void> {
+  const supabase = await createClient();
+  const serviceSupabase = createServiceRoleClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  // Verify the invite QR code belongs to the event
+  const { data: inviteQR, error: fetchError } = await serviceSupabase
+    .from("invite_qr_codes")
+    .select("event_id, created_by")
+    .eq("id", inviteQRCodeId)
+    .single();
+
+  if (fetchError || !inviteQR) {
+    throw new Error("Invite QR code not found");
+  }
+
+  if (inviteQR.event_id !== eventId) {
+    throw new Error("Invite QR code does not belong to this event");
+  }
+
+  // Check if user has permission (creator, organizer, venue admin, or superadmin)
+  const { getUserRoles } = await import("@crowdstack/shared/auth/roles");
+  const roles = await getUserRoles();
+  const isSuperadmin = roles.includes("superadmin");
+  const isCreator = inviteQR.created_by === user.id;
+
+  // Check if user is the event organizer or venue admin
+  let hasEventAccess = false;
+  if (!isCreator && !isSuperadmin) {
+    const { data: event } = await serviceSupabase
+      .from("events")
+      .select("organizer_id, venue_id, venue:venues(created_by)")
+      .eq("id", eventId)
+      .single();
+
+    if (event) {
+      // Check if user is organizer
+      const { data: organizer } = await serviceSupabase
+        .from("organizers")
+        .select("created_by")
+        .eq("id", event.organizer_id)
+        .single();
+      
+      if (organizer?.created_by === user.id) {
+        hasEventAccess = true;
+      }
+
+      // Check if user is venue admin
+      if (!hasEventAccess && event.venue_id) {
+        const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+        if (venue?.created_by === user.id) {
+          hasEventAccess = true;
+        }
+
+        // Check venue users
+        if (!hasEventAccess) {
+          const { data: venueUser } = await serviceSupabase
+            .from("venue_users")
+            .select("id")
+            .eq("venue_id", event.venue_id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          if (venueUser) {
+            hasEventAccess = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!isCreator && !isSuperadmin && !hasEventAccess) {
+    throw new Error("Forbidden: You do not have permission to delete this invite QR code");
+  }
+
+  // Delete the invite QR code
+  const { error: deleteError } = await serviceSupabase
+    .from("invite_qr_codes")
+    .delete()
+    .eq("id", inviteQRCodeId);
+
+  if (deleteError) {
+    throw deleteError;
+  }
+}
+

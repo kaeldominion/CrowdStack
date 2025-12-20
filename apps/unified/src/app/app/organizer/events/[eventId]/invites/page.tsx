@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Card, Button, Input, Badge, Select } from "@crowdstack/ui";
-import { QrCode, Plus, Copy, Check } from "lucide-react";
+import { QrCode, Plus, Copy, Check, Trash2 } from "lucide-react";
 import type { InviteQRCode } from "@/lib/data/invite-codes";
 
 export default function EventInvitesPage() {
@@ -16,6 +16,7 @@ export default function EventInvitesPage() {
   const [eventPromoters, setEventPromoters] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedPromoterId, setSelectedPromoterId] = useState<string>("");
   const [eventSlug, setEventSlug] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadInviteQRCodes();
@@ -112,6 +113,28 @@ export default function EventInvitesPage() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
   };
 
+  const handleDelete = async (inviteQRId: string) => {
+    if (!confirm("Are you sure you want to delete this QR code? This action cannot be undone.")) {
+      return;
+    }
+
+    setDeletingId(inviteQRId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/invites/${inviteQRId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete QR code");
+      }
+      await loadInviteQRCodes();
+    } catch (error: any) {
+      alert(error.message || "Failed to delete QR code");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -189,8 +212,8 @@ export default function EventInvitesPage() {
         {inviteQRCodes.map((inviteQR) => (
           <Card key={inviteQR.id}>
             <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
                   <p className="font-mono text-sm font-semibold text-white">{inviteQR.invite_code}</p>
                   <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
                   {inviteQR.owner_name && (
@@ -210,11 +233,23 @@ export default function EventInvitesPage() {
                     </div>
                   )}
                 </div>
-                {inviteQR.max_uses && (
-                  <Badge variant="warning">
-                    {inviteQR.used_count} / {inviteQR.max_uses}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2 ml-2">
+                  {inviteQR.max_uses && (
+                    <Badge variant="warning">
+                      {inviteQR.used_count} / {inviteQR.max_uses}
+                    </Badge>
+                  )}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleDelete(inviteQR.id)}
+                    disabled={deletingId === inviteQR.id}
+                    loading={deletingId === inviteQR.id}
+                    className="!p-2"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
               </div>
 
               {inviteQR.promoter_id && (
