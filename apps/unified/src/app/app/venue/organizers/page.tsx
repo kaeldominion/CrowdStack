@@ -249,8 +249,8 @@ export default function VenueOrganizersPage() {
                             <Badge variant="secondary">Standard</Badge>
                           )}
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center gap-2">
+                        <TableCell>
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             {organizer.is_preapproved ? (
                               <Button
                                 variant="ghost"
