@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, attendeeId } = body;
+    const { email: inputEmail, attendeeId } = body;
 
-    if (!email && !attendeeId) {
+    if (!inputEmail && !attendeeId) {
       return NextResponse.json(
         { error: "Either email or attendeeId must be provided" },
         { status: 400 }
@@ -36,13 +36,13 @@ export async function POST(request: NextRequest) {
     let userData: any = null;
 
     // Find user by email or attendee ID
-    if (email) {
+    if (inputEmail) {
       // Find user by email
       const { data: authUsers, error: userError } = await serviceSupabase.auth.admin.listUsers();
       if (userError) {
         throw userError;
       }
-      const matchingUser = authUsers.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      const matchingUser = authUsers.users.find((u) => u.email?.toLowerCase() === inputEmail.toLowerCase());
       
       if (matchingUser) {
         targetUserId = matchingUser.id;
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       const { data: attendeeByEmail } = await serviceSupabase
         .from("attendees")
         .select("*")
-        .eq("email", email)
+        .eq("email", inputEmail)
         .maybeSingle();
 
       if (attendeeByEmail && !targetUserId && attendeeByEmail.user_id) {
@@ -122,18 +122,18 @@ export async function POST(request: NextRequest) {
 
     // Determine name, email, phone from available data
     let name = "";
-    let email = "";
+    let promoterEmail = "";
     let phone = "";
 
     if (attendeeData) {
       name = attendeeData.name || "";
-      email = attendeeData.email || email || "";
+      promoterEmail = attendeeData.email || inputEmail || "";
       phone = attendeeData.phone || "";
     }
 
     if (userData) {
       name = name || userData.user_metadata?.full_name || userData.email?.split("@")[0] || "";
-      email = email || userData.email || "";
+      promoterEmail = promoterEmail || userData.email || inputEmail || "";
     }
 
     // Validate required fields
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!email && !phone) {
+    if (!promoterEmail && !phone) {
       return NextResponse.json(
         { error: "Cannot determine contact info. Email or phone is required." },
         { status: 400 }
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     // Create promoter profile
     const promoterData: any = {
       name,
-      email: email || null,
+      email: promoterEmail || null,
       phone: phone || null,
       created_by: targetUserId || adminUser.id,
     };
@@ -162,11 +162,11 @@ export async function POST(request: NextRequest) {
     // Check if promoter with same email or phone already exists
     let existingPromoter: any = null;
     
-    if (email) {
+    if (promoterEmail) {
       const { data: promoterByEmail } = await serviceSupabase
         .from("promoters")
         .select("*")
-        .eq("email", email)
+        .eq("email", promoterEmail)
         .maybeSingle();
       
       if (promoterByEmail) {
