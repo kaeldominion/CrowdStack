@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert } from "lucide-react";
+import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert, Globe, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminEventsPage() {
@@ -13,6 +13,7 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvents();
@@ -96,6 +97,34 @@ export default function AdminEventsPage() {
         );
       default:
         return <Badge variant="default">—</Badge>;
+    }
+  };
+
+  const handlePublishToggle = async (eventId: string, currentStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click navigation
+    
+    setPublishing(eventId);
+    try {
+      const newStatus = currentStatus === "published" ? "draft" : "published";
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update event status");
+      }
+
+      // Update the event in the local state
+      setEvents((prev) =>
+        prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e))
+      );
+    } catch (error: any) {
+      alert(error.message || "An error occurred");
+    } finally {
+      setPublishing(null);
     }
   };
 
@@ -215,7 +244,32 @@ export default function AdminEventsPage() {
                         <TableCell>{getApprovalBadge(event.venue_approval_status, !!event.venue_id)}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          <div className="flex items-center gap-2">
+                            {event.status === "published" ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={(e) => handlePublishToggle(event.id, event.status, e)}
+                                disabled={publishing === event.id}
+                                loading={publishing === event.id}
+                              >
+                                <EyeOff className="h-3 w-3 mr-1" />
+                                Unpublish
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={(e) => handlePublishToggle(event.id, event.status, e)}
+                                disabled={publishing === event.id}
+                                loading={publishing === event.id}
+                              >
+                                <Globe className="h-3 w-3 mr-1" />
+                                Publish
+                              </Button>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
