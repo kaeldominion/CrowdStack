@@ -125,6 +125,11 @@ interface Stats {
     registrations: number;
     check_ins: number;
   }>;
+  chart_data?: Array<{
+    date: string;
+    registrations: number;
+    checkins: number;
+  }>;
   // Promoter-specific stats
   referrals?: number;
   checkins?: number;
@@ -657,13 +662,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     );
   });
 
-  // Generate hourly registration data for charts
-  const hourlyData = stats?.total_registrations
-    ? Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}:00`,
-        registrations: Math.floor(Math.random() * 10), // Placeholder - should come from API
-      }))
-    : [];
+  // Use chart data from API, or generate empty array if not available
+  const chartData = stats?.chart_data || [];
 
   const eventUrl = event?.slug
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/e/${event.slug}`
@@ -1101,20 +1101,32 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             {/* Charts (for organizer/venue) */}
             {config.role !== "promoter" && config.canViewStats && stats && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Registrations Over Time
-                  </h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={hourlyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="hour" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="registrations" stroke="#8884d8" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Card>
+                {chartData.length > 0 ? (
+                  <Card>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      Registrations Over Time
+                    </h3>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="registrations" stroke="#8884d8" name="Registrations" />
+                        <Line type="monotone" dataKey="checkins" stroke="#10b981" name="Check-ins" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Card>
+                ) : (
+                  <Card>
+                    <h3 className="text-lg font-semibold text-foreground mb-4">
+                      Registrations Over Time
+                    </h3>
+                    <div className="flex items-center justify-center h-[200px] text-foreground-muted">
+                      No registration data yet
+                    </div>
+                  </Card>
+                )}
                 {stats.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
                   <Card>
                     <h3 className="text-lg font-semibold text-foreground mb-4">
