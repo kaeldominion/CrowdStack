@@ -94,6 +94,7 @@ interface EventData {
   end_time: string | null;
   capacity: number | null;
   cover_image_url: string | null;
+  timezone: string | null;
   promoter_access_type?: string;
   organizer_id: string;
   venue_id: string | null;
