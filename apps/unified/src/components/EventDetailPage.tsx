@@ -215,6 +215,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   // Edit form state
   const [editForm, setEditForm] = useState({
     name: "",
+    slug: "",
     description: "",
     start_time: "",
     end_time: "",
@@ -258,6 +259,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         if (config.canEdit) {
           setEditForm({
             name: data.event.name || "",
+            slug: data.event.slug || "",
             description: data.event.description || "",
             start_time: data.event.start_time?.slice(0, 16) || "",
             end_time: data.event.end_time?.slice(0, 16) || "",
@@ -331,6 +333,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       const updates: Record<string, any> = {};
       
       if (editForm.name !== event.name) updates.name = editForm.name;
+      if (editForm.slug !== event.slug) updates.slug = editForm.slug;
       if (editForm.description !== (event.description || "")) updates.description = editForm.description || null;
       if (editForm.start_time !== event.start_time?.slice(0, 16)) updates.start_time = editForm.start_time;
       if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) updates.end_time = editForm.end_time || null;
@@ -1511,6 +1514,43 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               value={editForm.name}
               onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
             />
+            <div>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="URL Slug"
+                    value={editForm.slug}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, slug: e.target.value }))}
+                    placeholder="event-slug"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch("/api/events/generate-slug", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ baseSlug: editForm.slug || editForm.name }),
+                      });
+                      if (response.ok) {
+                        const data = await response.json();
+                        setEditForm((prev) => ({ ...prev, slug: data.slug }));
+                      }
+                    } catch (error) {
+                      console.error("Failed to generate slug:", error);
+                    }
+                  }}
+                >
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-foreground-muted mt-1">
+                Used in the event URL (e.g., /e/{editForm.slug || "event-slug"})
+              </p>
+            </div>
             <Textarea
               label="Description"
               value={editForm.description}
