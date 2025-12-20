@@ -4,6 +4,7 @@ import { Calendar, MapPin, Users, Clock, Image as ImageIcon, ArrowRight } from "
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
+import { EventQRCode } from "@/components/EventQRCode";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 async function getEvent(slug: string) {
@@ -16,7 +17,7 @@ async function getEvent(slug: string) {
       .select(`
         *,
         organizer:organizers(id, name),
-        venue:venues(id, name, address, city, state, country)
+        venue:venues(id, name, slug, address, city, state, country)
       `)
       .eq("slug", slug)
       .eq("status", "published")
@@ -125,7 +126,16 @@ export default async function EventPage({
                         <MapPin className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
                         <div>
                           <div className="text-sm text-foreground-muted">Venue</div>
-                          <div className="text-foreground font-medium">{event.venue.name}</div>
+                          {event.venue.slug ? (
+                            <Link 
+                              href={`/v/${event.venue.slug}`}
+                              className="text-foreground font-medium hover:text-primary transition-colors"
+                            >
+                              {event.venue.name}
+                            </Link>
+                          ) : (
+                            <div className="text-foreground font-medium">{event.venue.name}</div>
+                          )}
                           {event.venue.address && (
                             <div className="text-foreground-muted text-sm">{event.venue.address}</div>
                           )}
@@ -209,6 +219,9 @@ export default async function EventPage({
                       url={shareUrl}
                     />
                   </div>
+
+                  {/* QR Code Section */}
+                  <EventQRCode eventSlug={params.eventSlug} />
 
                   {/* Event Status Badge */}
                   <div className="pt-4 border-t border-border">
