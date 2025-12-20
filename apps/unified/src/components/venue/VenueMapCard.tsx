@@ -16,6 +16,8 @@ export function VenueMapCard({ venue }: VenueMapCardProps) {
   // Extract place ID or coordinates from Google Maps URL for embedding
   const getEmbedUrl = () => {
     const url = venue.google_maps_url;
+    
+    if (!url) return null;
 
     // Try to extract coordinates from URL patterns like: @lat,lng (most common and reliable)
     const coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
@@ -87,16 +89,15 @@ export function VenueMapCard({ venue }: VenueMapCardProps) {
         )}
 
         {/* Open in Google Maps Button */}
-        <Button
-          variant="secondary"
-          href={venue.google_maps_url}
+        <a
+          href={venue.google_maps_url || "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full"
+          className="inline-flex items-center justify-center px-4 py-2 text-sm bg-surface text-foreground border border-border hover:bg-surface/80 focus:ring-primary w-full"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Open in Google Maps
-        </Button>
+        </a>
       </div>
     </Card>
   );

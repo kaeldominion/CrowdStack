@@ -396,6 +396,8 @@ export default function VenueSettingsPage() {
               {data.venue.google_maps_url && (() => {
                 const getEmbedUrl = () => {
                   const url = data.venue.google_maps_url;
+                  
+                  if (!url) return null;
 
                   // Extract coordinates from URL (most reliable method)
                   // Pattern: @lat,lng or @lat,lng,zoom
