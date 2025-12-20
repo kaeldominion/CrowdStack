@@ -100,9 +100,7 @@ export default function AdminEventsPage() {
     }
   };
 
-  const handlePublishToggle = async (eventId: string, currentStatus: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent row click navigation
-    
+  const handlePublishToggle = async (eventId: string, currentStatus: string) => {
     setPublishing(eventId);
     try {
       const newStatus = currentStatus === "published" ? "draft" : "published";
@@ -244,12 +242,15 @@ export default function AdminEventsPage() {
                         <TableCell>{getApprovalBadge(event.venue_approval_status, !!event.venue_id)}</TableCell>
                         <TableCell>{getStatusBadge(event.status)}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div 
+                            className="flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {event.status === "published" ? (
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={(e) => handlePublishToggle(event.id, event.status, e)}
+                                onClick={() => handlePublishToggle(event.id, event.status)}
                                 disabled={publishing === event.id}
                                 loading={publishing === event.id}
                               >
@@ -260,7 +261,7 @@ export default function AdminEventsPage() {
                               <Button
                                 variant="primary"
                                 size="sm"
-                                onClick={(e) => handlePublishToggle(event.id, event.status, e)}
+                                onClick={() => handlePublishToggle(event.id, event.status)}
                                 disabled={publishing === event.id}
                                 loading={publishing === event.id}
                               >
