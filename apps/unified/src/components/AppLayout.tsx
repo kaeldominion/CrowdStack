@@ -11,6 +11,7 @@ import {
   Settings,
   CreditCard,
   Shield,
+  Calendar,
 } from "lucide-react";
 import { Logo, Dropdown, cn } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -278,6 +279,11 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
                   </div>
                 }
                 items={[
+                  {
+                    label: "My Events",
+                    onClick: () => router.push("/me"),
+                    icon: <Calendar className="h-4 w-4" />,
+                  },
                   {
                     label: "Profile",
                     onClick: () => router.push("/me/profile"),

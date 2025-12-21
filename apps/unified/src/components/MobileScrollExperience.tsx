@@ -82,6 +82,25 @@ export function MobileScrollExperience({
     return () => clearTimeout(timeout);
   }, [mediaLoaded, hasVideo, videoUrl, videoFailed]);
 
+  // iOS Safari fix: explicitly play video when loaded
+  // Safari sometimes doesn't autoplay even with muted + playsInline
+  useEffect(() => {
+    if (hasVideo && mediaLoaded && videoRef.current) {
+      const playVideo = async () => {
+        try {
+          // Ensure video attributes are set (iOS sometimes needs this)
+          videoRef.current!.muted = true;
+          videoRef.current!.playsInline = true;
+          await videoRef.current!.play();
+        } catch (err) {
+          console.warn("Video autoplay failed, falling back to image:", err);
+          setVideoFailed(true);
+        }
+      };
+      playVideo();
+    }
+  }, [hasVideo, mediaLoaded]);
+
   // Show hint after 2 second delay
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -18,6 +18,7 @@ import {
   TabsTrigger,
   TabsContent,
   Modal,
+  ConfirmModal,
   Textarea,
   Select,
   InlineSpinner,
@@ -213,6 +214,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [saving, setSaving] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [videoUploadSuccess, setVideoUploadSuccess] = useState(false);
+  const [showRemoveVideoModal, setShowRemoveVideoModal] = useState(false);
+  const [removingVideo, setRemovingVideo] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -1788,18 +1791,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={async () => {
-                        if (!confirm("Remove this video flier?")) return;
-                        const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
-                          method: "DELETE",
-                        });
-                        if (!response.ok) {
-                          const errorData = await response.json();
-                          alert(errorData.error || "Failed to remove video");
-                          return;
-                        }
-                        await loadEventData(false);
-                      }}
+                      onClick={() => setShowRemoveVideoModal(true)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Remove Video
@@ -2014,6 +2006,35 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           </div>
         </Modal>
       )}
+
+      {/* Remove Video Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showRemoveVideoModal}
+        onClose={() => setShowRemoveVideoModal(false)}
+        onConfirm={async () => {
+          setRemovingVideo(true);
+          try {
+            const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+              method: "DELETE",
+            });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || "Failed to remove video");
+            }
+            await loadEventData(false);
+          } catch (error: any) {
+            console.error("Failed to remove video:", error);
+          } finally {
+            setRemovingVideo(false);
+          }
+        }}
+        title="Remove Video Flier"
+        message="Are you sure you want to remove this video? This action cannot be undone."
+        confirmText="Remove Video"
+        cancelText="Keep Video"
+        variant="danger"
+        loading={removingVideo}
+      />
     </div>
   );
 }

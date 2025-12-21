@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { HealthCheckResult } from "@crowdstack/shared";
+import { InlineSpinner } from "./InlineSpinner";
 
 export function HealthCheck() {
   const [result, setResult] = useState<HealthCheckResult | null>(null);
@@ -32,7 +33,7 @@ export function HealthCheck() {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+          <InlineSpinner size="sm" className="text-blue-600" />
           <p className="text-sm text-gray-600">Checking health...</p>
         </div>
       </div>
