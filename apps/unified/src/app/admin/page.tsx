@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, LogOut, Home, Radio, MapPin, UserCheck, User } from "lucide-react";
-import { createBrowserClient } from "@crowdstack/shared";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -24,21 +23,11 @@ interface LiveEvent {
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [baseUrl, setBaseUrl] = useState("");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [loadingLive, setLoadingLive] = useState(true);
 
   useEffect(() => {
     setBaseUrl(window.location.origin);
-    
-    // Get user info
-    const loadUser = async () => {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserEmail(user?.email || null);
-    };
-    loadUser();
 
     // Load live events
     const loadLiveEvents = async () => {
@@ -60,13 +49,6 @@ export default function AdminDashboardPage() {
     const interval = setInterval(loadLiveEvents, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    const supabase = createBrowserClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
 
   const dashboards = [
     {
@@ -175,50 +157,14 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with navigation and logout */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
-        <Container>
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-foreground hover:text-primary transition-colors">
-                <Home className="h-5 w-5" />
-              </Link>
-              <h1 className="text-lg font-semibold text-foreground">Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {userEmail && (
-                <span className="text-sm text-foreground-muted hidden sm:block">
-                  {userEmail}
-                </span>
-              )}
-              <Link
-                href="/me/profile"
-                className="flex items-center gap-2 px-3 py-2 text-sm text-foreground-muted hover:text-foreground hover:bg-surface rounded-md transition-colors"
-              >
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Profile</span>
-              </Link>
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-foreground-muted hover:text-foreground hover:bg-surface rounded-md transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">{loggingOut ? "Signing out..." : "Sign Out"}</span>
-              </button>
-            </div>
-          </div>
-        </Container>
-      </header>
-
-      <Section spacing="lg">
-        <Container>
-          <div className="mb-8">
-            <p className="text-sm text-foreground-muted">
-              Quick access to all dashboards, tools, and areas of the platform
-            </p>
-          </div>
+    <Section spacing="lg">
+      <Container>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-foreground mb-2">Admin Dashboard</h1>
+          <p className="text-sm text-foreground-muted">
+            Quick access to all dashboards, tools, and areas of the platform
+          </p>
+        </div>
 
           {/* Live Events Section */}
           {liveEvents.length > 0 && (
@@ -410,6 +356,5 @@ export default function AdminDashboardPage() {
           </Card>
         </Container>
       </Section>
-    </div>
   );
 }
