@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { Button, Card, PageLoader } from "@crowdstack/ui";
+import { Button, Card, PageLoader, Logo } from "@crowdstack/ui";
 
 // Singleton magic link client to avoid "Multiple GoTrueClient instances" warning
 let magicLinkClientInstance: SupabaseClient | null = null;
@@ -47,7 +47,7 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [useMagicLink, setUseMagicLink] = useState(false);
+  const [useMagicLink, setUseMagicLink] = useState(true); // Magic link is primary
   const [isSignup, setIsSignup] = useState(false);
   const submittingRef = useRef(false);
 
@@ -500,7 +500,7 @@ function LoginContent() {
         }
       } else {
         console.log("[Login] Magic link sent successfully");
-        setMessage("✅ Check your email for the magic link! If you're a new user, clicking the link will create your account. ⚠️ Important: Click the link in the SAME browser where you requested it (can be a different tab).");
+        setMessage("Check your email for the magic link! Click it in this browser to sign in.");
       }
     } catch (err: any) {
       console.error("[Login] Magic link exception:", err);
@@ -514,16 +514,23 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Link href="/">
+            <Logo variant="full" size="lg" animated={false} className="text-white" />
+          </Link>
+        </div>
+
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">
-            {useMagicLink ? "Sign Up / Sign In" : (isSignup ? "Sign Up" : "Sign In")}
+          <h1 className="text-2xl font-bold text-white">
+            {useMagicLink ? "Welcome" : (isSignup ? "Create Account" : "Sign In")}
           </h1>
           <p className="mt-2 text-sm text-white/60">
             {useMagicLink 
-              ? "Enter your email to receive a magic link. Works for both new signups and existing users." 
+              ? "Enter your email to sign in or create an account" 
               : isSignup
               ? "Create a new account with email and password"
-              : "Enter your email and password to sign in to your existing account"}
+              : "Sign in with your email and password"}
           </p>
         </div>
 
@@ -622,44 +629,53 @@ function LoginContent() {
             className="w-full"
             size="lg"
           >
-            {useMagicLink ? "Send Magic Link (Sign Up / Sign In)" : (isSignup ? "Create Account" : "Sign In")}
+            {useMagicLink ? "Send Magic Link" : (isSignup ? "Create Account" : "Sign In")}
           </Button>
 
-          <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-4">
+          <div className="text-center space-y-3">
+            {/* Password login toggle - only show when using magic link */}
+            {useMagicLink ? (
               <button
                 type="button"
                 onClick={() => {
-                  setIsSignup(!isSignup);
+                  setUseMagicLink(false);
                   setError("");
                   setMessage("");
-                  setPassword("");
-                  setConfirmPassword("");
                 }}
-                className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                className="text-sm text-white/50 hover:text-white/80 transition-colors"
               >
-                {isSignup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+                Use password instead
               </button>
-              {!useMagicLink && <span className="text-white/20">•</span>}
-              <button
-                type="button"
-                onClick={() => {
-                  setUseMagicLink(!useMagicLink);
-                  setIsSignup(false);
-                  setError("");
-                  setMessage("");
-                  setPassword("");
-                  setConfirmPassword("");
-                }}
-                className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
-              >
-                {useMagicLink ? "Use password instead" : "Use magic link instead"}
-              </button>
-            </div>
-            {useMagicLink && (
-              <p className="text-xs text-white/40">
-                Magic link works for both new signups and existing users. No password needed!
-              </p>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignup(!isSignup);
+                    setError("");
+                    setMessage("");
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                >
+                  {isSignup ? "Already have an account?" : "Need an account?"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseMagicLink(true);
+                    setIsSignup(false);
+                    setError("");
+                    setMessage("");
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                >
+                  Use magic link instead
+                </button>
+              </div>
             )}
           </div>
         </form>
