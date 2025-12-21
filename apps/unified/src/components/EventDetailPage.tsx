@@ -231,7 +231,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     status: "",
     organizer_id: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
-    mobile_style: "scroll" as "flip" | "scroll",
+    mobile_style: "flip" as "flip" | "scroll",
     reason: "",
   });
 
@@ -281,7 +281,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             status: data.event.status || "",
             organizer_id: data.event.organizer_id || "",
             timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
-            mobile_style: data.event.mobile_style || "scroll",
+            mobile_style: data.event.mobile_style || "flip",
             reason: "",
           });
         }
@@ -357,7 +357,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
       if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
-      if (editForm.mobile_style !== (event.mobile_style || "scroll")) updates.mobile_style = editForm.mobile_style;
+      if (editForm.mobile_style !== (event.mobile_style || "flip")) updates.mobile_style = editForm.mobile_style;
 
       if (Object.keys(updates).length === 0) {
         alert("No changes to save");
