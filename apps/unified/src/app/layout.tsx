@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-[#0A0A0A] text-white antialiased`}>
+      <body className={`${inter.className} bg-[#0B0D10] text-white antialiased`}>
         <ConditionalLayout>{children}</ConditionalLayout>
         <Analytics />
       </body>
