@@ -64,7 +64,8 @@ export async function GET(
         name,
         slug,
         start_time,
-        venue_id
+        venue_id,
+        flier_url
       `)
       .eq("id", event.id)
       .single();
@@ -95,6 +96,7 @@ export async function GET(
         name: eventDetails.name,
         slug: eventDetails.slug,
         start_time: eventDetails.start_time,
+        flier_url: eventDetails.flier_url,
         venue: venue ? { id: venue.id, name: venue.name } : null,
       } : null,
     });
