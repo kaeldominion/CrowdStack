@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Card, Button } from "@crowdstack/ui";
+import { Button } from "@crowdstack/ui";
 import { ImageIcon, ArrowRight } from "lucide-react";
 
 interface Photo {
@@ -73,16 +73,16 @@ export async function PhotoGalleryPreview({
   }
 
   return (
-    <Card className="p-4 lg:p-6">
+    <div className="p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
       <div className="space-y-3 lg:space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 lg:gap-4">
-            <div className="p-2 lg:p-3 rounded-lg bg-primary/10">
-              <ImageIcon className="h-4 w-4 lg:h-6 lg:w-6 text-primary" />
+          <div className="flex items-center gap-2 lg:gap-3">
+            <div className="p-1.5 lg:p-2 rounded-lg bg-primary/10">
+              <ImageIcon className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
             </div>
             <div>
               <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Photos</h2>
-              <p className="text-xs lg:text-sm text-foreground-muted mt-0.5 lg:mt-1">
+              <p className="text-xs lg:text-sm text-foreground-muted mt-0.5">
                 {photos.length} {photos.length === 1 ? "photo" : "photos"} available
               </p>
             </div>
@@ -120,7 +120,7 @@ export async function PhotoGalleryPreview({
           ))}
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
