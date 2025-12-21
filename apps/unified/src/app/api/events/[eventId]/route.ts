@@ -75,8 +75,12 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
+  console.log("[EventUpdate] PATCH request received for event:", params.eventId);
+  
   try {
     const userId = await getUserId();
+    console.log("[EventUpdate] User ID:", userId);
+    
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

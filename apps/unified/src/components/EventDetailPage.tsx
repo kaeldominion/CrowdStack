@@ -384,6 +384,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         ? config.eventApiEndpoint
         : `/api/events/${eventId}`;
 
+      console.log("[EventEdit] Sending to endpoint:", endpoint);
+      console.log("[EventEdit] Request body:", JSON.stringify(updates));
+      
       const response = await fetch(endpoint, {
         method: config.role === "venue" ? "PUT" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -394,10 +397,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         ),
       });
 
+      console.log("[EventEdit] Response status:", response.status);
+      
       if (!response.ok) {
         const error = await response.json();
+        console.error("[EventEdit] Error response:", error);
         throw new Error(error.error || "Failed to save changes");
       }
+
+      const responseData = await response.json();
+      console.log("[EventEdit] Success response:", responseData);
+      console.log("[EventEdit] Saved start_time:", responseData.event?.start_time);
 
       await loadEventData();
       setShowEditModal(false);
