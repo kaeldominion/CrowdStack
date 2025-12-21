@@ -455,15 +455,17 @@ export default function HomePage() {
                 key={stat.label}
                 className="text-center"
                 initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <motion.div
                   className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2"
                   initial={{ scale: 0.5 }}
+                  animate={{ scale: 1 }}
                   whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
+                  viewport={{ once: true, margin: "-100px" }}
                   transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
                 >
                   {stat.value}
@@ -498,8 +500,9 @@ export default function HomePage() {
           <motion.div
             className="text-center mb-20"
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
@@ -519,8 +522,9 @@ export default function HomePage() {
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <MovingBorder
@@ -556,8 +560,9 @@ export default function HomePage() {
           <motion.div
             className="text-center mb-20"
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
@@ -577,8 +582,9 @@ export default function HomePage() {
                 key={item.step}
                 className="relative"
                 initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5, delay: index * 0.15 }}
               >
                 {/* Connector line */}
@@ -605,8 +611,9 @@ export default function HomePage() {
           <motion.div
             className="text-center mb-20"
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
@@ -626,8 +633,9 @@ export default function HomePage() {
                 key={role.title}
                 className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group"
                 initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "-100px" }}
                 transition={{ duration: 0.5, delay: index * 0.15 }}
                 whileHover={{ borderColor: "rgba(99, 102, 241, 0.5)" }}
               >
@@ -676,8 +684,9 @@ export default function HomePage() {
           <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <motion.div
@@ -724,8 +733,9 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <motion.span
