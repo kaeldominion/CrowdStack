@@ -30,12 +30,10 @@ export function MobileScrollExperience({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
 
-  // Calculate blur and opacity based on scroll
-  const blurAmount = Math.min(scrollProgress * 20, 20); // Max 20px blur
-  const flierOpacity = Math.max(1 - scrollProgress * 0.7, 0.3); // Fade to 30% opacity
-  const contentOpacity = Math.min(scrollProgress * 2, 1); // Content fades in
+  // Calculate blur based on scroll - more gradual
+  const blurAmount = Math.min(scrollProgress * 15, 12); // Max 12px blur
+  const flierOpacity = Math.max(1 - scrollProgress * 0.4, 0.6); // Fade to 60% opacity - keep visible
 
   // Scroll handler
   const handleScroll = useCallback(() => {
@@ -45,7 +43,7 @@ export function MobileScrollExperience({
     const viewportHeight = window.innerHeight;
     
     // Progress from 0 to 1 over the first viewport height of scroll
-    const progress = Math.min(scrollTop / (viewportHeight * 0.5), 1);
+    const progress = Math.min(scrollTop / (viewportHeight * 0.8), 1);
     setScrollProgress(progress);
     
     if (scrollTop > 50 && !hasScrolled) {
@@ -53,7 +51,7 @@ export function MobileScrollExperience({
     }
 
     // Update global state for the sticky CTA button
-    const showingFlier = progress < 0.3;
+    const showingFlier = progress < 0.2;
     if (globalFlierState.showFlier !== showingFlier) {
       globalFlierState.showFlier = showingFlier;
       notifyListeners();
@@ -74,7 +72,7 @@ export function MobileScrollExperience({
     if (!containerRef.current) return;
     const viewportHeight = window.innerHeight;
     containerRef.current.scrollTo({
-      top: viewportHeight * 0.7,
+      top: viewportHeight * 0.85,
       behavior: "smooth"
     });
   }, []);
@@ -91,13 +89,13 @@ export function MobileScrollExperience({
   // Register the toggle function globally on mount
   useEffect(() => {
     const toggleFn = () => {
-      if (scrollProgress < 0.3) {
+      if (scrollProgress < 0.2) {
         scrollToContent();
       } else {
         scrollToFlier();
       }
     };
-    globalFlierState = { showFlier: scrollProgress < 0.3, onToggle: toggleFn };
+    globalFlierState = { showFlier: scrollProgress < 0.2, onToggle: toggleFn };
     notifyListeners();
     
     return () => {
@@ -109,11 +107,14 @@ export function MobileScrollExperience({
   return (
     <div 
       ref={containerRef}
-      className="lg:hidden fixed inset-0 z-10 overflow-y-auto overflow-x-hidden scroll-smooth"
+      className="lg:hidden fixed inset-0 z-10 overflow-y-auto overflow-x-hidden"
       style={{ 
         top: 0,
         scrollbarWidth: "none",
-        msOverflowStyle: "none"
+        msOverflowStyle: "none",
+        scrollBehavior: "smooth",
+        // CSS scroll snap for card-by-card scrolling
+        scrollSnapType: "y proximity",
       }}
     >
       {/* Hide scrollbar for webkit */}
@@ -123,14 +124,14 @@ export function MobileScrollExperience({
         }
       `}</style>
 
-      {/* Fixed Flier Background - dims and blurs on scroll */}
+      {/* Fixed Flier Background - dims and blurs on scroll but stays visible */}
       <div 
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           filter: `blur(${blurAmount}px)`,
           opacity: flierOpacity,
-          transform: `scale(${1 + scrollProgress * 0.1})`, // Subtle zoom on scroll
-          transition: "filter 0.1s ease-out, opacity 0.1s ease-out, transform 0.1s ease-out"
+          transform: `scale(${1 + scrollProgress * 0.15})`, // Parallax zoom on scroll
+          transition: "filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out"
         }}
       >
         <Image
@@ -141,53 +142,68 @@ export function MobileScrollExperience({
           priority
           sizes="100vw"
         />
-        {/* Gradient overlay that intensifies on scroll */}
+        {/* Subtle gradient overlay */}
         <div 
-          className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black"
+          className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60"
           style={{
-            opacity: 0.3 + scrollProgress * 0.5
+            opacity: 0.5 + scrollProgress * 0.3
           }}
         />
       </div>
 
       {/* Scroll Content Container */}
       <div className="relative z-10">
-        {/* Spacer for initial flier view - full viewport height */}
-        <div className="h-screen flex flex-col items-center justify-end pb-32">
+        {/* Spacer for initial flier view - full viewport height with snap point */}
+        <div 
+          className="h-screen flex flex-col items-center justify-end pb-24"
+          style={{ scrollSnapAlign: "start" }}
+        >
           {/* Scroll hint */}
           {!hasScrolled && (
             <div className="flex flex-col items-center animate-bounce-subtle">
-              <div className="px-4 py-2 bg-black/60 backdrop-blur-sm text-white text-sm rounded-full flex items-center gap-2">
+              <div className="px-4 py-2 bg-black/50 backdrop-blur-md text-white text-sm rounded-full flex items-center gap-2 border border-white/10">
                 <span>👇 Scroll to see details</span>
               </div>
-              <ChevronDown className="h-5 w-5 text-white/60 mt-1" />
+              <ChevronDown className="h-5 w-5 text-white/50 mt-1" />
             </div>
           )}
         </div>
 
-        {/* Event Content - fades in as user scrolls */}
-        <div 
-          ref={contentRef}
-          className="relative min-h-screen"
-          style={{
-            opacity: contentOpacity,
-            transform: `translateY(${(1 - contentOpacity) * 20}px)`,
-            transition: "opacity 0.1s ease-out, transform 0.1s ease-out"
-          }}
-        >
-          {/* Content background with stronger blur */}
-          <div className="absolute inset-0 bg-background/90 backdrop-blur-xl -z-10" />
-          
-          {/* Actual content */}
-          <div className="pt-4 pb-32">
+        {/* Floating Cards Container - no solid background, cards float over flier */}
+        <div className="relative px-4 pb-32 space-y-4">
+          {/* Pass children through with transparent wrapper */}
+          <div 
+            className="scroll-snap-cards"
+            style={{
+              // Ensure content has no solid background
+              background: "transparent",
+            }}
+          >
             {children}
           </div>
         </div>
       </div>
+
+      {/* Global styles for scroll snap on child cards */}
+      <style jsx global>{`
+        .scroll-snap-cards > * > * > * > div {
+          scroll-snap-align: start;
+          scroll-margin-top: 1rem;
+        }
+        
+        /* Make Section component transparent in scroll mode */
+        .scroll-snap-cards section {
+          background: transparent !important;
+        }
+        
+        /* Target the container divs to be transparent */
+        .scroll-snap-cards > * {
+          background: transparent !important;
+        }
+      `}</style>
     </div>
   );
 }
 
 // Re-export the hook from MobileFlierExperience for consistency
 export { useFlierToggle } from "./MobileFlierExperience";
-

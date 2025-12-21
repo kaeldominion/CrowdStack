@@ -31,6 +31,7 @@ interface EventPageContentProps {
   isUpcoming: boolean;
   isLive: boolean;
   isMobileFlierView?: boolean; // When true, this is inside MobileFlierExperience (mobile only)
+  isScrollMode?: boolean; // When true, cards are more transparent for parallax effect
 }
 
 export function EventPageContent({
@@ -42,7 +43,12 @@ export function EventPageContent({
   isUpcoming,
   isLive,
   isMobileFlierView = false,
+  isScrollMode = false,
 }: EventPageContentProps) {
+  // Card styles - more transparent in scroll mode for parallax effect
+  const cardStyle = isScrollMode 
+    ? "p-3 lg:p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl"
+    : "p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10";
   // When inside mobile flier view, don't show desktop elements
   // When in desktop view, show full layout
   
@@ -161,8 +167,11 @@ export function EventPageContent({
 
 
             {/* Event Details Card - Compact on mobile */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
-              <div className="lg:col-span-2 p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4 ${isScrollMode ? 'scroll-snap-align-start' : ''}`}>
+              <div 
+                className={`lg:col-span-2 ${cardStyle}`}
+                style={isScrollMode ? { scrollSnapAlign: 'start', scrollMarginTop: '1rem' } : undefined}
+              >
                 <div className="space-y-3 lg:space-y-4">
                   <div className="flex items-center gap-2 lg:gap-3">
                     <div className="p-1.5 lg:p-2 rounded-lg bg-primary/10">
@@ -280,11 +289,14 @@ export function EventPageContent({
               </div>
 
               {/* Action Card */}
-              <div className={`relative rounded-xl p-3 lg:p-4 backdrop-blur-md border ${
-                isLive 
-                  ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/10' 
-                  : 'bg-white/5 border-white/10'
-              }`}>
+              <div 
+                className={`relative ${isScrollMode ? 'rounded-2xl backdrop-blur-xl' : 'rounded-xl backdrop-blur-md'} p-3 lg:p-4 border ${
+                  isLive 
+                    ? `${isScrollMode ? 'bg-emerald-500/20' : 'bg-emerald-500/10'} border-emerald-500/30 shadow-lg shadow-emerald-500/10` 
+                    : `${isScrollMode ? 'bg-black/40 border-white/20 shadow-2xl' : 'bg-white/5 border-white/10'}`
+                }`}
+                style={isScrollMode ? { scrollSnapAlign: 'start', scrollMarginTop: '1rem' } : undefined}
+              >
                 {/* Status Badge - Top Right */}
                 <div className="absolute top-3 right-3">
                   {isUpcoming ? (
