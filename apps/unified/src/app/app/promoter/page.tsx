@@ -74,7 +74,7 @@ export default function PromoterDashboardPage() {
           </p>
         </div>
         <Link href="/me" target="_blank">
-          <Button variant="outline">
+          <Button variant="secondary">
             <ExternalLink className="h-4 w-4 mr-2" />
             View My Profile
           </Button>
