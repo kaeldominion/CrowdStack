@@ -96,6 +96,7 @@ interface EventData {
   capacity: number | null;
   flier_url: string | null;
   timezone: string | null;
+  mobile_style: "flip" | "scroll" | null;
   promoter_access_type?: string;
   organizer_id: string;
   venue_id: string | null;
@@ -230,6 +231,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     status: "",
     organizer_id: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+    mobile_style: "flip" as "flip" | "scroll",
     reason: "",
   });
 
@@ -279,6 +281,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             status: data.event.status || "",
             organizer_id: data.event.organizer_id || "",
             timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+            mobile_style: data.event.mobile_style || "flip",
             reason: "",
           });
         }
@@ -354,6 +357,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
       if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
+      if (editForm.mobile_style !== (event.mobile_style || "flip")) updates.mobile_style = editForm.mobile_style;
 
       if (Object.keys(updates).length === 0) {
         alert("No changes to save");
@@ -1659,6 +1663,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               ]}
               helperText="Timezone for event times"
             />
+            
+            {/* Mobile Page Style - A/B Testing */}
+            <Select
+              label="Mobile Page Style"
+              value={editForm.mobile_style}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, mobile_style: e.target.value as "flip" | "scroll" }))}
+              options={[
+                { value: "flip", label: "Flip (Card flip animation)" },
+                { value: "scroll", label: "Scroll (Parallax blur effect)" },
+              ]}
+              helperText="How the event page displays on mobile devices"
+            />
+
             {config.role === "venue" && (
               <Textarea
                 label="Reason for Changes (Optional)"

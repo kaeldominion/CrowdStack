@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MobileFlierExperience } from "@/components/MobileFlierExperience";
+import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
 import { MobileStickyCTA } from "@/components/MobileStickyCTA";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
@@ -153,9 +154,15 @@ export default async function EventPage({
   const isUpcoming = now < startDate;
   const isLive = now >= startDate && (!endDate || now < endDate);
 
-  // For events with fliers, show mobile flier experience on mobile and regular content on desktop
+  // For events with fliers, show mobile experience on mobile and regular content on desktop
+  // Mobile style can be 'flip' (default) or 'scroll' for A/B testing
+  const mobileStyle = event.mobile_style || 'flip';
+  
   // For events without fliers, show regular content everywhere
   if (event.flier_url) {
+    // Choose mobile experience component based on style
+    const MobileExperience = mobileStyle === 'scroll' ? MobileScrollExperience : MobileFlierExperience;
+    
     return (
       <>
         {/* Blurred Flier Background - Fixed, fills entire viewport */}
@@ -177,8 +184,8 @@ export default async function EventPage({
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
         </div>
 
-        {/* Mobile: Flier-first flip experience - renders as fixed overlay */}
-        <MobileFlierExperience
+        {/* Mobile: Flier experience (flip or scroll based on event setting) */}
+        <MobileExperience
           flierUrl={event.flier_url}
           eventName={event.name}
         >
@@ -192,9 +199,9 @@ export default async function EventPage({
             isLive={isLive}
             isMobileFlierView={true}
           />
-        </MobileFlierExperience>
+        </MobileExperience>
 
-        {/* Desktop: Standard layout - hidden on mobile since MobileFlierExperience handles it */}
+        {/* Desktop: Standard layout - hidden on mobile since MobileExperience handles it */}
         <div className="hidden lg:block min-h-screen relative z-10 pt-20">
           <EventPageContent
             event={event}
