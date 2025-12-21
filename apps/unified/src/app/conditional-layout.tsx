@@ -37,8 +37,6 @@ const isStandaloneRoute = (pathname: string) => {
   // Event registration and pass pages are standalone mobile-first experiences
   if (pathname.match(/^\/e\/[^/]+\/register/)) return true; // /e/[slug]/register
   if (pathname.match(/^\/e\/[^/]+\/pass/)) return true; // /e/[slug]/pass
-  // Photo gallery pages have their own header
-  if (pathname.startsWith("/p/")) return true;
   // Door scanner is always standalone
   if (pathname.startsWith("/door")) return true;
   return false;
@@ -62,7 +60,7 @@ const shouldShowSimpleNav = (pathname: string) => {
   if (pathname.startsWith("/invite/")) return true; // Invite pages
   if (pathname.startsWith("/i/")) return true; // Invite code pages
   if (pathname.startsWith("/checkin/")) return true; // Check-in pages
-  // Note: /p/ (photo pages) are standalone - they have their own header
+  if (pathname.startsWith("/p/")) return true; // Photo gallery pages
   return false;
 };
 
