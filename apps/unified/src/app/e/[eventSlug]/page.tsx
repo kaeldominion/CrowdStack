@@ -1,16 +1,34 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Container, Section, Button, Card, Badge } from "@crowdstack/ui";
-import { Calendar, MapPin, Users, Clock, Image as ImageIcon, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Users, Clock } from "lucide-react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
 import { PromoterRequestButton } from "@/components/PromoterRequestButton";
+import { CalendarButtons } from "@/components/CalendarButtons";
+import { FlierGallery } from "@/components/FlierGallery";
+import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
+import { MobileStickyCTA } from "@/components/MobileStickyCTA";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 // Force dynamic rendering to prevent caching stale organizer data
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+function getBaseUrl() {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
+}
 
 async function getEvent(slug: string) {
   try {
@@ -49,6 +67,73 @@ async function getEvent(slug: string) {
   }
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { eventSlug: string };
+}): Promise<Metadata> {
+  const event = await getEvent(params.eventSlug);
+
+  if (!event) {
+    return {
+      title: "Event Not Found",
+    };
+  }
+
+  const baseUrl = getBaseUrl();
+  const eventUrl = `${baseUrl}/e/${params.eventSlug}`;
+  const startDate = new Date(event.start_time);
+  const venueLocation = event.venue
+    ? [
+        event.venue.name,
+        event.venue.city,
+        event.venue.state,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+
+  const description = event.description
+    ? event.description.slice(0, 160)
+    : `${event.name} - ${startDate.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })}${venueLocation ? ` at ${venueLocation}` : ""}`;
+
+  const imageUrl = event.cover_image_url || event.flier_url || `${baseUrl}/og-default.png`;
+
+  return {
+    title: `${event.name} | CrowdStack`,
+    description,
+    openGraph: {
+      title: event.name,
+      description,
+      url: eventUrl,
+      siteName: "CrowdStack",
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: event.name,
+        },
+      ],
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: event.name,
+      description,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: eventUrl,
+    },
+  };
+}
+
 export default async function EventPage({
   params,
 }: {
@@ -63,40 +148,101 @@ export default async function EventPage({
   const startDate = new Date(event.start_time);
   const endDate = event.end_time ? new Date(event.end_time) : null;
 
-  const shareUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/e/${params.eventSlug}`
-    : `/e/${params.eventSlug}`;
+  const baseUrl = getBaseUrl();
+  const shareUrl = `${baseUrl}/e/${params.eventSlug}`;
+
+  // Determine if event is upcoming, live, or past
+  const now = new Date();
+  const isUpcoming = now < startDate;
+  const isLive = now >= startDate && (!endDate || now < endDate);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section with Cover Image */}
-      {event.cover_image_url && (
-        <div className="relative h-96 w-full overflow-hidden">
-          <Image
-            src={event.cover_image_url}
-            alt={event.name}
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        </div>
-      )}
+    <>
+      <div className="min-h-screen bg-background">
+        {/* Enhanced Hero Section with Cover Image */}
+        {event.cover_image_url || event.flier_url ? (
+          <div className="relative h-[60vh] min-h-[400px] max-h-[600px] w-full overflow-hidden">
+            <Image
+              src={event.cover_image_url || event.flier_url || ""}
+              alt={event.name}
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
+            />
+            {/* Enhanced gradient overlay - darker at bottom for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 via-background/30 to-transparent" />
+            
+            {/* Content overlay - positioned at bottom */}
+            <div className="absolute inset-0 flex flex-col justify-end">
+              <Container size="lg" className="pb-12 pt-24">
+                <div className="max-w-3xl space-y-4">
+                  {/* Event name in hero */}
+                  <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl">
+                    {event.name}
+                  </h1>
+                  {event.description && (
+                    <p className="text-lg text-white/90 max-w-2xl drop-shadow-md sm:text-xl">
+                      {event.description}
+                    </p>
+                  )}
+                  {/* Date in hero */}
+                  <div className="flex items-center gap-3 text-white/90">
+                    <Calendar className="h-5 w-5" />
+                    <div>
+                      <div className="font-medium">
+                        {startDate.toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                      <div className="text-sm text-white/80">
+                        {startDate.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                        {endDate && ` - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Container>
+            </div>
+          </div>
+        ) : (
+          // No hero image - show title section
+          <div className="border-b border-border bg-surface/50">
+            <Container size="lg" className="py-16">
+              <div className="text-center space-y-4 max-w-3xl mx-auto">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                  {event.name}
+                </h1>
+                {event.description && (
+                  <p className="text-lg text-foreground-muted sm:text-xl">
+                    {event.description}
+                  </p>
+                )}
+              </div>
+            </Container>
+          </div>
+        )}
 
       <Section spacing="xl">
         <Container size="lg">
           <div className="space-y-8">
-            {/* Header */}
-            <div className="text-center space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                {event.name}
-              </h1>
-              {event.description && (
-                <p className="text-lg text-foreground-muted max-w-3xl mx-auto">
-                  {event.description}
-                </p>
-              )}
-            </div>
+            {/* Flier Gallery Section */}
+            {(event.flier_url || event.cover_image_url) && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-semibold text-foreground">Event Flier & Images</h2>
+                <FlierGallery
+                  flierUrl={event.flier_url}
+                  coverImageUrl={event.cover_image_url}
+                  eventName={event.name}
+                />
+              </div>
+            )}
 
             {/* Event Details Card */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -224,6 +370,16 @@ export default async function EventPage({
                       text={event.description || undefined}
                       url={shareUrl}
                     />
+
+                    {/* Calendar Buttons */}
+                    <CalendarButtons
+                      eventName={event.name}
+                      startTime={event.start_time}
+                      endTime={event.end_time}
+                      description={event.description || undefined}
+                      venue={event.venue || undefined}
+                      url={shareUrl}
+                    />
                   </div>
 
                   {/* QR Code Section */}
@@ -254,32 +410,24 @@ export default async function EventPage({
               </Card>
             </div>
 
-            {/* Photo Gallery Section */}
-            <Card>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10">
-                    <ImageIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-foreground">Event Photos</h2>
-                    <p className="text-sm text-foreground-muted mt-1">
-                      View photos from this event
-                    </p>
-                  </div>
-                </div>
-                <Link href={`/p/${params.eventSlug}`}>
-                  <Button variant="primary">
-                    View Gallery
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
+            {/* Photo Gallery Preview */}
+            <PhotoGalleryPreview
+              eventSlug={params.eventSlug}
+              eventId={event.id}
+              eventName={event.name}
+            />
           </div>
         </Container>
       </Section>
+
+      {/* Mobile Sticky CTA */}
+      <MobileStickyCTA
+        href={`/e/${params.eventSlug}/register`}
+        label="Register Now"
+        eventName={event.name}
+      />
     </div>
+    </>
   );
 }
 
