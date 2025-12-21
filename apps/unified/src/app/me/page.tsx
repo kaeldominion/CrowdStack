@@ -473,7 +473,7 @@ export default function MePage() {
               </div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-white">{happeningNowEvents.length + todayEvents.length + upcomingEvents.length}</p>
-            <p className="text-sm text-white/50">Active</p>
+            <p className="text-sm text-white/50">Upcoming</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/20 to-orange-500/10 p-4 sm:p-6">
@@ -482,7 +482,9 @@ export default function MePage() {
                 <TrendingUp className="h-5 w-5 text-amber-400" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-white">{pastEvents.length}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-white">
+              {pastEvents.filter(reg => reg.checkins && reg.checkins.length > 0).length}
+            </p>
             <p className="text-sm text-white/50">Attended</p>
           </div>
         </div>
