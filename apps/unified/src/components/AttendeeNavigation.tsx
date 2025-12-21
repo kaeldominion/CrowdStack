@@ -8,7 +8,6 @@ import {
   Menu,
   X,
   User,
-  Calendar,
   Settings,
   LogOut,
   ChevronDown,
@@ -23,6 +22,7 @@ interface UserData {
   id: string;
   email: string;
   name?: string;
+  avatar_url?: string;
 }
 
 export function AttendeeNavigation() {
@@ -53,10 +53,10 @@ export function AttendeeNavigation() {
       const supabase = createBrowserClient();
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        // Try to get attendee name
+        // Try to get attendee name and avatar
         const { data: attendee } = await supabase
           .from("attendees")
-          .select("name")
+          .select("name, avatar_url")
           .eq("user_id", authUser.id)
           .single();
 
@@ -64,6 +64,7 @@ export function AttendeeNavigation() {
           id: authUser.id,
           email: authUser.email || "",
           name: attendee?.name || authUser.user_metadata?.name,
+          avatar_url: attendee?.avatar_url,
         });
       }
     } catch (error) {
@@ -81,7 +82,6 @@ export function AttendeeNavigation() {
 
   const navItems = [
     { href: "/me", label: "My Events", icon: Ticket },
-    { href: "/me/upcoming", label: "Upcoming", icon: Calendar },
     { href: "/me/history", label: "History", icon: History },
   ];
 
@@ -141,9 +141,17 @@ export function AttendeeNavigation() {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
           >
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-              {getUserInitial()}
-            </div>
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name || "Profile"}
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                {getUserInitial()}
+              </div>
+            )}
             <span className="hidden lg:inline max-w-24 truncate">{getDisplayName()}</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
           </button>
@@ -211,9 +219,17 @@ export function AttendeeNavigation() {
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden overflow-hidden">
             {/* User Info */}
             <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-                {getUserInitial()}
-              </div>
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name || "Profile"}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                  {getUserInitial()}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">
                   {user?.name || "Guest"}
