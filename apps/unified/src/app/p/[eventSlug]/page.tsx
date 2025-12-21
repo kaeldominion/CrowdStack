@@ -193,7 +193,7 @@ export default function PhotosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0D10]">
+    <div className="min-h-screen bg-[#0B0D10] pt-20">
       {/* Header - positioned below the global floating nav */}
       <div className="sticky top-20 z-10 bg-[#0B0D10]/80 backdrop-blur-md border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
