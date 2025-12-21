@@ -14,6 +14,7 @@ import {
   Shield,
   Clock,
   Star,
+  TrendingUp,
 } from "lucide-react";
 
 export interface NavItem {
@@ -182,6 +183,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Admin Dashboard",
     href: "/admin",
     icon: Shield,
+    roles: ["superadmin"],
+  },
+  {
+    label: "Analytics",
+    href: "/admin/analytics",
+    icon: TrendingUp,
     roles: ["superadmin"],
   },
   {
