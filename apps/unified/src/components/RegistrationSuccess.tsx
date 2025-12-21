@@ -23,7 +23,21 @@ export function RegistrationSuccess({
   flierUrl,
 }: RegistrationSuccessProps) {
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div 
+      className="fixed inset-0 overflow-hidden"
+      style={{ 
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
+    >
+      {/* Hide scrollbar for webkit */}
+      <style jsx>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      
+      <div className="min-h-screen relative">
       {/* Blurred Flier Background - less blur to show more detail */}
       {flierUrl ? (
         <div className="fixed inset-0 z-0">
@@ -150,6 +164,7 @@ export function RegistrationSuccess({
           </div>
         </Container>
       </Section>
+      </div>
     </div>
   );
 }
