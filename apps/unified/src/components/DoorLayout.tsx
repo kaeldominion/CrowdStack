@@ -91,42 +91,33 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
 
           <div className="h-4 w-px bg-white/20" />
 
-          {/* Door Scanner Label */}
-          <span className="text-xs sm:text-sm font-medium text-white/80 px-2">
-            Door Scanner
-          </span>
-
-          <div className="h-4 w-px bg-white/20" />
-
           {/* Dashboard Link (if has access) */}
           {hasDashboardAccess && (
-            <>
-              <Link
-                href="/app"
-                className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm text-white/60 hover:text-white transition-colors px-2"
-              >
-                <Home className="h-3.5 w-3.5" />
-                Dashboard
-              </Link>
-              <div className="h-4 w-px bg-white/20 hidden sm:block" />
-            </>
+            <Link
+              href="/app"
+              className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 hover:text-white transition-colors px-2"
+            >
+              <Home className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Link>
           )}
 
-          {/* Profile Dropdown */}
+          {hasDashboardAccess && <div className="h-4 w-px bg-white/20" />}
+
+          {/* Profile Dropdown - Avatar only */}
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
+              className="flex items-center gap-1 p-1 rounded-full transition-all duration-300 hover:bg-white/10"
             >
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   getUserInitial()
                 )}
               </div>
-              <span className="hidden sm:inline max-w-20 truncate text-xs">{getDisplayName()}</span>
-              <ChevronDown className={`h-3 w-3 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-3 w-3 text-white/60 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isProfileOpen && (
@@ -141,16 +132,6 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
 
                 {/* Links */}
                 <div className="py-1">
-                  {hasDashboardAccess && (
-                    <Link
-                      href="/app"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors sm:hidden"
-                    >
-                      <Home className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  )}
                   <Link
                     href="/me"
                     onClick={() => setIsProfileOpen(false)}
