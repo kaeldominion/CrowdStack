@@ -235,17 +235,23 @@ export default function MePage() {
 
           // Determine event status
           const hasStarted = startTime <= now;
-          const hasEnded = endTime ? endTime < now : false;
           const isToday = startTime >= todayStart && startTime < todayEnd;
           
-          // Event is still "active" if it hasn't ended (or has no end time)
-          // Long-running events without end_time are considered active until manually ended
+          // For events without end_time, consider them "ended" if they started more than 24 hours ago
+          // This prevents past events from being stuck in "happening now" forever
+          const hoursAgo24 = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const hasEnded = endTime 
+            ? endTime < now 
+            : (hasStarted && startTime < hoursAgo24); // No end_time but started > 24h ago = past
+          
+          // Event is "happening now" if it started within the last 24 hours and hasn't ended
+          const isHappeningNow = hasStarted && !hasEnded && startTime >= hoursAgo24;
           
           if (hasEnded) {
-            // Event has ended
+            // Event has ended (explicitly or implicitly for old events without end_time)
             past.push(normalizedReg);
-          } else if (hasStarted && !hasEnded) {
-            // Event has started but not ended - happening now!
+          } else if (isHappeningNow) {
+            // Event has started within last 24h and not ended - happening now!
             happeningNow.push(normalizedReg);
           } else if (isToday) {
             // Event starts today but hasn't started yet
@@ -254,8 +260,8 @@ export default function MePage() {
             // Event is in the future
             upcoming.push(normalizedReg);
           } else {
-            // Fallback - should not reach here
-            upcoming.push(normalizedReg);
+            // Fallback - treat as past (should not typically reach here)
+            past.push(normalizedReg);
           }
         });
 
