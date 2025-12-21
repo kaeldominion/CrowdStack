@@ -17,7 +17,7 @@ export interface PromoterAttendee {
 export interface PromoterAttendeeFilters {
   search?: string;
   event_id?: string;
-  category?: "referrals" | "upcoming" | "all";
+  category?: "upcoming" | "all";
 }
 
 /**
@@ -185,11 +185,10 @@ export async function getPromoterAttendees(
   let result = Array.from(attendeesMap.values());
 
   // Apply category filter
-  if (filters.category === "referrals") {
-    result = result.filter((a) => a.referral_count > 0);
-  } else if (filters.category === "upcoming") {
+  if (filters.category === "upcoming") {
     result = result.filter((a) => a.upcoming_signups > 0);
   }
+  // "all" shows everyone (no filter applied)
 
   return result;
 }
