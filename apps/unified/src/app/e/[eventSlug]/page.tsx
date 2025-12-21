@@ -155,8 +155,8 @@ export default async function EventPage({
   const isLive = now >= startDate && (!endDate || now < endDate);
 
   // For events with fliers, show mobile experience on mobile and regular content on desktop
-  // Mobile style can be 'flip' (default) or 'scroll' for A/B testing
-  const mobileStyle = event.mobile_style || 'flip';
+  // Mobile style can be 'scroll' (default) or 'flip' for A/B testing
+  const mobileStyle = event.mobile_style || 'scroll';
   
   // For events without fliers, show regular content everywhere
   if (event.flier_url) {
