@@ -187,6 +187,7 @@ export default async function EventPage({
         {/* Mobile: Flier experience (flip or scroll based on event setting) */}
         <MobileExperience
           flierUrl={event.flier_url}
+          videoUrl={event.flier_video_url || undefined}
           eventName={event.name}
         >
           <EventPageContent
@@ -225,6 +226,7 @@ export default async function EventPage({
           shareTitle={event.name}
           shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
           shareImageUrl={event.flier_url || undefined}
+          shareVideoUrl={event.flier_video_url || undefined}
         />
       </>
     );
@@ -255,6 +257,7 @@ export default async function EventPage({
         shareTitle={event.name}
         shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
         shareImageUrl={event.flier_url || undefined}
+        shareVideoUrl={event.flier_video_url || undefined}
       />
     </>
   );

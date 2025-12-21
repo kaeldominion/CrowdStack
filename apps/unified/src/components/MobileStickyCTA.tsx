@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Image as ImageIcon, FileText, Share2, Loader2, Link2, Check, X } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, FileText, Share2, Loader2, Link2, Check, X, Video } from "lucide-react";
 import { useFlierToggle } from "./MobileFlierExperience";
 
 interface MobileStickyCTAProps {
@@ -13,17 +13,18 @@ interface MobileStickyCTAProps {
   shareTitle?: string;
   shareText?: string;
   shareImageUrl?: string; // Optional image URL for Instagram Stories sharing
+  shareVideoUrl?: string; // Optional video URL for sharing video fliers
 }
 
-// Helper to fetch image and convert to File for sharing
-async function fetchImageAsFile(imageUrl: string, filename: string): Promise<File | null> {
+// Helper to fetch media and convert to File for sharing
+async function fetchMediaAsFile(mediaUrl: string, filename: string, isVideo = false): Promise<File | null> {
   try {
-    const response = await fetch(imageUrl);
+    const response = await fetch(mediaUrl);
     if (!response.ok) return null;
     
     const blob = await response.blob();
-    const mimeType = blob.type || "image/png";
-    const extension = mimeType.split("/")[1] || "png";
+    const mimeType = blob.type || (isVideo ? "video/mp4" : "image/png");
+    const extension = mimeType.split("/")[1] || (isVideo ? "mp4" : "png");
     
     return new File([blob], `${filename}.${extension}`, { type: mimeType });
   } catch {
@@ -39,6 +40,7 @@ export function MobileStickyCTA({
   shareTitle,
   shareText,
   shareImageUrl,
+  shareVideoUrl,
 }: MobileStickyCTAProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -122,9 +124,10 @@ export function MobileStickyCTA({
 
     setLoadingAction("image");
     try {
-      const imageFile = await fetchImageAsFile(
+      const imageFile = await fetchMediaAsFile(
         shareImageUrl, 
-        (shareTitle || eventName).replace(/[^a-zA-Z0-9]/g, "-")
+        (shareTitle || eventName).replace(/[^a-zA-Z0-9]/g, "-"),
+        false
       );
       
       if (imageFile) {
@@ -136,6 +139,35 @@ export function MobileStickyCTA({
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
         console.warn("Image share failed:", error.message);
+      }
+    } finally {
+      setLoadingAction(null);
+      setShowShareMenu(false);
+    }
+  };
+
+  const handleShareVideo = async () => {
+    if (!shareVideoUrl || !navigator.share || !navigator.canShare) {
+      return;
+    }
+
+    setLoadingAction("video");
+    try {
+      const videoFile = await fetchMediaAsFile(
+        shareVideoUrl, 
+        (shareTitle || eventName).replace(/[^a-zA-Z0-9]/g, "-"),
+        true
+      );
+      
+      if (videoFile) {
+        const shareData = { files: [videoFile] };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
+        console.warn("Video share failed:", error.message);
       }
     } finally {
       setLoadingAction(null);
@@ -216,6 +248,25 @@ export function MobileStickyCTA({
                 <div className="text-left">
                   <p className="font-medium">Share Image</p>
                   <p className="text-xs text-white/50">Instagram Stories, Snapchat</p>
+                </div>
+              </button>
+            )}
+
+            {/* Share Video - Only show if videoUrl exists */}
+            {shareVideoUrl && (
+              <button
+                onClick={handleShareVideo}
+                disabled={loadingAction === "video"}
+                className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                {loadingAction === "video" ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+                ) : (
+                  <Video className="h-5 w-5 text-cyan-400" />
+                )}
+                <div className="text-left">
+                  <p className="font-medium">Share Video</p>
+                  <p className="text-xs text-white/50">Instagram Stories, TikTok</p>
                 </div>
               </button>
             )}

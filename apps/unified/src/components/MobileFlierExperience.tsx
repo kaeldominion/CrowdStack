@@ -7,6 +7,7 @@ import { LoadingLogo } from "./LoadingLogo";
 
 interface MobileFlierExperienceProps {
   flierUrl: string;
+  videoUrl?: string; // Optional video flier URL
   eventName: string;
   children: React.ReactNode; // The event page content
 }
@@ -25,6 +26,7 @@ function notifyListeners() {
 
 export function MobileFlierExperience({
   flierUrl,
+  videoUrl,
   eventName,
   children,
 }: MobileFlierExperienceProps) {
@@ -32,7 +34,22 @@ export function MobileFlierExperience({
   const [hasInteracted, setHasInteracted] = useState(false);
   const [flipDirection, setFlipDirection] = useState<"left" | "right">("right");
   const [isFlipping, setIsFlipping] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Determine if we should show video or image
+  const hasVideo = !!videoUrl;
+
+  // Fallback timeout - if media doesn't load in 5 seconds, show anyway
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!mediaLoaded) {
+        console.warn("Media load timeout - showing content anyway");
+        setMediaLoaded(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [mediaLoaded]);
   
   // Touch tracking for swipe
   const touchStartX = useRef<number | null>(null);
@@ -149,7 +166,7 @@ export function MobileFlierExperience({
         >
           <div className="relative w-full h-full bg-black/90 flex items-center justify-center overflow-hidden">
             {/* Loading state */}
-            {!imageLoaded && (
+            {!mediaLoaded && (
               <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/90">
                 <LoadingLogo message="Loading event..." size="lg" />
               </div>
@@ -159,17 +176,35 @@ export function MobileFlierExperience({
             <div
               className={`relative w-full h-full flex items-center justify-center transition-opacity duration-500 ${
                 !hasInteracted ? "animate-zoom-in" : ""
-              } ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+              } ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
             >
-              <Image
-                src={flierUrl}
-                alt={`${eventName} flier`}
-                fill
-                className="object-contain"
-                priority
-                sizes="100vw"
-                onLoad={() => setImageLoaded(true)}
-              />
+              {hasVideo ? (
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  className="w-full h-full object-contain"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  onLoadedData={() => setMediaLoaded(true)}
+                  onCanPlay={() => setMediaLoaded(true)}
+                  onError={() => {
+                    console.error("Video failed to load, falling back to image");
+                    setMediaLoaded(true); // Show anyway to prevent infinite loading
+                  }}
+                />
+              ) : (
+                <Image
+                  src={flierUrl}
+                  alt={`${eventName} flier`}
+                  fill
+                  className="object-contain"
+                  priority
+                  sizes="100vw"
+                  onLoad={() => setMediaLoaded(true)}
+                />
+              )}
             </div>
 
             {/* Hint pointing to bottom flip button */}

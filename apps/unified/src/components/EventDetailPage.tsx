@@ -37,6 +37,7 @@ import {
   History,
   UserPlus,
   Image as ImageIcon,
+  Video,
   ExternalLink,
   Edit,
   QrCode,
@@ -95,6 +96,7 @@ interface EventData {
   end_time: string | null;
   capacity: number | null;
   flier_url: string | null;
+  flier_video_url: string | null;
   timezone: string | null;
   mobile_style: "flip" | "scroll" | null;
   promoter_access_type?: string;
@@ -1744,6 +1746,101 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 }}
                 helperText="Digital flier/poster for the event (9:16 portrait format required)"
               />
+            </div>
+
+            {/* Video Flier Upload */}
+            <div className="border-t border-border pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Video className="h-5 w-5 text-pink-400" />
+                  <label className="text-sm font-medium text-foreground">
+                    Video Flier (Optional)
+                  </label>
+                  <Badge variant="secondary" className="text-xs">Premium</Badge>
+                </div>
+                <p className="text-xs text-foreground-muted">
+                  Upload a video flier (9:16 format, max 30 seconds, 50MB). Shown instead of static image on mobile.
+                </p>
+                
+                {event?.flier_video_url ? (
+                  <div className="space-y-3">
+                    <div className="relative aspect-[9/16] max-w-[200px] rounded-lg overflow-hidden bg-black">
+                      <video
+                        src={event.flier_video_url}
+                        className="w-full h-full object-contain"
+                        controls
+                        muted
+                        playsInline
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm("Remove this video flier?")) return;
+                        const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+                          method: "DELETE",
+                        });
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          alert(errorData.error || "Failed to remove video");
+                          return;
+                        }
+                        await loadEventData(false);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove Video
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                      id="video-flier-upload"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        // Validate size client-side
+                        if (file.size > 50 * 1024 * 1024) {
+                          alert("Video must be under 50MB");
+                          return;
+                        }
+                        
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        
+                        try {
+                          const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+                            method: "POST",
+                            body: formData,
+                          });
+                          if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.error || "Failed to upload video");
+                          }
+                          await loadEventData(false);
+                        } catch (error: any) {
+                          alert(error.message || "Failed to upload video");
+                        }
+                        
+                        // Reset input
+                        e.target.value = "";
+                      }}
+                    />
+                    <label
+                      htmlFor="video-flier-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                    >
+                      <Upload className="h-4 w-4 text-foreground-muted" />
+                      <span className="text-sm text-foreground-muted">Upload Video (MP4, WebM, MOV)</span>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
