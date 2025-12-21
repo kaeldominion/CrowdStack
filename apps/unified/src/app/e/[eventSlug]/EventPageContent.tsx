@@ -76,7 +76,7 @@ export function EventPageContent({
                 </div>
                 {/* Title only on the right - big and bold */}
                 <div className="flex-1 flex items-center">
-                  <h1 className="text-5xl font-bold tracking-tight text-foreground xl:text-6xl drop-shadow-lg">
+                  <h1 className="text-6xl font-bold tracking-tight text-foreground xl:text-7xl drop-shadow-lg">
                     {event.name}
                   </h1>
                 </div>
@@ -88,7 +88,7 @@ export function EventPageContent({
           <div className="py-12">
             <Container size="lg">
               <div className="text-center max-w-4xl mx-auto">
-                <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl drop-shadow-lg">
+                <h1 className="text-6xl font-bold tracking-tight text-foreground sm:text-7xl lg:text-8xl drop-shadow-lg">
                   {event.name}
                 </h1>
               </div>
@@ -130,7 +130,7 @@ export function EventPageContent({
                   
                   {/* Event title only - big and bold */}
                   <div className="flex-1 min-w-0 flex items-center">
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
+                    <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">
                       {event.name}
                     </h1>
                   </div>
@@ -141,7 +141,7 @@ export function EventPageContent({
             {/* Mobile Title for events WITHOUT fliers */}
             {!isMobileFlierView && !event.flier_url && (
               <div className="lg:hidden text-center space-y-4 py-4">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                <h1 className="text-4xl font-bold tracking-tight text-foreground">
                   {event.name}
                 </h1>
                 {event.description && (
