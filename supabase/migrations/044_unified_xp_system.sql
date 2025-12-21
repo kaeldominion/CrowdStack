@@ -68,22 +68,46 @@ END $$;
 ALTER TABLE public.xp_ledger 
   DROP CONSTRAINT IF EXISTS xp_ledger_attendee_id_fkey;
 
--- Add new columns
+-- Add new columns (except description - handle that separately)
 ALTER TABLE public.xp_ledger 
   ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS source_type xp_source_type,
   ADD COLUMN IF NOT EXISTS role_context TEXT CHECK (role_context IN ('attendee', 'promoter', 'organizer', 'venue')),
-  ADD COLUMN IF NOT EXISTS related_id UUID, -- nullable, generic FK for related entity
-  ADD COLUMN IF NOT EXISTS description TEXT;
+  ADD COLUMN IF NOT EXISTS related_id UUID; -- nullable, generic FK for related entity
 
--- Rename reason to description if reason column exists
+-- Handle description column: rename reason to description if reason exists and description doesn't
+-- If description already exists, keep it and drop reason if it exists
 DO $$
 BEGIN
+  -- Check if description column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns 
              WHERE table_schema = 'public' 
              AND table_name = 'xp_ledger' 
-             AND column_name = 'reason') THEN
+             AND column_name = 'description') THEN
+    -- Description already exists, check if reason exists and copy data if needed
+    IF EXISTS (SELECT 1 FROM information_schema.columns 
+               WHERE table_schema = 'public' 
+               AND table_name = 'xp_ledger' 
+               AND column_name = 'reason') THEN
+      -- Both exist: copy any non-null reason values to description where description is null/empty
+      UPDATE public.xp_ledger 
+      SET description = reason 
+      WHERE (description IS NULL OR description = '') 
+      AND reason IS NOT NULL;
+      
+      -- Drop the reason column
+      ALTER TABLE public.xp_ledger DROP COLUMN reason;
+    END IF;
+    -- Description already exists, nothing to do
+  ELSIF EXISTS (SELECT 1 FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'xp_ledger' 
+                AND column_name = 'reason') THEN
+    -- Only reason exists, rename it to description
     ALTER TABLE public.xp_ledger RENAME COLUMN reason TO description;
+  ELSE
+    -- Neither exists, add description column
+    ALTER TABLE public.xp_ledger ADD COLUMN description TEXT;
   END IF;
 END $$;
 
@@ -97,6 +121,11 @@ BEGIN
       ALTER COLUMN role_context SET NOT NULL;
   END IF;
 END $$;
+
+-- Drop old RLS policies that depend on attendee_id before dropping the column
+DROP POLICY IF EXISTS "Attendees can read their own XP" ON public.xp_ledger;
+DROP POLICY IF EXISTS "Event access users can read XP" ON public.xp_ledger;
+DROP POLICY IF EXISTS "Event access users can read XP for events" ON public.xp_ledger;
 
 -- Drop attendee_id column if it exists and we've migrated
 DO $$
@@ -119,28 +148,8 @@ CREATE INDEX IF NOT EXISTS idx_xp_ledger_source_type ON public.xp_ledger(source_
 -- 3. USER XP SUMMARY (MATERIALIZED VIEW)
 -- ============================================
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS user_xp_summary AS
-SELECT 
-  user_id,
-  SUM(amount) as total_xp,
-  COUNT(*) as xp_events_count,
-  MIN(created_at) as first_xp_at,
-  MAX(created_at) as last_xp_at,
-  jsonb_object_agg(role_context, role_xp) FILTER (WHERE role_context IS NOT NULL) as xp_by_role
-FROM (
-  SELECT 
-    user_id,
-    role_context,
-    SUM(amount) as role_xp,
-    MIN(created_at) as first_xp_at,
-    MAX(created_at) as last_xp_at
-  FROM xp_ledger
-  WHERE user_id IS NOT NULL
-  GROUP BY user_id, role_context
-) role_totals
-GROUP BY user_id;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_xp_summary_user_id ON user_xp_summary(user_id);
+-- Drop existing view if it exists (will be recreated at the end)
+DROP MATERIALIZED VIEW IF EXISTS user_xp_summary;
 
 -- ============================================
 -- 4. BADGES SYSTEM
@@ -263,4 +272,53 @@ SELECT
   '[]'::jsonb as organizer_benefits
 FROM generate_series(1, 50) as level
 ON CONFLICT (level) DO NOTHING;
+
+-- ============================================
+-- 6. CREATE USER XP SUMMARY VIEW (AT THE END)
+-- ============================================
+
+-- Create materialized view after all table modifications are complete
+-- Use fully qualified table name and verify columns exist
+DO $$
+BEGIN
+  -- Double-check that amount column exists (it should from original schema)
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'xp_ledger' 
+    AND column_name = 'amount'
+  ) THEN
+    RAISE EXCEPTION 'xp_ledger.amount column does not exist - this should not happen. Check table structure.';
+  END IF;
+  
+  -- Create the view with fully qualified table reference
+  EXECUTE '
+    CREATE MATERIALIZED VIEW public.user_xp_summary AS
+    SELECT 
+      role_totals.user_id,
+      SUM(role_totals.role_xp) as total_xp,
+      COUNT(*) as xp_events_count,
+      MIN(role_totals.first_xp_at) as first_xp_at,
+      MAX(role_totals.last_xp_at) as last_xp_at,
+      COALESCE(
+        jsonb_object_agg(role_totals.role_context, role_totals.role_xp) FILTER (WHERE role_totals.role_context IS NOT NULL),
+        ''{}''::jsonb
+      ) as xp_by_role
+    FROM (
+      SELECT 
+        public.xp_ledger.user_id,
+        public.xp_ledger.role_context,
+        SUM(public.xp_ledger.amount) as role_xp,
+        MIN(public.xp_ledger.created_at) as first_xp_at,
+        MAX(public.xp_ledger.created_at) as last_xp_at
+      FROM public.xp_ledger
+      WHERE public.xp_ledger.user_id IS NOT NULL
+      GROUP BY public.xp_ledger.user_id, public.xp_ledger.role_context
+    ) role_totals
+    GROUP BY role_totals.user_id
+  ';
+  
+  -- Create index
+  EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS idx_user_xp_summary_user_id ON public.user_xp_summary(user_id)';
+END $$;
 

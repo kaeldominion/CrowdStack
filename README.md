@@ -100,6 +100,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3006
 
 ### 3. Set Up Supabase Database
 
+**Supabase Projects:**
+- **Beta & Localhost**: https://supabase.com/dashboard/project/aiopjznxnoqgmmqowpxb
+- **Production**: https://supabase.com/dashboard/project/fvrjcyscwibrqpsviblx
+
 1. Create a Supabase project (or use existing)
 2. Run the migrations in order:
 
