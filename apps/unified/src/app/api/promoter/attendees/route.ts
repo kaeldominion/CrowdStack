@@ -22,12 +22,17 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || undefined;
     const event_id = searchParams.get("event_id") || undefined;
-    const category = searchParams.get("category") as "referrals" | "upcoming" | "all" | null;
+    const categoryParam = searchParams.get("category");
+    
+    // Filter category to only allow "upcoming" | "all" (matching PromoterAttendeeFilters type)
+    const category = (categoryParam === "upcoming" || categoryParam === "all") 
+      ? categoryParam 
+      : undefined;
 
     const attendees = await getPromoterAttendees(promoterId, {
       search,
       event_id,
-      category: category || undefined,
+      category,
     });
 
     return NextResponse.json(attendees);
