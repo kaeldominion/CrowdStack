@@ -451,27 +451,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <motion.div
+              <div
                 key={stat.label}
                 className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <motion.div
-                  className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2"
-                  initial={{ scale: 0.5 }}
-                  animate={{ scale: 1 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                >
+                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">
                   {stat.value}
-                </motion.div>
+                </div>
                 <div className="text-sm text-white/60">{stat.label}</div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -514,19 +502,12 @@ export default function HomePage() {
             <p className="text-xl text-white/60 max-w-2xl mx-auto">
               End-to-end tools to streamline operations, track performance, and grow your events.
             </p>
-          </motion.div>
+          </div>
 
           {/* Aceternity UI Bento Grid with Moving Borders */}
           <BentoGrid className="md:grid-cols-3 md:auto-rows-[18rem]">
             {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
+              <div key={feature.title}>
                 <MovingBorder
                   duration={2000}
                   rx="8"
@@ -546,7 +527,7 @@ export default function HomePage() {
                     className="h-full"
                   />
                 </MovingBorder>
-              </motion.div>
+              </div>
             ))}
           </BentoGrid>
         </div>
@@ -578,14 +559,9 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorks.map((item, index) => (
-              <motion.div
+              <div
                 key={item.step}
                 className="relative"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
               >
                 {/* Connector line */}
                 {index < howItWorks.length - 1 && (
@@ -625,19 +601,13 @@ export default function HomePage() {
             <p className="text-xl text-white/60 max-w-2xl mx-auto">
               Whether you're a venue owner, event organizer, or promoter — CrowdStack gives you the tools you need.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {roles.map((role, index) => (
-              <motion.div
+              <div
                 key={role.title}
-                className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
-                whileHover={{ borderColor: "rgba(99, 102, 241, 0.5)" }}
+                className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group hover:border-indigo-500/50 transition-colors"
               >
                 {/* Hover gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -657,7 +627,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -681,14 +651,7 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center">
             <motion.div
               className="mb-8"
               initial={{ scale: 0 }}
