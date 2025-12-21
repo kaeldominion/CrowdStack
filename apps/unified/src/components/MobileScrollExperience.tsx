@@ -228,14 +228,29 @@ export function MobileScrollExperience({
       {/* Scroll Content Container */}
       <div className="relative z-10">
         {/* Spacer for initial flier view - slightly less than full height so cards peek */}
-        <div className="h-[75vh] flex flex-col items-center justify-end pb-16">
-          {/* Scroll hint */}
+        <div className="h-[75vh] flex flex-col items-center justify-end pb-12">
+          {/* Scroll hint - large animated swipe indicator */}
           {!hasScrolled && (
-            <div className="flex flex-col items-center animate-bounce-subtle">
-              <div className="px-4 py-2 bg-black/50 backdrop-blur-md text-white text-sm rounded-full flex items-center gap-2 border border-white/10">
-                <span>👇 Scroll to see details</span>
+            <div className="flex flex-col items-center">
+              {/* Glowing swipe up indicator */}
+              <div className="relative">
+                {/* Outer glow */}
+                <div className="absolute inset-0 bg-white/20 blur-xl rounded-full scale-150" />
+                
+                {/* Main indicator */}
+                <div className="relative px-6 py-3 bg-white/95 text-gray-900 font-semibold rounded-full shadow-2xl flex items-center gap-3">
+                  <span className="text-base">Swipe up for details</span>
+                  {/* Animated arrow stack */}
+                  <div className="flex flex-col -space-y-2 animate-bounce">
+                    <ChevronDown className="h-4 w-4 rotate-180 opacity-40" />
+                    <ChevronDown className="h-4 w-4 rotate-180 opacity-70" />
+                    <ChevronDown className="h-4 w-4 rotate-180" />
+                  </div>
+                </div>
               </div>
-              <ChevronDown className="h-5 w-5 text-white/50 mt-1" />
+              
+              {/* Subtle line indicator below */}
+              <div className="mt-4 w-12 h-1 bg-white/40 rounded-full" />
             </div>
           )}
         </div>
