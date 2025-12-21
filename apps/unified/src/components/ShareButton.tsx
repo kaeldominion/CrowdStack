@@ -20,13 +20,35 @@ export function ShareButton({ title, text, url, label = "Share", compact = false
           text,
           url,
         });
-      } catch (error) {
-        // User cancelled or error occurred
+      } catch (error: unknown) {
+        // Handle different error types gracefully
+        if (error instanceof Error) {
+          // AbortError = user cancelled, NotAllowedError = permission denied
+          // These are normal user actions, not real errors
+          if (error.name === "AbortError" || error.name === "NotAllowedError") {
+            return; // Silently ignore cancellations
+          }
+          
+          // For other errors (e.g., "cannot share media"), fall back to clipboard
+          console.warn("Share failed, falling back to clipboard:", error.message);
+        }
+        
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(url);
+          alert("Link copied to clipboard!");
+        } catch {
+          // If clipboard also fails, do nothing
+        }
       }
     } else {
-      // Fallback to clipboard
-      await navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
+      // Fallback to clipboard for browsers without Web Share API
+      try {
+        await navigator.clipboard.writeText(url);
+        alert("Link copied to clipboard!");
+      } catch {
+        // If clipboard also fails, do nothing
+      }
     }
   };
 
