@@ -430,6 +430,7 @@ export default function RegisterPage() {
           venueName: eventDataForSignup.venueName,
           startTime: eventDataForSignup.startTime,
           registrationCount: eventDataForSignup.registrationCount,
+          flierUrl: eventDataForSignup.flierUrl,
         } : undefined}
       />
     );
@@ -458,6 +459,7 @@ export default function RegisterPage() {
           venueName: eventDataForSignup.venueName,
           startTime: eventDataForSignup.startTime,
           registrationCount: eventDataForSignup.registrationCount,
+          flierUrl: eventDataForSignup.flierUrl,
         } : undefined}
       />
     );
