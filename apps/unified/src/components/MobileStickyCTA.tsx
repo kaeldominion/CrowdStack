@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Image as ImageIcon, FileText, Share2 } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, FileText, Share2, Loader2 } from "lucide-react";
 import { useFlierToggle } from "./MobileFlierExperience";
 
 interface MobileStickyCTAProps {
@@ -12,6 +12,23 @@ interface MobileStickyCTAProps {
   shareUrl?: string;
   shareTitle?: string;
   shareText?: string;
+  shareImageUrl?: string; // Optional image URL for Instagram Stories sharing
+}
+
+// Helper to fetch image and convert to File for sharing
+async function fetchImageAsFile(imageUrl: string, filename: string): Promise<File | null> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) return null;
+    
+    const blob = await response.blob();
+    const mimeType = blob.type || "image/png";
+    const extension = mimeType.split("/")[1] || "png";
+    
+    return new File([blob], `${filename}.${extension}`, { type: mimeType });
+  } catch {
+    return null;
+  }
 }
 
 export function MobileStickyCTA({ 
@@ -21,8 +38,10 @@ export function MobileStickyCTA({
   shareUrl,
   shareTitle,
   shareText,
+  shareImageUrl,
 }: MobileStickyCTAProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const flierState = useFlierToggle();
 
   // Check if we have a flier toggle (event has a flier)
@@ -44,20 +63,63 @@ export function MobileStickyCTA({
   const handleShare = async () => {
     if (!shareUrl) return;
     
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: shareTitle || eventName,
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch {
-        // User cancelled or error occurred
-      }
-    } else {
+    if (!navigator.share) {
       // Fallback to clipboard
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard!");
+      } catch {
+        // Clipboard failed
+      }
+      return;
+    }
+
+    setIsSharing(true);
+
+    try {
+      const shareData: ShareData = {
+        title: shareTitle || eventName,
+        text: shareText,
+        url: shareUrl,
+      };
+
+      // If we have an image URL, try to include it as a file for Instagram Stories
+      if (shareImageUrl && navigator.canShare) {
+        const imageFile = await fetchImageAsFile(
+          shareImageUrl, 
+          (shareTitle || eventName).replace(/[^a-zA-Z0-9]/g, "-")
+        );
+        
+        if (imageFile) {
+          const shareDataWithFile = { ...shareData, files: [imageFile] };
+          
+          if (navigator.canShare(shareDataWithFile)) {
+            await navigator.share(shareDataWithFile);
+            setIsSharing(false);
+            return;
+          }
+        }
+      }
+
+      // Fallback to sharing without file
+      await navigator.share(shareData);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error.name === "AbortError" || error.name === "NotAllowedError") {
+          setIsSharing(false);
+          return;
+        }
+      }
+      
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard!");
+      } catch {
+        // Clipboard failed
+      }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -72,6 +134,7 @@ export function MobileStickyCTA({
         {shareUrl && (
           <button
             onClick={handleShare}
+            disabled={isSharing}
             className="flex items-center justify-center h-11 w-11 rounded-full flex-shrink-0
                        bg-black/70 backdrop-blur-md
                        text-white
@@ -79,11 +142,16 @@ export function MobileStickyCTA({
                        border border-white/20
                        hover:bg-black/80 hover:scale-105 
                        active:scale-95
-                       transition-all duration-200"
+                       transition-all duration-200
+                       disabled:opacity-50"
             aria-label="Share event"
             title="Share"
           >
-            <Share2 className="h-4 w-4" />
+            {isSharing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Share2 className="h-4 w-4" />
+            )}
           </button>
         )}
 
