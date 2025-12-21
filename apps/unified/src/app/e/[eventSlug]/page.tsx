@@ -224,6 +224,7 @@ export default async function EventPage({
           shareUrl={shareUrl}
           shareTitle={event.name}
           shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
+          shareImageUrl={event.flier_url || undefined}
         />
       </>
     );
@@ -253,6 +254,7 @@ export default async function EventPage({
         shareUrl={shareUrl}
         shareTitle={event.name}
         shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
+        shareImageUrl={event.flier_url || undefined}
       />
     </>
   );
