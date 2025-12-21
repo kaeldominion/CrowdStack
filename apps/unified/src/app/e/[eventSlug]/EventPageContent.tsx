@@ -45,8 +45,9 @@ export function EventPageContent({
   isMobileFlierView = false,
   isScrollMode = false,
 }: EventPageContentProps) {
-  // Card styles - more transparent in scroll mode for parallax effect
-  const cardStyle = isScrollMode 
+  // Card styles - floating transparent when there's a flier background (both flip and scroll modes)
+  const useFloatingCards = isMobileFlierView && event.flier_url;
+  const cardStyle = useFloatingCards 
     ? "p-3 lg:p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl"
     : "p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10";
   // When inside mobile flier view, don't show desktop elements
@@ -290,10 +291,10 @@ export function EventPageContent({
 
               {/* Action Card */}
               <div 
-                className={`relative ${isScrollMode ? 'rounded-2xl backdrop-blur-xl' : 'rounded-xl backdrop-blur-md'} p-3 lg:p-4 border ${
+                className={`relative ${useFloatingCards ? 'rounded-2xl backdrop-blur-xl' : 'rounded-xl backdrop-blur-md'} p-3 lg:p-4 border ${
                   isLive 
-                    ? `${isScrollMode ? 'bg-emerald-500/20' : 'bg-emerald-500/10'} border-emerald-500/30 shadow-lg shadow-emerald-500/10` 
-                    : `${isScrollMode ? 'bg-black/40 border-white/20 shadow-2xl' : 'bg-white/5 border-white/10'}`
+                    ? `${useFloatingCards ? 'bg-emerald-500/20' : 'bg-emerald-500/10'} border-emerald-500/30 shadow-lg shadow-emerald-500/10` 
+                    : `${useFloatingCards ? 'bg-black/40 border-white/20 shadow-2xl' : 'bg-white/5 border-white/10'}`
                 }`}
                 style={isScrollMode ? { scrollSnapAlign: 'start', scrollMarginTop: '1rem' } : undefined}
               >
