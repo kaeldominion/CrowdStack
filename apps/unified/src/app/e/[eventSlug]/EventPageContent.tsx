@@ -139,11 +139,11 @@ export function EventPageContent({
                   
                   {/* Event title and description - right side */}
                   <div className="flex-1 min-w-0">
-                    <h1 className="text-xl font-bold tracking-tight text-foreground leading-tight">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">
                       {event.name}
                     </h1>
                     {event.description && (
-                      <p className="text-sm text-foreground-muted mt-2 line-clamp-3">
+                      <p className="text-sm text-foreground-muted mt-1 line-clamp-2">
                         {event.description}
                       </p>
                     )}
