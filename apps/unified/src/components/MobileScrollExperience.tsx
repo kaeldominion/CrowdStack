@@ -62,6 +62,7 @@ export function MobileScrollExperience({
     // Calculate individual card animations based on scroll position
     const cards = cardsContainerRef.current.querySelectorAll('[data-scroll-card]');
     const newAnimations: number[] = [];
+    const totalCards = cards.length;
     
     cards.forEach((card, index) => {
       const cardElement = card as HTMLElement;
@@ -70,12 +71,18 @@ export function MobileScrollExperience({
       
       // Calculate how far into the viewport the card is
       const cardTop = cardRect.top - containerRect.top;
-      const triggerPoint = viewportHeight * 0.85; // Start animating when card is 85% down the viewport
+      const triggerPoint = viewportHeight * 0.9; // Start animating when card is 90% down the viewport
       
-      // Apply acceleration: later cards need more scroll to fully reveal
-      const accelerationFactor = 1 + (index * 0.15); // Each card takes slightly longer to reveal
+      // Apply stagger delay: each card starts animating slightly later, but completes at same rate
+      // Reduce stagger effect for later cards so they can complete
+      const staggerDelay = index * 40; // 40px stagger per card
+      const adjustedCardTop = cardTop + staggerDelay;
+      
+      // Faster completion for later cards (they have less scroll distance available)
+      const completionSpeed = 1 + (index / totalCards) * 0.5; // Later cards complete faster
+      
       const cardProgress = Math.min(
-        Math.max((triggerPoint - cardTop) / (viewportHeight * 0.4 * accelerationFactor), 0),
+        Math.max((triggerPoint - adjustedCardTop) / (viewportHeight * 0.35 / completionSpeed), 0),
         1
       );
       
@@ -236,7 +243,7 @@ export function MobileScrollExperience({
         {/* Floating Cards Container with staggered reveal */}
         <div 
           ref={cardsContainerRef}
-          className="relative px-4 pb-32"
+          className="relative px-4 pb-48"
         >
           <div 
             className="scroll-cards-wrapper space-y-4"
