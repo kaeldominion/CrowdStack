@@ -238,15 +238,18 @@ export default function PromoterToolsPage() {
                       <p className="text-xs text-white/60 mb-3">
                         Share this link or QR code to track referrals. Anyone who registers through this link will be attributed to you.
                       </p>
-                      <a
-                        href={getReferralLink(selectedEvent)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => {
+                          const link = getReferralLink(selectedEvent);
+                          if (link) {
+                            window.open(link, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
                         className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                       >
                         <ExternalLink className="h-4 w-4" />
                         Open Event Page
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>

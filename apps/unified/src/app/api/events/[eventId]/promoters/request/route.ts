@@ -24,16 +24,25 @@ export async function POST(
     const { createServiceRoleClient } = await import("@crowdstack/shared/supabase/server");
     const serviceSupabase = createServiceRoleClient();
 
-    // Check if event is public
+    // Check if event exists and is published
     const { data: event } = await serviceSupabase
       .from("events")
-      .select("promoter_access_type")
+      .select("id, status, promoter_access_type")
       .eq("id", params.eventId)
       .single();
 
-    if (!event || event.promoter_access_type !== "public") {
+    if (!event) {
       return NextResponse.json(
-        { error: "Event is not available for promotion" },
+        { error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    // Allow promotion if event is published (promoter_access_type can be null, "public", or "invite_only")
+    // If it's "invite_only", the organizer would need to invite them, but we'll allow the request
+    if (event.status !== "published") {
+      return NextResponse.json(
+        { error: "Event is not published" },
         { status: 400 }
       );
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient } from "@crowdstack/shared/supabase/server";
+import { getUserPromoterId } from "@/lib/data/get-user-entity";
 import { getPromoterAttendeeDetails } from "@/lib/data/attendees-promoter";
 
 export async function GET(
@@ -17,21 +18,14 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const serviceSupabase = createServiceRoleClient();
+    const promoterId = await getUserPromoterId();
 
-    // Get promoter ID for this user
-    const { data: promoter } = await serviceSupabase
-      .from("promoters")
-      .select("id")
-      .eq("created_by", user.id)
-      .single();
-
-    if (!promoter) {
+    if (!promoterId) {
       return NextResponse.json({ error: "Promoter not found" }, { status: 404 });
     }
 
     // Get attendee details
-    const details = await getPromoterAttendeeDetails(attendeeId, promoter.id);
+    const details = await getPromoterAttendeeDetails(attendeeId, promoterId);
 
     if (!details) {
       return NextResponse.json({ error: "Attendee not found" }, { status: 404 });
