@@ -10,8 +10,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
+  console.log("[EventAttendees] GET request for event:", params.eventId);
+  
   try {
     const userId = await getUserId();
+    console.log("[EventAttendees] User ID:", userId);
+    
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
