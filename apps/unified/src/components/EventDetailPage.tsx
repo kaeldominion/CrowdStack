@@ -210,6 +210,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadSuccess, setVideoUploadSuccess] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -377,7 +378,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.mobile_style !== (event.mobile_style || "flip")) updates.mobile_style = editForm.mobile_style;
 
       if (Object.keys(updates).length === 0) {
-        alert("No changes to save");
+        // No form changes - just close the modal (video/image uploads save separately)
+        setShowEditModal(false);
         return;
       }
 
@@ -1763,6 +1765,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   Upload a video flier (9:16 format, max 30 seconds, 50MB). Shown instead of static image on mobile.
                 </p>
                 
+                {videoUploadSuccess && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Video saved successfully!
+                  </div>
+                )}
+                
                 {event?.flier_video_url ? (
                   <div className="space-y-3">
                     <div className="relative aspect-[9/16] max-w-[200px] rounded-lg overflow-hidden bg-black">
@@ -1822,6 +1831,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             formData.append("file", file);
                             
                             setUploadingVideo(true);
+                            setVideoUploadSuccess(false);
                             try {
                               const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
                                 method: "POST",
@@ -1832,6 +1842,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                 throw new Error(error.error || "Failed to upload video");
                               }
                               await loadEventData(false);
+                              setVideoUploadSuccess(true);
+                              // Auto-hide success after 3 seconds
+                              setTimeout(() => setVideoUploadSuccess(false), 3000);
                             } catch (error: any) {
                               alert(error.message || "Failed to upload video");
                             } finally {

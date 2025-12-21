@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { PageLoader, LoadingSpinner } from "@crowdstack/ui";
 
 // Singleton client to avoid multiple instances
 let callbackClientInstance: SupabaseClient | null = null;
@@ -37,14 +38,7 @@ let isProcessing = false;
 let hasSucceeded = false;
 
 function LoadingFallback() {
-  return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-        <p className="text-white/60">Loading...</p>
-      </div>
-    </div>
-  );
+  return <PageLoader message="Loading..." />;
 }
 
 /**
@@ -216,10 +210,7 @@ function AuthCallbackContent() {
   if (hasSucceeded) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-          <p className="text-white/60">Redirecting...</p>
-        </div>
+        <LoadingSpinner text="Redirecting..." size="lg" />
       </div>
     );
   }
@@ -245,10 +236,7 @@ function AuthCallbackContent() {
 
   return (
     <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-        <p className="text-white/60">{status}</p>
-      </div>
+      <LoadingSpinner text={status} size="lg" />
     </div>
   );
 }

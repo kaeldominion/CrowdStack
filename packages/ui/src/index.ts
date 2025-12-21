@@ -6,6 +6,7 @@ export { HealthCheck } from "./components/HealthCheck";
 export { Logo } from "./components/Logo";
 export { LoadingSpinner } from "./components/LoadingSpinner";
 export { PageLoader } from "./components/PageLoader";
+export { InlineSpinner } from "./components/InlineSpinner";
 export { Button } from "./components/Button";
 export { Card } from "./components/Card";
 
