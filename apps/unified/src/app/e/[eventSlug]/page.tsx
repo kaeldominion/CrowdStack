@@ -38,7 +38,7 @@ async function getEvent(slug: string) {
       .select(`
         *,
         organizer:organizers!events_organizer_id_fkey(id, name),
-        venue:venues(id, name, slug, address, city, state, country)
+        venue:venues(id, name, slug, address, city, state, country, google_maps_url)
       `)
       .eq("slug", slug)
       .eq("status", "published")
