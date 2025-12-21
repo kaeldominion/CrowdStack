@@ -380,6 +380,7 @@ export async function POST(
         name: event.name,
         slug: event.slug,
         start_time: event.start_time,
+        flier_url: event.flier_url,
         venue: venue ? { id: venue.id, name: venue.name } : null,
         organizer: organizer ? { id: organizer.id, name: organizer.name } : null,
       },
