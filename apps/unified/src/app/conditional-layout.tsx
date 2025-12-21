@@ -11,9 +11,17 @@ import { createBrowserClient } from "@crowdstack/shared";
 // Routes that should show public navigation and footer (marketing pages)
 const publicMarketingRoutes = [
   "/",
-  "/login",
   "/contact",
   "/legal",
+];
+
+// Auth routes that are standalone (no nav, no footer)
+const authRoutes = [
+  "/login",
+  "/auth/callback",
+  "/auth/reset-password",
+  "/auth/magic",
+  "/auth/forgot-password",
 ];
 
 // Routes that should show attendee navigation (logged-in user pages)
@@ -34,6 +42,8 @@ const shouldHideNav = (pathname: string) => {
 
 // Routes that are standalone (no nav, no footer) - self-contained experiences
 const isStandaloneRoute = (pathname: string) => {
+  // Auth routes are standalone
+  if (authRoutes.includes(pathname)) return true;
   // Event registration and pass pages are standalone mobile-first experiences
   if (pathname.match(/^\/e\/[^/]+\/register/)) return true; // /e/[slug]/register
   if (pathname.match(/^\/e\/[^/]+\/pass/)) return true; // /e/[slug]/pass
