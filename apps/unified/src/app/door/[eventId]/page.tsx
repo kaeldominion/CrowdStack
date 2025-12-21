@@ -39,6 +39,7 @@ interface EventInfo {
   name: string;
   slug: string;
   venue?: { id?: string; name: string };
+  flier_url?: string;
 }
 
 interface SearchResult {
@@ -124,6 +125,7 @@ export default function DoorScannerPage() {
           name: data.event.name,
           slug: data.event.slug,
           venue: data.event.venue,
+          flier_url: data.event.flier_url,
         });
       }
     } catch (err) {
@@ -405,14 +407,31 @@ export default function DoorScannerPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-[80vh] flex items-center justify-center">
         <LoadingSpinner text="Loading event..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black relative">
+    <div className="min-h-[80vh] relative">
+      {/* Blurred flier background */}
+      {eventInfo?.flier_url && (
+        <div className="fixed inset-0 z-0">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${eventInfo.flier_url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "blur(30px)",
+              transform: "scale(1.1)",
+              opacity: 0.4,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D10]/60 via-[#0B0D10]/70 to-[#0B0D10]/90" />
+        </div>
+      )}
       {/* Flash overlay */}
       <AnimatePresence>
         {flashColor && (
@@ -427,36 +446,32 @@ export default function DoorScannerPage() {
         )}
       </AnimatePresence>
 
-      <div className="mx-auto max-w-md px-4 py-6">
-        {/* Header with Branding */}
+      <div className="relative z-10 mx-auto max-w-md px-4 pb-6">
+        {/* Header with Event Info */}
         <div className="mb-6 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Logo variant="full" size="md" className="text-white" animated={false} />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-1">Door Scanner</h1>
           {eventInfo && (
-            <div className="text-white/60 text-sm space-y-0.5">
-              <p className="font-medium">{eventInfo.name}</p>
+            <div className="space-y-1">
+              <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
               {eventInfo.venue && (
-                <p className="text-white/40">{eventInfo.venue.name}</p>
+                <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Stats - Compact */}
+        {/* Stats - Glass Cards */}
         <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-center">
+          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
             <p className="text-2xl font-bold text-green-400 font-mono">{stats.checkedIn}</p>
-            <p className="text-xs text-white/60">In</p>
+            <p className="text-xs text-white/60">Checked In</p>
           </div>
-          <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-center">
+          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
             <p className="text-2xl font-bold text-white font-mono">{stats.registered}</p>
-            <p className="text-xs text-white/60">Total</p>
+            <p className="text-xs text-white/60">Registered</p>
           </div>
-          <div className="p-3 rounded-lg bg-white/5 border border-white/10 text-center">
+          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
             <p className="text-2xl font-bold text-yellow-400 font-mono">{stats.remaining}</p>
-            <p className="text-xs text-white/60">Waiting</p>
+            <p className="text-xs text-white/60">Remaining</p>
           </div>
         </div>
 
@@ -467,12 +482,12 @@ export default function DoorScannerPage() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className={`mb-6 p-4 rounded-lg border-2 ${
+              className={`mb-6 p-4 rounded-xl backdrop-blur-md border-2 ${
                 lastCheckIn.status === "success"
-                  ? "border-green-500 bg-green-500/10"
+                  ? "border-green-500/50 bg-green-500/20"
                   : lastCheckIn.status === "duplicate"
-                  ? "border-yellow-500 bg-yellow-500/10"
-                  : "border-red-500 bg-red-500/10"
+                  ? "border-yellow-500/50 bg-yellow-500/20"
+                  : "border-red-500/50 bg-red-500/20"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -497,7 +512,7 @@ export default function DoorScannerPage() {
           {/* QR Reader container - always rendered but visibility controlled */}
           <div 
             id="qr-reader" 
-            className="rounded-lg overflow-hidden bg-black"
+            className="rounded-xl overflow-hidden bg-black/50 backdrop-blur-sm border border-white/10"
             style={{ 
               minHeight: scanning ? "300px" : "0",
               display: scanning ? "block" : "none",
@@ -519,7 +534,7 @@ export default function DoorScannerPage() {
               variant="secondary"
               size="lg"
               onClick={stopScanning}
-              className="w-full h-12 mt-2 bg-white/10 border-white/20 text-white"
+              className="w-full h-12 mt-2 backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40"
             >
               <CameraOff className="h-5 w-5 mr-2" />
               Stop Scanning
@@ -527,7 +542,7 @@ export default function DoorScannerPage() {
           )}
 
           {cameraError && (
-            <div className="mt-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <div className="mt-2 p-3 rounded-xl backdrop-blur-md bg-red-500/20 border border-red-500/30">
               <p className="text-sm text-red-400">{cameraError}</p>
               <p className="text-xs text-white/60 mt-1">
                 Make sure camera permissions are granted and you're using HTTPS.
@@ -544,7 +559,7 @@ export default function DoorScannerPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name, email, or phone..."
-                className="bg-white/5 border-white/20 text-white pr-10"
+                className="backdrop-blur-md bg-black/30 border-white/20 text-white pr-10 rounded-xl"
               />
               {searching && (
                 <InlineSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60" />
@@ -555,7 +570,7 @@ export default function DoorScannerPage() {
                 variant="secondary"
                 onClick={() => handleSearch(true)}
                 disabled={searching}
-                className="bg-white/10 border-white/20 text-white"
+                className="backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
                 title="View all registered attendees"
               >
                 <Users className="h-4 w-4 mr-1" />
@@ -570,10 +585,10 @@ export default function DoorScannerPage() {
               {searchResults.map((result) => (
                 <div
                   key={result.registration_id}
-                  className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors ${
+                  className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-colors backdrop-blur-md ${
                     result.checked_in
-                      ? "bg-green-500/10 border-green-500/30"
-                      : "bg-white/5 border-white/10"
+                      ? "bg-green-500/20 border-green-500/30 hover:bg-green-500/30"
+                      : "bg-black/30 border-white/15 hover:bg-black/40"
                   }`}
                   onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
                 >
@@ -584,7 +599,7 @@ export default function DoorScannerPage() {
                     </p>
                   </div>
                   {result.checked_in ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 ml-2" />
+                    <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 ml-2" />
                   ) : (
                     <div 
                       className="flex-shrink-0 ml-2"
@@ -611,7 +626,7 @@ export default function DoorScannerPage() {
             variant="secondary"
             size="lg"
             onClick={() => setShowQuickAdd(true)}
-            className="w-full h-14 text-lg font-semibold bg-white/10 border-white/20 text-white"
+            className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Quick Add & Check In
@@ -622,7 +637,7 @@ export default function DoorScannerPage() {
               variant="secondary"
               size="lg"
               onClick={() => setShowQRCode(true)}
-              className="w-full h-14 text-lg font-semibold bg-white/10 border-white/20 text-white"
+              className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
             >
               <QrCode className="h-5 w-5 mr-2" />
               Show Event QR Code
@@ -632,15 +647,15 @@ export default function DoorScannerPage() {
 
         {/* Recent Scans */}
         {recentScans.length > 0 && (
-          <div>
-            <p className="text-sm font-medium text-white/60 mb-2">Recent ({recentScans.length})</p>
-            <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl p-4">
+            <p className="text-sm font-medium text-white/60 mb-3">Recent Check-ins ({recentScans.length})</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
               {recentScans.map((scan, index) => (
                 <motion.div
                   key={`${scan.id}-${scan.timestamp}`}
                   initial={{ opacity: 1 }}
                   animate={{ opacity: 1 - index * 0.08 }}
-                  className={`flex items-center gap-2 p-2 rounded bg-white/5 ${
+                  className={`flex items-center gap-2 p-2 rounded-lg bg-white/5 ${
                     scan.attendee_id ? "cursor-pointer hover:bg-white/10" : ""
                   }`}
                   onClick={() => scan.attendee_id && loadAttendeeProfile(scan.attendee_id, scan.registration_id)}
