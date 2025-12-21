@@ -171,7 +171,8 @@ export function EventPageContent({
                     <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Details</h2>
                   </div>
                   
-                  <div className="space-y-3 lg:space-y-4">
+                  {/* Content indented to align with title text */}
+                  <div className="space-y-3 lg:space-y-4 pl-9 lg:pl-11">
                     {/* Date & Time - Compact on mobile */}
                     <div className="flex items-start gap-3 lg:gap-4">
                       <Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
