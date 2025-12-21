@@ -137,13 +137,32 @@ export function EventPageContent({
                     />
                   </div>
                   
-                  {/* Event title and description - right side */}
+                  {/* Event title, venue, and description - right side */}
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">
                       {event.name}
                     </h1>
+                    {/* Venue name - clickable if has public profile */}
+                    {event.venue && (
+                      <div className="mt-1">
+                        {event.venue.slug ? (
+                          <Link 
+                            href={`/v/${event.venue.slug}`}
+                            className="text-sm text-foreground-muted hover:text-primary transition-colors inline-flex items-center gap-1"
+                          >
+                            <MapPin className="h-3 w-3" />
+                            {event.venue.name}
+                          </Link>
+                        ) : (
+                          <span className="text-sm text-foreground-muted inline-flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {event.venue.name}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {event.description && (
-                      <p className="text-sm text-foreground-muted mt-1 line-clamp-2">
+                      <p className="text-xs text-foreground-muted mt-1 line-clamp-2">
                         {event.description}
                       </p>
                     )}
