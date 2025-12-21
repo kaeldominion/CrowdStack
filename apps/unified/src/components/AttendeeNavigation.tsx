@@ -96,12 +96,6 @@ export function AttendeeNavigation() {
     return "U";
   };
 
-  const getDisplayName = () => {
-    if (user?.name) return user.name;
-    if (user?.email) return user.email.split("@")[0];
-    return "User";
-  };
-
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto">
       <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
@@ -152,8 +146,7 @@ export function AttendeeNavigation() {
                 {getUserInitial()}
               </div>
             )}
-            <span className="hidden lg:inline max-w-24 truncate">{getDisplayName()}</span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`h-3 w-3 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
           </button>
 
           {/* Profile Dropdown */}
