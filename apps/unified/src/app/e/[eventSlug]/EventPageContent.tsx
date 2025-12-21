@@ -293,7 +293,7 @@ export function EventPageContent({
                   <div className="flex flex-row lg:flex-col gap-2">
                     <ShareButton
                       title={event.name}
-                      text={event.description || undefined}
+                      text={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
                       url={shareUrl}
                       compact={true}
                     />
