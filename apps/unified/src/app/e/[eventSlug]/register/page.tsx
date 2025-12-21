@@ -52,6 +52,7 @@ export default function RegisterPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.event) {
+            console.log("[Register] fetchEventData got flier_url:", data.event.flier_url);
             setEventDataForSignup({
               name: data.event.name,
               venueName: data.event.venue?.name || null,
@@ -351,7 +352,13 @@ export default function RegisterPage() {
 
   // Show success screen if registration is complete (check this FIRST)
   if (success && eventDetails) {
-    console.log("[Register] Rendering success screen");
+    const flierUrl = eventDetails.flier_url || eventDataForSignup?.flierUrl || null;
+    console.log("[Register] Rendering success screen", { 
+      eventName: eventDetails.name,
+      flierUrl,
+      eventDetailsFlier: eventDetails.flier_url,
+      signupFlier: eventDataForSignup?.flierUrl 
+    });
     return (
       <RegistrationSuccess
         eventName={eventDetails.name}
@@ -359,7 +366,7 @@ export default function RegisterPage() {
         venueName={eventDetails.venue?.name || null}
         startTime={eventDetails.start_time || null}
         qrToken={qrToken}
-        flierUrl={eventDetails.flier_url || eventDataForSignup?.flierUrl || null}
+        flierUrl={flierUrl}
       />
     );
   }
