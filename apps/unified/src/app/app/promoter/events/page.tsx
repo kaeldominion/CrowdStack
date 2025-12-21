@@ -150,16 +150,15 @@ export default function PromoterEventsPage() {
                         <Badge variant="primary">{event.promoter_access_type || "public"}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             requestToPromote(event.id);
                           }}
+                          className="px-3 py-1.5 text-sm rounded-sm bg-transparent text-foreground hover:bg-surface transition-colors"
                         >
                           Request to Promote
-                        </Button>
+                        </button>
                       </TableCell>
                     </TableRow>
                   ))
