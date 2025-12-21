@@ -38,28 +38,28 @@ export function EventPageContent({
       {!isMobileFlierView && (
       <div className="hidden lg:block">
         {event.flier_url ? (
-          // Single flier display with event title overlay - transparent to show blur
-          <div className="py-4">
+          // Side-by-side layout: Flier left, Title/Description right
+          <div className="py-8">
             <Container size="lg">
-              <div className="flex flex-col items-center gap-6">
-                {/* Flier in 9:16 format */}
-                <div className="relative w-full max-w-sm aspect-[9/16] bg-black/50 rounded-lg overflow-hidden shadow-2xl ring-1 ring-white/10">
-            <Image
-              src={event.flier_url}
+              <div className="flex items-center gap-12">
+                {/* Flier on the left - 9:16 format */}
+                <div className="relative w-80 aspect-[9/16] bg-black/50 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 flex-shrink-0">
+                  <Image
+                    src={event.flier_url}
                     alt={`${event.name} flier`}
-              fill
+                    fill
                     className="object-contain"
-              priority
-                    sizes="384px"
-            />
+                    priority
+                    sizes="320px"
+                  />
                 </div>
-                {/* Event title below flier */}
-                <div className="text-center space-y-4 max-w-3xl">
-                  <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl drop-shadow-lg">
+                {/* Title and description on the right */}
+                <div className="flex-1 space-y-6">
+                  <h1 className="text-5xl font-bold tracking-tight text-foreground xl:text-6xl drop-shadow-lg">
                     {event.name}
                   </h1>
                   {event.description && (
-                    <p className="text-lg text-foreground-muted sm:text-xl drop-shadow-md">
+                    <p className="text-xl text-foreground-muted xl:text-2xl drop-shadow-md max-w-2xl">
                       {event.description}
                     </p>
                   )}
