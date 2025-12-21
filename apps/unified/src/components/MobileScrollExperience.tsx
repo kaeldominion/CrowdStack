@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { ChevronUp } from "lucide-react";
+import { LoadingLogo } from "./LoadingLogo";
 
 interface MobileScrollExperienceProps {
   flierUrl: string;
@@ -31,6 +32,7 @@ export function MobileScrollExperience({
   const [hasScrolled, setHasScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [cardAnimations, setCardAnimations] = useState<number[]>([]);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -209,12 +211,19 @@ export function MobileScrollExperience({
         }
       `}</style>
 
+      {/* Loading state */}
+      {!imageLoaded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+          <LoadingLogo message="Loading event..." size="lg" />
+        </div>
+      )}
+
       {/* Fixed Flier Background - dims and blurs on scroll but stays visible */}
       <div 
-        className="fixed inset-0 z-0 pointer-events-none"
+        className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
         style={{
           filter: `blur(${blurAmount}px)`,
-          opacity: flierOpacity,
+          opacity: imageLoaded ? flierOpacity : 0,
           transform: `scale(${1 + scrollProgress * 0.15})`, // Parallax zoom on scroll
           transition: "filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out"
         }}
@@ -226,6 +235,7 @@ export function MobileScrollExperience({
           className="object-cover"
           priority
           sizes="100vw"
+          onLoad={() => setImageLoaded(true)}
         />
         {/* Subtle gradient overlay */}
         <div 
