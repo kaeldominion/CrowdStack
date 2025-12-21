@@ -351,8 +351,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.name !== event.name) updates.name = editForm.name;
       if (editForm.slug !== event.slug) updates.slug = editForm.slug;
       if (editForm.description !== (event.description || "")) updates.description = editForm.description || null;
-      if (editForm.start_time !== event.start_time?.slice(0, 16)) updates.start_time = editForm.start_time;
-      if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) updates.end_time = editForm.end_time || null;
+      if (editForm.start_time !== event.start_time?.slice(0, 16)) {
+        updates.start_time = new Date(editForm.start_time).toISOString();
+      }
+      if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) {
+        updates.end_time = editForm.end_time ? new Date(editForm.end_time).toISOString() : null;
+      }
       if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
