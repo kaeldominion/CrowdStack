@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Container, Section, Button, Card, Badge } from "@crowdstack/ui";
-import { Calendar, MapPin, Users, Clock, ExternalLink } from "lucide-react";
+import { Container, Section, Button, Badge } from "@crowdstack/ui";
+import { Calendar, MapPin, Users, Clock, ExternalLink, Info } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
@@ -161,10 +161,15 @@ export function EventPageContent({
 
 
             {/* Event Details Card - Compact on mobile */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-              <Card className="lg:col-span-2 p-4 lg:p-6">
-                <div className="space-y-3 lg:space-y-6">
-                  <h2 className="text-lg lg:text-2xl font-semibold text-foreground">Event Details</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+              <div className="lg:col-span-2 p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+                <div className="space-y-3 lg:space-y-4">
+                  <div className="flex items-center gap-2 lg:gap-3">
+                    <div className="p-1.5 lg:p-2 rounded-lg bg-primary/10">
+                      <Info className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
+                    </div>
+                    <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Details</h2>
+                  </div>
                   
                   <div className="space-y-3 lg:space-y-4">
                     {/* Date & Time - Compact on mobile */}
@@ -271,13 +276,13 @@ export function EventPageContent({
                     )}
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {/* Action Card */}
-              <div className={`relative rounded-lg border p-6 ${
+              <div className={`relative rounded-xl p-3 lg:p-4 backdrop-blur-md border ${
                 isLive 
-                  ? 'bg-gradient-to-br from-emerald-500/10 via-surface to-surface border-emerald-500/30 shadow-lg shadow-emerald-500/10' 
-                  : 'bg-surface border-border'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/10' 
+                  : 'bg-white/5 border-white/10'
               }`}>
                 {/* Status Badge - Top Right */}
                 <div className="absolute top-3 right-3">
