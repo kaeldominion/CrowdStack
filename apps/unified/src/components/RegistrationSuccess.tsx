@@ -24,7 +24,7 @@ export function RegistrationSuccess({
 }: RegistrationSuccessProps) {
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Blurred Flier Background */}
+      {/* Blurred Flier Background - less blur to show more detail */}
       {flierUrl ? (
         <div className="fixed inset-0 z-0">
           <Image
@@ -33,13 +33,13 @@ export function RegistrationSuccess({
             fill
             className="object-cover"
             style={{
-              filter: "blur(40px)",
-              transform: "scale(1.2)",
-              opacity: 0.5,
+              filter: "blur(20px)",
+              transform: "scale(1.1)",
+              opacity: 0.7,
             }}
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
         </div>
       ) : (
         <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
@@ -61,8 +61,8 @@ export function RegistrationSuccess({
       {/* Content */}
       <Section spacing="xl" className="relative z-10 min-h-screen pt-20 sm:pt-24">
         <Container size="sm" className="flex items-center justify-center min-h-screen py-8">
-          {/* Glassmorphism Card */}
-          <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl">
+          {/* Glassmorphism Card - more transparent */}
+          <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-2xl">
             
             {/* Header with flier preview */}
             <div className="flex items-center gap-4 mb-6">
