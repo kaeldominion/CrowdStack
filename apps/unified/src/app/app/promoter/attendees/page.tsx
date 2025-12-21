@@ -12,7 +12,7 @@ export default function PromoterAttendeesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
-  const [category, setCategory] = useState<"referrals" | "upcoming" | "all">("all");
+  const [category, setCategory] = useState<"upcoming" | "all">("all");
 
   useEffect(() => {
     loadAttendees();
@@ -93,9 +93,8 @@ export default function PromoterAttendeesPage() {
         <div className="p-6 space-y-4">
           <Tabs value={category} onValueChange={(v) => setCategory(v as any)}>
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="referrals">My Referrals</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming Signups</TabsTrigger>
+              <TabsTrigger value="all">All Referrals</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             </TabsList>
           </Tabs>
           <Input
