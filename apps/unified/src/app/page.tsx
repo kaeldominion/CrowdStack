@@ -29,9 +29,9 @@ import { createBrowserClient } from "@crowdstack/shared";
 
 export default function HomePage() {
   const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Check if user is already logged in and redirect to /me
+  // Don't block rendering - show page content immediately
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -43,21 +43,15 @@ export default function HomePage() {
         }
       } catch (error) {
         console.error("Error checking auth:", error);
-      } finally {
-        setIsCheckingAuth(false);
+        // Continue showing page even if auth check fails
       }
     };
-    checkAuth();
+    // Use setTimeout to ensure page renders first
+    const timer = setTimeout(() => {
+      checkAuth();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [router]);
-
-  // Don't render content while checking auth to avoid flash
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
-      </div>
-    );
-  }
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, 100]);
   const y2 = useTransform(scrollY, [0, 300], [0, -80]);
