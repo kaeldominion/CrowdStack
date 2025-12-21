@@ -29,15 +29,17 @@ export function MobileScrollExperience({
 }: MobileScrollExperienceProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [cardAnimations, setCardAnimations] = useState<number[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate blur based on scroll - more gradual
   const blurAmount = Math.min(scrollProgress * 15, 12); // Max 12px blur
   const flierOpacity = Math.max(1 - scrollProgress * 0.4, 0.6); // Fade to 60% opacity - keep visible
 
-  // Scroll handler
+  // Scroll handler with staggered card animations
   const handleScroll = useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !cardsContainerRef.current) return;
     
     const scrollTop = containerRef.current.scrollTop;
     const viewportHeight = window.innerHeight;
@@ -56,7 +58,55 @@ export function MobileScrollExperience({
       globalFlierState.showFlier = showingFlier;
       notifyListeners();
     }
+
+    // Calculate individual card animations based on scroll position
+    const cards = cardsContainerRef.current.querySelectorAll('[data-scroll-card]');
+    const newAnimations: number[] = [];
+    
+    cards.forEach((card, index) => {
+      const cardElement = card as HTMLElement;
+      const cardRect = cardElement.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      
+      // Calculate how far into the viewport the card is
+      const cardTop = cardRect.top - containerRect.top;
+      const triggerPoint = viewportHeight * 0.85; // Start animating when card is 85% down the viewport
+      
+      // Apply acceleration: later cards need more scroll to fully reveal
+      const accelerationFactor = 1 + (index * 0.15); // Each card takes slightly longer to reveal
+      const cardProgress = Math.min(
+        Math.max((triggerPoint - cardTop) / (viewportHeight * 0.4 * accelerationFactor), 0),
+        1
+      );
+      
+      // Apply easing for smooth acceleration
+      const easedProgress = cardProgress < 0.5
+        ? 2 * cardProgress * cardProgress
+        : 1 - Math.pow(-2 * cardProgress + 2, 2) / 2;
+      
+      newAnimations[index] = easedProgress;
+    });
+    
+    setCardAnimations(newAnimations);
   }, [hasScrolled]);
+
+  // Mark cards for animation on mount and when content changes
+  useEffect(() => {
+    if (!cardsContainerRef.current) return;
+    
+    // Find all card-like elements (those with rounded corners and glassmorphism styles)
+    const cards = cardsContainerRef.current.querySelectorAll(
+      '.bg-black\\/40, .bg-emerald-500\\/20, [class*="backdrop-blur"]'
+    );
+    
+    cards.forEach((card, index) => {
+      (card as HTMLElement).setAttribute('data-scroll-card', '');
+      (card as HTMLElement).setAttribute('data-card-index', index.toString());
+    });
+    
+    // Trigger initial scroll calculation
+    handleScroll();
+  }, [children, handleScroll]);
 
   // Register scroll listener
   useEffect(() => {
@@ -66,6 +116,26 @@ export function MobileScrollExperience({
     container.addEventListener("scroll", handleScroll, { passive: true });
     return () => container.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
+
+  // Apply animations to cards
+  useEffect(() => {
+    if (!cardsContainerRef.current) return;
+    
+    const cards = cardsContainerRef.current.querySelectorAll('[data-scroll-card]');
+    cards.forEach((card, index) => {
+      const cardElement = card as HTMLElement;
+      const progress = cardAnimations[index] ?? 0;
+      
+      // Animate from below with scale
+      const translateY = (1 - progress) * 80; // Start 80px below
+      const scale = 0.92 + progress * 0.08; // Scale from 0.92 to 1
+      const opacity = progress;
+      
+      cardElement.style.transform = `translateY(${translateY}px) scale(${scale})`;
+      cardElement.style.opacity = opacity.toString();
+      cardElement.style.transition = 'transform 0.1s ease-out, opacity 0.1s ease-out';
+    });
+  }, [cardAnimations]);
 
   // Scroll to content function for the toggle button
   const scrollToContent = useCallback(() => {
@@ -112,9 +182,6 @@ export function MobileScrollExperience({
         top: 0,
         scrollbarWidth: "none",
         msOverflowStyle: "none",
-        scrollBehavior: "smooth",
-        // CSS scroll snap for card-by-card scrolling
-        scrollSnapType: "y proximity",
       }}
     >
       {/* Hide scrollbar for webkit */}
@@ -153,11 +220,8 @@ export function MobileScrollExperience({
 
       {/* Scroll Content Container */}
       <div className="relative z-10">
-        {/* Spacer for initial flier view - full viewport height with snap point */}
-        <div 
-          className="h-screen flex flex-col items-center justify-end pb-24"
-          style={{ scrollSnapAlign: "start" }}
-        >
+        {/* Spacer for initial flier view - full viewport height */}
+        <div className="h-screen flex flex-col items-center justify-end pb-24">
           {/* Scroll hint */}
           {!hasScrolled && (
             <div className="flex flex-col items-center animate-bounce-subtle">
@@ -169,36 +233,35 @@ export function MobileScrollExperience({
           )}
         </div>
 
-        {/* Floating Cards Container - no solid background, cards float over flier */}
-        <div className="relative px-4 pb-32 space-y-4">
-          {/* Pass children through with transparent wrapper */}
+        {/* Floating Cards Container with staggered reveal */}
+        <div 
+          ref={cardsContainerRef}
+          className="relative px-4 pb-32"
+        >
           <div 
-            className="scroll-snap-cards"
-            style={{
-              // Ensure content has no solid background
-              background: "transparent",
-            }}
+            className="scroll-cards-wrapper space-y-4"
+            style={{ background: "transparent" }}
           >
             {children}
           </div>
         </div>
       </div>
 
-      {/* Global styles for scroll snap on child cards */}
+      {/* Global styles for transparent backgrounds */}
       <style jsx global>{`
-        .scroll-snap-cards > * > * > * > div {
-          scroll-snap-align: start;
-          scroll-margin-top: 1rem;
-        }
-        
         /* Make Section component transparent in scroll mode */
-        .scroll-snap-cards section {
+        .scroll-cards-wrapper section {
           background: transparent !important;
         }
         
         /* Target the container divs to be transparent */
-        .scroll-snap-cards > * {
+        .scroll-cards-wrapper > * {
           background: transparent !important;
+        }
+        
+        /* Initial state for cards before JS takes over */
+        .scroll-cards-wrapper [data-scroll-card] {
+          will-change: transform, opacity;
         }
       `}</style>
     </div>
