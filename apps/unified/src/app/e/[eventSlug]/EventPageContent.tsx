@@ -102,7 +102,7 @@ export function EventPageContent({
 
       <Section spacing="sm" className="pt-0">
         <Container size="lg">
-          <div className="space-y-8">
+          <div className="space-y-3 lg:space-y-4">
             {/* Mobile Title with Flier Preview (shown in mobile flier view after flip) */}
             {isMobileFlierView && event.flier_url && (
               <div className="relative overflow-hidden rounded-2xl">
