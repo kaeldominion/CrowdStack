@@ -51,6 +51,7 @@ export async function GET() {
       topEventsResult,
       topPromotersResult,
       recentEventsResult,
+      topOrganizersResult,
     ] = await Promise.all([
       // Total auth users
       serviceClient.from("user_roles").select("user_id", { count: "exact", head: true }),
@@ -119,6 +120,15 @@ export async function GET() {
           created_at
         `)
         .order("created_at", { ascending: false })
+        .limit(10),
+      // Top organizers by event count
+      serviceClient
+        .from("organizers")
+        .select(`
+          id,
+          name,
+          events:events(count)
+        `)
         .limit(10),
     ]);
 
@@ -201,6 +211,16 @@ export async function GET() {
       .sort((a: any, b: any) => b.referrals - a.referrals)
       .slice(0, 5);
 
+    // Process top organizers
+    const topOrganizers = (topOrganizersResult.data || [])
+      .map((organizer: any) => ({
+        id: organizer.id,
+        name: organizer.name,
+        eventCount: organizer.events?.[0]?.count || 0,
+      }))
+      .sort((a: any, b: any) => b.eventCount - a.eventCount)
+      .slice(0, 5);
+
     // Calculate growth metrics
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -246,6 +266,7 @@ export async function GET() {
       monthlyTrend,
       topEvents,
       topPromoters,
+      topOrganizers,
       recentEvents: (recentEventsResult.data || []).map((event: any) => ({
         id: event.id,
         name: event.name,

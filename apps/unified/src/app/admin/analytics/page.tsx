@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, Container, Section, LoadingSpinner } from "@crowdstack/ui";
 import {
   Users,
@@ -49,6 +50,7 @@ interface AnalyticsData {
   monthlyTrend: { month: string; count: number }[];
   topEvents: { id: string; name: string; slug: string; registrations: number }[];
   topPromoters: { id: string; name: string; referrals: number }[];
+  topOrganizers: { id: string; name: string; eventCount: number }[];
   recentEvents: { id: string; name: string; status: string; createdAt: string }[];
 }
 
@@ -452,33 +454,34 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Lists Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Top Events */}
           <Card>
             <h3 className="text-sm font-semibold text-foreground mb-4">
               Top Events by Registrations
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {data.topEvents.length === 0 ? (
                 <p className="text-sm text-foreground-muted">No events yet</p>
               ) : (
                 data.topEvents.map((event, index) => (
-                  <div
+                  <Link
                     key={event.id}
-                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                    href={`/admin/events/${event.id}`}
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[200px]">
+                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-primary transition-colors">
                         {event.name}
                       </span>
                     </div>
                     <span className="text-sm font-medium text-foreground-muted">
                       {formatNumber(event.registrations)}
                     </span>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
@@ -489,27 +492,60 @@ export default function AnalyticsPage() {
             <h3 className="text-sm font-semibold text-foreground mb-4">
               Top Promoters by Referrals
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {data.topPromoters.length === 0 ? (
                 <p className="text-sm text-foreground-muted">No promoters yet</p>
               ) : (
                 data.topPromoters.map((promoter, index) => (
-                  <div
+                  <Link
                     key={promoter.id}
-                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                    href={`/admin/promoters?highlight=${promoter.id}`}
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/10 text-xs font-medium text-secondary">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[200px]">
+                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-secondary transition-colors">
                         {promoter.name}
                       </span>
                     </div>
                     <span className="text-sm font-medium text-foreground-muted">
                       {formatNumber(promoter.referrals)}
                     </span>
-                  </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Top Organizers */}
+          <Card>
+            <h3 className="text-sm font-semibold text-foreground mb-4">
+              Top Organizers by Events
+            </h3>
+            <div className="space-y-1">
+              {data.topOrganizers.length === 0 ? (
+                <p className="text-sm text-foreground-muted">No organizers yet</p>
+              ) : (
+                data.topOrganizers.map((organizer, index) => (
+                  <Link
+                    key={organizer.id}
+                    href={`/admin/organizers?highlight=${organizer.id}`}
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/10 text-xs font-medium text-warning">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-warning transition-colors">
+                        {organizer.name}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-foreground-muted">
+                      {formatNumber(organizer.eventCount)} events
+                    </span>
+                  </Link>
                 ))
               )}
             </div>
