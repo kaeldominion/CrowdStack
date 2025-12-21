@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
+import { LoadingLogo } from "./LoadingLogo";
 
 interface MobileFlierExperienceProps {
   flierUrl: string;
@@ -31,6 +32,7 @@ export function MobileFlierExperience({
   const [hasInteracted, setHasInteracted] = useState(false);
   const [flipDirection, setFlipDirection] = useState<"left" | "right">("right");
   const [isFlipping, setIsFlipping] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Touch tracking for swipe
   const touchStartX = useRef<number | null>(null);
@@ -146,11 +148,18 @@ export function MobileFlierExperience({
           }}
         >
           <div className="relative w-full h-full bg-black/90 flex items-center justify-center overflow-hidden">
+            {/* Loading state */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/90">
+                <LoadingLogo message="Loading event..." size="lg" />
+              </div>
+            )}
+            
             {/* Zoom-in animation on first load */}
             <div
-              className={`relative w-full h-full flex items-center justify-center ${
+              className={`relative w-full h-full flex items-center justify-center transition-opacity duration-500 ${
                 !hasInteracted ? "animate-zoom-in" : ""
-              }`}
+              } ${imageLoaded ? "opacity-100" : "opacity-0"}`}
             >
               <Image
                 src={flierUrl}
@@ -159,6 +168,7 @@ export function MobileFlierExperience({
                 className="object-contain"
                 priority
                 sizes="100vw"
+                onLoad={() => setImageLoaded(true)}
               />
             </div>
 
