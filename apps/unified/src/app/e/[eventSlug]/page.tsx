@@ -92,7 +92,7 @@ export async function generateMetadata({
         year: "numeric",
       })}${venueLocation ? ` at ${venueLocation}` : ""}`;
 
-  const imageUrl = event.cover_image_url || event.flier_url || `${baseUrl}/og-default.png`;
+  const imageUrl = event.flier_url || `${baseUrl}/og-default.png`;
 
   return {
     title: `${event.name} | CrowdStack`,

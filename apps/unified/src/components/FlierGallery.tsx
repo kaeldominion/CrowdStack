@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, X, Download } from "lucide-react";
 
 interface FlierGalleryProps {
   flierUrl: string | null;
-  coverImageUrl: string | null;
+  coverImageUrl?: string | null; // Deprecated, kept for backward compatibility
   eventName: string;
 }
 
@@ -15,10 +15,9 @@ export function FlierGallery({ flierUrl, coverImageUrl, eventName }: FlierGaller
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Collect all available images
+  // Collect all available images (only flier now)
   const images = [
     flierUrl && { url: flierUrl, type: "Flier" },
-    coverImageUrl && { url: coverImageUrl, type: "Cover" },
   ].filter(Boolean) as Array<{ url: string; type: string }>;
 
   // Don't render if no images

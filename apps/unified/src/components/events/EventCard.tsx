@@ -21,7 +21,6 @@ interface EventCardProps {
     registrations: number;
     checkins: number;
     flier_url: string | null;
-    cover_image_url: string | null;
     venue: Venue | null;
     organizer: Organizer | null;
   };
@@ -76,7 +75,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
     }
   };
 
-  const heroImage = event.flier_url || event.cover_image_url;
+  const heroImage = event.flier_url;
 
   return (
     <Card

@@ -94,7 +94,6 @@ interface EventData {
   start_time: string;
   end_time: string | null;
   capacity: number | null;
-  cover_image_url: string | null;
   flier_url: string | null;
   timezone: string | null;
   promoter_access_type?: string;
@@ -1669,41 +1668,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               />
             )}
 
-            {/* Image Uploads */}
-            <div className="grid grid-cols-1 gap-6 border-t border-border pt-6">
-              <EventImageUpload
-                label="Cover Image"
-                aspectRatio="16:9"
-                currentImageUrl={event?.cover_image_url}
-                onUpload={async (file) => {
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  const response = await fetch(`/api/organizer/events/${eventId}/cover`, {
-                    method: "POST",
-                    body: formData,
-                  });
-                  if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || "Failed to upload cover image");
-                  }
-                  const data = await response.json();
-                  await loadEventData(); // Refresh event data
-                  return data.cover_image_url;
-                }}
-                onRemove={async () => {
-                  // Update event to remove cover image
-                  const response = await fetch(`/api/events/${eventId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cover_image_url: null }),
-                  });
-                  if (!response.ok) {
-                    throw new Error("Failed to remove cover image");
-                  }
-                  await loadEventData();
-                }}
-                helperText="Main hero image for the event page (16:9 aspect ratio required)"
-              />
+            {/* Flier Upload */}
+            <div className="border-t border-border pt-6">
               <EventImageUpload
                 label="Event Flier"
                 aspectRatio="9:16"

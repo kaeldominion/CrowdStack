@@ -25,7 +25,6 @@ export default function NewEventPage() {
     self_promote: true,
     selected_promoters: [] as string[],
   });
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -145,21 +144,7 @@ export default function NewEventPage() {
       const data = await response.json();
       const eventId = data.event.id;
 
-      // Upload images if provided
-      if (coverImageFile) {
-        try {
-          const coverFormData = new FormData();
-          coverFormData.append("file", coverImageFile);
-          await fetch(`/api/organizer/events/${eventId}/cover`, {
-            method: "POST",
-            body: coverFormData,
-          });
-        } catch (error) {
-          console.error("Failed to upload cover image:", error);
-          // Continue even if image upload fails
-        }
-      }
-
+      // Upload flier if provided
       if (flierImageFile) {
         try {
           const flierFormData = new FormData();
@@ -297,22 +282,8 @@ export default function NewEventPage() {
             />
           </div>
 
-          {/* Image Uploads */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 border-t border-border pt-6">
-            <EventImageUpload
-              label="Cover Image"
-              aspectRatio="16:9"
-              onUpload={async (file) => {
-                setCoverImageFile(file);
-                // Return a preview URL for display
-                return new Promise((resolve) => {
-                  const reader = new FileReader();
-                  reader.onloadend = () => resolve(reader.result as string);
-                  reader.readAsDataURL(file);
-                });
-              }}
-              helperText="Main hero image for the event page (16:9 aspect ratio required)"
-            />
+          {/* Flier Upload */}
+          <div className="border-t border-border pt-6">
             <EventImageUpload
               label="Event Flier"
               aspectRatio="9:16"

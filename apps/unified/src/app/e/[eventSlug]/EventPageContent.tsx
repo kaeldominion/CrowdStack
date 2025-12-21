@@ -33,58 +33,16 @@ export function EventPageContent({
     <>
       {/* Desktop Hero - Hide on mobile if flier exists (mobile will show flier first) */}
       <div className="hidden lg:block">
-        {event.cover_image_url || event.flier_url ? (
+        {event.flier_url ? (
           <div className="relative h-[60vh] min-h-[400px] max-h-[600px] w-full overflow-hidden">
             <Image
-              src={event.cover_image_url || event.flier_url || ""}
+              src={event.flier_url}
               alt={event.name}
               fill
-              className={event.flier_url ? "object-contain bg-black" : "object-cover"}
+              className="object-contain bg-black"
               priority
               sizes="100vw"
             />
-            {/* Enhanced gradient overlay - only show if not flier */}
-            {!event.flier_url && (
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 via-background/30 to-transparent" />
-            )}
-            
-            {/* Content overlay - positioned at bottom, only if not flier */}
-            {!event.flier_url && (
-              <div className="absolute inset-0 flex flex-col justify-end">
-                <Container size="lg" className="pb-12 pt-24">
-                  <div className="max-w-3xl space-y-4">
-                    <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl">
-                      {event.name}
-                    </h1>
-                    {event.description && (
-                      <p className="text-lg text-white/90 max-w-2xl drop-shadow-md sm:text-xl">
-                        {event.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-3 text-white/90">
-                      <Calendar className="h-5 w-5" />
-                      <div>
-                        <div className="font-medium">
-                          {startDate.toLocaleDateString("en-US", {
-                            weekday: "long",
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </div>
-                        <div className="text-sm text-white/80">
-                          {startDate.toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                          {endDate && ` - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Container>
-              </div>
-            )}
           </div>
         ) : (
           <div className="border-b border-border bg-surface/50">
@@ -126,8 +84,8 @@ export function EventPageContent({
       <Section spacing="xl">
         <Container size="lg">
           <div className="space-y-8">
-            {/* Desktop: Show title if no hero image */}
-            {!event.cover_image_url && !event.flier_url && (
+            {/* Desktop: Show title if no flier */}
+            {!event.flier_url && (
               <div className="text-center space-y-4">
                 <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
                   {event.name}
@@ -155,12 +113,12 @@ export function EventPageContent({
             )}
 
             {/* Desktop Flier Gallery */}
-            {(event.flier_url || event.cover_image_url) && (
+            {event.flier_url && (
               <div className="hidden lg:block space-y-4">
-                <h2 className="text-2xl font-semibold text-foreground">Event Images</h2>
+                <h2 className="text-2xl font-semibold text-foreground">Event Flier</h2>
                 <FlierGallery
                   flierUrl={event.flier_url}
-                  coverImageUrl={event.cover_image_url}
+                  coverImageUrl={null}
                   eventName={event.name}
                 />
               </div>
