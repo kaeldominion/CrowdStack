@@ -6,6 +6,7 @@ import { Input, Button, Logo, InlineSpinner } from "@crowdstack/ui";
 import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import Link from "next/link";
+import Image from "next/image";
 
 interface TypeformSignupProps {
   onSubmit: (data: SignupData) => Promise<void>;
@@ -26,6 +27,7 @@ interface TypeformSignupProps {
     venueName?: string | null;
     startTime?: string | null;
     registrationCount?: number;
+    flierUrl?: string | null;
   };
 }
 
@@ -768,15 +770,38 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     return isMobile && step.mobileLabel ? step.mobileLabel : step.label;
   };
 
+  const flierUrl = eventDetails?.flierUrl;
+
   return (
     <div 
-      className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+      className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
       style={{ 
         paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))",
         // Use 100dvh on mobile to account for dynamic viewport changes (keyboard)
         height: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
       }}
     >
+      {/* Blurred Flier Background */}
+      {flierUrl ? (
+        <div className="fixed inset-0 z-0">
+          <Image
+            src={flierUrl}
+            alt=""
+            fill
+            className="object-cover"
+            style={{
+              filter: "blur(25px)",
+              transform: "scale(1.1)",
+              opacity: 0.6,
+            }}
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70" />
+        </div>
+      ) : (
+        <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      )}
+
       {/* Navigation Bar */}
       <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
         <div className="flex h-12 sm:h-14 items-center px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
@@ -786,7 +811,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         </div>
       </nav>
 
-      <div className="w-full max-w-2xl flex flex-col justify-center pt-20 sm:pt-24" style={{ 
+      <div className="relative z-10 w-full max-w-2xl flex flex-col justify-center pt-20 sm:pt-24" style={{ 
         maxHeight: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
         minHeight: 0,
       }}>
@@ -798,7 +823,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             transition={{ duration: 0.3 }}
             className="mb-4 sm:mb-6 flex-shrink-0"
           >
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 sm:p-5">
+            <div className="bg-black/20 backdrop-blur-md rounded-xl border border-white/15 p-4 sm:p-5 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs sm:text-sm text-white/50 mb-2">Registering for</p>
@@ -879,7 +904,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink min-w-0 overflow-y-auto overscroll-contain"
+          className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink min-w-0 overflow-y-auto overscroll-contain"
           style={{ 
             maxHeight: typeof window !== "undefined" && window.innerWidth < 640 
               ? "calc(100dvh - 6rem)" 
