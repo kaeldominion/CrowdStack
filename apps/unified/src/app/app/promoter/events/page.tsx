@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
 import { Calendar, Search, Eye, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +18,7 @@ interface Event {
 }
 
 export default function PromoterEventsPage() {
+  const router = useRouter();
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [myEvents, setMyEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +131,11 @@ export default function PromoterEventsPage() {
                   </TableRow>
                 ) : (
                   filteredAvailable.map((event) => (
-                    <TableRow key={event.id} hover>
+                    <TableRow 
+                      key={event.id} 
+                      hover
+                      onClick={() => router.push(`/e/${event.slug}`)}
+                    >
                       <TableCell className="font-medium">{event.name}</TableCell>
                       <TableCell>{event.venue?.name || "—"}</TableCell>
                       <TableCell className="text-sm text-foreground-muted">
@@ -147,7 +153,10 @@ export default function PromoterEventsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => requestToPromote(event.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            requestToPromote(event.id);
+                          }}
                         >
                           Request to Promote
                         </Button>
@@ -164,7 +173,11 @@ export default function PromoterEventsPage() {
                   </TableRow>
                 ) : (
                   filteredMy.map((event) => (
-                    <TableRow key={event.id} hover>
+                    <TableRow 
+                      key={event.id} 
+                      hover
+                      onClick={() => router.push(`/app/promoter/events/${event.id}`)}
+                    >
                       <TableCell className="font-medium">{event.name}</TableCell>
                       <TableCell>{event.venue?.name || "—"}</TableCell>
                       <TableCell className="text-sm text-foreground-muted">
@@ -182,7 +195,10 @@ export default function PromoterEventsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Link href={`/app/promoter/events/${event.id}`}>
+                        <Link 
+                          href={`/app/promoter/events/${event.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
