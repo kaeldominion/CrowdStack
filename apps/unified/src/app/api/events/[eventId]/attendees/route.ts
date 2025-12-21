@@ -10,56 +10,86 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
-  console.log("[EventAttendees] GET request for event:", params.eventId);
+  const { eventId } = params;
+  console.log("[EventAttendees] GET request for event:", eventId);
   
   try {
     const userId = await getUserId();
     console.log("[EventAttendees] User ID:", userId);
     
     if (!userId) {
+      console.log("[EventAttendees] No user ID - unauthorized");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Verify organizer role or superadmin
-    if (!(await userHasRoleOrSuperadmin("event_organizer"))) {
+    const hasRole = await userHasRoleOrSuperadmin("event_organizer");
+    console.log("[EventAttendees] Has organizer role or superadmin:", hasRole);
+    
+    if (!hasRole) {
+      console.log("[EventAttendees] User lacks required role - forbidden");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    console.log("[EventAttendees] Creating service role client...");
     const serviceSupabase = createServiceRoleClient();
+    console.log("[EventAttendees] Service client created");
 
     // Get user roles to check if superadmin
-    const { data: userRoles } = await serviceSupabase
+    console.log("[EventAttendees] Fetching user roles...");
+    const { data: userRoles, error: rolesError } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
     
+    if (rolesError) {
+      console.error("[EventAttendees] Error fetching roles:", rolesError);
+    }
+    
     const roles = userRoles?.map((r) => r.role) || [];
+    console.log("[EventAttendees] User roles:", roles);
     const isSuperadmin = roles.includes("superadmin");
 
     // If not superadmin, verify user owns this event
     if (!isSuperadmin) {
-      const { data: organizer } = await serviceSupabase
+      console.log("[EventAttendees] User is not superadmin, checking event ownership...");
+      const { data: organizer, error: orgError } = await serviceSupabase
         .from("organizers")
         .select("id")
         .eq("created_by", userId)
         .single();
 
+      if (orgError) {
+        console.error("[EventAttendees] Error fetching organizer:", orgError);
+      }
+
       if (!organizer) {
+        console.log("[EventAttendees] Organizer not found for user");
         return NextResponse.json({ error: "Organizer not found" }, { status: 404 });
       }
 
-      const { data: event } = await serviceSupabase
+      console.log("[EventAttendees] Found organizer:", organizer.id);
+      const { data: event, error: eventError } = await serviceSupabase
         .from("events")
         .select("organizer_id")
-        .eq("id", params.eventId)
+        .eq("id", eventId)
         .single();
 
+      if (eventError) {
+        console.error("[EventAttendees] Error fetching event:", eventError);
+      }
+
       if (!event || event.organizer_id !== organizer.id) {
+        console.log("[EventAttendees] Event not owned by this organizer");
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
+      console.log("[EventAttendees] Event ownership verified");
+    } else {
+      console.log("[EventAttendees] User is superadmin, skipping ownership check");
     }
 
     // Get all registrations for this event with attendee details
+    console.log("[EventAttendees] Fetching registrations for event:", eventId);
     const { data: registrations, error } = await serviceSupabase
       .from("registrations")
       .select(`
@@ -81,12 +111,15 @@ export async function GET(
         ),
         checkins(id, checked_in_at, undo_at)
       `)
-      .eq("event_id", params.eventId)
+      .eq("event_id", eventId)
       .order("registered_at", { ascending: false });
 
     if (error) {
+      console.error("[EventAttendees] Query error:", error);
       throw error;
     }
+    
+    console.log("[EventAttendees] Found", registrations?.length || 0, "registrations");
 
     // Format results
     const attendees = (registrations || []).map((reg: any) => {
