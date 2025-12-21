@@ -338,6 +338,7 @@ export function EventPageContent({
                       title={event.name}
                       text={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
                       url={shareUrl}
+                      imageUrl={event.flier_url || undefined}
                       compact={true}
                     />
                     <CalendarButtons
