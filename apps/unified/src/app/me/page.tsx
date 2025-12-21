@@ -489,6 +489,79 @@ export default function MePage() {
           </div>
         </div>
 
+        {/* Attendance Motivation Card - Conditional based on show rate */}
+        {(() => {
+          const attended = pastEvents.filter(reg => reg.checkins && reg.checkins.length > 0).length;
+          const totalPast = pastEvents.length;
+          const showRate = totalPast > 0 ? Math.round((attended / totalPast) * 100) : 0;
+          const hasUpcoming = happeningNowEvents.length + todayEvents.length + upcomingEvents.length > 0;
+          
+          // Great show rate (>70%)
+          if (showRate >= 70 && totalPast >= 2) {
+            return (
+              <div className="mb-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-green-500/5 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <Target className="h-6 w-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-white">
+                      🎯 Great show rate: {showRate}%
+                    </p>
+                    <p className="text-sm text-white/60">
+                      You've attended {attended} of {totalPast} past events. Keep it up!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          // Good show rate (50-70%)
+          if (showRate >= 50 && totalPast >= 2) {
+            return (
+              <div className="mb-8 rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-500/10 to-indigo-500/5 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <TrendingUp className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-white">
+                      You've made it to {attended} event{attended !== 1 ? 's' : ''}!
+                    </p>
+                    <p className="text-sm text-white/60">
+                      Keep the momentum going - your next event awaits!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          // Low show rate or new user - only show if they have upcoming events
+          if (hasUpcoming && totalPast > 0) {
+            return (
+              <div className="mb-8 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/5 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="h-6 w-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-white">
+                      Your next event awaits! ✨
+                    </p>
+                    <p className="text-sm text-white/60">
+                      Check in at events to earn XP and unlock rewards.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          return null;
+        })()}
+
         {/* Happening Now - Most prominent */}
         {happeningNowEvents.length > 0 && (
           <div className="mb-8">
