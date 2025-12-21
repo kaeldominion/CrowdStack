@@ -73,30 +73,30 @@ export async function PhotoGalleryPreview({
   }
 
   return (
-    <Card>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <ImageIcon className="h-6 w-6 text-primary" />
+    <Card className="p-4 lg:p-6">
+      <div className="space-y-3 lg:space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 lg:gap-4">
+            <div className="p-2 lg:p-3 rounded-lg bg-primary/10">
+              <ImageIcon className="h-4 w-4 lg:h-6 lg:w-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Event Photos</h2>
-              <p className="text-sm text-foreground-muted mt-1">
+              <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Photos</h2>
+              <p className="text-xs lg:text-sm text-foreground-muted mt-0.5 lg:mt-1">
                 {photos.length} {photos.length === 1 ? "photo" : "photos"} available
               </p>
             </div>
           </div>
           <Link href={`/p/${eventSlug}`}>
-            <Button variant="primary">
+            <Button variant="primary" size="sm" className="text-xs lg:text-sm">
               View Gallery
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4 ml-1.5 lg:ml-2" />
             </Button>
           </Link>
         </div>
 
         {/* Photo Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 lg:gap-3">
           {photos.map((photo: Photo, index: number) => (
             <Link
               key={photo.id}
@@ -108,11 +108,11 @@ export async function PhotoGalleryPreview({
                 alt={photo.caption || `Photo ${index + 1} from ${eventName}`}
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
-                sizes="(max-width: 640px) 50vw, 33vw"
+                sizes="(max-width: 640px) 33vw, 33vw"
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               {index === 5 && photos.length > 6 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-semibold">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs lg:text-sm font-semibold">
                   +{photos.length - 6} more
                 </div>
               )}
