@@ -155,7 +155,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0B0D10] px-4 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
