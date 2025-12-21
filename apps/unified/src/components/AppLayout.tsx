@@ -268,16 +268,13 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
               {/* User dropdown (visible on all screens) */}
               <Dropdown
                 trigger={
-                  <div className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-surface transition-colors cursor-pointer">
+                  <div className="flex items-center px-1 py-1 rounded-md hover:bg-surface transition-colors cursor-pointer">
                     <Avatar
                       name={userName || undefined}
                       email={userEmail || undefined}
                       avatarUrl={avatarUrl}
                       size="sm"
                     />
-                    <span className="hidden sm:block text-sm text-foreground truncate max-w-32">
-                      {userName || userEmail || "User"}
-                    </span>
                   </div>
                 }
                 items={[
