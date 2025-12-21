@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -122,6 +122,15 @@ export default function AdminDashboardPage() {
       href: "/admin/disputes",
       description: "Handle payout disputes and conflicts",
       icon: <AlertTriangle className="h-6 w-6" />,
+    },
+  ];
+
+  const brandTools = [
+    {
+      name: "Download Brand Assets",
+      href: "/admin/tools/brand-assets",
+      description: "Download logos, icons, and brand materials",
+      icon: <Download className="h-6 w-6" />,
     },
   ];
 
@@ -304,6 +313,24 @@ export default function AdminDashboardPage() {
                 <Link key={tool.href} href={tool.href}>
                   <Card hover className="h-full">
                     <div className="flex h-10 w-10 items-center justify-center rounded-md bg-warning/10 text-warning mb-4">
+                      {tool.icon}
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground mb-2">{tool.name}</h3>
+                    <p className="text-xs text-foreground-muted">{tool.description}</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Brand & Assets */}
+          <div className="mb-12">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Brand & Assets</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {brandTools.map((tool) => (
+                <Link key={tool.href} href={tool.href}>
+                  <Card hover className="h-full">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary mb-4">
                       {tool.icon}
                     </div>
                     <h3 className="text-sm font-semibold text-foreground mb-2">{tool.name}</h3>
