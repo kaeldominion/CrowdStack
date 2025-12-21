@@ -153,11 +153,19 @@ export function AttendeeNavigation() {
           {isProfileOpen && (
             <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden">
               {/* User Info */}
-              <div className="px-4 py-3 border-b border-white/10">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.name || "Guest"}
-                </p>
-                <p className="text-xs text-white/50 truncate">{user?.email}</p>
+              <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                    {getUserInitial()}
+                  </div>
+                )}
+                <p className="text-xs text-white/50 truncate flex-1">{user?.email}</p>
               </div>
 
               {/* Profile Links */}
@@ -215,7 +223,7 @@ export function AttendeeNavigation() {
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
-                  alt={user.name || "Profile"}
+                  alt="Profile"
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
@@ -223,12 +231,7 @@ export function AttendeeNavigation() {
                   {getUserInitial()}
                 </div>
               )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.name || "Guest"}
-                </p>
-                <p className="text-xs text-white/50 truncate">{user?.email}</p>
-              </div>
+              <p className="text-xs text-white/50 truncate flex-1">{user?.email}</p>
             </div>
 
             {/* Navigation Links */}
