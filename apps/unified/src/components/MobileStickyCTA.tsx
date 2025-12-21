@@ -66,13 +66,13 @@ export function MobileStickyCTA({
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden">
-      <div className="flex items-center gap-2">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden max-w-[calc(100vw-2rem)]">
+      <div className="flex items-center gap-1.5">
         {/* Share Button */}
         {shareUrl && (
           <button
             onClick={handleShare}
-            className="flex items-center justify-center h-12 w-12 rounded-full 
+            className="flex items-center justify-center h-11 w-11 rounded-full flex-shrink-0
                        bg-black/70 backdrop-blur-md
                        text-white
                        shadow-lg shadow-black/30
@@ -83,7 +83,7 @@ export function MobileStickyCTA({
             aria-label="Share event"
             title="Share"
           >
-            <Share2 className="h-5 w-5" />
+            <Share2 className="h-4 w-4" />
           </button>
         )}
 
@@ -91,7 +91,7 @@ export function MobileStickyCTA({
         {hasFlierToggle && (
           <button
             onClick={flierState.onToggle!}
-            className="flex items-center justify-center h-12 w-12 rounded-full 
+            className="flex items-center justify-center h-11 w-11 rounded-full flex-shrink-0
                        bg-black/70 backdrop-blur-md
                        text-white
                        shadow-lg shadow-black/30
@@ -103,9 +103,9 @@ export function MobileStickyCTA({
             title={flierState.showFlier ? "View details" : "View flier"}
           >
             {flierState.showFlier ? (
-              <FileText className="h-5 w-5" />
+              <FileText className="h-4 w-4" />
             ) : (
-              <ImageIcon className="h-5 w-5" />
+              <ImageIcon className="h-4 w-4" />
             )}
           </button>
         )}
@@ -113,19 +113,20 @@ export function MobileStickyCTA({
         {/* Register Now Button */}
         <Link 
           href={href} 
-          className="flex items-center gap-2 px-5 py-3 rounded-full 
+          className="flex items-center gap-2 px-4 py-3 rounded-full 
                      bg-gradient-to-r from-indigo-600 to-purple-600 
-                     text-white font-semibold text-base
+                     text-white font-semibold text-sm
                      shadow-lg shadow-indigo-500/40
                      border border-white/20
                      backdrop-blur-sm
+                     whitespace-nowrap
                      hover:shadow-xl hover:shadow-indigo-500/50 
                      hover:scale-105 
                      active:scale-95
                      transition-all duration-200"
         >
           {label}
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4 flex-shrink-0" />
         </Link>
       </div>
     </div>
