@@ -261,13 +261,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   }, [eventId, config]);
 
-  const loadEventData = async () => {
+  const loadEventData = async (resetForm = true) => {
     try {
       const response = await fetch(config.eventApiEndpoint);
       if (response.ok) {
         const data = await response.json();
         setEvent(data.event);
-        if (config.canEdit) {
+        // Only reset the form if requested (don't reset during image uploads while modal is open)
+        if (config.canEdit && resetForm) {
           setEditForm({
             name: data.event.name || "",
             slug: data.event.slug || "",
@@ -1686,7 +1687,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     throw new Error(error.error || "Failed to upload flier");
                   }
                   const data = await response.json();
-                  await loadEventData(); // Refresh event data
+                  await loadEventData(false); // Refresh event data without resetting form
                   return data.flier_url;
                 }}
                 onRemove={async () => {
@@ -1698,7 +1699,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || "Failed to remove flier");
                   }
-                  await loadEventData();
+                  await loadEventData(false); // Refresh event data without resetting form
                 }}
                 helperText="Digital flier/poster for the event (9:16 portrait format required)"
               />
