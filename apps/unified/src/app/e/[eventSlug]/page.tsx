@@ -221,6 +221,9 @@ export default async function EventPage({
           href={`/e/${params.eventSlug}/register`}
           label="Register Now"
           eventName={event.name}
+          shareUrl={shareUrl}
+          shareTitle={event.name}
+          shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
         />
       </>
     );
@@ -247,6 +250,9 @@ export default async function EventPage({
         href={`/e/${params.eventSlug}/register`}
         label="Register Now"
         eventName={event.name}
+        shareUrl={shareUrl}
+        shareTitle={event.name}
+        shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
       />
     </>
   );
