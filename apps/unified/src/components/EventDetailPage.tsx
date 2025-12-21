@@ -209,6 +209,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState<"approve" | "reject">("approve");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -1795,49 +1796,61 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
-                      id="video-flier-upload"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        
-                        // Validate size client-side
-                        if (file.size > 50 * 1024 * 1024) {
-                          alert("Video must be under 50MB");
-                          return;
-                        }
-                        
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        
-                        try {
-                          const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
-                            method: "POST",
-                            body: formData,
-                          });
-                          if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || "Failed to upload video");
-                          }
-                          await loadEventData(false);
-                        } catch (error: any) {
-                          alert(error.message || "Failed to upload video");
-                        }
-                        
-                        // Reset input
-                        e.target.value = "";
-                      }}
-                    />
-                    <label
-                      htmlFor="video-flier-upload"
-                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                    >
-                      <Upload className="h-4 w-4 text-foreground-muted" />
-                      <span className="text-sm text-foreground-muted">Upload Video (MP4, WebM, MOV)</span>
-                    </label>
+                    {uploadingVideo ? (
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                        <span className="text-sm text-primary font-medium">Uploading video...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                          id="video-flier-upload"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            
+                            // Validate size client-side
+                            if (file.size > 50 * 1024 * 1024) {
+                              alert("Video must be under 50MB");
+                              return;
+                            }
+                            
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            
+                            setUploadingVideo(true);
+                            try {
+                              const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+                                method: "POST",
+                                body: formData,
+                              });
+                              if (!response.ok) {
+                                const error = await response.json();
+                                throw new Error(error.error || "Failed to upload video");
+                              }
+                              await loadEventData(false);
+                            } catch (error: any) {
+                              alert(error.message || "Failed to upload video");
+                            } finally {
+                              setUploadingVideo(false);
+                            }
+                            
+                            // Reset input
+                            e.target.value = "";
+                          }}
+                        />
+                        <label
+                          htmlFor="video-flier-upload"
+                          className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                        >
+                          <Upload className="h-4 w-4 text-foreground-muted" />
+                          <span className="text-sm text-foreground-muted">Upload Video (MP4, WebM, MOV)</span>
+                        </label>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
