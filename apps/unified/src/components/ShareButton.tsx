@@ -2,26 +2,27 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@crowdstack/ui";
-import { Share2, Loader2, Link2, Image as ImageIcon, Check, X } from "lucide-react";
+import { Share2, Loader2, Link2, Image as ImageIcon, Video, Check, X } from "lucide-react";
 
 interface ShareButtonProps {
   title: string;
   text?: string;
   url: string;
   imageUrl?: string; // Optional image URL (e.g., event flier) for Instagram Stories
+  videoUrl?: string; // Optional video URL for sharing video fliers
   label?: string;
   compact?: boolean; // Smaller size for inline layout
 }
 
-// Helper to fetch image and convert to File for sharing
-async function fetchImageAsFile(imageUrl: string, filename: string): Promise<File | null> {
+// Helper to fetch media and convert to File for sharing
+async function fetchMediaAsFile(mediaUrl: string, filename: string, isVideo = false): Promise<File | null> {
   try {
-    const response = await fetch(imageUrl);
+    const response = await fetch(mediaUrl);
     if (!response.ok) return null;
     
     const blob = await response.blob();
-    const mimeType = blob.type || "image/png";
-    const extension = mimeType.split("/")[1] || "png";
+    const mimeType = blob.type || (isVideo ? "video/mp4" : "image/png");
+    const extension = mimeType.split("/")[1] || (isVideo ? "mp4" : "png");
     
     return new File([blob], `${filename}.${extension}`, { type: mimeType });
   } catch {
@@ -30,10 +31,11 @@ async function fetchImageAsFile(imageUrl: string, filename: string): Promise<Fil
 }
 
 export function ShareButton({ 
-  title, 
-  text, 
-  url, 
+          title,
+          text,
+          url,
   imageUrl,
+  videoUrl,
   label = "Share", 
   compact = false 
 }: ShareButtonProps) {
@@ -95,7 +97,7 @@ export function ShareButton({
 
     setLoadingAction("image");
     try {
-      const imageFile = await fetchImageAsFile(imageUrl, title.replace(/[^a-zA-Z0-9]/g, "-"));
+      const imageFile = await fetchMediaAsFile(imageUrl, title.replace(/[^a-zA-Z0-9]/g, "-"), false);
       
       if (imageFile) {
         const shareData = { files: [imageFile] };
@@ -106,6 +108,31 @@ export function ShareButton({
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
         console.warn("Image share failed:", error.message);
+      }
+    } finally {
+      setLoadingAction(null);
+      setShowMenu(false);
+    }
+  };
+
+  const handleShareVideo = async () => {
+    if (!videoUrl || !navigator.share || !navigator.canShare) {
+      return;
+    }
+
+    setLoadingAction("video");
+    try {
+      const videoFile = await fetchMediaAsFile(videoUrl, title.replace(/[^a-zA-Z0-9]/g, "-"), true);
+      
+      if (videoFile) {
+        const shareData = { files: [videoFile] };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+        }
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
+        console.warn("Video share failed:", error.message);
       }
     } finally {
       setLoadingAction(null);
@@ -182,6 +209,25 @@ export function ShareButton({
             </div>
           </button>
         )}
+
+        {/* Share Video - Only show if videoUrl exists */}
+        {videoUrl && (
+          <button
+            onClick={handleShareVideo}
+            disabled={loadingAction === "video"}
+            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            {loadingAction === "video" ? (
+              <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            ) : (
+              <Video className="h-5 w-5 text-cyan-400" />
+            )}
+            <div className="text-left">
+              <p className="font-medium">Share Video</p>
+              <p className="text-xs text-white/50">Instagram Stories, TikTok</p>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -189,18 +235,18 @@ export function ShareButton({
   if (compact) {
     return (
       <div className="relative flex-1">
-        <button
+      <button
           onClick={() => setShowMenu(!showMenu)}
           disabled={isLoading}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium disabled:opacity-50"
-        >
+      >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Share2 className="h-4 w-4" />
+        <Share2 className="h-4 w-4" />
           )}
-          {label}
-        </button>
+        {label}
+      </button>
         {showMenu && menuContent}
       </div>
     );
@@ -212,10 +258,10 @@ export function ShareButton({
         {isLoading ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         ) : (
-          <Share2 className="h-4 w-4 mr-2" />
+      <Share2 className="h-4 w-4 mr-2" />
         )}
-        {label}
-      </Button>
+      {label}
+    </Button>
       {showMenu && menuContent}
     </div>
   );

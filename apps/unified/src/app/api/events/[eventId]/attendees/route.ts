@@ -96,7 +96,6 @@ export async function GET(
         id,
         attendee_id,
         registered_at,
-        promoter_id,
         attendee:attendees(
           id,
           name,
@@ -104,10 +103,6 @@ export async function GET(
           email,
           phone,
           gender
-        ),
-        promoter:promoters(
-          id,
-          name
         ),
         checkins(id, checked_in_at, undo_at)
       `)
@@ -121,23 +116,22 @@ export async function GET(
     
     console.log("[EventAttendees] Found", registrations?.length || 0, "registrations");
 
-    // Format results
+    // Format results - match expected interface in EventDetailPage
     const attendees = (registrations || []).map((reg: any) => {
       const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
       const isCheckedIn = checkin && !checkin.undo_at;
       
       return {
-        registration_id: reg.id,
+        id: reg.id, // registration id as unique identifier
         attendee_id: reg.attendee_id,
-        name: reg.attendee?.name || "Unknown",
-        surname: reg.attendee?.surname || null,
+        name: `${reg.attendee?.name || "Unknown"}${reg.attendee?.surname ? ` ${reg.attendee.surname}` : ""}`,
         email: reg.attendee?.email || null,
         phone: reg.attendee?.phone || null,
         gender: reg.attendee?.gender || null,
-        registered_at: reg.registered_at,
-        promoter_name: reg.promoter?.name || null,
-        is_checked_in: isCheckedIn,
-        checked_in_at: isCheckedIn ? checkin.checked_in_at : null,
+        registration_date: reg.registered_at,
+        checked_in: isCheckedIn,
+        check_in_time: isCheckedIn ? checkin.checked_in_at : null,
+        promoter_name: null, // promoter tracking not yet implemented
       };
     });
 

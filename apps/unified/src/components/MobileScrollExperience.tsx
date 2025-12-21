@@ -7,6 +7,7 @@ import { LoadingLogo } from "./LoadingLogo";
 
 interface MobileScrollExperienceProps {
   flierUrl: string;
+  videoUrl?: string; // Optional video flier URL
   eventName: string;
   children: React.ReactNode; // The event page content
 }
@@ -25,6 +26,7 @@ function notifyListeners() {
 
 export function MobileScrollExperience({
   flierUrl,
+  videoUrl,
   eventName,
   children,
 }: MobileScrollExperienceProps) {
@@ -32,9 +34,24 @@ export function MobileScrollExperience({
   const [hasScrolled, setHasScrolled] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [cardAnimations, setCardAnimations] = useState<number[]>([]);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Determine if we should show video or image
+  const hasVideo = !!videoUrl;
+
+  // Fallback timeout - if media doesn't load in 5 seconds, show anyway
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!mediaLoaded) {
+        console.warn("Media load timeout - showing content anyway");
+        setMediaLoaded(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [mediaLoaded]);
 
   // Show hint after 2 second delay
   useEffect(() => {
@@ -212,7 +229,7 @@ export function MobileScrollExperience({
       `}</style>
 
       {/* Loading state */}
-      {!imageLoaded && (
+      {!mediaLoaded && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
           <LoadingLogo message="Loading event..." size="lg" />
         </div>
@@ -220,23 +237,41 @@ export function MobileScrollExperience({
 
       {/* Fixed Flier Background - dims and blurs on scroll but stays visible */}
       <div 
-        className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+        className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
         style={{
           filter: `blur(${blurAmount}px)`,
-          opacity: imageLoaded ? flierOpacity : 0,
+          opacity: mediaLoaded ? flierOpacity : 0,
           transform: `scale(${1 + scrollProgress * 0.15})`, // Parallax zoom on scroll
           transition: "filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out"
         }}
       >
-        <Image
-          src={flierUrl}
-          alt={`${eventName} flier`}
-          fill
-          className="object-cover"
-          priority
-          sizes="100vw"
-          onLoad={() => setImageLoaded(true)}
-        />
+        {hasVideo ? (
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+            onLoadedData={() => setMediaLoaded(true)}
+            onCanPlay={() => setMediaLoaded(true)}
+            onError={() => {
+              console.error("Video failed to load, falling back to image");
+              setMediaLoaded(true); // Show anyway to prevent infinite loading
+            }}
+          />
+        ) : (
+          <Image
+            src={flierUrl}
+            alt={`${eventName} flier`}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+            onLoad={() => setMediaLoaded(true)}
+          />
+        )}
         {/* Subtle gradient overlay */}
         <div 
           className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60"
