@@ -59,7 +59,7 @@ export function EventPageContent({
       {!isMobileFlierView && (
       <div className="hidden lg:block">
         {event.flier_url ? (
-          // Side-by-side layout: Flier left, Title/Description right
+          // Side-by-side layout: Flier left, Title only right (description in details card)
           <div className="py-8">
             <Container size="lg">
               <div className="flex items-center gap-12">
@@ -74,32 +74,23 @@ export function EventPageContent({
                     sizes="320px"
                   />
                 </div>
-                {/* Title and description on the right */}
-                <div className="flex-1 space-y-6">
+                {/* Title only on the right - big and bold */}
+                <div className="flex-1 flex items-center">
                   <h1 className="text-5xl font-bold tracking-tight text-foreground xl:text-6xl drop-shadow-lg">
                     {event.name}
                   </h1>
-                  {event.description && (
-                    <p className="text-xl text-foreground-muted xl:text-2xl drop-shadow-md max-w-2xl">
-                      {event.description}
-                    </p>
-                  )}
                 </div>
               </div>
             </Container>
           </div>
         ) : (
+          // No flier - centered title only (description in details card)
           <div className="py-12">
             <Container size="lg">
-              <div className="text-center space-y-6 max-w-4xl mx-auto">
+              <div className="text-center max-w-4xl mx-auto">
                 <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl drop-shadow-lg">
                   {event.name}
                 </h1>
-                {event.description && (
-                  <p className="text-xl text-foreground-muted sm:text-2xl drop-shadow-md max-w-3xl mx-auto">
-                    {event.description}
-                  </p>
-                )}
               </div>
             </Container>
           </div>
@@ -176,9 +167,9 @@ export function EventPageContent({
                     <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Details</h2>
                   </div>
                   
-                  {/* Description - shown in details card for mobile */}
-                  {event.description && isMobileFlierView && (
-                    <p className="text-sm text-foreground-muted pl-9 lg:pl-11">
+                  {/* Description - shown in details card */}
+                  {event.description && (
+                    <p className="text-sm lg:text-base text-foreground-muted pl-9 lg:pl-11">
                       {event.description}
                     </p>
                   )}
