@@ -154,6 +154,10 @@ export async function PATCH(
       }
     }
 
+    // Debug logging
+    console.log("[EventUpdate] Updating event:", params.eventId);
+    console.log("[EventUpdate] Update payload:", JSON.stringify(body, null, 2));
+
     // Update event
     const { data: updatedEvent, error: updateError } = await serviceSupabase
       .from("events")
@@ -163,11 +167,14 @@ export async function PATCH(
       .single();
 
     if (updateError) {
+      console.error("[EventUpdate] Supabase error:", updateError);
       throw updateError;
     }
 
+    console.log("[EventUpdate] Updated event start_time:", updatedEvent?.start_time);
     return NextResponse.json({ event: updatedEvent });
   } catch (error: any) {
+    console.error("[EventUpdate] Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to update event" },
       { status: 500 }
