@@ -80,12 +80,24 @@ export function ConditionalLayout({
   const showAttendeeNav = isAttendeeRoute(pathname);
   const showFooter = showMarketingNav; // Only show footer on marketing pages (not event pages)
 
+  // Event pages use MobileFlierExperience which is fixed positioned
+  // so we don't want pt-20 on mobile for event pages
+  const isEventPage = pathname.startsWith("/e/") && !pathname.includes("/register") && !pathname.includes("/pass");
+  
+  // On mobile, event pages don't need main padding since MobileFlierExperience is fixed overlay
+  // On desktop, still need padding for the nav bar
+  const mainPaddingClass = isEventPage 
+    ? "flex-1 lg:pt-20" // No padding on mobile, padding on desktop
+    : (showMarketingNav || showSimpleNav || showAttendeeNav) 
+      ? "flex-1 pt-20" 
+      : "flex-1";
+
   return (
     <div className="flex min-h-screen flex-col">
       {showMarketingNav && <PublicNavigation variant="marketing" />}
       {showSimpleNav && <PublicNavigation variant="simple" />}
       {showAttendeeNav && <AttendeeNavigation />}
-      <main className={(showMarketingNav || showSimpleNav || showAttendeeNav) ? "flex-1 pt-20" : "flex-1"}>
+      <main className={mainPaddingClass}>
         {children}
       </main>
       {showFooter && <PublicFooter />}

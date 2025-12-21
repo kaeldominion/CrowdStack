@@ -35,11 +35,11 @@ export default function HomePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const supabase = createBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // User is logged in, redirect to their dashboard
-          router.push("/me");
+      const supabase = createBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // User is logged in, redirect to their dashboard
+        router.push("/me");
         }
       } catch (error) {
         console.error("Error checking auth:", error);
@@ -48,7 +48,7 @@ export default function HomePage() {
     };
     // Use setTimeout to ensure page renders first
     const timer = setTimeout(() => {
-      checkAuth();
+    checkAuth();
     }, 100);
     return () => clearTimeout(timer);
   }, [router]);

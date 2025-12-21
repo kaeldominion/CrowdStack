@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@crowdstack/ui";
+import { ArrowRight, Image as ImageIcon, FileText } from "lucide-react";
+import { useFlierToggle } from "./MobileFlierExperience";
 
 interface MobileStickyCTAProps {
   href: string;
@@ -10,8 +11,12 @@ interface MobileStickyCTAProps {
   eventName: string;
 }
 
-export function MobileStickyCTA({ href, label, eventName }: MobileStickyCTAProps) {
+export function MobileStickyCTA({ href, label }: MobileStickyCTAProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const flierState = useFlierToggle();
+
+  // Check if we have a flier toggle (event has a flier)
+  const hasFlierToggle = flierState.showFlier !== null && flierState.onToggle !== null;
 
   useEffect(() => {
     // Only show on mobile devices
@@ -31,13 +36,47 @@ export function MobileStickyCTA({ href, label, eventName }: MobileStickyCTAProps
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background border-t border-border p-4 shadow-lg">
-      <Link href={href} className="block">
-        <Button variant="primary" size="lg" className="w-full">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden">
+      <div className="flex items-center gap-2">
+        {/* Flier Toggle Button - Only show when event has a flier */}
+        {hasFlierToggle && (
+          <button
+            onClick={flierState.onToggle!}
+            className="flex items-center justify-center h-14 w-14 rounded-full 
+                       bg-black/70 backdrop-blur-md
+                       text-white
+                       shadow-lg shadow-black/30
+                       border border-white/20
+                       hover:bg-black/80 hover:scale-105 
+                       transition-all duration-300"
+            aria-label={flierState.showFlier ? "View event details" : "View flier"}
+            title={flierState.showFlier ? "View details" : "View flier"}
+          >
+            {flierState.showFlier ? (
+              <FileText className="h-6 w-6" />
+            ) : (
+              <ImageIcon className="h-6 w-6" />
+            )}
+          </button>
+        )}
+
+        {/* Register Now Button */}
+        <Link 
+          href={href} 
+          className="flex items-center gap-3 px-8 py-4 rounded-full 
+                     bg-gradient-to-r from-indigo-600 to-purple-600 
+                     text-white font-semibold text-lg
+                     shadow-lg shadow-indigo-500/40
+                     border border-white/20
+                     backdrop-blur-sm
+                     hover:shadow-xl hover:shadow-indigo-500/50 
+                     hover:scale-105 
+                     transition-all duration-300"
+        >
           {label}
-        </Button>
-      </Link>
+          <ArrowRight className="h-5 w-5" />
+        </Link>
+      </div>
     </div>
   );
 }
-

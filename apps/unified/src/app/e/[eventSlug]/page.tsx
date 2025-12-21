@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MobileFlierExperience } from "@/components/MobileFlierExperience";
 import { EventPageContent } from "./EventPageContent";
+import { MobileStickyCTA } from "@/components/MobileStickyCTA";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 // Force dynamic rendering to prevent caching stale organizer data
@@ -147,29 +148,29 @@ export default async function EventPage({
   const isUpcoming = now < startDate;
   const isLive = now >= startDate && (!endDate || now < endDate);
 
-  // If flier exists on mobile, wrap in flier experience
+  // For events with fliers, show mobile flier experience on mobile and regular content on desktop
+  // For events without fliers, show regular content everywhere
   if (event.flier_url) {
-  return (
+    return (
       <>
-        {/* Mobile: Flier-first experience */}
+        {/* Mobile: Flier-first flip experience - renders as fixed overlay */}
         <MobileFlierExperience
           flierUrl={event.flier_url}
           eventName={event.name}
         >
-    <div className="min-h-screen bg-background">
-            <EventPageContent
-              event={event}
-              params={params}
-              shareUrl={shareUrl}
-              startDate={startDate}
-              endDate={endDate}
-              isUpcoming={isUpcoming}
-              isLive={isLive}
-            />
-          </div>
+          <EventPageContent
+            event={event}
+            params={params}
+            shareUrl={shareUrl}
+            startDate={startDate}
+            endDate={endDate}
+            isUpcoming={isUpcoming}
+            isLive={isLive}
+            isMobileFlierView={true}
+          />
         </MobileFlierExperience>
 
-        {/* Desktop: Normal layout */}
+        {/* Desktop: Standard layout - hidden on mobile since MobileFlierExperience handles it */}
         <div className="hidden lg:block min-h-screen bg-background">
           <EventPageContent
             event={event}
@@ -179,25 +180,43 @@ export default async function EventPage({
             endDate={endDate}
             isUpcoming={isUpcoming}
             isLive={isLive}
+            isMobileFlierView={false}
           />
         </div>
+
+        {/* Mobile Sticky CTA - Always visible on mobile, even during flier view */}
+        <MobileStickyCTA
+          href={`/e/${params.eventSlug}/register`}
+          label="Register Now"
+          eventName={event.name}
+        />
       </>
     );
   }
 
-  // No flier - normal layout for all devices
+  // No flier - standard layout for all devices
   return (
-    <div className="min-h-screen bg-background">
-      <EventPageContent
-        event={event}
-        params={params}
-        shareUrl={shareUrl}
-        startDate={startDate}
-        endDate={endDate}
-        isUpcoming={isUpcoming}
-        isLive={isLive}
+    <>
+      <div className="min-h-screen bg-background">
+        <EventPageContent
+          event={event}
+          params={params}
+          shareUrl={shareUrl}
+          startDate={startDate}
+          endDate={endDate}
+          isUpcoming={isUpcoming}
+          isLive={isLive}
+          isMobileFlierView={false}
+        />
+      </div>
+
+      {/* Mobile Sticky CTA */}
+      <MobileStickyCTA
+        href={`/e/${params.eventSlug}/register`}
+        label="Register Now"
+        eventName={event.name}
       />
-    </div>
+    </>
   );
 }
 

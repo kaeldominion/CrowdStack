@@ -17,6 +17,7 @@ interface CalendarButtonsProps {
     country?: string | null;
   } | null;
   url: string;
+  compact?: boolean; // Smaller size for inline layout
 }
 
 export function CalendarButtons({
@@ -26,6 +27,7 @@ export function CalendarButtons({
   description,
   venue,
   url,
+  compact = false,
 }: CalendarButtonsProps) {
   const startDate = new Date(startTime);
   const endDate = endTime ? new Date(endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // Default 2 hours
@@ -162,15 +164,25 @@ export function CalendarButtons({
 
   return (
     <>
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => setIsModalOpen(true)}
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <Calendar className="h-4 w-4" />
-        Add to Calendar
-      </Button>
+      {compact ? (
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium"
+        >
+          <Calendar className="h-4 w-4" />
+          Calendar
+        </button>
+      ) : (
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setIsModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Add to Calendar
+        </Button>
+      )}
 
       <Modal
         isOpen={isModalOpen}

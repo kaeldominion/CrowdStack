@@ -39,11 +39,11 @@ export async function POST(
     
     // If not superadmin, require organizer account and verify ownership
     if (!userIsSuperadmin) {
-      if (!organizerId) {
-        return NextResponse.json(
-          { error: "No organizer found for user" },
-          { status: 404 }
-        );
+    if (!organizerId) {
+      return NextResponse.json(
+        { error: "No organizer found for user" },
+        { status: 404 }
+      );
       }
     }
 
