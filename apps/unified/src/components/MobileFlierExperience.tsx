@@ -165,10 +165,10 @@ export function MobileFlierExperience({
             {/* Hint pointing to bottom flip button */}
             {!hasInteracted && (
               <div className="absolute bottom-28 left-0 right-0 flex flex-col items-center z-10 animate-bounce-subtle">
-                <div className="px-4 py-2 bg-black/60 backdrop-blur-sm text-white text-sm rounded-full flex items-center gap-2">
-                  <span>👇 Swipe or tap below to see details</span>
+                <div className="px-4 py-2.5 bg-black/70 backdrop-blur-md text-white text-sm font-medium rounded-full flex items-center gap-2 shadow-lg shadow-black/30 border border-white/10">
+                  <span>👇 Swipe or tap to see details</span>
                 </div>
-                <ChevronDown className="h-5 w-5 text-white/60 mt-1" />
+                <ChevronDown className="h-5 w-5 text-white/80 mt-1.5 drop-shadow-md" />
               </div>
             )}
 
