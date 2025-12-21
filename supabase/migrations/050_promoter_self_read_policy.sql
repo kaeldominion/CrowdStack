@@ -2,7 +2,11 @@
 -- This is needed for the PromoterRequestButton component on public event pages
 -- to check if the current user is a promoter
 
--- First, add policy for users to read their own promoter record
+-- Drop existing policies first to make this idempotent
+DROP POLICY IF EXISTS "Users can read their own promoter record" ON public.promoters;
+DROP POLICY IF EXISTS "Promoters can read their own record via role" ON public.promoters;
+
+-- Add policy for users to read their own promoter record
 CREATE POLICY "Users can read their own promoter record"
   ON public.promoters FOR SELECT
   USING (created_by = auth.uid());
