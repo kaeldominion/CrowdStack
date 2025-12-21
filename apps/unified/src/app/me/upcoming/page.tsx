@@ -121,7 +121,7 @@ export default function UpcomingEventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <div className="mb-8">

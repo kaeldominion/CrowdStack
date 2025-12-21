@@ -296,6 +296,7 @@ export default function MePage() {
       weekday: "short",
       month: "short",
       day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -334,7 +335,7 @@ export default function MePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         {/* Welcome Header */}
         <div className="mb-8">
@@ -723,15 +724,16 @@ export default function MePage() {
 
             <div className="space-y-2">
               {pastEvents.slice(0, 3).map((reg) => (
-                <div
+                <Link
                   key={reg.id}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02]"
+                  href={`/e/${reg.event?.slug}`}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-white/10 transition-all group"
                 >
                   <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                     <Ticket className="h-6 w-6 text-white/30" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-white/80 truncate">
+                    <h3 className="font-medium text-white/80 group-hover:text-white truncate transition-colors">
                       {reg.event?.name}
                     </h3>
                     <p className="text-sm text-white/40">
@@ -747,7 +749,7 @@ export default function MePage() {
                       Registered
                     </span>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
           </div>

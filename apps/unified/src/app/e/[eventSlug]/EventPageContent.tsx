@@ -186,10 +186,8 @@ export function EventPageContent({
                             weekday: "short",
                             month: "short",
                             day: "numeric",
+                            year: "numeric",
                           })}
-                          <span className="hidden lg:inline">
-                            {`, ${startDate.getFullYear()}`}
-                          </span>
                           <span className="text-foreground-muted font-normal"> · </span>
                           {startDate.toLocaleTimeString("en-US", {
                             hour: "numeric",
