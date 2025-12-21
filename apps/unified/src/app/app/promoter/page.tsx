@@ -4,8 +4,19 @@ import { useState, useEffect } from "react";
 import { BentoCard } from "@/components/BentoCard";
 import { EarningsChart } from "@/components/charts/EarningsChart";
 import { Button } from "@crowdstack/ui";
-import { Ticket, TrendingUp, DollarSign, Trophy, Target, Zap, QrCode, Copy, Check } from "lucide-react";
-import { createBrowserClient } from "@crowdstack/shared";
+import { Ticket, TrendingUp, DollarSign, Trophy, Calendar, ExternalLink, QrCode, ArrowRight } from "lucide-react";
+import Link from "next/link";
+
+interface Event {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  status: string;
+  venue?: { name: string } | null;
+  registrations: number;
+  checkins: number;
+}
 
 export default function PromoterDashboardPage() {
   const [stats, setStats] = useState({
@@ -18,13 +29,11 @@ export default function PromoterDashboardPage() {
   });
   const [earningsChartData, setEarningsChartData] = useState<Array<{ date: string; earnings: number }>>([]);
   const [loading, setLoading] = useState(true);
-  const [referralLink, setReferralLink] = useState("");
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [recentEvents, setRecentEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     loadStats();
-    loadReferralLink();
+    loadRecentEvents();
   }, []);
 
   const loadStats = async () => {
@@ -41,102 +50,88 @@ export default function PromoterDashboardPage() {
     }
   };
 
-  const loadReferralLink = async () => {
+  const loadRecentEvents = async () => {
     try {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: promoter } = await supabase
-        .from("promoters")
-        .select("id")
-        .eq("created_by", user.id)
-        .single();
-
-      if (promoter) {
-        const link = `/e/[eventSlug]?ref=${promoter.id}`;
-        setReferralLink(link);
-        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`);
+      const response = await fetch("/api/promoter/events/my");
+      if (response.ok) {
+        const data = await response.json();
+        // Get the 5 most recent events
+        const events = (data.events || []).slice(0, 5);
+        setRecentEvents(events);
       }
     } catch (error) {
-      console.error("Error loading referral link:", error);
+      console.error("Error loading recent events:", error);
     }
-  };
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
-        <p className="mt-2 text-sm text-white/60">
-          Track your referrals and earnings
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Track your referrals and earnings
+          </p>
+        </div>
+        <Link href="/me" target="_blank">
+          <Button variant="outline">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View My Profile
+          </Button>
+        </Link>
       </div>
 
-      {/* Wallet Card - QR Code & Referral Link */}
-      <BentoCard span={3}>
-        <div className="space-y-6">
+      {/* Recent Events Section */}
+      {recentEvents.length > 0 && (
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Your Promoter Card</p>
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Recent Events
+            </h2>
+            <Link href="/app/promoter/events">
+              <Button variant="ghost" size="sm">
+                View All
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* QR Code */}
-            <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
-              {qrCodeUrl ? (
-                <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 mb-4" />
-              ) : (
-                <QrCode className="w-32 h-32 text-white/20 mb-4" />
-              )}
-              <p className="text-xs text-white/60 text-center">Scan to share your link</p>
-            </div>
-
-            {/* Referral Link */}
-            <div className="flex flex-col justify-center space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Referral Link</p>
-                <div className="flex items-center gap-2 p-3 rounded-md bg-white/5 border border-white/10">
-                  <input
-                    type="text"
-                    value={referralLink || "Loading..."}
-                    readOnly
-                    className="flex-1 bg-transparent text-white text-sm font-mono"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={copyLink}
-                    className="shrink-0"
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4 text-green-400" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {recentEvents.map((event) => (
+              <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
+                <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white truncate">
+                        {event.name}
+                      </h3>
+                      {event.venue && (
+                        <p className="text-xs text-white/60 mt-1">
+                          {event.venue.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-white/40 mt-1">
+                        {new Date(event.start_time).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Ticket className="h-3 w-3 text-white/40" />
+                        <span className="text-white/60">
+                          {event.registrations || 0} registered
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </BentoCard>
+              </Link>
+            ))}
           </div>
         </div>
-      </BentoCard>
+      )}
 
-      {/* Scoreboard */}
+      {/* Quick Stats */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <BentoCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Clicks</p>
-              <p className="text-3xl font-bold tracking-tighter text-white">—</p>
-            </div>
-            <Target className="h-5 w-5 text-white/40" />
-          </div>
-        </BentoCard>
-
         <BentoCard>
           <div className="flex items-center justify-between">
             <div>
@@ -144,6 +139,16 @@ export default function PromoterDashboardPage() {
               <p className="text-3xl font-bold tracking-tighter text-white">{stats.referrals}</p>
             </div>
             <Ticket className="h-5 w-5 text-white/40" />
+          </div>
+        </BentoCard>
+
+        <BentoCard>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
+              <p className="text-3xl font-bold tracking-tighter text-white">{stats.totalCheckIns}</p>
+            </div>
+            <TrendingUp className="h-5 w-5 text-white/40" />
           </div>
         </BentoCard>
 

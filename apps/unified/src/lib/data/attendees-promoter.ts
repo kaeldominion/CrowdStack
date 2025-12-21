@@ -37,7 +37,8 @@ export async function getPromoterAttendees(
 
   const eventIds = promotedEvents?.map((ep) => ep.event_id) || [];
 
-  // Get attendees who registered through this promoter's referral
+  // Get attendees who registered through this promoter's referral ONLY
+  // This ensures we only show attendees that the promoter actually referred
   let referralQuery = supabase
     .from("attendees")
     .select(`
@@ -77,7 +78,9 @@ export async function getPromoterAttendees(
     throw referralError;
   }
 
-  // Get attendees registered for upcoming events (even if not through referral)
+  // Get attendees registered for upcoming events that this promoter is promoting
+  // BUT only if they registered through this promoter's referral
+  // This ensures promoters only see attendees they actually referred
   let upcomingQuery = supabase
     .from("attendees")
     .select(`
@@ -87,6 +90,7 @@ export async function getPromoterAttendees(
       phone,
       created_at,
       registrations!inner(
+        referral_promoter_id,
         event_id,
         registered_at,
         event:events!inner(
@@ -99,6 +103,7 @@ export async function getPromoterAttendees(
       )
     `)
     .in("registrations.event_id", eventIds.length > 0 ? eventIds : ["00000000-0000-0000-0000-000000000000"])
+    .eq("registrations.referral_promoter_id", promoterId)
     .neq("registrations.event.status", "ended");
 
   if (filters.search) {

@@ -1,44 +1,33 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { cookies } from "next/headers";
+import { getUserPromoterId } from "@/lib/data/get-user-entity";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
     const supabase = await createClient();
-
-    // Check for localhost development mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const userId = user?.id || localhostUser;
-
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const serviceClient = createServiceRoleClient();
+    const promoterId = await getUserPromoterId();
 
-    // Get promoter profile for this user
-    const { data: promoter } = await serviceClient
-      .from("promoters")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!promoter) {
+    if (!promoterId) {
       return NextResponse.json({ events: [] });
     }
+
+    const serviceClient = createServiceRoleClient();
 
     // Get events this promoter is assigned to
     const { data: eventPromotions } = await serviceClient
       .from("event_promoters")
       .select("event_id")
-      .eq("promoter_id", promoter.id);
+      .eq("promoter_id", promoterId);
 
     const eventIds = eventPromotions?.map((ep) => ep.event_id) || [];
 
@@ -84,24 +73,35 @@ export async function GET() {
     // Get registration and check-in counts for each event (promoter-specific)
     const eventsWithStats = await Promise.all(
       (events || []).map(async (event) => {
-        // Get all registrations for this event
+        // Get all registrations for this event through this promoter's referral
         const { count: registrations } = await serviceClient
           .from("registrations")
           .select("*", { count: "exact", head: true })
           .eq("event_id", event.id)
-          .eq("referral_promoter_id", promoter.id);
+          .eq("referral_promoter_id", promoterId);
 
-        const { count: checkins } = await serviceClient
+        // Get check-ins for this promoter's referrals
+        const { data: regs } = await serviceClient
           .from("registrations")
-          .select("*", { count: "exact", head: true })
+          .select("id")
           .eq("event_id", event.id)
-          .eq("referral_promoter_id", promoter.id)
-          .eq("checked_in", true);
+          .eq("referral_promoter_id", promoterId);
+
+        const regIds = regs?.map((r) => r.id) || [];
+        let checkinCount = 0;
+        if (regIds.length > 0) {
+          const { count } = await serviceClient
+            .from("checkins")
+            .select("*", { count: "exact", head: true })
+            .in("registration_id", regIds)
+            .is("undo_at", null);
+          checkinCount = count || 0;
+        }
 
         return {
           ...event,
           registrations: registrations || 0,
-          checkins: checkins || 0,
+          checkins: checkinCount,
         };
       })
     );
