@@ -153,6 +153,25 @@ export default async function EventPage({
   if (event.flier_url) {
     return (
       <>
+        {/* Blurred Flier Background - Fixed, fills entire viewport */}
+        <div 
+          className="fixed inset-0 z-0 overflow-hidden pointer-events-none"
+          aria-hidden="true"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={event.flier_url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              filter: 'blur(60px)',
+              transform: 'scale(1.3)',
+              opacity: 0.4,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
+        </div>
+
         {/* Mobile: Flier-first flip experience - renders as fixed overlay */}
         <MobileFlierExperience
           flierUrl={event.flier_url}
@@ -171,7 +190,7 @@ export default async function EventPage({
         </MobileFlierExperience>
 
         {/* Desktop: Standard layout - hidden on mobile since MobileFlierExperience handles it */}
-        <div className="hidden lg:block min-h-screen bg-background">
+        <div className="hidden lg:block min-h-screen relative z-10 pt-20">
           <EventPageContent
             event={event}
             params={params}
@@ -197,7 +216,7 @@ export default async function EventPage({
   // No flier - standard layout for all devices
   return (
     <>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen pt-20">
         <EventPageContent
           event={event}
           params={params}

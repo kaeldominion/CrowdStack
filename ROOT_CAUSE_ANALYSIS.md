@@ -55,3 +55,4 @@ We need **ONE login** that works for both apps. Options:
 4. Handle session sharing for localhost (maybe via URL params or localStorage sync)
 
 
+

@@ -142,3 +142,4 @@ This document explains the current workflow for inviting a user to become an eve
 3. User gets `event_organizer` role and access to that organizer
 
 
+

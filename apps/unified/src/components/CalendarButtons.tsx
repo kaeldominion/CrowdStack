@@ -173,15 +173,15 @@ export function CalendarButtons({
           Calendar
         </button>
       ) : (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setIsModalOpen(true)}
-          className="w-full flex items-center justify-center gap-2"
-        >
-          <Calendar className="h-4 w-4" />
-          Add to Calendar
-        </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => setIsModalOpen(true)}
+        className="w-full flex items-center justify-center gap-2"
+      >
+        <Calendar className="h-4 w-4" />
+        Add to Calendar
+      </Button>
       )}
 
       <Modal

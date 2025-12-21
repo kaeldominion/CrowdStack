@@ -36,30 +36,30 @@ export function EventPageContent({
     <>
       {/* Desktop Hero - Only show in desktop view (not mobile flier view) */}
       {!isMobileFlierView && (
-        <div className="hidden lg:block">
-          {event.flier_url ? (
-          // Single flier display with event title overlay
-          <div className="bg-gradient-to-b from-black to-background py-8">
+      <div className="hidden lg:block">
+        {event.flier_url ? (
+          // Single flier display with event title overlay - transparent to show blur
+          <div className="py-4">
             <Container size="lg">
               <div className="flex flex-col items-center gap-6">
                 {/* Flier in 9:16 format */}
-                <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-lg overflow-hidden shadow-2xl">
-                  <Image
-                    src={event.flier_url}
+                <div className="relative w-full max-w-sm aspect-[9/16] bg-black/50 rounded-lg overflow-hidden shadow-2xl ring-1 ring-white/10">
+            <Image
+              src={event.flier_url}
                     alt={`${event.name} flier`}
-                    fill
+              fill
                     className="object-contain"
-                    priority
+              priority
                     sizes="384px"
-                  />
+            />
                 </div>
                 {/* Event title below flier */}
-                <div className="text-center space-y-2 max-w-2xl">
-                  <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                <div className="text-center space-y-4 max-w-3xl">
+                  <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl drop-shadow-lg">
                     {event.name}
                   </h1>
                   {event.description && (
-                    <p className="text-base text-foreground-muted">
+                    <p className="text-lg text-foreground-muted sm:text-xl drop-shadow-md">
                       {event.description}
                     </p>
                   )}
@@ -68,14 +68,14 @@ export function EventPageContent({
             </Container>
           </div>
         ) : (
-          <div className="border-b border-border bg-surface/50">
-            <Container size="lg" className="py-16">
-              <div className="text-center space-y-4 max-w-3xl mx-auto">
-                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+          <div className="py-12">
+            <Container size="lg">
+              <div className="text-center space-y-6 max-w-4xl mx-auto">
+                <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl drop-shadow-lg">
                   {event.name}
                 </h1>
                 {event.description && (
-                  <p className="text-lg text-foreground-muted sm:text-xl">
+                  <p className="text-xl text-foreground-muted sm:text-2xl drop-shadow-md max-w-3xl mx-auto">
                     {event.description}
                   </p>
                 )}
@@ -86,24 +86,10 @@ export function EventPageContent({
         </div>
       )}
 
-      <Section spacing="sm" className="pt-[72px] lg:pt-8">
+      <Section spacing="sm" className="pt-0">
         <Container size="lg">
           <div className="space-y-8">
-            {/* Desktop: Show title if no flier */}
-            {!event.flier_url && (
-              <div className="text-center space-y-4">
-                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                  {event.name}
-                </h1>
-                {event.description && (
-                  <p className="text-lg text-foreground-muted max-w-3xl mx-auto">
-                    {event.description}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Mobile Title and Flier Preview (shown in mobile flier view after flip) */}
+            {/* Mobile Title with Flier Preview (shown in mobile flier view after flip) */}
             {isMobileFlierView && event.flier_url && (
               <div className="relative overflow-hidden rounded-2xl">
                 {/* Blurred flier background */}
@@ -142,6 +128,20 @@ export function EventPageContent({
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Mobile Title for events WITHOUT fliers */}
+            {!isMobileFlierView && !event.flier_url && (
+              <div className="lg:hidden text-center space-y-4 py-4">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                  {event.name}
+                </h1>
+                {event.description && (
+                  <p className="text-base text-foreground-muted">
+                    {event.description}
+                  </p>
+                )}
               </div>
             )}
 
@@ -266,28 +266,28 @@ export function EventPageContent({
                 <div className="space-y-4">
                   {/* Spots left / registration count */}
                   <div className="text-center pt-2">
-                    {event.capacity ? (
+                      {event.capacity ? (
                       <div className="space-y-1">
+                          <div className="text-2xl font-bold text-foreground">
+                            {event.capacity - (event.registration_count || 0)} spots left
+                          </div>
+                          <div className="text-sm text-foreground-muted">
+                            {event.registration_count || 0} people registered
+                          </div>
+                        </div>
+                      ) : (
                         <div className="text-2xl font-bold text-foreground">
-                          {event.capacity - (event.registration_count || 0)} spots left
+                          {event.registration_count || 0} registered
                         </div>
-                        <div className="text-sm text-foreground-muted">
-                          {event.registration_count || 0} people registered
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-2xl font-bold text-foreground">
-                        {event.registration_count || 0} registered
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
                   {/* Register Now - Desktop only */}
                   <Link href={`/e/${params.eventSlug}/register`} className="hidden lg:block">
-                    <Button variant="primary" size="lg" className="w-full">
-                      Register Now
-                    </Button>
-                  </Link>
+                      <Button variant="primary" size="lg" className="w-full">
+                        Register Now
+                      </Button>
+                    </Link>
 
                   {/* Share and Calendar - Same line on mobile, stacked on desktop */}
                   <div className="flex flex-row lg:flex-col gap-2">
@@ -310,7 +310,7 @@ export function EventPageContent({
 
                   {/* QR Code Section - Desktop only */}
                   <div className="hidden lg:block">
-                    <EventQRCode eventSlug={params.eventSlug} />
+                  <EventQRCode eventSlug={params.eventSlug} />
                   </div>
 
                   {/* Promoter Request Button */}

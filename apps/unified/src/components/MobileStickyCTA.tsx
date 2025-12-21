@@ -75,7 +75,7 @@ export function MobileStickyCTA({ href, label }: MobileStickyCTAProps) {
         >
           {label}
           <ArrowRight className="h-5 w-5" />
-        </Link>
+      </Link>
       </div>
     </div>
   );

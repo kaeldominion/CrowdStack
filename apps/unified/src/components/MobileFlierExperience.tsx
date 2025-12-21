@@ -121,10 +121,10 @@ export function MobileFlierExperience({
   };
 
   return (
-    // Use fixed positioning for true full-screen
+    // Use fixed positioning for true full-screen - background is now at page level
     <div 
       ref={containerRef}
-      className="lg:hidden fixed inset-0 z-40" 
+      className="lg:hidden fixed inset-0 z-10" 
       style={{ top: 0, perspective: "1000px" }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -145,7 +145,7 @@ export function MobileFlierExperience({
             transition: "opacity 0.15s ease-out"
           }}
         >
-          <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+          <div className="relative w-full h-full bg-black/90 flex items-center justify-center overflow-hidden">
             {/* Zoom-in animation on first load */}
             <div
               className={`relative w-full h-full flex items-center justify-center ${
@@ -192,7 +192,7 @@ export function MobileFlierExperience({
             transition: "opacity 0.15s ease-out"
           }}
         >
-          <div className="w-full h-full overflow-y-auto bg-background">
+          <div className="w-full h-full overflow-y-auto bg-background/80 backdrop-blur-md pt-20">
             {children}
           </div>
         </div>
