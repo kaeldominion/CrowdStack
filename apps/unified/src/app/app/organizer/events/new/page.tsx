@@ -84,16 +84,24 @@ export default function NewEventPage() {
     }
   };
 
-  const handleNameChange = async (name: string) => {
+  const handleNameChange = (name: string) => {
+    // Update name immediately (synchronously) to prevent input lag
     const baseSlug = generateSlugFromName(name);
-    
-    // Generate unique slug asynchronously
-    const uniqueSlug = await generateUniqueSlug(name);
-    
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       name,
-      slug: uniqueSlug,
+      slug: baseSlug, // Use base slug immediately
+    }));
+    
+    // Generate unique slug asynchronously and update only the slug
+    generateUniqueSlug(name).then((uniqueSlug) => {
+      setFormData((prev) => {
+        // Only update slug if the name hasn't changed since we started
+        if (prev.name === name) {
+          return { ...prev, slug: uniqueSlug };
+        }
+        return prev;
+      });
     });
   };
 
