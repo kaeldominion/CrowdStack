@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
+import { LoadingSpinner } from "@crowdstack/ui";
 import Link from "next/link";
 import {
   Calendar,
@@ -329,7 +330,7 @@ export default function MePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading your dashboard..." size="lg" />
       </div>
     );
   }

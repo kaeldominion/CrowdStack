@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Button, Dropdown, Modal, Input } from "@crowdstack/ui";
+import { Button, Dropdown, Modal, Input, LoadingSpinner } from "@crowdstack/ui";
 import { Building2, Calendar, Users, User, Shield, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { UserRole } from "@crowdstack/shared";
 
@@ -304,7 +304,9 @@ export function ImprovedEntitySwitcher({ userRoles }: { userRoles: UserRole[] })
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-foreground-muted">Loading...</div>
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner text="Loading entities..." size="md" />
+              </div>
             ) : entities.length === 0 ? (
               <div className="text-center py-8 text-foreground-muted">
                 {(() => {

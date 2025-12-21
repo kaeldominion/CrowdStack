@@ -2,15 +2,10 @@
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { LoadingSpinner, PageLoader } from "@crowdstack/ui";
 
 function LoadingFallback() {
-  return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-white/60">Loading...</p>
-      </div>
-    </div>
-  );
+  return <PageLoader message="Loading..." />;
 }
 
 /**
@@ -65,9 +60,7 @@ function MagicLinkContent() {
   // Show loading state while redirecting
   return (
     <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-      <div className="text-center">
-        <p className="text-white/60">Verifying magic link...</p>
-      </div>
+      <LoadingSpinner text="Verifying magic link..." size="lg" />
     </div>
   );
 }
@@ -79,4 +72,3 @@ export default function MagicLinkPage() {
     </Suspense>
   );
 }
-

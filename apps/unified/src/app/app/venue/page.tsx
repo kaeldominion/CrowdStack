@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { BentoCard } from "@/components/BentoCard";
-import { Button } from "@crowdstack/ui";
+import { Button, LoadingSpinner } from "@crowdstack/ui";
 import { Calendar, TrendingUp, Ticket, Repeat, BarChart3, Users, Plus, ExternalLink, Globe, Eye, Building2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -58,8 +58,8 @@ export default function VenueDashboardPage() {
   if (loading) {
     return (
       <div className="space-y-8 pt-4">
-        <div className="text-center py-12">
-          <p className="text-white/60">Loading...</p>
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner text="Loading dashboard..." size="lg" />
         </div>
       </div>
     );

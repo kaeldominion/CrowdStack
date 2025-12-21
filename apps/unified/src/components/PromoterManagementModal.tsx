@@ -12,6 +12,7 @@ import {
   TableHead,
   TableCell,
   Badge,
+  LoadingSpinner,
 } from "@crowdstack/ui";
 import { Search, UserPlus, Trash2, Users, DollarSign } from "lucide-react";
 
@@ -244,8 +245,8 @@ export function PromoterManagementModal({
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-foreground-muted">
-              Loading...
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner text="Loading promoters..." size="md" />
             </div>
           ) : eventPromoters.length > 0 ? (
             <Table>

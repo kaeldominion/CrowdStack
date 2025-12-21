@@ -24,6 +24,14 @@ function notifyListeners() {
   listeners.forEach(listener => listener());
 }
 
+// Detect problematic in-app browsers that have issues with video
+function isProblematicBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent || navigator.vendor || "";
+  // Instagram, Facebook, TikTok, Snapchat, Twitter in-app browsers
+  return /Instagram|FBAN|FBAV|FB_IAB|TikTok|Snapchat|Twitter/i.test(ua);
+}
+
 export function MobileScrollExperience({
   flierUrl,
   videoUrl,
@@ -35,23 +43,44 @@ export function MobileScrollExperience({
   const [showHint, setShowHint] = useState(false);
   const [cardAnimations, setCardAnimations] = useState<number[]>([]);
   const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Determine if we should show video or image
-  const hasVideo = !!videoUrl;
-
-  // Fallback timeout - if media doesn't load in 5 seconds, show anyway
+  // Check for problematic browsers on mount
   useEffect(() => {
+    setIsInAppBrowser(isProblematicBrowser());
+  }, []);
+  
+  // Determine if we should show video or image
+  // Fall back to image if video failed or we're in a problematic browser
+  const hasVideo = !!videoUrl && !videoFailed && !isInAppBrowser;
+
+  // Fallback timeout - if media doesn't load in 3 seconds, show anyway
+  // For video, if it hasn't loaded in 2 seconds, fall back to image
+  useEffect(() => {
+    // Shorter timeout for video - fall back to image faster
+    if (hasVideo && videoUrl && !videoFailed) {
+      const videoTimeout = setTimeout(() => {
+        if (!mediaLoaded) {
+          console.warn("Video load timeout - falling back to image");
+          setVideoFailed(true);
+        }
+      }, 2000);
+      return () => clearTimeout(videoTimeout);
+    }
+    
+    // General timeout for image loading
     const timeout = setTimeout(() => {
       if (!mediaLoaded) {
         console.warn("Media load timeout - showing content anyway");
         setMediaLoaded(true);
       }
-    }, 5000);
+    }, 3000);
     return () => clearTimeout(timeout);
-  }, [mediaLoaded]);
+  }, [mediaLoaded, hasVideo, videoUrl, videoFailed]);
 
   // Show hint after 2 second delay
   useEffect(() => {
@@ -258,7 +287,16 @@ export function MobileScrollExperience({
             onCanPlay={() => setMediaLoaded(true)}
             onError={() => {
               console.error("Video failed to load, falling back to image");
-              setMediaLoaded(true); // Show anyway to prevent infinite loading
+              setVideoFailed(true); // Fall back to image
+            }}
+            onStalled={() => {
+              // Video stalled - fall back to image after a delay
+              setTimeout(() => {
+                if (!mediaLoaded) {
+                  console.warn("Video stalled - falling back to image");
+                  setVideoFailed(true);
+                }
+              }, 1000);
             }}
           />
         ) : (
@@ -270,6 +308,10 @@ export function MobileScrollExperience({
             priority
             sizes="100vw"
             onLoad={() => setMediaLoaded(true)}
+            onError={() => {
+              console.error("Image failed to load");
+              setMediaLoaded(true); // Show content anyway
+            }}
           />
         )}
         {/* Subtle gradient overlay */}

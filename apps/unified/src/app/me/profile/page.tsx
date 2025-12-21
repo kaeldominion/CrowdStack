@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { User, Mail, Phone, Save, Check, AlertCircle, Calendar, Instagram, MessageCircle, FileText, ArrowLeft } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { Button, InlineSpinner } from "@crowdstack/ui";
+import { Button, InlineSpinner, LoadingSpinner } from "@crowdstack/ui";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -149,7 +149,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading profile..." size="lg" />
       </div>
     );
   }

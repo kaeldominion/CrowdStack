@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
+import { Card, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Tabs, TabsList, TabsTrigger, TabsContent, LoadingSpinner } from "@crowdstack/ui";
 import { Calendar, Search, Eye, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
@@ -74,7 +74,7 @@ export default function PromoterEventsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading events...</div>
+        <LoadingSpinner text="Loading events..." size="lg" />
       </div>
     );
   }

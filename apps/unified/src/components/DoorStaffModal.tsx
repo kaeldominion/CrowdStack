@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Button, Input, Badge } from "@crowdstack/ui";
+import { Modal, Button, Input, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail } from "lucide-react";
 
 interface DoorStaff {
@@ -153,7 +153,9 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-foreground-muted">Loading...</div>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner text="Loading staff..." size="md" />
+          </div>
         ) : error ? (
           <div className="text-center py-8 text-danger">{error}</div>
         ) : (

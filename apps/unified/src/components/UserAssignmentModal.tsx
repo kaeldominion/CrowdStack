@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Button, Input } from "@crowdstack/ui";
+import { Modal, Button, Input, LoadingSpinner } from "@crowdstack/ui";
 import { Search, User, Building2, Calendar, Check, X } from "lucide-react";
 
 interface User {
@@ -149,7 +149,9 @@ export function UserAssignmentModal({
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-foreground-muted">Loading...</div>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner text="Loading..." size="md" />
+          </div>
         ) : loadError ? (
           <div className="text-center py-8 text-error">
             <p className="font-medium">Error loading {type === "venue" ? "venues" : "organizers"}</p>
