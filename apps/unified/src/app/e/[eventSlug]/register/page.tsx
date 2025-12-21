@@ -34,12 +34,14 @@ export default function RegisterPage() {
     venue?: { name: string } | null;
     start_time?: string | null;
     registration_count?: number;
+    flier_url?: string | null;
   } | null>(null);
   const [eventDataForSignup, setEventDataForSignup] = useState<{
     name: string;
     venueName?: string | null;
     startTime?: string | null;
     registrationCount?: number;
+    flierUrl?: string | null;
   } | null>(null);
 
   // Fetch event data on mount
@@ -55,6 +57,7 @@ export default function RegisterPage() {
               venueName: data.event.venue?.name || null,
               startTime: data.event.start_time || null,
               registrationCount: data.event.registration_count || 0,
+              flierUrl: data.event.flier_url || null,
             });
             // Also update eventDetails if not already set
             if (!eventDetails) {
@@ -63,6 +66,7 @@ export default function RegisterPage() {
                 venue: data.event.venue,
                 start_time: data.event.start_time,
                 registration_count: data.event.registration_count || 0,
+                flier_url: data.event.flier_url || null,
               });
             }
           }
@@ -110,6 +114,7 @@ export default function RegisterPage() {
                 name: checkData.event.name,
                 venue: checkData.event.venue,
                 start_time: checkData.event.start_time,
+                flier_url: checkData.event.flier_url,
               });
               setLoading(false);
               return;
@@ -287,6 +292,7 @@ export default function RegisterPage() {
           name: data.event.name,
           venue: data.event.venue,
           start_time: data.event.start_time,
+          flier_url: data.event.flier_url,
         });
       } else {
         // If event details not in response, fetch them
@@ -295,9 +301,10 @@ export default function RegisterPage() {
           if (eventResponse.ok) {
             const eventData = await eventResponse.json();
             setEventDetails({
-              name: eventData.name,
-              venue: eventData.venue || null,
-              start_time: eventData.start_time || null,
+              name: eventData.event?.name || eventData.name,
+              venue: eventData.event?.venue || eventData.venue || null,
+              start_time: eventData.event?.start_time || eventData.start_time || null,
+              flier_url: eventData.event?.flier_url || eventData.flier_url || null,
             });
           }
         } catch (err) {
@@ -328,6 +335,7 @@ export default function RegisterPage() {
             name: checkData.event.name,
             venue: checkData.event.venue,
             start_time: checkData.event.start_time,
+            flier_url: checkData.event.flier_url,
           });
           return true;
         }
@@ -351,6 +359,7 @@ export default function RegisterPage() {
         venueName={eventDetails.venue?.name || null}
         startTime={eventDetails.start_time || null}
         qrToken={qrToken}
+        flierUrl={eventDetails.flier_url || eventDataForSignup?.flierUrl || null}
       />
     );
   }
