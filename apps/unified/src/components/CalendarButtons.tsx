@@ -1,7 +1,8 @@
 "use client";
 
-import { Button } from "@crowdstack/ui";
-import { Calendar } from "lucide-react";
+import { useState } from "react";
+import { Button, Modal } from "@crowdstack/ui";
+import { Calendar, ExternalLink, Download } from "lucide-react";
 
 interface CalendarButtonsProps {
   eventName: string;
@@ -122,48 +123,84 @@ export function CalendarButtons({
     URL.revokeObjectURL(link.href);
   };
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const calendarOptions = [
+    {
+      name: "Google Calendar",
+      icon: "📅",
+      action: () => {
+        window.open(googleCalendarUrl.toString(), "_blank");
+        setIsModalOpen(false);
+      },
+    },
+    {
+      name: "Apple Calendar",
+      icon: "🍎",
+      action: () => {
+        generateICS();
+        setIsModalOpen(false);
+      },
+    },
+    {
+      name: "Outlook",
+      icon: "📧",
+      action: () => {
+        window.open(outlookCalendarUrl.toString(), "_blank");
+        setIsModalOpen(false);
+      },
+    },
+    {
+      name: "Yahoo Calendar",
+      icon: "📆",
+      action: () => {
+        window.open(yahooCalendarUrl.toString(), "_blank");
+        setIsModalOpen(false);
+      },
+    },
+  ];
+
   return (
-    <div className="space-y-2">
-      <div className="text-sm text-foreground-muted mb-2">Add to Calendar</div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => window.open(googleCalendarUrl.toString(), "_blank")}
-          className="flex items-center gap-1.5"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          Google
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => window.open(outlookCalendarUrl.toString(), "_blank")}
-          className="flex items-center gap-1.5"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          Outlook
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => window.open(yahooCalendarUrl.toString(), "_blank")}
-          className="flex items-center gap-1.5"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          Yahoo
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={generateICS}
-          className="flex items-center gap-1.5"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          Apple
-        </Button>
-      </div>
-    </div>
+    <>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => setIsModalOpen(true)}
+        className="w-full flex items-center justify-center gap-2"
+      >
+        <Calendar className="h-4 w-4" />
+        Add to Calendar
+      </Button>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add to Calendar"
+        size="sm"
+      >
+        <div className="space-y-2">
+          {calendarOptions.map((option) => (
+            <button
+              key={option.name}
+              onClick={option.action}
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-surface/50 transition-all text-left group"
+            >
+              <span className="text-2xl flex-shrink-0">{option.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                  {option.name}
+                </div>
+              </div>
+              {option.name === "Apple Calendar" ? (
+                <Download className="h-4 w-4 text-foreground-muted flex-shrink-0" />
+              ) : (
+                <ExternalLink className="h-4 w-4 text-foreground-muted flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      </Modal>
+    </>
   );
 }
 
