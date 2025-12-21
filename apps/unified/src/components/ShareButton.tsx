@@ -12,6 +12,7 @@ interface ShareButtonProps {
   videoUrl?: string; // Optional video URL for sharing video fliers
   label?: string;
   compact?: boolean; // Smaller size for inline layout
+  userId?: string; // Optional user ID to append as ?ref= parameter for referral tracking
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -37,8 +38,18 @@ export function ShareButton({
   imageUrl,
   videoUrl,
   label = "Share", 
-  compact = false 
+  compact = false,
+  userId,
 }: ShareButtonProps) {
+  // Append userId as ref parameter if provided
+  const getShareUrl = () => {
+    if (!userId) return url;
+    const urlObj = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    urlObj.searchParams.set("ref", userId);
+    return urlObj.toString();
+  };
+
+  const shareUrl = getShareUrl();
   const [isLoading, setIsLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -60,7 +71,7 @@ export function ShareButton({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => {
         setCopied(false);
@@ -79,7 +90,7 @@ export function ShareButton({
 
     setLoadingAction("link");
     try {
-      await navigator.share({ title, text, url });
+      await navigator.share({ title, text, url: shareUrl });
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
         handleCopyLink();

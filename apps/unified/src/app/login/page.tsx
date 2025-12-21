@@ -418,6 +418,13 @@ function LoginContent() {
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate email before proceeding
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError("Please enter your email address");
+      return;
+    }
+    
     // Prevent duplicate submissions
     if (submittingRef.current || loading) {
       return;
@@ -470,10 +477,10 @@ function LoginContent() {
         ? `${callbackUrl}?redirect=${encodeURIComponent(redirectParam)}`
         : callbackUrl;
       
-      console.log("[Login] Requesting magic link for:", email);
+      console.log("[Login] Requesting magic link for:", trimmedEmail);
       console.log("[Login] Using redirect URL:", redirectTo);
       const { data, error: magicError } = await supabase.auth.signInWithOtp({
-        email,
+        email: trimmedEmail,
         options: {
           emailRedirectTo: redirectTo,
         },
@@ -500,7 +507,7 @@ function LoginContent() {
         }
       } else {
         console.log("[Login] Magic link sent successfully");
-        setMessage("Check your email for the magic link! Click it in this browser to sign in.");
+        setMessage("Check your email for the magic link! If you don't receive it within a minute, check your spam folder or try password login instead.");
       }
     } catch (err: any) {
       console.error("[Login] Magic link exception:", err);

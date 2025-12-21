@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@crowdstack/ui";
@@ -16,58 +19,50 @@ interface PhotoGalleryPreviewProps {
   eventName: string;
 }
 
-function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
-  }
-  // In production on Vercel, always use the custom domain
-  if (process.env.VERCEL_ENV === "production") {
-    return "https://crowdstack.app";
-  }
-  // For preview deployments, use VERCEL_URL
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return "http://localhost:3000";
-}
-
-async function getEventPhotos(eventId: string) {
-  try {
-    const baseUrl = getBaseUrl();
-    const response = await fetch(
-      `${baseUrl}/api/events/${eventId}/photos`,
-      { 
-        cache: "no-store",
-        // In production, we might need to pass headers for auth, but for public photos this should work
-      }
-    );
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    
-    // Only show photos if album is published
-    if (data.album?.status === "published" && data.photos && data.photos.length > 0) {
-      return data.photos.slice(0, 6); // Show max 6 photos
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error fetching photos:", error);
-    return null;
-  }
-}
-
-export async function PhotoGalleryPreview({
+export function PhotoGalleryPreview({
   eventSlug,
   eventId,
   eventName,
 }: PhotoGalleryPreviewProps) {
-  const photos = await getEventPhotos(eventId);
+  const [photos, setPhotos] = useState<Photo[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Don't render if no photos
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const response = await fetch(`/api/events/${eventId}/photos`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          setPhotos(null);
+          return;
+        }
+
+        const data = await response.json();
+        
+        // Only show photos if album is published
+        if (data.album?.status === "published" && data.photos && data.photos.length > 0) {
+          setPhotos(data.photos.slice(0, 6)); // Show max 6 photos
+        } else {
+          setPhotos(null);
+        }
+      } catch (error) {
+        console.error("Error fetching photos:", error);
+        setPhotos(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPhotos();
+  }, [eventId]);
+
+  // Don't render if loading, no photos, or error
+  if (loading) {
+    return null; // Or return a loading skeleton if desired
+  }
+
   if (!photos || photos.length === 0) {
     return null;
   }

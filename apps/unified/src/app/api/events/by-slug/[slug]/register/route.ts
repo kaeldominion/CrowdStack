@@ -21,19 +21,56 @@ export async function POST(
     console.log("[Register API] Request body:", JSON.stringify(body, null, 2));
     
     const { searchParams } = new URL(request.url);
-    const ref = searchParams.get("ref"); // referral promoter ID or invite code
+    const ref = searchParams.get("ref"); // referral user ID, promoter ID, or invite code
     
-    // Validate ref - could be a UUID (promoter ID) or an invite code (e.g., INV-XXXXXX)
+    // Track referral attribution - can be any user ID (not just promoter)
+    let referredByUserId: string | null = null;
     let referralPromoterId: string | null = null;
+    
     if (ref) {
-      // Check if ref is a valid UUID format (promoter ID)
+      // Check if ref is a valid UUID format (could be user ID or promoter ID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(ref)) {
-        referralPromoterId = ref;
+        // First check if it's a promoter ID
+        const { data: promoter } = await serviceSupabase
+          .from("promoters")
+          .select("id")
+          .eq("id", ref)
+          .single();
+        
+        if (promoter) {
+          // It's a promoter ID
+          referralPromoterId = ref;
+          // Also set as user referral (promoters are users too)
+          const { data: promoterUser } = await serviceSupabase
+            .from("promoters")
+            .select("created_by")
+            .eq("id", ref)
+            .single();
+          if (promoterUser?.created_by) {
+            referredByUserId = promoterUser.created_by;
+          }
+        } else {
+          // It's likely a user ID - verify it exists
+          const { data: refUser } = await serviceSupabase.auth.admin.getUserById(ref).catch(() => ({ data: { user: null } }));
+          if (refUser?.user) {
+            referredByUserId = ref;
+            // Check if this user is also a promoter
+            const { data: userPromoter } = await serviceSupabase
+              .from("promoters")
+              .select("id")
+              .eq("created_by", ref)
+              .single();
+            if (userPromoter) {
+              referralPromoterId = userPromoter.id;
+            }
+          } else {
+            console.log("[Register API] Ref is not a valid user or promoter ID:", ref);
+          }
+        }
       } else if (ref.startsWith("venue_") || ref.startsWith("organizer_")) {
         // Ignore venue/organizer refs - they're not promoter IDs
         console.log("[Register API] Ignoring non-promoter ref:", ref);
-        referralPromoterId = null;
       } else if (ref.startsWith("INV-")) {
         // This is an invite code - look up the associated promoter
         console.log("[Register API] Looking up invite code:", ref);
@@ -48,6 +85,15 @@ export async function POST(
           if (inviteQR.promoter_id) {
             referralPromoterId = inviteQR.promoter_id;
             console.log("[Register API] Found promoter from invite code promoter_id:", referralPromoterId);
+            // Also set user referral
+            const { data: promoterUser } = await serviceSupabase
+              .from("promoters")
+              .select("created_by")
+              .eq("id", referralPromoterId)
+              .single();
+            if (promoterUser?.created_by) {
+              referredByUserId = promoterUser.created_by;
+            }
           } 
           // Otherwise, if creator is a promoter, get their promoter ID
           else if (inviteQR.creator_role === "promoter") {
@@ -59,8 +105,12 @@ export async function POST(
             
             if (promoter) {
               referralPromoterId = promoter.id;
+              referredByUserId = inviteQR.created_by;
               console.log("[Register API] Found promoter from invite code creator:", referralPromoterId);
             }
+          } else if (inviteQR.created_by) {
+            // Creator is not a promoter, but still track as user referral
+            referredByUserId = inviteQR.created_by;
           }
         } else {
           console.warn("[Register API] Invite code not found:", ref);
@@ -69,10 +119,27 @@ export async function POST(
         // Try to extract UUID if there's a prefix
         const uuidMatch = ref.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
         if (uuidMatch) {
-          referralPromoterId = uuidMatch[0];
+          const extractedId = uuidMatch[0];
+          // Check if it's a promoter or user ID (same logic as above)
+          const { data: promoter } = await serviceSupabase
+            .from("promoters")
+            .select("id, created_by")
+            .eq("id", extractedId)
+            .single();
+          
+          if (promoter) {
+            referralPromoterId = extractedId;
+            if (promoter.created_by) {
+              referredByUserId = promoter.created_by;
+            }
+          } else {
+            const { data: refUser } = await serviceSupabase.auth.admin.getUserById(extractedId).catch(() => ({ data: { user: null } }));
+            if (refUser?.user) {
+              referredByUserId = extractedId;
+            }
+          }
         } else {
           console.warn("[Register API] Invalid ref format, ignoring:", ref);
-          referralPromoterId = null;
         }
       }
     }
@@ -302,19 +369,45 @@ export async function POST(
       }
     }
 
-    // Create registration
+    // Create registration with both referral fields
     const { data: registration, error: regError } = await serviceSupabase
       .from("registrations")
       .insert({
         attendee_id: attendee.id,
         event_id: event.id,
-        referral_promoter_id: defaultPromoterId,
+        referral_promoter_id: defaultPromoterId || referralPromoterId,
+        referred_by_user_id: referredByUserId,
       })
       .select()
       .single();
 
     if (regError) {
       throw regError;
+    }
+
+    // Update referral_clicks to mark as converted if we have a matching click
+    if (referredByUserId) {
+      // Find the most recent click from this referrer for this event that hasn't been converted
+      const { data: recentClick } = await serviceSupabase
+        .from("referral_clicks")
+        .select("id")
+        .eq("event_id", event.id)
+        .eq("referrer_user_id", referredByUserId)
+        .is("converted_at", null)
+        .order("clicked_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (recentClick) {
+        // Mark this click as converted
+        await serviceSupabase
+          .from("referral_clicks")
+          .update({
+            converted_at: new Date().toISOString(),
+            registration_id: registration.id,
+          })
+          .eq("id", recentClick.id);
+      }
     }
 
     // Save answers if provided

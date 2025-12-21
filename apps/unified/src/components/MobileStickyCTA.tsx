@@ -15,6 +15,7 @@ interface MobileStickyCTAProps {
   shareText?: string;
   shareImageUrl?: string; // Optional image URL for Instagram Stories sharing
   shareVideoUrl?: string; // Optional video URL for sharing video fliers
+  userId?: string; // Optional user ID to append as ?ref= parameter for referral tracking
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -42,7 +43,17 @@ export function MobileStickyCTA({
   shareText,
   shareImageUrl,
   shareVideoUrl,
+  userId,
 }: MobileStickyCTAProps) {
+  // Append userId as ref parameter if provided
+  const getShareUrl = () => {
+    if (!shareUrl || !userId) return shareUrl || "";
+    const urlObj = new URL(shareUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    urlObj.searchParams.set("ref", userId);
+    return urlObj.toString();
+  };
+
+  const finalShareUrl = getShareUrl();
   const [isVisible, setIsVisible] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -80,9 +91,9 @@ export function MobileStickyCTA({
   }, [showShareMenu]);
 
   const handleCopyLink = async () => {
-    if (!shareUrl) return;
+    if (!finalShareUrl) return;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(finalShareUrl);
       setCopied(true);
       setTimeout(() => {
         setCopied(false);
@@ -94,7 +105,7 @@ export function MobileStickyCTA({
   };
 
   const handleShareLink = async () => {
-    if (!shareUrl) return;
+    if (!finalShareUrl) return;
     
     if (!navigator.share) {
       handleCopyLink();
@@ -106,7 +117,7 @@ export function MobileStickyCTA({
       await navigator.share({
         title: shareTitle || eventName,
         text: shareText,
-        url: shareUrl,
+        url: finalShareUrl,
       });
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
@@ -183,7 +194,7 @@ export function MobileStickyCTA({
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 lg:hidden max-w-[calc(100vw-2rem)]">
       {/* Share Menu Popup */}
-      {showShareMenu && shareUrl && (
+      {showShareMenu && finalShareUrl && (
         <div 
           ref={menuRef}
           className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border border-white/20 backdrop-blur-xl bg-black/90 shadow-2xl shadow-black/50 overflow-hidden"
@@ -277,7 +288,7 @@ export function MobileStickyCTA({
 
       <div className="flex items-center gap-1.5">
         {/* Share Button */}
-        {shareUrl && (
+        {finalShareUrl && (
           <button
             onClick={() => setShowShareMenu(!showShareMenu)}
             className="flex items-center justify-center h-11 w-11 rounded-full flex-shrink-0
