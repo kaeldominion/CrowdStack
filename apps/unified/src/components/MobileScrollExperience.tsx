@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
+import { ChevronUp } from "lucide-react";
 
 interface MobileScrollExperienceProps {
   flierUrl: string;
@@ -29,9 +29,20 @@ export function MobileScrollExperience({
 }: MobileScrollExperienceProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [cardAnimations, setCardAnimations] = useState<number[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Show hint after 2 second delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!hasScrolled) {
+        setShowHint(true);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [hasScrolled]);
 
   // Calculate blur based on scroll - more gradual
   const blurAmount = Math.min(scrollProgress * 15, 12); // Max 12px blur
@@ -229,28 +240,38 @@ export function MobileScrollExperience({
       <div className="relative z-10">
         {/* Spacer for initial flier view - slightly less than full height so cards peek */}
         <div className="h-[75vh] flex flex-col items-center justify-end pb-12">
-          {/* Scroll hint - large animated swipe indicator */}
-          {!hasScrolled && (
-            <div className="flex flex-col items-center">
-              {/* Glowing swipe up indicator */}
-              <div className="relative">
-                {/* Outer glow */}
-                <div className="absolute inset-0 bg-white/20 blur-xl rounded-full scale-150" />
+          {/* Scroll hint - minimal animated chevrons, appears after delay */}
+          {!hasScrolled && showHint && (
+            <div 
+              className="flex flex-col items-center animate-fade-in"
+              style={{
+                animation: "fadeIn 0.5s ease-out"
+              }}
+            >
+              {/* Animated chevrons floating upward */}
+              <div className="relative flex flex-col items-center">
+                {/* Glow effect behind */}
+                <div className="absolute inset-0 bg-white/10 blur-2xl rounded-full scale-[3]" />
                 
-                {/* Main indicator */}
-                <div className="relative px-6 py-3 bg-white/95 text-gray-900 font-semibold rounded-full shadow-2xl flex items-center gap-3">
-                  <span className="text-base">Swipe up for details</span>
-                  {/* Animated arrow stack */}
-                  <div className="flex flex-col -space-y-2 animate-bounce">
-                    <ChevronDown className="h-4 w-4 rotate-180 opacity-40" />
-                    <ChevronDown className="h-4 w-4 rotate-180 opacity-70" />
-                    <ChevronDown className="h-4 w-4 rotate-180" />
-                  </div>
+                {/* Stacked chevrons with staggered animation */}
+                <div className="relative flex flex-col items-center -space-y-3">
+                  <ChevronUp 
+                    className="h-6 w-6 text-white/40 animate-pulse" 
+                    style={{ animationDelay: "0.4s", animationDuration: "1.5s" }}
+                  />
+                  <ChevronUp 
+                    className="h-7 w-7 text-white/60 animate-pulse" 
+                    style={{ animationDelay: "0.2s", animationDuration: "1.5s" }}
+                  />
+                  <ChevronUp 
+                    className="h-8 w-8 text-white/90 animate-pulse drop-shadow-lg" 
+                    style={{ animationDelay: "0s", animationDuration: "1.5s" }}
+                  />
                 </div>
               </div>
               
-              {/* Subtle line indicator below */}
-              <div className="mt-4 w-12 h-1 bg-white/40 rounded-full" />
+              {/* Small line indicator */}
+              <div className="mt-6 w-8 h-0.5 bg-white/30 rounded-full" />
             </div>
           )}
         </div>
@@ -269,8 +290,34 @@ export function MobileScrollExperience({
         </div>
       </div>
 
-      {/* Global styles for transparent backgrounds */}
+      {/* Global styles for transparent backgrounds and animations */}
       <style jsx global>{`
+        /* Fade in animation for hint */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        /* Floating animation for chevrons */
+        @keyframes floatUp {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-8px);
+          }
+        }
+        
+        .animate-float-up {
+          animation: floatUp 2s ease-in-out infinite;
+        }
+        
         /* Make Section component transparent in scroll mode */
         .scroll-cards-wrapper section {
           background: transparent !important;
