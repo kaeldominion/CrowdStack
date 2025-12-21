@@ -10,9 +10,13 @@ import { uploadToStorage } from "@crowdstack/shared/storage/upload";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> | { eventId: string } }
 ) {
   try {
+    // Handle both sync and async params (Next.js 15+ uses Promise)
+    const resolvedParams = await Promise.resolve(params);
+    const eventId = resolvedParams.eventId;
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -38,16 +42,37 @@ export async function POST(
     const serviceSupabase = createServiceRoleClient();
 
     // Verify event belongs to this organizer
-    const { data: event } = await serviceSupabase
+    const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .select("id, organizer_id, flier_url")
-      .eq("id", params.eventId)
+      .eq("id", eventId)
       .single();
 
-    if (!event || event.organizer_id !== organizerId) {
+    if (eventError) {
+      console.error("Error fetching event:", eventError);
       return NextResponse.json(
-        { error: "Event not found or access denied" },
+        { error: `Event lookup failed: ${eventError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!event) {
+      return NextResponse.json(
+        { error: "Event not found" },
         { status: 404 }
+      );
+    }
+
+    if (event.organizer_id !== organizerId) {
+      console.error("Organizer ID mismatch:", {
+        eventOrganizerId: event.organizer_id,
+        userOrganizerId: organizerId,
+        eventId,
+        userId: user.id,
+      });
+      return NextResponse.json(
+        { error: "Access denied: Event does not belong to your organizer account" },
+        { status: 403 }
       );
     }
 
@@ -82,7 +107,7 @@ export async function POST(
     // Generate unique filename
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const storagePath = `events/${params.eventId}/flier/${fileName}`;
+    const storagePath = `events/${eventId}/flier/${fileName}`;
 
     // Upload to storage (using event-photos bucket for now, or create event-assets bucket)
     const fileBuffer = await file.arrayBuffer();
@@ -111,7 +136,7 @@ export async function POST(
     const { error: updateError } = await serviceSupabase
       .from("events")
       .update({ flier_url: publicUrl })
-      .eq("id", params.eventId);
+      .eq("id", eventId);
 
     if (updateError) {
       return NextResponse.json(
