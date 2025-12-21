@@ -1,8 +1,9 @@
 "use client";
 
-import { Section, Container, Card, Button, Logo } from "@crowdstack/ui";
+import { Section, Container, Button, Logo } from "@crowdstack/ui";
 import { CheckCircle2, Calendar, MapPin, Ticket } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface RegistrationSuccessProps {
   eventName: string;
@@ -10,6 +11,7 @@ interface RegistrationSuccessProps {
   venueName?: string | null;
   startTime?: string | null;
   qrToken: string;
+  flierUrl?: string | null;
 }
 
 export function RegistrationSuccess({
@@ -18,9 +20,31 @@ export function RegistrationSuccess({
   venueName,
   startTime,
   qrToken,
+  flierUrl,
 }: RegistrationSuccessProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Blurred Flier Background */}
+      {flierUrl ? (
+        <div className="fixed inset-0 z-0">
+          <Image
+            src={flierUrl}
+            alt=""
+            fill
+            className="object-cover"
+            style={{
+              filter: "blur(40px)",
+              transform: "scale(1.2)",
+              opacity: 0.5,
+            }}
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/80" />
+        </div>
+      ) : (
+        <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      )}
+
       {/* Navigation Bar */}
       <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
         <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
@@ -34,74 +58,98 @@ export function RegistrationSuccess({
         </div>
       </nav>
 
-      <Section spacing="xl" className="min-h-screen pt-20 sm:pt-24">
+      {/* Content */}
+      <Section spacing="xl" className="relative z-10 min-h-screen pt-20 sm:pt-24">
         <Container size="sm" className="flex items-center justify-center min-h-screen py-8">
-        <Card className="text-center w-full max-w-md p-6 sm:p-8">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10 mb-6">
-            <CheckCircle2 className="h-8 w-8 text-success" />
-          </div>
-          
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-            You're Registered!
-          </h1>
-          
-          <div className="mt-6 space-y-4 text-left">
-            {/* Event Name */}
-            <div className="flex items-start gap-3 p-4 bg-white/5 rounded-lg border border-white/10">
-              <Calendar className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white/60 mb-1">Event</p>
-                <p className="text-base font-semibold text-white">{eventName}</p>
+          {/* Glassmorphism Card */}
+          <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl">
+            
+            {/* Header with flier preview */}
+            <div className="flex items-center gap-4 mb-6">
+              {/* Small flier preview */}
+              {flierUrl && (
+                <div className="relative w-16 h-24 rounded-xl overflow-hidden shadow-xl ring-2 ring-white/20 flex-shrink-0">
+                  <Image
+                    src={flierUrl}
+                    alt={`${eventName} flier`}
+                    fill
+                    className="object-cover"
+                    sizes="64px"
+                  />
+                </div>
+              )}
+              
+              {/* Success icon and title */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-white">
+                    You're Registered!
+                  </h1>
+                </div>
               </div>
             </div>
-
-            {/* Venue */}
-            {venueName && (
-              <div className="flex items-start gap-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            
+            {/* Event Details */}
+            <div className="space-y-3">
+              {/* Event Name */}
+              <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/60 mb-1">Venue</p>
-                  <p className="text-base font-semibold text-white">{venueName}</p>
+                  <p className="text-xs text-white/50 mb-0.5">Event</p>
+                  <p className="text-sm font-semibold text-white">{eventName}</p>
                 </div>
               </div>
-            )}
 
-            {/* Start Time */}
-            {startTime && (
-              <div className="flex items-start gap-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                <Calendar className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/60 mb-1">Date & Time</p>
-                  <p className="text-base font-semibold text-white">
-                    {new Date(startTime).toLocaleDateString(undefined, {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </p>
+              {/* Venue */}
+              {venueName && (
+                <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                  <MapPin className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/50 mb-0.5">Venue</p>
+                    <p className="text-sm font-semibold text-white">{venueName}</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          <div className="mt-8 space-y-3">
-            <Link href={`/e/${eventSlug}/pass?token=${qrToken}`}>
-              <Button variant="primary" size="lg" className="w-full flex items-center justify-center gap-2">
-                <Ticket className="h-5 w-5" />
-                View QR Pass
-              </Button>
-            </Link>
-            <p className="text-xs text-white/50">
-              Show your QR pass at the event entrance
-            </p>
+              {/* Start Time */}
+              {startTime && (
+                <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                  <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/50 mb-0.5">Date & Time</p>
+                    <p className="text-sm font-semibold text-white">
+                      {new Date(startTime).toLocaleDateString(undefined, {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* CTA Button */}
+            <div className="mt-6 space-y-3">
+              <Link href={`/e/${eventSlug}/pass?token=${qrToken}`}>
+                <Button variant="primary" size="lg" className="w-full flex items-center justify-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  View QR Pass
+                </Button>
+              </Link>
+              <p className="text-xs text-white/40 text-center">
+                Show your QR pass at the event entrance
+              </p>
+            </div>
           </div>
-        </Card>
-      </Container>
-    </Section>
+        </Container>
+      </Section>
     </div>
   );
 }
-
