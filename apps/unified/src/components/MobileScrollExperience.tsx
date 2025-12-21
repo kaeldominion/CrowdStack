@@ -227,8 +227,8 @@ export function MobileScrollExperience({
 
       {/* Scroll Content Container */}
       <div className="relative z-10">
-        {/* Spacer for initial flier view - full viewport height */}
-        <div className="h-screen flex flex-col items-center justify-end pb-24">
+        {/* Spacer for initial flier view - slightly less than full height so cards peek */}
+        <div className="h-[75vh] flex flex-col items-center justify-end pb-16">
           {/* Scroll hint */}
           {!hasScrolled && (
             <div className="flex flex-col items-center animate-bounce-subtle">
