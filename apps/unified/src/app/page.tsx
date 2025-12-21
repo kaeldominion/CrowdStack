@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Zap, 
@@ -657,7 +657,7 @@ export default function HomePage() {
                 <div className="text-white/60 text-sm">Operations Manager, Arena Events</div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
