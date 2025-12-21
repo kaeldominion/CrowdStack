@@ -348,6 +348,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     try {
       const updates: Record<string, any> = {};
       
+      // Debug logging for date comparison
+      console.log("[EventEdit] Comparing dates:", {
+        editForm_start: editForm.start_time,
+        event_start_raw: event.start_time,
+        event_start_sliced: event.start_time?.slice(0, 16),
+        are_different: editForm.start_time !== event.start_time?.slice(0, 16),
+      });
+      
       if (editForm.name !== event.name) updates.name = editForm.name;
       if (editForm.slug !== event.slug) updates.slug = editForm.slug;
       if (editForm.description !== (event.description || "")) updates.description = editForm.description || null;
@@ -357,6 +365,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.end_time !== (event.end_time?.slice(0, 16) || "")) {
         updates.end_time = editForm.end_time ? new Date(editForm.end_time).toISOString() : null;
       }
+      
+      console.log("[EventEdit] Updates to save:", updates);
       if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
