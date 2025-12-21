@@ -58,6 +58,7 @@ import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { EventImageUpload } from "@/components/EventImageUpload";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
@@ -94,6 +95,7 @@ interface EventData {
   end_time: string | null;
   capacity: number | null;
   cover_image_url: string | null;
+  flier_url: string | null;
   timezone: string | null;
   promoter_access_type?: string;
   organizer_id: string;
@@ -1666,6 +1668,75 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 placeholder="Explain why you're making these changes..."
               />
             )}
+
+            {/* Image Uploads */}
+            <div className="grid grid-cols-1 gap-6 border-t border-border pt-6">
+              <EventImageUpload
+                label="Cover Image"
+                currentImageUrl={event?.cover_image_url}
+                onUpload={async (file) => {
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  const response = await fetch(`/api/organizer/events/${eventId}/cover`, {
+                    method: "POST",
+                    body: formData,
+                  });
+                  if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Failed to upload cover image");
+                  }
+                  const data = await response.json();
+                  await loadEventData(); // Refresh event data
+                  return data.cover_image_url;
+                }}
+                onRemove={async () => {
+                  // Update event to remove cover image
+                  const response = await fetch(`/api/events/${eventId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cover_image_url: null }),
+                  });
+                  if (!response.ok) {
+                    throw new Error("Failed to remove cover image");
+                  }
+                  await loadEventData();
+                }}
+                helperText="Main hero image for the event page (recommended: 16:9 aspect ratio)"
+              />
+              <EventImageUpload
+                label="Event Flier"
+                currentImageUrl={event?.flier_url}
+                onUpload={async (file) => {
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                    method: "POST",
+                    body: formData,
+                  });
+                  if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Failed to upload flier");
+                  }
+                  const data = await response.json();
+                  await loadEventData(); // Refresh event data
+                  return data.flier_url;
+                }}
+                onRemove={async () => {
+                  // Update event to remove flier
+                  const response = await fetch(`/api/events/${eventId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ flier_url: null }),
+                  });
+                  if (!response.ok) {
+                    throw new Error("Failed to remove flier");
+                  }
+                  await loadEventData();
+                }}
+                helperText="Digital flier/poster for the event (optional)"
+              />
+            </div>
+
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
               <Button variant="ghost" onClick={() => setShowEditModal(false)}>
                 Cancel
