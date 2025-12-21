@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Container, Section, Button, Badge } from "@crowdstack/ui";
 import { Calendar, MapPin, Users, Clock, ExternalLink, Info } from "lucide-react";
 import Image from "next/image";
@@ -7,6 +10,7 @@ import { EventQRCode } from "@/components/EventQRCode";
 import { PromoterRequestButton } from "@/components/PromoterRequestButton";
 import { CalendarButtons } from "@/components/CalendarButtons";
 import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
+import { useReferralUserId } from "@/components/ReferralTracker";
 
 // Helper to construct Google Maps URL from address
 function getGoogleMapsUrl(venue: any): string | null {
@@ -45,6 +49,19 @@ export function EventPageContent({
   isMobileFlierView = false,
   isScrollMode = false,
 }: EventPageContentProps) {
+  // Get userId from ReferralTracker context
+  const userId = useReferralUserId();
+  const searchParams = useSearchParams();
+  
+  // Preserve ref parameter in register link
+  const getRegisterUrl = () => {
+    const ref = searchParams?.get("ref");
+    const baseUrl = `/e/${params.eventSlug}/register`;
+    if (ref) {
+      return `${baseUrl}?ref=${encodeURIComponent(ref)}`;
+    }
+    return baseUrl;
+  };
   // Card styles - floating transparent when there's a flier background (mobile and desktop)
   const useFloatingCards = event.flier_url;
   const cardStyle = useFloatingCards 
@@ -341,7 +358,7 @@ export function EventPageContent({
                     </div>
 
                   {/* Register Now - Desktop only */}
-                  <Link href={`/e/${params.eventSlug}/register`} className="hidden lg:block">
+                  <Link href={getRegisterUrl()} className="hidden lg:block">
                       <Button variant="primary" size="lg" className="w-full">
                         Register Now
                       </Button>
@@ -353,6 +370,7 @@ export function EventPageContent({
                       title={event.name}
                       text={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
                       url={shareUrl}
+                      userId={userId}
                       imageUrl={event.flier_url || undefined}
                       videoUrl={event.flier_video_url || undefined}
                       compact={true}

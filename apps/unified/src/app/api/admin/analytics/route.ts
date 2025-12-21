@@ -52,6 +52,7 @@ export async function GET() {
       topPromotersResult,
       recentEventsResult,
       topOrganizersResult,
+      topReferrersResult,
     ] = await Promise.all([
       // Total auth users
       serviceClient.from("user_roles").select("user_id", { count: "exact", head: true }),
@@ -130,6 +131,14 @@ export async function GET() {
           events:events(count)
         `)
         .limit(10),
+      // Top referrers (all users, not just promoters) by referred_by_user_id
+      serviceClient
+        .from("registrations")
+        .select(`
+          referred_by_user_id,
+          id
+        `)
+        .not("referred_by_user_id", "is", null),
     ]);
 
     // Process role distribution
@@ -221,6 +230,45 @@ export async function GET() {
       .sort((a: any, b: any) => b.eventCount - a.eventCount)
       .slice(0, 5);
 
+    // Process top referrers - aggregate by referred_by_user_id
+    const referrerCounts: Record<string, number> = {};
+    (topReferrersResult.data || []).forEach((reg: any) => {
+      if (reg.referred_by_user_id) {
+        referrerCounts[reg.referred_by_user_id] = (referrerCounts[reg.referred_by_user_id] || 0) + 1;
+      }
+    });
+
+    // Get user details for top referrers
+    const topReferrerUserIds = Object.entries(referrerCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([userId]) => userId);
+
+    const topReferrers = await Promise.all(
+      topReferrerUserIds.map(async (userId) => {
+        try {
+          const { data: user } = await serviceClient.auth.admin.getUserById(userId);
+          const { data: attendee } = await serviceClient
+            .from("attendees")
+            .select("name")
+            .eq("user_id", userId)
+            .single();
+          
+          return {
+            userId,
+            name: attendee?.name || user?.user?.email || "Unknown",
+            referrals: referrerCounts[userId],
+          };
+        } catch {
+          return {
+            userId,
+            name: "Unknown",
+            referrals: referrerCounts[userId],
+          };
+        }
+      })
+    );
+
     // Calculate growth metrics
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -267,6 +315,7 @@ export async function GET() {
       topEvents,
       topPromoters,
       topOrganizers,
+      topReferrers,
       recentEvents: (recentEventsResult.data || []).map((event: any) => ({
         id: event.id,
         name: event.name,

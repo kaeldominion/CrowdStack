@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { MobileFlierExperience } from "@/components/MobileFlierExperience";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
-import { MobileStickyCTA } from "@/components/MobileStickyCTA";
+import { ReferralTracker } from "@/components/ReferralTracker";
+import { MobileStickyCTAWrapper } from "./MobileStickyCTAWrapper";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 // Force dynamic rendering to prevent caching stale organizer data
@@ -164,102 +166,117 @@ export default async function EventPage({
     const MobileExperience = mobileStyle === 'scroll' ? MobileScrollExperience : MobileFlierExperience;
     
     return (
-      <>
-        {/* Blurred Flier Background - Fixed, fills entire viewport */}
-        <div 
-          className="fixed inset-0 z-0 overflow-hidden pointer-events-none"
-          aria-hidden="true"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={event.flier_url}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              filter: 'blur(60px)',
-              transform: 'scale(1.3)',
-              opacity: 0.4,
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
-        </div>
+      <Suspense fallback={null}>
+        <ReferralTracker eventId={event.id}>
+          <>
+            {/* Blurred Flier Background - Fixed, fills entire viewport */}
+            <div 
+              className="fixed inset-0 z-0 overflow-hidden pointer-events-none"
+              aria-hidden="true"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={event.flier_url}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{
+                  filter: 'blur(60px)',
+                  transform: 'scale(1.3)',
+                  opacity: 0.4,
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
+            </div>
 
-        {/* Mobile: Flier experience (flip or scroll based on event setting) */}
-        <MobileExperience
-          flierUrl={event.flier_url}
-          videoUrl={event.flier_video_url || undefined}
-          eventName={event.name}
-        >
-          <EventPageContent
-            event={event}
-            params={params}
-            shareUrl={shareUrl}
-            startDate={startDate}
-            endDate={endDate}
-            isUpcoming={isUpcoming}
-            isLive={isLive}
-            isMobileFlierView={true}
-            isScrollMode={mobileStyle === 'scroll'}
-          />
-        </MobileExperience>
+            {/* Mobile: Flier experience (flip or scroll based on event setting) */}
+            <MobileExperience
+              flierUrl={event.flier_url}
+              videoUrl={event.flier_video_url || undefined}
+              eventName={event.name}
+            >
+              <Suspense fallback={null}>
+                <EventPageContent
+                  event={event}
+                  params={params}
+                  shareUrl={shareUrl}
+                  startDate={startDate}
+                  endDate={endDate}
+                  isUpcoming={isUpcoming}
+                  isLive={isLive}
+                  isMobileFlierView={true}
+                  isScrollMode={mobileStyle === 'scroll'}
+                />
+              </Suspense>
+            </MobileExperience>
 
-        {/* Desktop: Standard layout - hidden on mobile since MobileExperience handles it */}
-        <div className="hidden lg:block min-h-screen relative z-10 pt-20">
-          <EventPageContent
-            event={event}
-            params={params}
-            shareUrl={shareUrl}
-            startDate={startDate}
-            endDate={endDate}
-            isUpcoming={isUpcoming}
-            isLive={isLive}
-            isMobileFlierView={false}
-          />
-        </div>
+            {/* Desktop: Standard layout - hidden on mobile since MobileExperience handles it */}
+            <div className="hidden lg:block min-h-screen relative z-10 pt-20">
+              <Suspense fallback={null}>
+                <EventPageContent
+                  event={event}
+                  params={params}
+                  shareUrl={shareUrl}
+                  startDate={startDate}
+                  endDate={endDate}
+                  isUpcoming={isUpcoming}
+                  isLive={isLive}
+                  isMobileFlierView={false}
+                />
+              </Suspense>
+            </div>
 
-        {/* Mobile Sticky CTA - Always visible on mobile, even during flier view */}
-        <MobileStickyCTA
-          href={`/e/${params.eventSlug}/register`}
-          label="Register Now"
-          eventName={event.name}
-          shareUrl={shareUrl}
-          shareTitle={event.name}
-          shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
-          shareImageUrl={event.flier_url || undefined}
-          shareVideoUrl={event.flier_video_url || undefined}
-        />
-      </>
+            <MobileStickyCTAWrapper
+              eventSlug={params.eventSlug}
+              eventName={event.name}
+              shareUrl={shareUrl}
+              startDate={startDate}
+              venue={event.venue}
+              description={event.description}
+              flierUrl={event.flier_url}
+              flierVideoUrl={event.flier_video_url}
+            />
+          </>
+        </ReferralTracker>
+      </Suspense>
     );
   }
 
   // No flier - standard layout for all devices
   return (
-    <>
-      <div className="min-h-screen pt-20">
-        <EventPageContent
-          event={event}
-          params={params}
-          shareUrl={shareUrl}
-          startDate={startDate}
-          endDate={endDate}
-          isUpcoming={isUpcoming}
-          isLive={isLive}
-          isMobileFlierView={false}
-        />
-      </div>
+    <Suspense fallback={null}>
+      <ReferralTracker eventId={event.id}>
+          <>
+          <div className="min-h-screen pt-20">
+            <Suspense fallback={null}>
+              <EventPageContent
+                event={event}
+                params={params}
+                shareUrl={shareUrl}
+                startDate={startDate}
+                endDate={endDate}
+                isUpcoming={isUpcoming}
+                isLive={isLive}
+                isMobileFlierView={false}
+              />
+            </Suspense>
+          </div>
 
-      {/* Mobile Sticky CTA */}
-      <MobileStickyCTA
-        href={`/e/${params.eventSlug}/register`}
-        label="Register Now"
-        eventName={event.name}
-        shareUrl={shareUrl}
-        shareTitle={event.name}
-        shareText={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}${event.description ? `\n\n${event.description}` : ""}`}
-        shareImageUrl={event.flier_url || undefined}
-        shareVideoUrl={event.flier_video_url || undefined}
-      />
-    </>
+          {/* Mobile Sticky CTA */}
+          <Suspense fallback={null}>
+            <MobileStickyCTAWrapper
+              eventSlug={params.eventSlug}
+              eventName={event.name}
+              shareUrl={shareUrl}
+              startDate={startDate}
+              venue={event.venue}
+              description={event.description}
+              flierUrl={event.flier_url}
+              flierVideoUrl={event.flier_video_url}
+            />
+          </Suspense>
+        </>
+      </ReferralTracker>
+    </Suspense>
   );
 }
 

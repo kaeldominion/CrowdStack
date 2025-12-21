@@ -51,6 +51,7 @@ interface AnalyticsData {
   topEvents: { id: string; name: string; slug: string; registrations: number }[];
   topPromoters: { id: string; name: string; referrals: number }[];
   topOrganizers: { id: string; name: string; eventCount: number }[];
+  topReferrers: { userId: string; name: string; referrals: number }[];
   recentEvents: { id: string; name: string; status: string; createdAt: string }[];
 }
 
@@ -544,6 +545,38 @@ export default function AnalyticsPage() {
                     </div>
                     <span className="text-sm font-medium text-foreground-muted">
                       {formatNumber(organizer.eventCount)} events
+                    </span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Top Referrers (All Users) */}
+          <Card>
+            <h3 className="text-sm font-semibold text-foreground mb-4">
+              Top Referrers (All Users)
+            </h3>
+            <div className="space-y-1">
+              {data.topReferrers && data.topReferrers.length === 0 ? (
+                <p className="text-sm text-foreground-muted">No referrals yet</p>
+              ) : (
+                (data.topReferrers || []).map((referrer, index) => (
+                  <Link
+                    key={referrer.userId}
+                    href={`/admin/users?highlight=${referrer.userId}`}
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-info/10 text-xs font-medium text-info">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-info transition-colors">
+                        {referrer.name}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-foreground-muted">
+                      {formatNumber(referrer.referrals)} referrals
                     </span>
                   </Link>
                 ))

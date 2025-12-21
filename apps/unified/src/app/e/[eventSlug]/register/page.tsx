@@ -11,7 +11,10 @@ export default function RegisterPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const ref = searchParams.get("ref"); // referral code (promoter/venue ID)
+  const urlRef = searchParams.get("ref"); // referral code from URL
+  // Also check sessionStorage for ref (set by ReferralTracker when clicking shared link)
+  const sessionRef = typeof window !== "undefined" ? sessionStorage.getItem("referral_ref") : null;
+  const ref = urlRef || sessionRef; // Prefer URL ref, fallback to sessionStorage
   const magicLinkError = searchParams.get("magic_link_error"); // Error from magic link callback
   const eventSlug = params.eventSlug as string;
 
