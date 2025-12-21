@@ -53,19 +53,35 @@ export default function VenueNewEventPage() {
     }
   };
 
-  const generateSlugFromName = (name: string) => {
-    return name
+  const generateSlugFromName = (name: string, startDate?: string) => {
+    let slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
+    
+    // Append date if provided
+    if (startDate) {
+      try {
+        const date = new Date(startDate);
+        if (!isNaN(date.getTime())) {
+          const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+          const month = months[date.getMonth()];
+          const day = date.getDate();
+          const year = date.getFullYear();
+          slug = `${slug}-${month}-${day}-${year}`;
+        }
+      } catch {}
+    }
+    
+    return slug;
   };
 
-  const generateUniqueSlug = async (name: string) => {
+  const generateUniqueSlug = async (name: string, startDate?: string) => {
     try {
       const response = await fetch("/api/events/generate-slug", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, startDate }),
       });
 
       if (!response.ok) {
@@ -77,13 +93,13 @@ export default function VenueNewEventPage() {
     } catch (error) {
       console.error("Error generating unique slug:", error);
       // Fallback to basic slug generation
-      return generateSlugFromName(name);
+      return generateSlugFromName(name, startDate);
     }
   };
 
   const handleNameChange = (name: string) => {
     // Update name immediately (synchronously) to prevent input lag
-    const baseSlug = generateSlugFromName(name);
+    const baseSlug = generateSlugFromName(name, formData.start_time);
     setFormData((prev) => ({
       ...prev,
       name,
@@ -91,7 +107,7 @@ export default function VenueNewEventPage() {
     }));
     
     // Generate unique slug asynchronously and update only the slug
-    generateUniqueSlug(name).then((uniqueSlug) => {
+    generateUniqueSlug(name, formData.start_time).then((uniqueSlug) => {
       setFormData((prev) => {
         // Only update slug if the name hasn't changed since we started
         if (prev.name === name) {
@@ -100,6 +116,25 @@ export default function VenueNewEventPage() {
         return prev;
       });
     });
+  };
+
+  const handleStartTimeChange = (startTime: string) => {
+    setFormData((prev) => ({ ...prev, start_time: startTime }));
+    
+    // Regenerate slug with new date if name exists
+    if (formData.name) {
+      const baseSlug = generateSlugFromName(formData.name, startTime);
+      setFormData((prev) => ({ ...prev, slug: baseSlug }));
+      
+      generateUniqueSlug(formData.name, startTime).then((uniqueSlug) => {
+        setFormData((prev) => {
+          if (prev.start_time === startTime && prev.name === formData.name) {
+            return { ...prev, slug: uniqueSlug };
+          }
+          return prev;
+        });
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,7 +227,7 @@ export default function VenueNewEventPage() {
               type="datetime-local"
               required
               value={formData.start_time}
-              onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+              onChange={(e) => handleStartTimeChange(e.target.value)}
             />
 
             <Input
