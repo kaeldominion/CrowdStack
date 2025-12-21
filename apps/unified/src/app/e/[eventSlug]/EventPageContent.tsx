@@ -1,12 +1,26 @@
 import Link from "next/link";
 import { Container, Section, Button, Card, Badge } from "@crowdstack/ui";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
 import { PromoterRequestButton } from "@/components/PromoterRequestButton";
 import { CalendarButtons } from "@/components/CalendarButtons";
 import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
+
+// Helper to construct Google Maps URL from address
+function getGoogleMapsUrl(venue: any): string | null {
+  if (venue.google_maps_url) {
+    return venue.google_maps_url;
+  }
+  // Construct search URL from address parts
+  const addressParts = [venue.address, venue.city, venue.state, venue.country].filter(Boolean);
+  if (addressParts.length > 0) {
+    const query = encodeURIComponent(addressParts.join(", "));
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  }
+  return null;
+}
 
 interface EventPageContentProps {
   event: any;
@@ -146,94 +160,113 @@ export function EventPageContent({
             )}
 
 
-            {/* Event Details Card */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-semibold text-foreground">Event Details</h2>
+            {/* Event Details Card - Compact on mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+              <Card className="lg:col-span-2 p-4 lg:p-6">
+                <div className="space-y-3 lg:space-y-6">
+                  <h2 className="text-lg lg:text-2xl font-semibold text-foreground">Event Details</h2>
                   
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <Calendar className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm text-foreground-muted">Date & Time</div>
-                        <div className="text-foreground font-medium">
+                  <div className="space-y-3 lg:space-y-4">
+                    {/* Date & Time - Compact on mobile */}
+                    <div className="flex items-start gap-3 lg:gap-4">
+                      <Calendar className="h-4 w-4 lg:h-5 lg:w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs lg:text-sm text-foreground-muted">Date & Time</div>
+                        <div className="text-sm lg:text-base text-foreground font-medium">
                           {startDate.toLocaleDateString("en-US", {
-                            weekday: "long",
-                            year: "numeric",
-                            month: "long",
+                            weekday: "short",
+                            month: "short",
                             day: "numeric",
                           })}
-                        </div>
-                        <div className="text-foreground-muted">
+                          <span className="hidden lg:inline">
+                            {`, ${startDate.getFullYear()}`}
+                          </span>
+                          <span className="text-foreground-muted font-normal"> · </span>
                           {startDate.toLocaleTimeString("en-US", {
                             hour: "numeric",
                             minute: "2-digit",
                           })}
-                          {endDate && ` - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                          {endDate && (
+                            <span className="text-foreground-muted font-normal">
+                              {` - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
 
+                    {/* Venue - Clickable name and address */}
                     {event.venue && (
-                      <div className="flex items-start gap-4">
-                        <MapPin className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
-                        <div>
-                          <div className="text-sm text-foreground-muted">Venue</div>
+                      <div className="flex items-start gap-3 lg:gap-4">
+                        <MapPin className="h-4 w-4 lg:h-5 lg:w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs lg:text-sm text-foreground-muted">Venue</div>
                           {event.venue.slug ? (
                             <Link 
                               href={`/v/${event.venue.slug}`}
-                              className="text-foreground font-medium hover:text-primary transition-colors"
+                              className="text-sm lg:text-base text-foreground font-medium hover:text-primary transition-colors inline-flex items-center gap-1"
                             >
                               {event.venue.name}
+                              <ExternalLink className="h-3 w-3 opacity-50" />
                             </Link>
                           ) : (
-                            <div className="text-foreground font-medium">{event.venue.name}</div>
+                            <div className="text-sm lg:text-base text-foreground font-medium">{event.venue.name}</div>
                           )}
-                          {event.venue.address && (
-                            <div className="text-foreground-muted text-sm">{event.venue.address}</div>
-                          )}
-                          {(event.venue.city || event.venue.state) && (
-                            <div className="text-foreground-muted text-sm">
-                              {[event.venue.city, event.venue.state, event.venue.country]
-                                .filter(Boolean)
-                                .join(", ")}
-                            </div>
-                          )}
+                          {/* Address - Clickable to Google Maps */}
+                          {(event.venue.address || event.venue.city) && (() => {
+                            const mapsUrl = getGoogleMapsUrl(event.venue);
+                            const addressText = [
+                              event.venue.address,
+                              [event.venue.city, event.venue.state].filter(Boolean).join(", ")
+                            ].filter(Boolean).join(" · ");
+                            
+                            return mapsUrl ? (
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs lg:text-sm text-foreground-muted hover:text-primary transition-colors inline-flex items-center gap-1 mt-0.5"
+                              >
+                                {addressText}
+                                <ExternalLink className="h-3 w-3 opacity-50" />
+                              </a>
+                            ) : (
+                              <div className="text-xs lg:text-sm text-foreground-muted mt-0.5">{addressText}</div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
 
+                    {/* Capacity - Hidden on mobile if we have venue (to save space) */}
                     {event.capacity && (
-                      <div className="flex items-start gap-4">
+                      <div className="hidden lg:flex items-start gap-4">
                         <Users className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
                         <div>
                           <div className="text-sm text-foreground-muted">Capacity</div>
                           <div className="text-foreground font-medium">
-                            {event.registration_count || 0} registered
-                            {event.capacity && ` / ${event.capacity} capacity`}
+                            {event.registration_count || 0} registered / {event.capacity} capacity
                           </div>
-                          {event.capacity && (
-                            <div className="w-full bg-surface rounded-full h-2 mt-2">
-                              <div
-                                className="bg-primary h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${Math.min(
-                                    ((event.registration_count || 0) / event.capacity) * 100,
-                                    100
-                                  )}%`,
-                                }}
-                              />
-                            </div>
-                          )}
+                          <div className="w-full bg-surface rounded-full h-2 mt-2">
+                            <div
+                              className="bg-primary h-2 rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(
+                                  ((event.registration_count || 0) / event.capacity) * 100,
+                                  100
+                                )}%`,
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
 
+                    {/* Organizer - Inline on mobile */}
                     {event.organizer && (
-                      <div className="flex items-start gap-4">
-                        <div className="text-sm text-foreground-muted">Organized by</div>
-                        <div className="text-foreground font-medium">{event.organizer.name}</div>
+                      <div className="flex items-center gap-2 text-xs lg:text-sm text-foreground-muted">
+                        <span>Organized by</span>
+                        <span className="text-foreground font-medium">{event.organizer.name}</span>
                       </div>
                     )}
                   </div>
