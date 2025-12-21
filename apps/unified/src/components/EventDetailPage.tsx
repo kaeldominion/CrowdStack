@@ -1673,6 +1673,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <div className="grid grid-cols-1 gap-6 border-t border-border pt-6">
               <EventImageUpload
                 label="Cover Image"
+                aspectRatio="16:9"
                 currentImageUrl={event?.cover_image_url}
                 onUpload={async (file) => {
                   const formData = new FormData();
@@ -1701,10 +1702,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   }
                   await loadEventData();
                 }}
-                helperText="Main hero image for the event page (recommended: 16:9 aspect ratio)"
+                helperText="Main hero image for the event page (16:9 aspect ratio required)"
               />
               <EventImageUpload
                 label="Event Flier"
+                aspectRatio="9:16"
                 currentImageUrl={event?.flier_url}
                 onUpload={async (file) => {
                   const formData = new FormData();
@@ -1733,7 +1735,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   }
                   await loadEventData();
                 }}
-                helperText="Digital flier/poster for the event (optional)"
+                helperText="Digital flier/poster for the event (9:16 portrait format required)"
               />
             </div>
 

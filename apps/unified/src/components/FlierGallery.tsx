@@ -56,7 +56,9 @@ export function FlierGallery({ flierUrl, coverImageUrl, eventName }: FlierGaller
               setCurrentImageIndex(index);
               setIsLightboxOpen(true);
             }}
-            className="group relative aspect-[4/3] overflow-hidden rounded-lg bg-surface border-2 border-border hover:border-primary transition-colors"
+            className={`group relative overflow-hidden rounded-lg bg-surface border-2 border-border hover:border-primary transition-colors ${
+              image.type === "Flier" ? "aspect-[9/16]" : "aspect-[4/3]"
+            }`}
           >
             <Image
               src={image.url}
@@ -89,7 +91,9 @@ export function FlierGallery({ flierUrl, coverImageUrl, eventName }: FlierGaller
             </button>
 
             {/* Image */}
-            <div className="relative aspect-[4/3] w-full max-h-[80vh] bg-black rounded-lg overflow-hidden">
+            <div className={`relative w-full max-h-[90vh] bg-black rounded-lg overflow-hidden flex items-center justify-center ${
+              currentImage.type === "Flier" ? "aspect-[9/16] max-w-sm" : "aspect-[4/3]"
+            }`}>
               <Image
                 src={currentImage.url}
                 alt={`${currentImage.type} for ${eventName}`}

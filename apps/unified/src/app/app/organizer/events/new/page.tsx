@@ -301,6 +301,7 @@ export default function NewEventPage() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 border-t border-border pt-6">
             <EventImageUpload
               label="Cover Image"
+              aspectRatio="16:9"
               onUpload={async (file) => {
                 setCoverImageFile(file);
                 // Return a preview URL for display
@@ -310,10 +311,11 @@ export default function NewEventPage() {
                   reader.readAsDataURL(file);
                 });
               }}
-              helperText="Main hero image for the event page (recommended: 16:9 aspect ratio)"
+              helperText="Main hero image for the event page (16:9 aspect ratio required)"
             />
             <EventImageUpload
               label="Event Flier"
+              aspectRatio="9:16"
               onUpload={async (file) => {
                 setFlierImageFile(file);
                 // Return a preview URL for display
@@ -323,7 +325,7 @@ export default function NewEventPage() {
                   reader.readAsDataURL(file);
                 });
               }}
-              helperText="Digital flier/poster for the event (optional)"
+              helperText="Digital flier/poster for the event (9:16 portrait format required)"
             />
           </div>
 
