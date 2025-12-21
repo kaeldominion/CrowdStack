@@ -1690,14 +1690,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   return data.flier_url;
                 }}
                 onRemove={async () => {
-                  // Update event to remove flier
-                  const response = await fetch(`/api/events/${eventId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ flier_url: null }),
+                  // Delete flier via DELETE endpoint
+                  const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                    method: "DELETE",
                   });
                   if (!response.ok) {
-                    throw new Error("Failed to remove flier");
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to remove flier");
                   }
                   await loadEventData();
                 }}
