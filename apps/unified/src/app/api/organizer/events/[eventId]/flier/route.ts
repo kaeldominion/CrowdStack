@@ -31,17 +31,25 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Check if user is superadmin
+    const { userHasRole } = await import("@crowdstack/shared/auth/roles");
+    const userIsSuperadmin = await userHasRole("superadmin");
+
     const organizerId = await getUserOrganizerId();
-    if (!organizerId) {
-      return NextResponse.json(
-        { error: "No organizer found for user" },
-        { status: 404 }
-      );
+    
+    // If not superadmin, require organizer account and verify ownership
+    if (!userIsSuperadmin) {
+      if (!organizerId) {
+        return NextResponse.json(
+          { error: "No organizer found for user" },
+          { status: 404 }
+        );
+      }
     }
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Verify event belongs to this organizer
+    // Verify event exists
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .select("id, organizer_id, flier_url")
@@ -63,7 +71,8 @@ export async function POST(
       );
     }
 
-    if (event.organizer_id !== organizerId) {
+    // Check ownership only if not superadmin
+    if (!userIsSuperadmin && event.organizer_id !== organizerId) {
       console.error("Organizer ID mismatch:", {
         eventOrganizerId: event.organizer_id,
         userOrganizerId: organizerId,
