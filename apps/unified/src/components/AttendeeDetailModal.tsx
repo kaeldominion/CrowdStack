@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Badge } from "@crowdstack/ui";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
+import { Modal, Badge, LoadingSpinner } from "@crowdstack/ui";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 interface AttendeeDetailModalProps {
   isOpen: boolean;
@@ -115,7 +115,7 @@ export function AttendeeDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Attendee Details" size="lg">
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
+          <LoadingSpinner text="Loading..." size="md" />
         </div>
       ) : error ? (
         <div className="py-12 text-center">

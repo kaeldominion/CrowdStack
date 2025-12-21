@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button, Card } from "@crowdstack/ui";
+import { Button, Card, LoadingSpinner } from "@crowdstack/ui";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 
@@ -120,9 +120,8 @@ function ResetPasswordContent() {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-            <p className="text-white/60">Verifying reset link...</p>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner text="Verifying reset link..." size="md" />
           </div>
         </Card>
       </div>
@@ -263,9 +262,8 @@ function LoadingFallback() {
   return (
     <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-          <p className="text-white/60">Loading...</p>
+        <div className="flex items-center justify-center py-8">
+          <LoadingSpinner text="Loading..." size="md" />
         </div>
       </Card>
     </div>

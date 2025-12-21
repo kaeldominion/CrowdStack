@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Input, Modal, Card, Logo } from "@crowdstack/ui";
+import { Button, Input, Modal, Card, Logo, InlineSpinner, LoadingSpinner } from "@crowdstack/ui";
 import { 
   QrCode, 
   Search, 
@@ -14,7 +14,6 @@ import {
   CameraOff,
   Download,
   Users,
-  Loader2,
   Phone,
   Mail,
   Instagram,
@@ -407,7 +406,7 @@ export default function DoorScannerPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-white animate-spin" />
+        <LoadingSpinner text="Loading event..." size="lg" />
       </div>
     );
   }
@@ -548,7 +547,7 @@ export default function DoorScannerPage() {
                 className="bg-white/5 border-white/20 text-white pr-10"
               />
               {searching && (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60 animate-spin" />
+                <InlineSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60" />
               )}
             </div>
             {!searchQuery.trim() && (
@@ -788,7 +787,7 @@ export default function DoorScannerPage() {
             >
               {loadingProfile ? (
                 <div className="p-8 flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  <LoadingSpinner text="Loading profile..." size="md" />
                 </div>
               ) : selectedAttendee ? (
                 <div className="p-6">

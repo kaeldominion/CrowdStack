@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Image as ImageIcon, FileText, Share2, Loader2, Link2, Check, X, Video } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video } from "lucide-react";
+import { InlineSpinner } from "@crowdstack/ui";
 import { useFlierToggle } from "./MobileFlierExperience";
 
 interface MobileStickyCTAProps {
@@ -223,7 +224,7 @@ export function MobileStickyCTA({
               className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
             >
               {loadingAction === "link" ? (
-                <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                <InlineSpinner size="md" className="text-purple-400" />
               ) : (
                 <Share2 className="h-5 w-5 text-purple-400" />
               )}
@@ -241,7 +242,7 @@ export function MobileStickyCTA({
                 className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 {loadingAction === "image" ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-pink-400" />
+                  <InlineSpinner size="md" className="text-pink-400" />
                 ) : (
                   <ImageIcon className="h-5 w-5 text-pink-400" />
                 )}
@@ -260,7 +261,7 @@ export function MobileStickyCTA({
                 className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 {loadingAction === "video" ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+                  <InlineSpinner size="md" className="text-cyan-400" />
                 ) : (
                   <Video className="h-5 w-5 text-cyan-400" />
                 )}

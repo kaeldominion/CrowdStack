@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Button } from "@crowdstack/ui";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Button, InlineSpinner } from "@crowdstack/ui";
+import { Upload, X } from "lucide-react";
 
 interface EventImageUploadProps {
   label: string;
@@ -153,7 +153,7 @@ export function EventImageUpload({
             />
             {uploading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
+                <InlineSpinner size="lg" className="text-white" />
               </div>
             )}
           </div>
@@ -199,7 +199,7 @@ export function EventImageUpload({
           >
             {uploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <InlineSpinner size="sm" className="mr-2" />
                 Uploading...
               </>
             ) : (

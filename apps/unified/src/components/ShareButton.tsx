@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Button } from "@crowdstack/ui";
-import { Share2, Loader2, Link2, Image as ImageIcon, Video, Check, X } from "lucide-react";
+import { Button, InlineSpinner } from "@crowdstack/ui";
+import { Share2, Link2, Image as ImageIcon, Video, Check, X } from "lucide-react";
 
 interface ShareButtonProps {
   title: string;
@@ -181,7 +181,7 @@ export function ShareButton({
           className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
         >
           {loadingAction === "link" ? (
-            <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+            <InlineSpinner size="md" className="text-purple-400" />
           ) : (
             <Share2 className="h-5 w-5 text-purple-400" />
           )}
@@ -199,7 +199,7 @@ export function ShareButton({
             className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             {loadingAction === "image" ? (
-              <Loader2 className="h-5 w-5 animate-spin text-pink-400" />
+              <InlineSpinner size="md" className="text-pink-400" />
             ) : (
               <ImageIcon className="h-5 w-5 text-pink-400" />
             )}
@@ -218,7 +218,7 @@ export function ShareButton({
             className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
           >
             {loadingAction === "video" ? (
-              <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+              <InlineSpinner size="md" className="text-cyan-400" />
             ) : (
               <Video className="h-5 w-5 text-cyan-400" />
             )}
@@ -241,7 +241,7 @@ export function ShareButton({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium disabled:opacity-50"
       >
           {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <InlineSpinner size="sm" />
           ) : (
         <Share2 className="h-4 w-4" />
           )}
@@ -256,7 +256,7 @@ export function ShareButton({
     <div className="relative">
       <Button variant="secondary" size="lg" onClick={() => setShowMenu(!showMenu)} disabled={isLoading}>
         {isLoading ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <InlineSpinner size="sm" className="mr-2" />
         ) : (
       <Share2 className="h-4 w-4 mr-2" />
         )}

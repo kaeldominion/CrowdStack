@@ -321,11 +321,50 @@ export default function MyPage() {
 5. **Accessibility**: Always include labels, focus states, and keyboard navigation
 6. **Mobile**: Test all pages on mobile devices, especially attendee-facing flows
 
+## Loading Components
+
+CrowdStack uses branded loading animations featuring stacked bars that animate in a cascading pattern.
+
+### Logo (with loading state)
+The primary logo component supports a `loading` prop that adds orbital elements and pulsing animations.
+
+```tsx
+<Logo variant="icon" size="lg" loading={true} />
+```
+
+### LoadingSpinner
+Full-featured loading spinner with optional text. Uses the animated logo.
+
+```tsx
+<LoadingSpinner text="Loading..." size="lg" />
+<LoadingSpinner fullScreen={true} /> {/* Full-page overlay */}
+```
+
+### PageLoader
+Full-page loading component with ambient glow and progress bar.
+
+```tsx
+<PageLoader message="Loading data..." showProgress={true} />
+```
+
+### InlineSpinner
+Compact spinner for inline use (buttons, inputs, etc.). Drop-in replacement for Loader2.
+
+```tsx
+<InlineSpinner size="sm" /> {/* xs, sm, md, lg */}
+```
+
+### Button (with loading)
+Buttons support a `loading` prop that shows the branded spinner.
+
+```tsx
+<Button loading={true}>Saving...</Button>
+```
+
 ## Future Enhancements
 
 - Toast notification system
 - Skeleton loading states
 - Data visualization components (charts, graphs)
 - Advanced form validation patterns
-- Animation system for micro-interactions
 

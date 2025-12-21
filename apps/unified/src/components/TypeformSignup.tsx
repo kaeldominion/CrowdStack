@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Input, Button, Logo } from "@crowdstack/ui";
-import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, Loader2, MapPin, Users } from "lucide-react";
+import { Input, Button, Logo, InlineSpinner } from "@crowdstack/ui";
+import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import Link from "next/link";
 
@@ -978,7 +978,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               >
                 {sendingMagicLink ? (
                   <>
-                    Sending... <Loader2 className="h-5 w-5 animate-spin" />
+                    Sending... <InlineSpinner size="md" />
                   </>
                 ) : (
                   <>
@@ -1006,7 +1006,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               >
                 {sendingMagicLink ? (
                   <>
-                    Creating account... <Loader2 className="h-5 w-5 animate-spin" />
+                    Creating account... <InlineSpinner size="md" />
                   </>
                 ) : (
                   <>

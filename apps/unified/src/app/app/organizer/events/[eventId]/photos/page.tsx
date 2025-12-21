@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Card, Badge, EmptyState } from "@crowdstack/ui";
+import { Button, Card, Badge, EmptyState, LoadingSpinner, InlineSpinner } from "@crowdstack/ui";
 import {
   ArrowLeft,
   Upload,
@@ -11,7 +11,6 @@ import {
   Star,
   Eye,
   EyeOff,
-  Loader2,
   Grid3x3,
   List,
   ArrowUp,
@@ -219,7 +218,7 @@ export default function OrganizerPhotosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
+        <LoadingSpinner text="Loading photos..." size="lg" />
       </div>
     );
   }
@@ -258,7 +257,7 @@ export default function OrganizerPhotosPage() {
               >
                 {publishing ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <InlineSpinner size="sm" className="mr-2" />
                     Publishing...
                   </>
                 ) : (
@@ -354,7 +353,7 @@ export default function OrganizerPhotosPage() {
                       title="Delete"
                     >
                       {deleting === photo.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <InlineSpinner size="sm" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
