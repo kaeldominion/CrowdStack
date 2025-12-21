@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button } from "@crowdstack/ui";
+import { Card, Button, LoadingSpinner } from "@crowdstack/ui";
 import { QrCode, Calendar, Users, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -52,7 +52,7 @@ export default function DoorLandingPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading events...</div>
+        <LoadingSpinner text="Loading events..." size="lg" />
       </div>
     );
   }

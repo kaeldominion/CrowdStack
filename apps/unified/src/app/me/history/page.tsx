@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
+import { LoadingSpinner } from "@crowdstack/ui";
 import { Calendar, CheckCircle2, XCircle, Ticket } from "lucide-react";
 
 interface Registration {
@@ -123,7 +124,7 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading history..." size="lg" />
       </div>
     );
   }

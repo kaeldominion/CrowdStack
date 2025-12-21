@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
+import { LoadingSpinner } from "@crowdstack/ui";
 
 export default function InviteAcceptPage() {
   const params = useParams();
@@ -79,8 +80,8 @@ export default function InviteAcceptPage() {
 
   if (loading && !user) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+        <LoadingSpinner text="Processing invite..." size="lg" />
       </div>
     );
   }

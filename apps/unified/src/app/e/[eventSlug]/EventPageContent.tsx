@@ -58,43 +58,58 @@ export function EventPageContent({
       {/* Desktop Hero - Only show in desktop view (not mobile flier view) */}
       {!isMobileFlierView && (
       <div className="hidden lg:block">
-        {event.flier_url ? (
-          // Side-by-side layout: Flier left, Title only right (description in details card)
-          <div className="py-8">
-            <Container size="lg">
-              <div className="flex items-center gap-12">
-                {/* Flier on the left - 9:16 format */}
-                <div className="relative w-80 aspect-[9/16] bg-black/50 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 flex-shrink-0">
-                  <Image
-                    src={event.flier_url}
-                    alt={`${event.name} flier`}
-                    fill
-                    className="object-contain"
-                    priority
-                    sizes="320px"
-                  />
+        <div className="py-8">
+          <Container size="lg">
+            {(event.flier_url || event.flier_video_url) ? (
+              <div className="flex items-center gap-8">
+                {/* Media section - video and/or image on the left */}
+                <div className="flex gap-6 flex-shrink-0">
+                  {/* Video flier (if exists) */}
+                  {event.flier_video_url && (
+                    <div className="relative w-64 aspect-[9/16] bg-black/50 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                      <video
+                        src={event.flier_video_url}
+                        className="w-full h-full object-contain"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Image flier */}
+                  {event.flier_url && (
+                    <div className="relative w-64 aspect-[9/16] bg-black/50 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                      <Image
+                        src={event.flier_url}
+                        alt={`${event.name} flier`}
+                        fill
+                        className="object-contain"
+                        priority
+                        sizes="256px"
+                      />
+                    </div>
+                  )}
                 </div>
-                {/* Title only on the right - big and bold */}
+                
+                {/* Title on the right */}
                 <div className="flex-1 flex items-center">
-                  <h1 className="text-6xl font-bold tracking-tight text-foreground xl:text-7xl drop-shadow-lg">
+                  <h1 className="text-5xl font-bold tracking-tight text-foreground xl:text-6xl 2xl:text-7xl drop-shadow-lg">
                     {event.name}
                   </h1>
                 </div>
               </div>
-            </Container>
-          </div>
-        ) : (
-          // No flier - centered title only (description in details card)
-          <div className="py-12">
-            <Container size="lg">
-              <div className="text-center max-w-4xl mx-auto">
-                <h1 className="text-6xl font-bold tracking-tight text-foreground sm:text-7xl lg:text-8xl drop-shadow-lg">
+            ) : (
+              // No media - centered title only
+              <div className="text-center max-w-4xl mx-auto py-4">
+                <h1 className="text-6xl font-bold tracking-tight text-foreground xl:text-7xl drop-shadow-lg">
                   {event.name}
                 </h1>
               </div>
-            </Container>
-          </div>
-        )}
+            )}
+          </Container>
+        </div>
         </div>
       )}
 

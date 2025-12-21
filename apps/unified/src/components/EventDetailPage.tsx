@@ -21,6 +21,7 @@ import {
   Textarea,
   Select,
   InlineSpinner,
+  LoadingSpinner,
 } from "@crowdstack/ui";
 import {
   ArrowLeft,
@@ -708,7 +709,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading event...</div>
+        <LoadingSpinner text="Loading event..." size="lg" />
       </div>
     );
   }

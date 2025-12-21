@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+import { LoadingSpinner } from "@crowdstack/ui";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
 import { RegistrationSuccess } from "@/components/RegistrationSuccess";
 
@@ -404,7 +405,7 @@ export default function RegisterPage() {
     console.log("[Register] Rendering loading state");
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading registration..." size="lg" />
       </div>
     );
   }

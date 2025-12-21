@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
+import { LoadingSpinner } from "@crowdstack/ui";
 import {
   Shield,
   Bell,
@@ -75,7 +76,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading settings..." size="lg" />
       </div>
     );
   }

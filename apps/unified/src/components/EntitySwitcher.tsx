@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Dropdown, Modal } from "@crowdstack/ui";
+import { Button, Dropdown, Modal, LoadingSpinner } from "@crowdstack/ui";
 import { Building2, Calendar, Users, User, Shield, X, Search } from "lucide-react";
 import type { UserRole } from "@crowdstack/shared";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -237,7 +237,9 @@ export function EntitySwitcher({ userRoles }: { userRoles: UserRole[] }) {
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-foreground-muted">Loading...</div>
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner text="Loading entities..." size="md" />
+              </div>
             ) : filteredEntities.length === 0 ? (
               <div className="text-center py-8 text-foreground-muted">
                 No {impersonatingRole?.replace(/_/g, " ")}s found

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
+import { LoadingSpinner } from "@crowdstack/ui";
 import Link from "next/link";
 import { Calendar, Clock, MapPin, Ticket, QrCode, Share2 } from "lucide-react";
 
@@ -115,7 +116,7 @@ export default function UpcomingEventsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <LoadingSpinner text="Loading events..." size="lg" />
       </div>
     );
   }
