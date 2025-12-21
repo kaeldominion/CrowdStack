@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { Button, Card } from "@crowdstack/ui";
+import { Button, Card, PageLoader } from "@crowdstack/ui";
 
 // Singleton magic link client to avoid "Multiple GoTrueClient instances" warning
 let magicLinkClientInstance: SupabaseClient | null = null;
@@ -36,16 +36,7 @@ function getMagicLinkClient(): SupabaseClient {
 }
 
 function LoadingFallback() {
-  return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-          <p className="text-white/60">Loading...</p>
-        </div>
-      </Card>
-    </div>
-  );
+  return <PageLoader message="Loading..." />;
 }
 
 function LoginContent() {
