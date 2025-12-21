@@ -45,8 +45,8 @@ export function EventPageContent({
   isMobileFlierView = false,
   isScrollMode = false,
 }: EventPageContentProps) {
-  // Card styles - floating transparent when there's a flier background (both flip and scroll modes)
-  const useFloatingCards = isMobileFlierView && event.flier_url;
+  // Card styles - floating transparent when there's a flier background (mobile and desktop)
+  const useFloatingCards = event.flier_url;
   const cardStyle = useFloatingCards 
     ? "p-3 lg:p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-white/20 shadow-2xl"
     : "p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10";
