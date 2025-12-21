@@ -485,14 +485,7 @@ export default function HomePage() {
         />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center mb-20">
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               Platform Features
             </span>
@@ -575,7 +568,7 @@ export default function HomePage() {
                   <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
                   <p className="text-sm text-white/60">{item.description}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -584,14 +577,7 @@ export default function HomePage() {
       {/* Built for Everyone Section */}
       <section id="solutions" className="py-32 border-t border-white/10 relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center mb-20">
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               One Platform, Every Role
             </span>
@@ -694,47 +680,17 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-          >
-            <motion.span
-              className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+          <div>
+            <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               Get Started
-            </motion.span>
-            <motion.h2
-              className="text-5xl font-bold tracking-tighter text-white mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            </span>
+            <h2 className="text-5xl font-bold tracking-tighter text-white mb-6">
               Ready to run smarter events?
-            </motion.h2>
-            <motion.p
-              className="text-xl text-white/60 mb-10"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
+            </h2>
+            <p className="text-xl text-white/60 mb-10">
               Join venues and organizers using CrowdStack to streamline their operations
-            </motion.p>
-            <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/contact">
                 <motion.button
                   className="px-8 py-4 text-base font-medium bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-md transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/50"
@@ -751,8 +707,8 @@ export default function HomePage() {
                   </motion.div>
                 </motion.button>
               </Link>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
