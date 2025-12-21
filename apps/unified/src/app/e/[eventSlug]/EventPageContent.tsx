@@ -137,35 +137,11 @@ export function EventPageContent({
                     />
                   </div>
                   
-                  {/* Event title, venue, and description - right side */}
-                  <div className="flex-1 min-w-0">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">
+                  {/* Event title only - big and bold */}
+                  <div className="flex-1 min-w-0 flex items-center">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
                       {event.name}
                     </h1>
-                    {/* Venue name - clickable if has public profile */}
-                    {event.venue && (
-                      <div className="mt-1">
-                        {event.venue.slug ? (
-                          <Link 
-                            href={`/v/${event.venue.slug}`}
-                            className="text-sm text-foreground-muted hover:text-primary transition-colors inline-flex items-center gap-1"
-                          >
-                            <MapPin className="h-3 w-3" />
-                            {event.venue.name}
-                          </Link>
-                        ) : (
-                          <span className="text-sm text-foreground-muted inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.venue.name}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {event.description && (
-                      <p className="text-xs text-foreground-muted mt-1 line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -199,6 +175,13 @@ export function EventPageContent({
                     </div>
                     <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Details</h2>
                   </div>
+                  
+                  {/* Description - shown in details card for mobile */}
+                  {event.description && isMobileFlierView && (
+                    <p className="text-sm text-foreground-muted pl-9 lg:pl-11">
+                      {event.description}
+                    </p>
+                  )}
                   
                   {/* Content indented to align with title text */}
                   <div className="space-y-3 lg:space-y-4 pl-9 lg:pl-11">
