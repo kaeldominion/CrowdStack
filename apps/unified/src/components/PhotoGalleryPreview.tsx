@@ -20,6 +20,11 @@ function getBaseUrl() {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
+  // In production on Vercel, always use the custom domain
+  if (process.env.VERCEL_ENV === "production") {
+    return "https://crowdstack.app";
+  }
+  // For preview deployments, use VERCEL_URL
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
