@@ -32,13 +32,15 @@ export function PromoterRequestButton({ eventId, eventSlug }: PromoterRequestBut
       }
 
       // Check if user is a promoter
-      const { data: promoter } = await supabase
+      // Note: This may fail with 406 if RLS policy doesn't allow self-read
+      const { data: promoter, error: promoterError } = await supabase
         .from("promoters")
         .select("id")
         .eq("created_by", user.id)
         .single();
 
-      if (!promoter) {
+      // Silently handle RLS errors (406) - just means user isn't a visible promoter
+      if (promoterError || !promoter) {
         setLoading(false);
         return;
       }
@@ -56,8 +58,8 @@ export function PromoterRequestButton({ eventId, eventSlug }: PromoterRequestBut
       if (assignment) {
         setIsAssigned(true);
       }
-    } catch (error) {
-      console.error("Error checking promoter status:", error);
+    } catch {
+      // Silently fail - component will just not render
     } finally {
       setLoading(false);
     }
