@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@crowdstack/ui";
 import { DollarSign, CheckCircle2, Loader2 } from "lucide-react";
-import { createBrowserClient } from "@crowdstack/shared";
 
 interface PromoterRequestButtonProps {
   eventId: string;
@@ -23,41 +22,16 @@ export function PromoterRequestButton({ eventId, eventSlug }: PromoterRequestBut
 
   const checkPromoterStatus = async () => {
     try {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      // Use API route to check promoter status (avoids RLS 406 errors in console)
+      const response = await fetch(`/api/me/promoter-status?eventId=${eventId}`);
+      if (!response.ok) {
+        setLoading(false);
+        return;
+      }
       
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      // Check if user is a promoter
-      // Note: This may fail with 406 if RLS policy doesn't allow self-read
-      const { data: promoter, error: promoterError } = await supabase
-        .from("promoters")
-        .select("id")
-        .eq("created_by", user.id)
-        .single();
-
-      // Silently handle RLS errors (406) - just means user isn't a visible promoter
-      if (promoterError || !promoter) {
-        setLoading(false);
-        return;
-      }
-
-      setIsPromoter(true);
-
-      // Check if already assigned
-      const { data: assignment } = await supabase
-        .from("event_promoters")
-        .select("id")
-        .eq("event_id", eventId)
-        .eq("promoter_id", promoter.id)
-        .single();
-
-      if (assignment) {
-        setIsAssigned(true);
-      }
+      const data = await response.json();
+      setIsPromoter(data.isPromoter);
+      setIsAssigned(data.isAssigned);
     } catch {
       // Silently fail - component will just not render
     } finally {
