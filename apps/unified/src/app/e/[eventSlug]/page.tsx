@@ -198,6 +198,7 @@ export default async function EventPage({
             isUpcoming={isUpcoming}
             isLive={isLive}
             isMobileFlierView={true}
+            isScrollMode={mobileStyle === 'scroll'}
           />
         </MobileExperience>
 
