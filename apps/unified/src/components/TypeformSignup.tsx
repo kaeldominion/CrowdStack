@@ -59,7 +59,9 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [sendingMagicLink, setSendingMagicLink] = useState(false);
+  const [magicLinkError, setMagicLinkError] = useState<string | null>(null);
   const [showPasswordFallback, setShowPasswordFallback] = useState(forcePasswordFallback);
+  const [passwordFallbackFromMagicLink, setPasswordFallbackFromMagicLink] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formData, setFormData] = useState<SignupData>({
@@ -276,20 +278,28 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         const errorMsgLower = errorMsg.toLowerCase();
         
         // Check if it's a rate limit error or PKCE/browser error
+        // Even if there's an error, still show the magic link screen with a warning
+        // so users can manually choose to use password instead
         if (errorMsgLower.includes("rate limit") || 
             errorMsgLower.includes("too many") ||
             errorMsgLower.includes("email rate limit") ||
             errorMsgLower.includes("same browser") ||
             errorMsgLower.includes("pkce") ||
             errorMsgLower.includes("verifier")) {
-          // Show password fallback instead of error
-          setShowPasswordFallback(true);
+          // Store the error message but still show the magic link screen
+          setMagicLinkError(errorMsg);
+          setMagicLinkSent(true);
+          // Store email in sessionStorage in case magic link fails and we need password fallback
+          if (typeof window !== "undefined" && formData.email) {
+            sessionStorage.setItem("pending_registration_email", formData.email);
+          }
           return;
         }
         throw new Error(errorMsg);
       }
 
       setMagicLinkSent(true);
+      setMagicLinkError(null); // Clear any previous errors
       // Store email in sessionStorage in case magic link fails and we need password fallback
       if (typeof window !== "undefined" && formData.email) {
         sessionStorage.setItem("pending_registration_email", formData.email);
@@ -356,6 +366,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         // Successfully signed in with existing account
         setEmailVerified(true);
         setShowPasswordFallback(false);
+        setPasswordFallbackFromMagicLink(false);
         
         if (onEmailVerified) {
           const alreadyRegistered = await onEmailVerified();
@@ -418,6 +429,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       // Successfully signed in
       setEmailVerified(true);
       setShowPasswordFallback(false);
+      setPasswordFallbackFromMagicLink(false);
       
       // Clear stored email from sessionStorage
       if (typeof window !== "undefined") {
@@ -538,14 +550,25 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       if (showPasswordFallback) {
         return (
           <div className="space-y-4">
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
-              <p className="text-yellow-400 text-sm text-center mb-2">
-                Email rate limit reached. Please set a password to continue.
-              </p>
-              <p className="text-yellow-300/70 text-xs text-center">
-                If you already have an account, use your existing password to sign in.
-              </p>
-            </div>
+            {passwordFallbackFromMagicLink ? (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+                <p className="text-blue-400 text-sm text-center mb-2">
+                  Magic link not working? Use a password instead.
+                </p>
+                <p className="text-blue-300/70 text-xs text-center">
+                  If you already have an account, use your existing password to sign in.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                <p className="text-yellow-400 text-sm text-center mb-2">
+                  Email rate limit reached. Please set a password to continue.
+                </p>
+                <p className="text-yellow-300/70 text-xs text-center">
+                  If you already have an account, use your existing password to sign in.
+                </p>
+              </div>
+            )}
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
               <Input
@@ -614,14 +637,34 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-white mb-2">Check your email!</h3>
-                <p className="text-white/70 text-sm">
-                  We sent a magic link to <span className="font-medium">{formData.email}</span>
-                </p>
-                <p className="text-white/50 text-xs mt-2">
-                  Click the link in the same browser to continue
-                </p>
+                {magicLinkError ? (
+                  <>
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-3 mt-3">
+                      <p className="text-yellow-400 text-xs text-center">
+                        {magicLinkError.includes("rate limit") || magicLinkError.includes("too many")
+                          ? "Email rate limit reached. The magic link may not have been sent."
+                          : "There was an issue sending the magic link."}
+                      </p>
+                    </div>
+                    <p className="text-white/70 text-sm">
+                      We tried to send a magic link to <span className="font-medium">{formData.email}</span>
+                    </p>
+                    <p className="text-white/50 text-xs mt-2">
+                      If you don't receive it, use the password option below.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-white/70 text-sm">
+                      We sent a magic link to <span className="font-medium">{formData.email}</span>
+                    </p>
+                    <p className="text-white/50 text-xs mt-2">
+                      Click the link in the same browser to continue
+                    </p>
+                  </>
+                )}
               </div>
-              <div className="pt-4">
+              <div className="pt-4 space-y-3">
                 <Button
                   variant="secondary"
                   onClick={async () => {
@@ -642,6 +685,23 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   className="w-full"
                 >
                   I've clicked the link
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    // Store email in sessionStorage to preserve it
+                    if (typeof window !== "undefined" && formData.email) {
+                      sessionStorage.setItem("pending_registration_email", formData.email);
+                    }
+                    // Switch to password fallback mode
+                    setPasswordFallbackFromMagicLink(true);
+                    setShowPasswordFallback(true);
+                    setMagicLinkSent(false);
+                    setMagicLinkError(null);
+                  }}
+                  className="w-full text-white/70 hover:text-white hover:bg-white/5"
+                >
+                  Use password instead
                 </Button>
               </div>
             </div>
