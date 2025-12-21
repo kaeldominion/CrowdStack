@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Share2, Image as ImageIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Share2, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@crowdstack/ui";
+import { Logo, LoadingSpinner } from "@crowdstack/ui";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 
 interface Photo {
@@ -119,7 +119,7 @@ export default function PhotosPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        <LoadingSpinner text="Loading photos..." size="lg" />
       </div>
     );
   }

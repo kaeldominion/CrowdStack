@@ -2,8 +2,8 @@
 
 import { useState, useRef } from "react";
 import { Avatar } from "./Avatar";
-import { Button } from "@crowdstack/ui";
-import { Camera, X, Upload, Loader2 } from "lucide-react";
+import { Button, InlineSpinner } from "@crowdstack/ui";
+import { Camera, X, Upload } from "lucide-react";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -130,7 +130,7 @@ export function AvatarUpload({
         />
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-            <Loader2 className="h-6 w-6 text-white animate-spin" />
+            <InlineSpinner size="lg" className="text-white" />
           </div>
         )}
       </div>

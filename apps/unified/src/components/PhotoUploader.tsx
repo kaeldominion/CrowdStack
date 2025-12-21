@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Button } from "@crowdstack/ui";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Button, InlineSpinner } from "@crowdstack/ui";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 interface PhotoUploaderProps {
   eventId: string;
@@ -220,7 +220,7 @@ export function PhotoUploader({
               >
                 {fileProgress.status === "uploading" && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <InlineSpinner size="lg" className="text-white" />
                   </div>
                 )}
                 {fileProgress.status === "error" && (

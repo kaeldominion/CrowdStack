@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@crowdstack/ui";
-import { DollarSign, CheckCircle2, Loader2 } from "lucide-react";
+import { Button, InlineSpinner } from "@crowdstack/ui";
+import { DollarSign, CheckCircle2 } from "lucide-react";
 
 interface PromoterRequestButtonProps {
   eventId: string;
@@ -96,7 +96,7 @@ export function PromoterRequestButton({ eventId, eventSlug }: PromoterRequestBut
       >
         {isRequesting ? (
           <>
-            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+            <InlineSpinner size="xs" className="mr-2" />
             Requesting...
           </>
         ) : (

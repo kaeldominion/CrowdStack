@@ -20,6 +20,7 @@ import {
   Modal,
   Textarea,
   Select,
+  InlineSpinner,
 } from "@crowdstack/ui";
 import {
   ArrowLeft,
@@ -1807,7 +1808,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <div className="flex items-center gap-2">
                     {uploadingVideo ? (
                       <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
-                        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                        <InlineSpinner size="md" className="text-primary" />
                         <span className="text-sm text-primary font-medium">Uploading video...</span>
                       </div>
                     ) : (

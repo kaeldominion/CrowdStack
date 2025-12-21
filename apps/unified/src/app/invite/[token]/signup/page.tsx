@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
-import { Card, Button, Input } from "@crowdstack/ui";
+import { Card, Button, Input, LoadingSpinner } from "@crowdstack/ui";
 
 export default function InviteSignupPage() {
   const params = useParams();
@@ -113,9 +113,8 @@ export default function InviteSignupPage() {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3B82F6] mx-auto mb-4"></div>
-            <p className="text-white/60">Validating invite...</p>
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner text="Validating invite..." size="md" />
           </div>
         </Card>
       </div>

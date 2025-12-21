@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Container, Section, Button, Input, Card } from "@crowdstack/ui";
-import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Container, Section, Button, Input, Card, LoadingSpinner } from "@crowdstack/ui";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export default function InviteCodePage() {
   const params = useParams();
@@ -69,7 +69,7 @@ export default function InviteCodePage() {
   if (loading && !event) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
+        <LoadingSpinner text="Loading invite..." size="lg" />
       </div>
     );
   }

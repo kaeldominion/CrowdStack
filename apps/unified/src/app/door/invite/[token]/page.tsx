@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, Button } from "@crowdstack/ui";
-import { QrCode, Calendar, MapPin, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Card, Button, LoadingSpinner } from "@crowdstack/ui";
+import { QrCode, Calendar, MapPin, CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 
 interface InviteData {
@@ -87,7 +87,7 @@ export default function DoorStaffInvitePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-white animate-spin" />
+        <LoadingSpinner text="Loading invite..." size="lg" />
       </div>
     );
   }

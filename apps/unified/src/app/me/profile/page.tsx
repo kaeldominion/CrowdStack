@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { User, Mail, Phone, Save, Check, AlertCircle, Calendar, Instagram, MessageCircle, FileText, ArrowLeft } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { Button } from "@crowdstack/ui";
+import { Button, InlineSpinner } from "@crowdstack/ui";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -397,7 +397,7 @@ export default function ProfilePage() {
             >
               {saving ? (
                 <>
-                  <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <InlineSpinner size="md" className="text-white" />
                   Saving...
                 </>
               ) : (

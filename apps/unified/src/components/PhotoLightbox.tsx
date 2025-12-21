@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Download, Share2, Instagram } from "lucide-react";
+import { InlineSpinner } from "@crowdstack/ui";
 
 interface Photo {
   id: string;
@@ -284,7 +285,7 @@ export function PhotoLightbox({
       >
         {!imageLoaded && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-8 w-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <InlineSpinner size="lg" className="text-white" />
           </div>
         )}
         <img
