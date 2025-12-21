@@ -155,17 +155,23 @@ export default function MePage() {
       // Load profile
       const { data: attendee } = await supabase
         .from("attendees")
-        .select("id, name, email, phone")
+        .select("id, name, email, phone, user_id")
         .eq("user_id", currentUser.id)
         .single();
 
-      // Load XP
-      const { data: xpData } = await supabase
-        .from("xp_ledger")
-        .select("delta")
-        .eq("attendee_id", attendee?.id || "");
-
-      const totalXp = xpData?.reduce((sum, entry) => sum + (entry.delta || 0), 0) || 0;
+      // Load XP from unified XP system
+      let totalXp = 0;
+      try {
+        if (attendee?.user_id || currentUser) {
+          const xpResponse = await fetch("/api/xp/me");
+          if (xpResponse.ok) {
+            const xpData = await xpResponse.json();
+            totalXp = xpData.total_xp || 0;
+          }
+        }
+      } catch (error) {
+        console.error("[Me] Error loading XP:", error);
+      }
 
       setProfile({
         name: attendee?.name || currentUser.user_metadata?.name || null,

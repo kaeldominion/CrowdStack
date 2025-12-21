@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
+import { PromoterRequestButton } from "@/components/PromoterRequestButton";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 // Force dynamic rendering to prevent caching stale organizer data
@@ -227,6 +228,9 @@ export default async function EventPage({
 
                   {/* QR Code Section */}
                   <EventQRCode eventSlug={params.eventSlug} />
+
+                  {/* Promoter Request Button */}
+                  <PromoterRequestButton eventId={event.id} eventSlug={params.eventSlug} />
 
                   {/* Event Status Badge */}
                   <div className="pt-4 border-t border-border">

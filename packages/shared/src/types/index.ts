@@ -308,13 +308,113 @@ export interface EventAnswer {
   created_at: string;
 }
 
+export type XPSourceType =
+  | 'ATTENDED_EVENT'
+  | 'EARLY_REGISTRATION'
+  | 'REPEAT_VENUE_ATTENDANCE'
+  | 'PROFILE_COMPLETION'
+  | 'SOCIAL_CONNECTION'
+  | 'PHOTO_TAGGED'
+  | 'TABLE_SPEND'
+  | 'NO_SHOW_PENALTY'
+  | 'PROMOTER_REFERRAL_REGISTRATION'
+  | 'PROMOTER_REFERRAL_CHECKIN'
+  | 'PROMOTER_CONVERSION_BONUS'
+  | 'PROMOTER_RELIABILITY_BONUS'
+  | 'PROMOTER_QUALITY_BONUS'
+  | 'PROMOTER_DISPUTE_PENALTY'
+  | 'ORGANIZER_EVENT_COMPLETED'
+  | 'ORGANIZER_ATTENDANCE_ACCURACY'
+  | 'ORGANIZER_PAYOUT_ON_TIME'
+  | 'ORGANIZER_VENUE_SATISFACTION'
+  | 'ORGANIZER_PROMOTER_RETENTION'
+  | 'VENUE_EVENT_SUCCESS'
+  | 'VENUE_FAIR_PAYOUT'
+  | 'VENUE_REPEAT_ORGANIZERS';
+
+export type RoleContext = 'attendee' | 'promoter' | 'organizer' | 'venue';
+
 export interface XPLedger {
   id: string;
-  event_id: string | null;
-  attendee_id: string;
+  user_id: string; // Universal user reference
   amount: number;
-  reason: string;
+  source_type: XPSourceType;
+  role_context: RoleContext;
+  event_id: string | null;
+  related_id: string | null; // Generic FK for related entity
+  description: string;
   metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface AttendeeXPView {
+  total_xp: number;
+  level: number;
+  xp_in_level: number;
+  xp_for_next_level: number;
+  progress_pct: number;
+  attendee_xp: number;
+  recent_activity: Array<{
+    amount: number;
+    source: XPSourceType;
+    description: string;
+    date: string;
+  }>;
+}
+
+export interface PromoterXPView {
+  total_xp: number;
+  performance_score: number;
+  reliability_score: number;
+  conversion_bonuses: number;
+  stats: {
+    referrals: number;
+    quality_bonuses: number;
+    penalties: number;
+  };
+}
+
+export interface OrganizerXPView {
+  total_xp: number;
+  trust_score: number;
+  stats: {
+    events_completed: number;
+    on_time_payouts: number;
+    accuracy_bonuses: number;
+    venue_satisfaction: number;
+    promoter_retention: number;
+  };
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string | null;
+  badge_category: 'performance' | 'reliability' | 'quality' | 'milestone' | 'special';
+  target_role: 'attendee' | 'promoter' | 'organizer' | 'venue' | 'all';
+  criteria_jsonb: Record<string, any> | null;
+  is_automatic: boolean;
+  is_giftable: boolean;
+  created_at: string;
+}
+
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  awarded_by: string | null;
+  awarded_at: string;
+  metadata: Record<string, any>;
+}
+
+export interface XPLevel {
+  level: number;
+  xp_required: number;
+  level_name: string;
+  attendee_benefits: Record<string, any>[];
+  promoter_benefits: Record<string, any>[];
+  organizer_benefits: Record<string, any>[];
   created_at: string;
 }
 
