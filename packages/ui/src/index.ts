@@ -50,6 +50,7 @@ export { Dropdown, type DropdownProps, type DropdownItem } from "./components/Dr
 
 // Overlays
 export { Modal, type ModalProps } from "./components/Modal";
+export { ConfirmModal, type ConfirmModalProps } from "./components/ConfirmModal";
 
 // Layout
 export { Container, type ContainerProps } from "./components/Container";

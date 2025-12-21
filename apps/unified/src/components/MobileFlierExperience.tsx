@@ -79,6 +79,25 @@ export function MobileFlierExperience({
     }, 3000);
     return () => clearTimeout(timeout);
   }, [mediaLoaded, hasVideo, videoUrl, videoFailed]);
+
+  // iOS Safari fix: explicitly play video when loaded
+  // Safari sometimes doesn't autoplay even with muted + playsInline
+  useEffect(() => {
+    if (hasVideo && mediaLoaded && videoRef.current) {
+      const playVideo = async () => {
+        try {
+          // Ensure video attributes are set (iOS sometimes needs this)
+          videoRef.current!.muted = true;
+          videoRef.current!.playsInline = true;
+          await videoRef.current!.play();
+        } catch (err) {
+          console.warn("Video autoplay failed, falling back to image:", err);
+          setVideoFailed(true);
+        }
+      };
+      playVideo();
+    }
+  }, [hasVideo, mediaLoaded]);
   
   // Touch tracking for swipe
   const touchStartX = useRef<number | null>(null);

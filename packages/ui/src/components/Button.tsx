@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { cn } from "../utils/cn";
+import { InlineSpinner } from "./InlineSpinner";
 
 export interface ButtonProps {
   children: ReactNode;
@@ -46,25 +47,6 @@ export function Button({
     lg: "px-6 py-3 text-base rounded-md",
   };
 
-  // Branded CrowdStack spinner - mini stacking bars
-  const BrandedSpinner = () => (
-    <svg 
-      viewBox="0 0 16 16" 
-      fill="none" 
-      className="h-4 w-4 animate-spin"
-      style={{ animationDuration: '1s' }}
-    >
-      {/* Top bar (accent) */}
-      <rect x="5" y="1" width="6" height="2" rx="0.5" fill="currentColor" opacity="1" />
-      {/* Second bar */}
-      <rect x="4" y="5" width="8" height="2" rx="0.5" fill="currentColor" opacity="0.7" />
-      {/* Third bar */}
-      <rect x="3" y="9" width="10" height="2" rx="0.5" fill="currentColor" opacity="0.5" />
-      {/* Bottom bar */}
-      <rect x="2" y="13" width="12" height="2" rx="0.5" fill="currentColor" opacity="0.3" />
-    </svg>
-  );
-
   const classes = cn(baseClasses, variantClasses[variant], sizeClasses[size], className);
 
   const buttonContent = (
@@ -77,7 +59,7 @@ export function Button({
     >
       {loading ? (
         <span className="flex items-center gap-2">
-          <BrandedSpinner />
+          <InlineSpinner size="sm" className="text-current" />
           <span>Loading...</span>
         </span>
       ) : (

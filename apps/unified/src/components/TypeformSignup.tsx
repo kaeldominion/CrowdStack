@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo, InlineSpinner } from "@crowdstack/ui";
-import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users } from "lucide-react";
+import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users, ChevronDown, Settings, LogOut } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface TypeformSignupProps {
   onSubmit: (data: SignupData) => Promise<void>;
@@ -71,6 +72,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     instagram_handle: existingProfile?.instagram_handle || "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof SignupData, string>>>({});
+  
+  // Navigation auth state
+  const router = useRouter();
+  const [navUser, setNavUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+  const [navLoading, setNavLoading] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   // Determine which steps to show based on existing profile and email verification status
   const visibleSteps = useMemo(() => {
@@ -91,6 +99,64 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     
     return visible;
   }, [emailVerified, existingProfile]);
+
+  // Load nav user on mount
+  useEffect(() => {
+    const loadNavUser = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const { data: attendee } = await supabase
+            .from("attendees")
+            .select("name")
+            .eq("user_id", authUser.id)
+            .single();
+
+          setNavUser({
+            id: authUser.id,
+            email: authUser.email || "",
+            name: attendee?.name || authUser.user_metadata?.name,
+          });
+        }
+      } catch (error) {
+        console.error("Error loading nav user:", error);
+      } finally {
+        setNavLoading(false);
+      }
+    };
+    loadNavUser();
+  }, []);
+
+  // Click outside handler for profile dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleNavLogout = async () => {
+    const supabase = createBrowserClient();
+    await supabase.auth.signOut();
+    setIsProfileOpen(false);
+    router.push("/");
+  };
+
+  const getNavUserInitial = () => {
+    if (navUser?.name) return navUser.name[0].toUpperCase();
+    if (navUser?.email) return navUser.email[0].toUpperCase();
+    return "U";
+  };
+
+  const getNavDisplayName = () => {
+    if (navUser?.name) return navUser.name;
+    if (navUser?.email) return navUser.email.split("@")[0];
+    return "User";
+  };
 
   // Check if user is already authenticated and update formData with email
   useEffect(() => {
@@ -804,10 +870,80 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       {/* Navigation Bar */}
       <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
-          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105">
+        <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
+          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 pr-2">
             <Logo variant="full" size="sm" animated={false} className="text-white" />
           </Link>
+          
+          <div className="h-4 w-px bg-white/20" />
+          
+          {/* Auth-aware navigation */}
+          {navLoading ? (
+            <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-2">
+              Log in
+            </Link>
+          ) : navUser ? (
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
+              >
+                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                  {getNavUserInitial()}
+                </div>
+                <span className="hidden sm:inline max-w-20 truncate text-xs">{getNavDisplayName()}</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Profile Dropdown */}
+              {isProfileOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden">
+                  {/* User Info */}
+                  <div className="px-4 py-3 border-b border-white/10">
+                    <p className="text-sm font-medium text-white truncate">
+                      {navUser.name || "Guest"}
+                    </p>
+                    <p className="text-xs text-white/50 truncate">{navUser.email}</p>
+                  </div>
+
+                  {/* Profile Links */}
+                  <div className="py-1">
+                    <Link
+                      href="/me"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      My Events
+                    </Link>
+                    <Link
+                      href="/me/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Profile
+                    </Link>
+                  </div>
+
+                  {/* Sign Out */}
+                  <div className="border-t border-white/10 py-1">
+                    <button
+                      onClick={handleNavLogout}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-2">
+              Log in
+            </Link>
+          )}
         </div>
       </nav>
 
