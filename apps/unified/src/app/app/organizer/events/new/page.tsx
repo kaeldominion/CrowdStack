@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Textarea, Card, Select, Checkbox } from "@crowdstack/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { EventImageUpload } from "@/components/EventImageUpload";
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function NewEventPage() {
     self_promote: true,
     selected_promoters: [] as string[],
   });
+  const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     loadVenues();
@@ -140,7 +142,24 @@ export default function NewEventPage() {
       }
 
       const data = await response.json();
-      router.push(`/app/organizer/events/${data.event.id}`);
+      const eventId = data.event.id;
+
+      // Upload flier if provided
+      if (flierImageFile) {
+        try {
+          const flierFormData = new FormData();
+          flierFormData.append("file", flierImageFile);
+          await fetch(`/api/organizer/events/${eventId}/flier`, {
+            method: "POST",
+            body: flierFormData,
+          });
+        } catch (error) {
+          console.error("Failed to upload flier:", error);
+          // Continue even if image upload fails
+        }
+      }
+
+      router.push(`/app/organizer/events/${eventId}`);
     } catch (error: any) {
       alert(error.message || "Failed to create event");
     } finally {
@@ -260,6 +279,24 @@ export default function NewEventPage() {
               value={formData.capacity}
               onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
               placeholder="500"
+            />
+          </div>
+
+          {/* Flier Upload */}
+          <div className="border-t border-border pt-6">
+            <EventImageUpload
+              label="Event Flier"
+              aspectRatio="9:16"
+              onUpload={async (file) => {
+                setFlierImageFile(file);
+                // Return a preview URL for display
+                return new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(file);
+                });
+              }}
+              helperText="Digital flier/poster for the event (9:16 portrait format required)"
             />
           </div>
 

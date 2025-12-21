@@ -159,3 +159,4 @@ COMMENT ON FUNCTION public.user_has_venue_permission IS 'Check if a user has a s
 COMMENT ON FUNCTION public.user_has_organizer_permission IS 'Check if a user has a specific permission for an organizer. Returns true if user is organizer creator, has full_admin=true, or has the specific permission=true.';
 
 
+

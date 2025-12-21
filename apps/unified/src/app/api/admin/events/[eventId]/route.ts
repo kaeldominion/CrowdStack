@@ -165,16 +165,60 @@ export async function PATCH(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // Only allow updating fields that exist in the events table
+    // Note: timezone may not exist in all environments - we'll handle this gracefully
+    const allowedFields = [
+      'name', 'slug', 'description', 'venue_id', 'organizer_id',
+      'start_datetime', 'end_datetime', 'capacity', 'ticket_price',
+      'flier_url', 'status', 'created_by', 'tags', 'address',
+      'private_notes', 'default_commission_type', 'default_commission_config',
+      'timezone'
+    ];
+    
+    // Filter body to only include allowed fields that have values
+    const updateData: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in body) {
+        updateData[key] = body[key];
+      }
+    }
+    
     // Superadmins can update any field, including status (can bypass venue approval if needed)
-    const { data: updatedEvent, error: updateError } = await supabase
+    let updatedEvent;
+    let updateError;
+    
+    // Try the update with all fields first
+    const result = await supabase
       .from("events")
       .update({
-        ...body,
+        ...updateData,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.eventId)
       .select()
       .single();
+    
+    updatedEvent = result.data;
+    updateError = result.error;
+    
+    // If the error is about a missing column (like timezone), retry without that field
+    if (updateError && updateError.code === 'PGRST204' && updateError.message?.includes('timezone')) {
+      console.warn("Timezone column not found, retrying without it");
+      delete updateData.timezone;
+      
+      const retryResult = await supabase
+        .from("events")
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", params.eventId)
+        .select()
+        .single();
+      
+      updatedEvent = retryResult.data;
+      updateError = retryResult.error;
+    }
 
     if (updateError) {
       console.error("Error updating event:", updateError);

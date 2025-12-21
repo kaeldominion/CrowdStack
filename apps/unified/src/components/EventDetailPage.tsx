@@ -58,6 +58,7 @@ import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { EventImageUpload } from "@/components/EventImageUpload";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
@@ -93,7 +94,7 @@ interface EventData {
   start_time: string;
   end_time: string | null;
   capacity: number | null;
-  cover_image_url: string | null;
+  flier_url: string | null;
   timezone: string | null;
   promoter_access_type?: string;
   organizer_id: string;
@@ -1666,6 +1667,43 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 placeholder="Explain why you're making these changes..."
               />
             )}
+
+            {/* Flier Upload */}
+            <div className="border-t border-border pt-6">
+              <EventImageUpload
+                label="Event Flier"
+                aspectRatio="9:16"
+                currentImageUrl={event?.flier_url}
+                onUpload={async (file) => {
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                    method: "POST",
+                    body: formData,
+                  });
+                  if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Failed to upload flier");
+                  }
+                  const data = await response.json();
+                  await loadEventData(); // Refresh event data
+                  return data.flier_url;
+                }}
+                onRemove={async () => {
+                  // Delete flier via DELETE endpoint
+                  const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                    method: "DELETE",
+                  });
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to remove flier");
+                  }
+                  await loadEventData();
+                }}
+                helperText="Digital flier/poster for the event (9:16 portrait format required)"
+              />
+            </div>
+
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
               <Button variant="ghost" onClick={() => setShowEditModal(false)}>
                 Cancel

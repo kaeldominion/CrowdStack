@@ -80,12 +80,24 @@ export function ConditionalLayout({
   const showAttendeeNav = isAttendeeRoute(pathname);
   const showFooter = showMarketingNav; // Only show footer on marketing pages (not event pages)
 
+  // Event pages handle their own layout (fixed backgrounds, flier experience, etc.)
+  // They should not have any padding from the conditional layout
+  const isEventPage = pathname.startsWith("/e/") && !pathname.includes("/register") && !pathname.includes("/pass");
+  
+  // Event pages: no padding at all (page handles its own layout)
+  // Other pages with nav: add pt-20 padding for nav bar clearance
+  const mainPaddingClass = isEventPage 
+    ? "flex-1" // No padding - event page handles its own layout
+    : (showMarketingNav || showSimpleNav || showAttendeeNav) 
+      ? "flex-1 pt-20" 
+      : "flex-1";
+
   return (
     <div className="flex min-h-screen flex-col">
       {showMarketingNav && <PublicNavigation variant="marketing" />}
       {showSimpleNav && <PublicNavigation variant="simple" />}
       {showAttendeeNav && <AttendeeNavigation />}
-      <main className={(showMarketingNav || showSimpleNav || showAttendeeNav) ? "flex-1 pt-20" : "flex-1"}>
+      <main className={mainPaddingClass}>
         {children}
       </main>
       {showFooter && <PublicFooter />}

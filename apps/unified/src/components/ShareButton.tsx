@@ -8,9 +8,10 @@ interface ShareButtonProps {
   text?: string;
   url: string;
   label?: string;
+  compact?: boolean; // Smaller size for inline layout
 }
 
-export function ShareButton({ title, text, url, label = "Share" }: ShareButtonProps) {
+export function ShareButton({ title, text, url, label = "Share", compact = false }: ShareButtonProps) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -29,6 +30,18 @@ export function ShareButton({ title, text, url, label = "Share" }: ShareButtonPr
     }
   };
 
+  if (compact) {
+    return (
+      <button
+        onClick={handleShare}
+        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium"
+      >
+        <Share2 className="h-4 w-4" />
+        {label}
+      </button>
+    );
+  }
+
   return (
     <Button variant="secondary" size="lg" onClick={handleShare}>
       <Share2 className="h-4 w-4 mr-2" />
@@ -36,4 +49,3 @@ export function ShareButton({ title, text, url, label = "Share" }: ShareButtonPr
     </Button>
   );
 }
-

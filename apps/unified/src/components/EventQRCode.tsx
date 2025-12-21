@@ -51,7 +51,7 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
   }
 
   return (
-    <div className="pt-4 border-t border-border space-y-4">
+    <div className="hidden md:block pt-4 border-t border-border space-y-4">
       <div className="text-center">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-2">
           <QrCode className="h-4 w-4" />

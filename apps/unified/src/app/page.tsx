@@ -31,16 +31,26 @@ export default function HomePage() {
   const router = useRouter();
 
   // Check if user is already logged in and redirect to /me
+  // Don't block rendering - show page content immediately
   useEffect(() => {
     const checkAuth = async () => {
+      try {
       const supabase = createBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         // User is logged in, redirect to their dashboard
         router.push("/me");
+        }
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        // Continue showing page even if auth check fails
       }
     };
+    // Use setTimeout to ensure page renders first
+    const timer = setTimeout(() => {
     checkAuth();
+    }, 100);
+    return () => clearTimeout(timer);
   }, [router]);
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, 100]);
@@ -441,25 +451,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <motion.div
+              <div
                 key={stat.label}
                 className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <motion.div
-                  className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2"
-                  initial={{ scale: 0.5 }}
-                  whileInView={{ scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                >
+                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">
                   {stat.value}
-                </motion.div>
+                </div>
                 <div className="text-sm text-white/60">{stat.label}</div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -485,13 +485,7 @@ export default function HomePage() {
         />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center mb-20">
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               Platform Features
             </span>
@@ -501,18 +495,12 @@ export default function HomePage() {
             <p className="text-xl text-white/60 max-w-2xl mx-auto">
               End-to-end tools to streamline operations, track performance, and grow your events.
             </p>
-          </motion.div>
+          </div>
 
           {/* Aceternity UI Bento Grid with Moving Borders */}
           <BentoGrid className="md:grid-cols-3 md:auto-rows-[18rem]">
             {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
+              <div key={feature.title}>
                 <MovingBorder
                   duration={2000}
                   rx="8"
@@ -532,7 +520,7 @@ export default function HomePage() {
                     className="h-full"
                   />
                 </MovingBorder>
-              </motion.div>
+              </div>
             ))}
           </BentoGrid>
         </div>
@@ -546,8 +534,9 @@ export default function HomePage() {
           <motion.div
             className="text-center mb-20"
             initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
           >
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
@@ -563,13 +552,9 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {howItWorks.map((item, index) => (
-              <motion.div
+              <div
                 key={item.step}
                 className="relative"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
               >
                 {/* Connector line */}
                 {index < howItWorks.length - 1 && (
@@ -583,7 +568,7 @@ export default function HomePage() {
                   <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
                   <p className="text-sm text-white/60">{item.description}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -592,13 +577,7 @@ export default function HomePage() {
       {/* Built for Everyone Section */}
       <section id="solutions" className="py-32 border-t border-white/10 relative overflow-hidden">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center mb-20">
             <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               One Platform, Every Role
             </span>
@@ -608,18 +587,13 @@ export default function HomePage() {
             <p className="text-xl text-white/60 max-w-2xl mx-auto">
               Whether you're a venue owner, event organizer, or promoter — CrowdStack gives you the tools you need.
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {roles.map((role, index) => (
-              <motion.div
+              <div
                 key={role.title}
-                className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
-                whileHover={{ borderColor: "rgba(99, 102, 241, 0.5)" }}
+                className="p-8 rounded-lg border border-white/10 bg-black/30 backdrop-blur-sm relative overflow-hidden group hover:border-indigo-500/50 transition-colors"
               >
                 {/* Hover gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -639,7 +613,7 @@ export default function HomePage() {
                     ))}
                   </ul>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -663,13 +637,7 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="text-center">
             <motion.div
               className="mb-8"
               initial={{ scale: 0 }}
@@ -689,7 +657,7 @@ export default function HomePage() {
                 <div className="text-white/60 text-sm">Operations Manager, Arena Events</div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -712,46 +680,17 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <motion.span
-              className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+          <div>
+            <span className="text-xs uppercase tracking-widest text-white/40 font-medium mb-4 block">
               Get Started
-            </motion.span>
-            <motion.h2
-              className="text-5xl font-bold tracking-tighter text-white mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
+            </span>
+            <h2 className="text-5xl font-bold tracking-tighter text-white mb-6">
               Ready to run smarter events?
-            </motion.h2>
-            <motion.p
-              className="text-xl text-white/60 mb-10"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
+            </h2>
+            <p className="text-xl text-white/60 mb-10">
               Join venues and organizers using CrowdStack to streamline their operations
-            </motion.p>
-            <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/contact">
                 <motion.button
                   className="px-8 py-4 text-base font-medium bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-md transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/50"
@@ -768,8 +707,8 @@ export default function HomePage() {
                   </motion.div>
                 </motion.button>
               </Link>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
