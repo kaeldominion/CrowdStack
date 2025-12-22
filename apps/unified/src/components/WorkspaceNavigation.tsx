@@ -77,6 +77,7 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
       items.push({ href: "/app/venue/promoters", label: "Promoters", icon: Megaphone });
     } else if (roles.includes("event_organizer")) {
       items.push({ href: "/app/organizer/events", label: "Events", icon: Calendar });
+      items.push({ href: "/app/organizer/attendees", label: "Attendees", icon: Users });
       items.push({ href: "/app/organizer/promoters", label: "Promoters", icon: Megaphone });
       items.push({ href: "/app/organizer/settings", label: "Settings", icon: Settings });
     } else if (roles.includes("promoter")) {
