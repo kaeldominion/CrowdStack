@@ -117,6 +117,11 @@ export async function GET(request: NextRequest) {
       .order("assigned_at", { ascending: false });
 
     if (error) {
+      // If table doesn't exist yet, return empty list gracefully
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        console.warn("venue_door_staff table not found - migration may not be applied yet");
+        return NextResponse.json({ door_staff: [], venue_name: "Unknown Venue" });
+      }
       console.error("Error fetching venue door staff:", error);
       return NextResponse.json({ error: "Failed to fetch door staff" }, { status: 500 });
     }
