@@ -880,22 +880,20 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                             className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              copyEventLink(event.id, event.referral_link);
-                            }}
-                            className="shrink-0 h-6 w-6 p-0"
-                          >
-                            {copiedEventId === event.id ? (
-                              <Check className="h-3 w-3 text-green-400" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
+                          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyEventLink(event.id, event.referral_link)}
+                              className="shrink-0 h-6 w-6 p-0"
+                            >
+                              {copiedEventId === event.id ? (
+                                <Check className="h-3 w-3 text-green-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </BentoCard>
@@ -942,22 +940,20 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                             className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
                             onClick={(e) => e.stopPropagation()}
                           />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              copyEventLink(event.id, event.referral_link);
-                            }}
-                            className="shrink-0 h-6 w-6 p-0"
-                          >
-                            {copiedEventId === event.id ? (
-                              <Check className="h-3 w-3 text-green-400" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
+                          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyEventLink(event.id, event.referral_link)}
+                              className="shrink-0 h-6 w-6 p-0"
+                            >
+                              {copiedEventId === event.id ? (
+                                <Check className="h-3 w-3 text-green-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </BentoCard>
