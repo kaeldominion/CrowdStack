@@ -25,9 +25,11 @@ import { DEFAULT_VENUE_PERMISSIONS } from "@crowdstack/shared/constants/permissi
 
 export default function VenueUsersPage() {
   const searchParams = useSearchParams();
-  const venueId = searchParams.get("venueId");
+  const venueIdParam = searchParams.get("venueId");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<VenueUser[]>([]);
+  const [venueId, setVenueId] = useState<string | null>(venueIdParam);
+  const [venueName, setVenueName] = useState<string>("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<VenueUser | null>(null);
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -36,13 +38,13 @@ export default function VenueUsersPage() {
 
   useEffect(() => {
     loadUsers();
-  }, [venueId]);
+  }, [venueIdParam]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const url = venueId 
-        ? `/api/venue/users?venueId=${venueId}`
+      const url = venueIdParam 
+        ? `/api/venue/users?venueId=${venueIdParam}`
         : `/api/venue/users`;
       const response = await fetch(url);
       if (!response.ok) {
@@ -51,6 +53,13 @@ export default function VenueUsersPage() {
       }
       const data = await response.json();
       setUsers(data.users || []);
+      // Store the venue info from the API response
+      if (data.venue_id) {
+        setVenueId(data.venue_id);
+      }
+      if (data.venue_name) {
+        setVenueName(data.venue_name);
+      }
     } catch (error: any) {
       console.error("Error loading users:", error);
       alert(error.message || "Failed to load users");
@@ -325,13 +334,16 @@ export default function VenueUsersPage() {
             </div>
           </Modal>
 
-          {/* Door Staff Section */}
-          <div className="mt-8">
-            <PermanentDoorStaffSection 
-              type="venue" 
-              entityId={venueId || undefined}
-            />
-          </div>
+          {/* Door Staff Section - only show when we have a venue */}
+          {venueId && (
+            <div className="mt-8">
+              <PermanentDoorStaffSection 
+                type="venue" 
+                entityId={venueId}
+                entityName={venueName}
+              />
+            </div>
+          )}
 
           {/* Edit Permissions Modal */}
           {editingUser && (

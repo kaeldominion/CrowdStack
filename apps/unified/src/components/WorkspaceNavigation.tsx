@@ -153,7 +153,7 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
   };
 
   const profileItems = [
-    { href: "/me", label: "My Dashboard", icon: Calendar },
+    { href: "/me", label: "Me", icon: Calendar },
     { href: "/me/profile", label: "Profile", icon: User },
     { href: "/me/settings", label: "Settings", icon: Settings },
     { href: "/me/billing", label: "Billing", icon: CreditCard },
