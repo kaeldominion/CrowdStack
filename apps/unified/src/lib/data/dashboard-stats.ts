@@ -267,6 +267,13 @@ export async function getVenueDashboardStats(): Promise<{
   repeatRate: number;
   avgAttendance: number;
   topEvent: string;
+  topEventDetails: {
+    id: string;
+    name: string;
+    registrations: number;
+    checkins: number;
+    date: string;
+  } | null;
   venue: {
     id: string;
     name: string;
@@ -284,6 +291,7 @@ export async function getVenueDashboardStats(): Promise<{
       repeatRate: 0,
       avgAttendance: 0,
       topEvent: "N/A",
+      topEventDetails: null,
       venue: null,
     };
   }
@@ -330,14 +338,62 @@ export async function getVenueDashboardStats(): Promise<{
   // Calculate average attendance
   const avgAttendance = totalEvents && totalEvents > 0 ? Math.round(totalCheckIns / totalEvents) : 0;
 
-  // Get top event
-  const { data: topEvent } = await supabase
-    .from("events")
-    .select("name")
-    .eq("venue_id", venueId)
-    .order("start_time", { ascending: false })
-    .limit(1)
-    .single();
+  // Get top event by check-in count
+  let topEventDetails: {
+    id: string;
+    name: string;
+    registrations: number;
+    checkins: number;
+    date: string;
+  } | null = null;
+
+  if (eventIds.length > 0) {
+    // Get registration and check-in counts per event
+    const eventStats: Array<{ id: string; name: string; date: string; registrations: number; checkins: number }> = [];
+    
+    const { data: allEvents } = await supabase
+      .from("events")
+      .select("id, name, start_time")
+      .eq("venue_id", venueId);
+
+    if (allEvents) {
+      for (const event of allEvents) {
+        const { count: regCount } = await supabase
+          .from("registrations")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", event.id);
+
+        const { data: eventRegs } = await supabase
+          .from("registrations")
+          .select("id")
+          .eq("event_id", event.id);
+
+        let checkinCount = 0;
+        if (eventRegs && eventRegs.length > 0) {
+          const { count } = await supabase
+            .from("checkins")
+            .select("*", { count: "exact", head: true })
+            .in("registration_id", eventRegs.map((r) => r.id))
+            .is("undo_at", null);
+          checkinCount = count || 0;
+        }
+
+        eventStats.push({
+          id: event.id,
+          name: event.name,
+          date: event.start_time,
+          registrations: regCount || 0,
+          checkins: checkinCount,
+        });
+      }
+
+      // Sort by check-ins (descending) to find top event
+      eventStats.sort((a, b) => b.checkins - a.checkins);
+      if (eventStats.length > 0) {
+        topEventDetails = eventStats[0];
+      }
+    }
+  }
 
   // Get venue info
   const { data: venue } = await supabase
@@ -352,7 +408,8 @@ export async function getVenueDashboardStats(): Promise<{
     totalCheckIns,
     repeatRate: 0, // TODO: Calculate repeat rate
     avgAttendance,
-    topEvent: topEvent?.name || "N/A",
+    topEvent: topEventDetails?.name || "N/A",
+    topEventDetails,
     venue: venue ? {
       id: venue.id,
       name: venue.name,
