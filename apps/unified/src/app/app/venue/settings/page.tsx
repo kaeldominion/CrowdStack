@@ -337,8 +337,8 @@ export default function VenueSettingsPage() {
                   type="text"
                   value={data.venue.instagram_url || ""}
                   onChange={(e) => updateVenueField("instagram_url", e.target.value)}
-                  placeholder="@username or https://instagram.com/username"
-                  helperText="Instagram handle or full URL"
+                  placeholder="username"
+                  helperText="Just the handle (no @ needed) - we'll normalize it on save"
                 />
                 <Input
                   label="Phone"
