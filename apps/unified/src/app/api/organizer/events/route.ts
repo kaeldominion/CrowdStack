@@ -76,7 +76,11 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({ events: eventsWithCounts });
+    return NextResponse.json({ events: eventsWithCounts }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      }
+    });
   } catch (error: any) {
     console.error("Error fetching organizer events:", error);
     return NextResponse.json(
