@@ -19,7 +19,7 @@ export default function PromoterEventPage() {
         canEdit: false,
         canManagePromoters: false,
         canManageDoorStaff: false,
-        canViewAttendees: false,
+        canViewAttendees: true, // Promoters can see their own referrals
         canViewPromoters: false,
         canViewPhotos: false,
         canViewSettings: false,
