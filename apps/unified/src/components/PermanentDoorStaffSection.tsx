@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   Button,
@@ -8,8 +8,10 @@ import {
   Modal,
   Badge,
   LoadingSpinner,
+  InlineSpinner,
+  ConfirmModal,
 } from "@crowdstack/ui";
-import { Plus, Trash2, DoorOpen, User, Mail, Shield } from "lucide-react";
+import { Plus, Trash2, DoorOpen, User, Mail, Shield, Search, Check, UserPlus } from "lucide-react";
 
 interface DoorStaff {
   id: string;
@@ -20,6 +22,14 @@ interface DoorStaff {
   status: string;
   notes: string | null;
   assigned_at: string;
+}
+
+interface SearchUser {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  already_assigned: boolean;
 }
 
 interface PermanentDoorStaffSectionProps {
@@ -36,9 +46,18 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
   
   // Add modal state
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newStaffEmail, setNewStaffEmail] = useState("");
   const [newStaffNotes, setNewStaffNotes] = useState("");
   const [adding, setAdding] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
+
+  // Revoke confirmation state
+  const [confirmRevoke, setConfirmRevoke] = useState<{ staffId: string; name: string } | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
   const apiEndpoint = type === "venue" 
     ? `/api/venue/door-staff${entityId ? `?venueId=${entityId}` : ""}`
@@ -69,16 +88,44 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
     }
   };
 
-  const handleAddStaff = async () => {
-    if (!newStaffEmail.trim()) {
-      alert("Please enter an email address");
+  // Debounced search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults([]);
       return;
     }
 
-    setAdding(true);
+    const timer = setTimeout(() => {
+      searchUsers(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, entityId, type]);
+
+  const searchUsers = async (query: string) => {
+    setSearching(true);
+    try {
+      const searchUrl = type === "venue"
+        ? `/api/venue/door-staff/search-users?q=${encodeURIComponent(query)}${entityId ? `&venueId=${entityId}` : ""}`
+        : `/api/organizer/door-staff/search-users?q=${encodeURIComponent(query)}${entityId ? `&organizerId=${entityId}` : ""}`;
+      
+      const response = await fetch(searchUrl);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.users || []);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAssignUser = async (user: SearchUser) => {
+    setAssigningUserId(user.id);
     try {
       const body: Record<string, string> = {
-        email: newStaffEmail.trim(),
+        email: user.email,
       };
       if (newStaffNotes.trim()) {
         body.notes = newStaffNotes.trim();
@@ -101,26 +148,27 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
         throw new Error(data.error || "Failed to add door staff");
       }
 
+      // Reset and reload
       setShowAddModal(false);
-      setNewStaffEmail("");
+      setSearchQuery("");
+      setSearchResults([]);
       setNewStaffNotes("");
       loadDoorStaff();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to add door staff");
     } finally {
-      setAdding(false);
+      setAssigningUserId(null);
     }
   };
 
-  const handleRevokeAccess = async (staffId: string) => {
-    if (!confirm("Are you sure you want to revoke this person's permanent door staff access?")) {
-      return;
-    }
+  const handleRevokeAccess = async () => {
+    if (!confirmRevoke) return;
 
+    setRevoking(true);
     try {
       const deleteUrl = type === "venue"
-        ? `/api/venue/door-staff?staff_id=${staffId}${entityId ? `&venueId=${entityId}` : ""}`
-        : `/api/organizer/door-staff?staff_id=${staffId}${entityId ? `&organizerId=${entityId}` : ""}`;
+        ? `/api/venue/door-staff?staff_id=${confirmRevoke.staffId}${entityId ? `&venueId=${entityId}` : ""}`
+        : `/api/organizer/door-staff?staff_id=${confirmRevoke.staffId}${entityId ? `&organizerId=${entityId}` : ""}`;
 
       const response = await fetch(deleteUrl, { method: "DELETE" });
 
@@ -128,9 +176,12 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
         throw new Error("Failed to revoke access");
       }
 
+      setConfirmRevoke(null);
       loadDoorStaff();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to revoke access");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -219,7 +270,7 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleRevokeAccess(staff.id)}
+                  onClick={() => setConfirmRevoke({ staffId: staff.id, name: staff.user_name })}
                   className="text-danger hover:text-danger hover:bg-danger/10"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -235,7 +286,8 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
         isOpen={showAddModal}
         onClose={() => {
           setShowAddModal(false);
-          setNewStaffEmail("");
+          setSearchQuery("");
+          setSearchResults([]);
           setNewStaffNotes("");
         }}
         title="Add Permanent Door Staff"
@@ -243,49 +295,124 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
       >
         <div className="space-y-4">
           <p className="text-sm text-foreground-muted">
-            Add a user as permanent door staff. They will have access to the door scanner for all {resolvedEntityName || type} events.
+            Search for a user by email to add as permanent door staff for all {resolvedEntityName || type} events.
           </p>
 
-          <Input
-            label="User Email"
-            type="email"
-            value={newStaffEmail}
-            onChange={(e) => setNewStaffEmail(e.target.value)}
-            placeholder="staff@example.com"
-            required
-            helperText="The user must already have an account"
-          />
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by email..."
+              className="pl-10"
+            />
+            {searching && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <InlineSpinner size="sm" />
+              </div>
+            )}
+          </div>
 
-          <Input
-            label="Notes (optional)"
-            value={newStaffNotes}
-            onChange={(e) => setNewStaffNotes(e.target.value)}
-            placeholder="e.g., Head of Security"
-          />
+          {/* Search Results */}
+          {searchQuery.length >= 2 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {searchResults.length > 0 ? (
+                searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                      user.already_assigned
+                        ? "bg-surface-secondary border-border opacity-60"
+                        : "bg-surface-secondary border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-white font-semibold text-sm">
+                            {user.name?.charAt(0)?.toUpperCase() || "?"}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{user.name}</p>
+                        <p className="text-sm text-foreground-muted">{user.email}</p>
+                      </div>
+                    </div>
+                    {user.already_assigned ? (
+                      <Badge variant="secondary" size="sm" className="flex items-center gap-1">
+                        <Check className="h-3 w-3" />
+                        Added
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAssignUser(user)}
+                        loading={assigningUserId === user.id}
+                        disabled={assigningUserId !== null}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Add
+                      </Button>
+                    )}
+                  </div>
+                ))
+              ) : !searching ? (
+                <div className="text-center py-6 text-foreground-muted">
+                  <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No users found</p>
+                  <p className="text-sm">Try a different email address</p>
+                </div>
+              ) : null}
+            </div>
+          )}
 
-          <div className="flex justify-end gap-3 pt-4">
+          {/* Notes field (shown when search has results) */}
+          {searchResults.length > 0 && (
+            <Input
+              label="Notes (optional)"
+              value={newStaffNotes}
+              onChange={(e) => setNewStaffNotes(e.target.value)}
+              placeholder="e.g., Head of Security"
+            />
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
             <Button
               variant="ghost"
               onClick={() => {
                 setShowAddModal(false);
-                setNewStaffEmail("");
+                setSearchQuery("");
+                setSearchResults([]);
                 setNewStaffNotes("");
               }}
-              disabled={adding}
             >
               Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAddStaff}
-              disabled={adding || !newStaffEmail.trim()}
-              loading={adding}
-            >
-              Add Door Staff
             </Button>
           </div>
         </div>
       </Modal>
+
+      {/* Revoke Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!confirmRevoke}
+        onClose={() => setConfirmRevoke(null)}
+        onConfirm={handleRevokeAccess}
+        title="Remove Permanent Door Staff"
+        message={
+          <>
+            Are you sure you want to remove <strong>{confirmRevoke?.name}</strong> from permanent door staff? 
+            They will no longer have automatic access to all {type} events.
+          </>
+        }
+        confirmText="Remove Access"
+        cancelText="Cancel"
+        variant="danger"
+        loading={revoking}
+      />
     </Card>
   );
 }
