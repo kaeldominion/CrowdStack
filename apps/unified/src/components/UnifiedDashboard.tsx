@@ -68,6 +68,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     repeatRate: 0,
     avgAttendance: 0,
     topEvent: "N/A",
+    topEventDetails: null as {
+      id: string;
+      name: string;
+      registrations: number;
+      checkins: number;
+      date: string;
+    } | null,
   });
   const [attendeeStats, setAttendeeStats] = useState({
     totalAttendees: 0,
@@ -560,15 +567,52 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </div>
             </BentoCard>
 
-            <BentoCard span={2}>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
-                  <BarChart3 className="h-4 w-4 text-white/40" />
+            {venueStats.topEventDetails ? (
+              <Link href={`/app/venue/events/${venueStats.topEventDetails.id}`} className="block">
+                <BentoCard span={2} className="hover:bg-white/10 transition-colors cursor-pointer group">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
+                      <Trophy className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <p className="text-xl font-bold tracking-tighter text-white group-hover:text-indigo-300 transition-colors truncate">
+                      {venueStats.topEventDetails.name}
+                    </p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <Ticket className="h-3.5 w-3.5 text-white/40" />
+                        <span className="text-white/70">{venueStats.topEventDetails.registrations}</span>
+                        <span className="text-white/40 text-xs">reg</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <UserCheck className="h-3.5 w-3.5 text-green-400" />
+                        <span className="text-green-400 font-medium">{venueStats.topEventDetails.checkins}</span>
+                        <span className="text-white/40 text-xs">in</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-white/40">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span className="text-xs">
+                          {new Date(venueStats.topEventDetails.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </BentoCard>
+              </Link>
+            ) : (
+              <BentoCard span={2}>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
+                    <BarChart3 className="h-4 w-4 text-white/40" />
+                  </div>
+                  <p className="text-2xl font-bold tracking-tighter text-white/40">No events yet</p>
                 </div>
-                <p className="text-2xl font-bold tracking-tighter text-white">{venueStats.topEvent}</p>
-              </div>
-            </BentoCard>
+              </BentoCard>
+            )}
           </div>
 
           {/* Attendees Card */}
