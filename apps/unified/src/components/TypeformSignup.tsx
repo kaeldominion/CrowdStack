@@ -55,6 +55,17 @@ const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
 
+// Detect iOS Safari for OTP-first flow
+const isIOSSafari = () => {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  // Also check for in-app browsers (Mail, Gmail, etc.)
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Twitter|Line|Messenger|WhatsApp/.test(ua);
+  return isIOS || isSafari || isInAppBrowser;
+};
+
 export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false, fallbackReason, eventName, eventDetails }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
@@ -65,6 +76,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   const [passwordFallbackFromMagicLink, setPasswordFallbackFromMagicLink] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // OTP verification state
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [formData, setFormData] = useState<SignupData>({
     email: "",
     name: existingProfile?.name || "",
@@ -107,6 +125,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     
     return visible;
   }, [emailVerified, existingProfile]);
+
+  // Detect mobile/iOS on mount
+  useEffect(() => {
+    setIsMobileDevice(isIOSSafari());
+  }, []);
 
   // Load nav user on mount
   useEffect(() => {
@@ -469,6 +492,73 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     }
   };
 
+  // OTP Verification - for iOS/Safari users who can't use magic links
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.length < 6) {
+      setOtpError("Please enter the 6-digit code from your email");
+      return;
+    }
+
+    setVerifyingOtp(true);
+    setOtpError(null);
+
+    try {
+      const supabase = createBrowserClient();
+      
+      // Verify OTP - Supabase sends a code along with the magic link
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        email: formData.email,
+        token: otpCode.trim(),
+        type: "email",
+      });
+
+      if (verifyError) {
+        console.error("[OTP Verify] Error:", verifyError.message);
+        if (verifyError.message.includes("expired")) {
+          setOtpError("Code expired. Please request a new one.");
+        } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token")) {
+          setOtpError("Invalid code. Please check and try again.");
+        } else {
+          setOtpError(verifyError.message);
+        }
+        return;
+      }
+
+      if (!data.session) {
+        setOtpError("Verification failed. Please try again.");
+        return;
+      }
+
+      // Successfully verified!
+      console.log("[OTP Verify] Success for:", formData.email);
+      setEmailVerified(true);
+      setMagicLinkSent(false);
+      setShowOtpInput(false);
+      
+      // Clear stored email from sessionStorage
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("pending_registration_email");
+      }
+      
+      // Check if already registered (if callback provided)
+      if (onEmailVerified) {
+        const alreadyRegistered = await onEmailVerified();
+        if (alreadyRegistered) {
+          return; // Parent component will handle showing success
+        }
+      }
+      
+      if (visibleSteps.length > 1) {
+        setCurrentStep(1); // Move to next step
+      }
+    } catch (err: any) {
+      console.error("[OTP Verify] Exception:", err);
+      setOtpError(err.message || "Verification failed");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   const handleNext = async () => {
     // Special handling for email step
     if (visibleSteps[currentStep] === "email" && !emailVerified) {
@@ -577,10 +667,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             ) : fallbackReason === "pkce" ? (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
                 <p className="text-blue-400 text-sm text-center mb-2">
-                  Please open the magic link in the same browser where you requested it.
+                  📱 Magic link opened in a different browser
+                </p>
+                <p className="text-blue-300/70 text-xs text-center mb-2">
+                  This often happens on iOS when email apps open links in their own browser.
                 </p>
                 <p className="text-blue-300/70 text-xs text-center">
-                  Or create a password below to continue.
+                  Create a password below to continue, or go back and enter the 6-digit code from the email.
                 </p>
               </div>
             ) : fallbackReason === "expired" ? (
@@ -671,6 +764,97 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       }
 
       if (magicLinkSent && !emailVerified) {
+        // Show OTP input for mobile/iOS users or when explicitly requested
+        if (showOtpInput || isMobileDevice) {
+          return (
+            <div className="space-y-6">
+              <div className="text-center space-y-4 py-4">
+                <div className="mx-auto w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center">
+                  <Mail className="h-7 w-7 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Enter verification code</h3>
+                  <p className="text-white/70 text-sm">
+                    We sent a 6-digit code to <span className="font-medium">{formData.email}</span>
+                  </p>
+                  <p className="text-white/50 text-xs mt-1">
+                    Check your email and enter the code below
+                  </p>
+                </div>
+                
+                {/* OTP Input */}
+                <div className="pt-4 space-y-4">
+                  <Input
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => {
+                      // Only allow digits and limit to 6 characters
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                      setOtpCode(value);
+                      if (otpError) setOtpError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && otpCode.length === 6) {
+                        e.preventDefault();
+                        handleVerifyOtp();
+                      }
+                    }}
+                    placeholder="000000"
+                    className="text-3xl py-6 text-center tracking-[0.5em] font-mono border-2 focus:border-primary w-full"
+                    autoFocus
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                  />
+                  
+                  {otpError && (
+                    <p className="text-red-400 text-sm text-center">{otpError}</p>
+                  )}
+                  
+                  <Button
+                    variant="primary"
+                    onClick={handleVerifyOtp}
+                    disabled={verifyingOtp || otpCode.length < 6}
+                    loading={verifyingOtp}
+                    className="w-full"
+                  >
+                    {verifyingOtp ? "Verifying..." : "Verify Code"}
+                  </Button>
+                </div>
+                
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSendMagicLink()}
+                    disabled={sendingMagicLink}
+                    className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  >
+                    Didn't receive it? Send new code
+                  </button>
+                  <br />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined" && formData.email) {
+                        sessionStorage.setItem("pending_registration_email", formData.email);
+                      }
+                      setPasswordFallbackFromMagicLink(true);
+                      setShowPasswordFallback(true);
+                      setMagicLinkSent(false);
+                      setShowOtpInput(false);
+                      setMagicLinkError(null);
+                    }}
+                    className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  >
+                    Use password instead
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        
+        // Desktop flow - show magic link confirmation with option to enter code
         return (
           <div className="space-y-6">
             <div className="text-center space-y-4 py-8">
@@ -727,6 +911,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   className="w-full"
                 >
                   I've clicked the link
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowOtpInput(true)}
+                  className="w-full text-white/70 hover:text-white hover:bg-white/5"
+                >
+                  Enter code manually instead
                 </Button>
                 <Button
                   variant="ghost"

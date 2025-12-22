@@ -105,16 +105,16 @@ function AuthCallbackContent() {
               return;
             }
             setError("This magic link has already been used or has expired. Please request a new one.");
-          } else if (exchangeError.message.includes("PKCE") || exchangeError.message.includes("verifier") || exchangeError.message.includes("same browser")) {
-            // PKCE error - redirect back to registration page with error flag
-            // This will trigger password fallback in TypeformSignup
+          } else if (exchangeError.message.includes("PKCE") || exchangeError.message.includes("verifier") || exchangeError.message.includes("same browser") || exchangeError.message.includes("code_verifier")) {
+            // PKCE error - common on iOS Safari when link opens in different browser context
+            // Redirect back with error flag to show OTP or password fallback
             if (redirectParam) {
               const redirectUrl = new URL(redirectParam, window.location.origin);
               redirectUrl.searchParams.set("magic_link_error", "pkce");
               window.location.replace(redirectUrl.toString());
               return;
             }
-            setError("Authentication failed. Please request a new magic link in the same browser.");
+            setError("The magic link opened in a different browser. On iOS, you can enter the 6-digit code from the email instead, or use password login.");
           } else {
             // Other errors - try to redirect back if we have redirect param
             if (redirectParam) {
@@ -216,12 +216,28 @@ function AuthCallbackContent() {
   }
 
   if (error) {
+    // Check if this is a PKCE error to show iOS-specific help
+    const isPKCEError = error.includes("PKCE") || error.includes("browser") || error.includes("verifier");
+    
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="rounded-lg border border-[#EF4444]/20 bg-[#EF4444]/10 p-6">
             <h2 className="text-xl font-semibold text-[#EF4444] mb-2">Authentication Failed</h2>
             <p className="text-white/80 mb-4">{error}</p>
+            
+            {isPKCEError && (
+              <div className="bg-[#3B82F6]/10 border border-[#3B82F6]/20 rounded-lg p-4 mb-4 text-left">
+                <p className="text-[#3B82F6] text-sm font-medium mb-2">📱 Using iOS or Safari?</p>
+                <p className="text-white/70 text-xs mb-2">
+                  Magic links sometimes don't work on iOS because email apps open links in a different browser.
+                </p>
+                <p className="text-white/70 text-xs">
+                  <strong>Solution:</strong> Go back and enter the 6-digit code from the email instead, or use password login.
+                </p>
+              </div>
+            )}
+            
             <a
               href="/login"
               className="inline-block px-4 py-2 bg-[#3B82F6] text-white rounded-md hover:bg-[#3B82F6]/80 transition-colors"
