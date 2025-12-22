@@ -201,7 +201,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { action, email, user_id, notes } = body;
+    const { action, email, user_id, notes, make_permanent, venue_id, organizer_id } = body;
 
     const supabase = createServiceRoleClient();
 
@@ -245,7 +245,7 @@ export async function POST(
         },
       });
     } else if (action === "assign" && user_id) {
-      // Directly assign a user
+      // Directly assign a user to the event
       const { data: assignment, error } = await supabase
         .from("event_door_staff")
         .insert({
@@ -265,9 +265,53 @@ export async function POST(
         return NextResponse.json({ error: "Failed to assign door staff" }, { status: 500 });
       }
 
+      // If make_permanent is true, also add to venue or organizer permanent staff
+      if (make_permanent) {
+        if (venue_id) {
+          // Add to venue permanent door staff
+          const { error: venueError } = await supabase
+            .from("venue_door_staff")
+            .upsert({
+              venue_id: venue_id,
+              user_id: user_id,
+              assigned_by: userId,
+              notes: notes || null,
+              status: "active",
+            }, {
+              onConflict: "venue_id,user_id",
+              ignoreDuplicates: false,
+            });
+
+          if (venueError && venueError.code !== "23505") {
+            console.error("Error adding permanent venue door staff:", venueError);
+            // Don't fail the request - event assignment succeeded
+          }
+        } else if (organizer_id) {
+          // Add to organizer permanent door staff
+          const { error: organizerError } = await supabase
+            .from("organizer_door_staff")
+            .upsert({
+              organizer_id: organizer_id,
+              user_id: user_id,
+              assigned_by: userId,
+              notes: notes || null,
+              status: "active",
+            }, {
+              onConflict: "organizer_id,user_id",
+              ignoreDuplicates: false,
+            });
+
+          if (organizerError && organizerError.code !== "23505") {
+            console.error("Error adding permanent organizer door staff:", organizerError);
+            // Don't fail the request - event assignment succeeded
+          }
+        }
+      }
+
       return NextResponse.json({
         success: true,
         assignment,
+        made_permanent: make_permanent && (venue_id || organizer_id),
       });
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
