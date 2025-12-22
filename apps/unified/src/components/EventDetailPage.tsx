@@ -1393,7 +1393,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     {/* Source Filter */}
                     <Select
                       value={sourceFilter}
-                      onValueChange={(value) => setSourceFilter(value as ReferralSource | "all")}
+                      onChange={(e) => setSourceFilter(e.target.value as ReferralSource | "all")}
                     >
                       <option value="all">All Sources</option>
                       <option value="direct">Direct Registration</option>
@@ -1405,7 +1405,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     {promoterOptions.length > 0 && (
                       <Select
                         value={promoterFilter}
-                        onValueChange={setPromoterFilter}
+                        onChange={(e) => setPromoterFilter(e.target.value)}
                       >
                         <option value="all">All Promoters</option>
                         {promoterOptions.map((p) => (
