@@ -132,6 +132,11 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     upcomingEvents: PromoterEvent[];
     pastEvents: PromoterEvent[];
   }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
+  const [organizerEvents, setOrganizerEvents] = useState<{
+    liveEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+    upcomingEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+    pastEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+  }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
@@ -208,7 +213,17 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             setOrganizerStats(data.stats || organizerStats);
             setOrganizerChartData(data.chartData || []);
           })
-          .catch((e) => console.error("Failed to load organizer stats:", e))
+          .catch((e) => console.error("Failed to load organizer stats:", e)),
+        fetch("/api/organizer/dashboard-events")
+          .then((r) => r.json())
+          .then((data) => {
+            setOrganizerEvents({
+              liveEvents: data.liveEvents || [],
+              upcomingEvents: data.upcomingEvents || [],
+              pastEvents: data.pastEvents || [],
+            });
+          })
+          .catch((e) => console.error("Failed to load organizer events:", e))
       );
     }
 
@@ -790,6 +805,79 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </div>
             </BentoCard>
           </div>
+
+          {/* Upcoming Events - List View */}
+          {organizerEvents.upcomingEvents.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-indigo-400" />
+                  Upcoming Events
+                </h3>
+                <Link href="/app/organizer/events">
+                  <Button variant="ghost" size="sm">View All</Button>
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {organizerEvents.upcomingEvents.slice(0, 5).map((event) => (
+                  <Link key={event.id} href={`/app/organizer/events/${event.id}`}>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        {event.flier_url && (
+                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
+                            <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-white/50">
+                            <Calendar className="h-3 w-3" />
+                            <span>{new Date(event.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
+                            <span>·</span>
+                            <span>{new Date(event.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                            {event.venue_name && (
+                              <>
+                                <span>·</span>
+                                <span className="truncate">{event.venue_name}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center">
+                          <p className="text-white font-medium">{event.registrations}</p>
+                          <p className="text-xs text-white/40">Registered</p>
+                        </div>
+                        {event.venue_approval_status === "pending" && (
+                          <Badge variant="warning" className="text-xs">Pending</Badge>
+                        )}
+                        {event.status === "draft" && (
+                          <Badge variant="secondary" className="text-xs">Draft</Badge>
+                        )}
+                        <ArrowUpRight className="h-4 w-4 text-white/40 group-hover:text-primary transition-colors" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No Events State */}
+          {organizerEvents.liveEvents.length === 0 && organizerEvents.upcomingEvents.length === 0 && (
+            <BentoCard className="text-center py-8">
+              <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No Upcoming Events</h3>
+              <p className="text-white/60 mb-4">Create your first event to start managing your business!</p>
+              <Link href="/app/organizer/events/new">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Event
+                </Button>
+              </Link>
+            </BentoCard>
+          )}
         </section>
       )}
 
