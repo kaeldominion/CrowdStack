@@ -241,6 +241,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [editHistory, setEditHistory] = useState<EditRecord[]>([]);
   const [saving, setSaving] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [videoUploadSuccess, setVideoUploadSuccess] = useState(false);
   const [showRemoveVideoModal, setShowRemoveVideoModal] = useState(false);
   const [removingVideo, setRemovingVideo] = useState(false);
@@ -1966,9 +1967,20 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 ) : (
                   <div className="flex items-center gap-2">
                     {uploadingVideo ? (
-                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
-                        <InlineSpinner size="md" className="text-primary" />
-                        <span className="text-sm text-primary font-medium">Uploading video...</span>
+                      <div className="flex-1 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-primary font-medium">Uploading video...</span>
+                          <span className="text-sm text-primary font-mono">{videoUploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-primary/20 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${videoUploadProgress}%` }}
+                          />
+                        </div>
+                        {videoUploadProgress === 100 && (
+                          <p className="text-xs text-primary/70 mt-2">Processing video...</p>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -2005,39 +2017,55 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             formData.append("file", file);
                             
                             setUploadingVideo(true);
+                            setVideoUploadProgress(0);
                             setVideoUploadSuccess(false);
-                            try {
-                              const response = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
-                                method: "POST",
-                                body: formData,
-                              });
-                              if (!response.ok) {
+                            
+                            // Use XMLHttpRequest for progress tracking
+                            const xhr = new XMLHttpRequest();
+                            
+                            xhr.upload.addEventListener("progress", (progressEvent) => {
+                              if (progressEvent.lengthComputable) {
+                                const percentComplete = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                                setVideoUploadProgress(percentComplete);
+                              }
+                            });
+                            
+                            xhr.addEventListener("load", async () => {
+                              if (xhr.status >= 200 && xhr.status < 300) {
+                                await loadEventData(false);
+                                setVideoUploadSuccess(true);
+                                setTimeout(() => setVideoUploadSuccess(false), 3000);
+                              } else {
                                 let errorMessage = "Failed to upload video";
                                 try {
-                                  const error = await response.json();
-                                  errorMessage = error.error || errorMessage;
+                                  const errorData = JSON.parse(xhr.responseText);
+                                  errorMessage = errorData.error || errorMessage;
                                 } catch {
-                                  // Response wasn't JSON (network error)
-                                  if (response.status === 0 || !response.status) {
-                                    errorMessage = "Upload failed - please check your internet connection and try again. For large files, try using a desktop browser.";
+                                  if (xhr.status === 504 || xhr.status === 408) {
+                                    errorMessage = "Upload timed out - the file may be too large. Try a smaller file or compress the video.";
+                                  } else if (xhr.status === 413) {
+                                    errorMessage = "File too large - please use a file under 100MB.";
                                   }
                                 }
-                                throw new Error(errorMessage);
+                                alert(errorMessage);
                               }
-                              await loadEventData(false);
-                              setVideoUploadSuccess(true);
-                              // Auto-hide success after 3 seconds
-                              setTimeout(() => setVideoUploadSuccess(false), 3000);
-                            } catch (error: any) {
-                              // Better error message for common iOS failures
-                              let message = error.message || "Failed to upload video";
-                              if (message.includes("Load failed") || message.includes("load failed") || message.includes("Failed to fetch")) {
-                                message = "Upload failed - this can happen with large files on mobile. Please try a smaller file or upload from a desktop browser.";
-                              }
-                              alert(message);
-                            } finally {
                               setUploadingVideo(false);
-                            }
+                              setVideoUploadProgress(0);
+                            });
+                            
+                            xhr.addEventListener("error", () => {
+                              alert("Upload failed - please check your internet connection and try again.");
+                              setUploadingVideo(false);
+                              setVideoUploadProgress(0);
+                            });
+                            
+                            xhr.addEventListener("abort", () => {
+                              setUploadingVideo(false);
+                              setVideoUploadProgress(0);
+                            });
+                            
+                            xhr.open("POST", `/api/organizer/events/${eventId}/video-flier`);
+                            xhr.send(formData);
                             
                             // Reset input
                             e.target.value = "";
@@ -2234,4 +2262,5 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     </div>
   );
 }
+
 
