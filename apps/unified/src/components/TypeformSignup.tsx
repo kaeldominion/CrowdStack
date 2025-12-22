@@ -115,16 +115,24 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       return !!(val && val.trim().length > 0);
     };
     
-    // Only show fields that are missing or have invalid values
-    if (!hasValue(existingProfile?.name)) visible.push("name");
-    if (!hasValue(existingProfile?.surname)) visible.push("surname");
-    if (!hasValue(existingProfile?.date_of_birth)) visible.push("date_of_birth");
-    if (!(existingProfile as any)?.gender) visible.push("gender");
-    if (!hasValue(existingProfile?.whatsapp)) visible.push("whatsapp");
-    if (!hasValue(existingProfile?.instagram_handle)) visible.push("instagram_handle");
+    // Check both existingProfile AND formData to prevent skipping fields
+    // Only show fields that are missing or have invalid values in BOTH places
+    const nameValue = formData.name || existingProfile?.name;
+    const surnameValue = formData.surname || existingProfile?.surname;
+    const dobValue = formData.date_of_birth || existingProfile?.date_of_birth;
+    const genderValue = formData.gender || (existingProfile as any)?.gender;
+    const whatsappValue = formData.whatsapp || existingProfile?.whatsapp;
+    const instagramValue = formData.instagram_handle || existingProfile?.instagram_handle;
+    
+    if (!hasValue(nameValue)) visible.push("name");
+    if (!hasValue(surnameValue)) visible.push("surname");
+    if (!hasValue(dobValue)) visible.push("date_of_birth");
+    if (!genderValue) visible.push("gender");
+    if (!hasValue(whatsappValue)) visible.push("whatsapp");
+    if (!hasValue(instagramValue)) visible.push("instagram_handle");
     
     return visible;
-  }, [emailVerified, existingProfile]);
+  }, [emailVerified, existingProfile, formData]);
 
   // Detect mobile/iOS on mount
   useEffect(() => {
@@ -504,45 +512,54 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
     try {
       const supabase = createBrowserClient();
+      const trimmedCode = otpCode.trim();
       
-      console.log("[OTP Verify] Attempting verification for:", formData.email, "with code length:", otpCode.trim().length);
+      console.log("[OTP Verify] Attempting verification for:", formData.email, "with code length:", trimmedCode.length);
       
-      // Verify OTP - try with type 'email' first (standard for signInWithOtp)
-      let { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email: formData.email,
-        token: otpCode.trim(),
-        type: "email",
-      });
-
-      // If that fails, try with type 'signup' (for new users)
-      if (verifyError && (verifyError.message.includes("expired") || verifyError.message.includes("invalid"))) {
-        console.log("[OTP Verify] Retrying with type 'signup'...");
-        const retryResult = await supabase.auth.verifyOtp({
+      // Try all possible OTP types in order
+      const typesToTry = ["email", "signup", "magiclink"];
+      let data = null;
+      let verifyError = null;
+      
+      for (const type of typesToTry) {
+        console.log(`[OTP Verify] Trying type: ${type}`);
+        const result = await supabase.auth.verifyOtp({
           email: formData.email,
-          token: otpCode.trim(),
-          type: "signup",
+          token: trimmedCode,
+          type: type as any,
         });
-        if (!retryResult.error) {
-          data = retryResult.data;
+        
+        if (!result.error && result.data?.session) {
+          console.log(`[OTP Verify] Success with type: ${type}`);
+          data = result.data;
           verifyError = null;
+          break;
+        } else if (result.error) {
+          console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
+          verifyError = result.error;
+          // Continue to next type unless it's a clear non-retryable error
+          if (result.error.message.includes("User not found") || 
+              result.error.message.includes("Email rate limit")) {
+            break; // Don't retry for these errors
+          }
         }
       }
 
       if (verifyError) {
-        console.error("[OTP Verify] Error:", verifyError.message, verifyError);
-        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired")) {
-          setOtpError("Code expired. Please click 'Send new code' below.");
-        } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token")) {
-          setOtpError("Invalid code. Please check the code and try again.");
+        console.error("[OTP Verify] All types failed. Last error:", verifyError.message, verifyError);
+        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired") || verifyError.message.includes("has expired")) {
+          setOtpError("Code expired. The code is only valid for 60 seconds. Please request a new code.");
+        } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token") || verifyError.message.includes("Invalid")) {
+          setOtpError("Invalid code. Please check the 8-digit code from your email and try again.");
         } else if (verifyError.message.includes("User not found")) {
           setOtpError("User not found. Please request a new code.");
         } else {
-          setOtpError(verifyError.message);
+          setOtpError(`Verification failed: ${verifyError.message}. Please try requesting a new code.`);
         }
         return;
       }
 
-      if (!data.session) {
+      if (!data || !data.session) {
         setOtpError("Verification failed. Please try again.");
         return;
       }
@@ -1197,25 +1214,43 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           >
             <div className="bg-black/20 backdrop-blur-md rounded-xl border border-white/15 p-4 sm:p-5 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-white/50 mb-2">Registering for</p>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white break-words leading-tight">{eventName}</h3>
-                  {(eventDetails?.venueName || eventDetails?.startTime) && (
-                    <div className="flex items-center gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-white/60 flex-wrap">
-                      {eventDetails.venueName && (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span className="truncate max-w-[200px] sm:max-w-none">{eventDetails.venueName}</span>
-                        </div>
-                      )}
-                      {eventDetails.startTime && (
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                          <span>{new Date(eventDetails.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
-                        </div>
-                      )}
+                <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
+                  {/* Flier Image */}
+                  {eventDetails?.flierUrl && (
+                    <div className="flex-shrink-0">
+                      <div className="relative w-16 h-24 sm:w-20 sm:h-28 rounded-lg overflow-hidden border border-white/20 bg-black/30">
+                        <Image
+                          src={eventDetails.flierUrl}
+                          alt={`${eventName} flier`}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      </div>
                     </div>
                   )}
+                  
+                  {/* Event Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm text-white/50 mb-2">Registering for</p>
+                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white break-words leading-tight">{eventName}</h3>
+                    {(eventDetails?.venueName || eventDetails?.startTime) && (
+                      <div className="flex items-center gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-white/60 flex-wrap">
+                        {eventDetails.venueName && (
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span className="truncate max-w-[200px] sm:max-w-none">{eventDetails.venueName}</span>
+                          </div>
+                        )}
+                        {eventDetails.startTime && (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>{new Date(eventDetails.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {eventDetails?.registrationCount !== undefined && eventDetails.registrationCount > 0 && (
                   <div className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 bg-white/5 px-3 py-2 rounded-lg border border-white/10 self-start sm:self-auto">

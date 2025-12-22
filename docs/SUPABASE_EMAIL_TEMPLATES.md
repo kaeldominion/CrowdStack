@@ -50,49 +50,39 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
           <!-- Content -->
           <tr>
             <td style="padding: 32px;">
-              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
+              <h1 style="margin: 0 0 8px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
                 Your Verification Code
               </h1>
               
-              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
                 Enter this code in the app to sign in. It expires in 24 hours.
               </p>
               
-              <!-- OTP Code Section (Primary) -->
-              <div style="background-color: #1A1D24; border-radius: 12px; padding: 28px; margin: 0 0 24px; border: 1px solid #2A2F3A;">
-                <p style="margin: 0; font-size: 42px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.4em; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">
+              <!-- OTP Code Section (Primary - Most Prominent) -->
+              <div style="background: linear-gradient(135deg, #1A1D24 0%, #0F1115 100%); border-radius: 16px; padding: 36px 28px; margin: 0 0 32px; border: 2px solid #3B82F6; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
+                <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;">
+                  Verification Code
+                </p>
+                <p style="margin: 0; font-size: 48px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.5em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
                   {{ .Token }}
                 </p>
               </div>
               
-              <!-- Divider -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="padding: 16px 0;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 45%;"></td>
-                        <td style="text-align: center; color: #6B7280; font-size: 12px; padding: 0 12px;">OR</td>
-                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 45%;"></td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Magic Link Button (Secondary) -->
-              <p style="margin: 0 0 12px; font-size: 13px; color: #6B7280; text-align: center;">
-                Or click the button below to sign in directly:
-              </p>
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="text-align: center; padding: 0 0 16px;">
-                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 12px 28px; background: transparent; border: 1px solid #3B82F6; color: #3B82F6; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px;">
-                      Sign In with Link
-                    </a>
-                  </td>
-                </tr>
-              </table>
+              <!-- Magic Link (Secondary - Less Prominent) -->
+              <div style="margin: 32px 0 0; padding-top: 24px; border-top: 1px solid #2A2F3A;">
+                <p style="margin: 0 0 12px; font-size: 12px; color: #6B7280; text-align: center;">
+                  Prefer to use a link instead?
+                </p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                  <tr>
+                    <td style="text-align: center; padding: 0;">
+                      <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 10px 20px; background: transparent; border: 1px solid #4B5563; color: #9CA3AF; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
+                        Sign In with Magic Link
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </div>
               
               <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
                 If you didn't request this email, you can safely ignore it.
