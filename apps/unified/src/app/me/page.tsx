@@ -168,9 +168,9 @@ export default function MePage() {
           .eq("user_id", currentUser.id)
           .single(),
         // Load XP from unified XP system
-        fetch("/api/xp/me").catch(() => ({ ok: false })),
+        fetch("/api/xp/me").catch(() => null),
         // Load referral stats
-        fetch("/api/referral/stats").catch(() => ({ ok: false })),
+        fetch("/api/referral/stats").catch(() => null),
       ]);
 
       const { data: userRoles } = userRolesResult;
@@ -180,7 +180,7 @@ export default function MePage() {
 
       // Process XP data
       let totalXp = 0;
-      if (xpResult.ok) {
+      if (xpResult && xpResult.ok) {
         try {
           const xpData = await xpResult.json();
           console.log("[Me] XP data received:", xpData);
@@ -194,7 +194,7 @@ export default function MePage() {
       }
 
       // Process referral stats
-      if (referralStatsResult.ok) {
+      if (referralStatsResult && referralStatsResult.ok) {
         try {
           const referralData = await referralStatsResult.json();
           setReferralStats(referralData);
