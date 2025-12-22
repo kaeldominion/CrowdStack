@@ -1475,7 +1475,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                   {attendee.promoter_name}
                                 </Badge>
                               ) : attendee.referral_source === "user_referral" && attendee.referred_by_user_name ? (
-                                <Badge variant="info" className="flex items-center gap-1 w-fit">
+                                <Badge variant="primary" className="flex items-center gap-1 w-fit">
                                   <Share2 className="h-3 w-3" />
                                   {attendee.referred_by_user_name}
                                 </Badge>
