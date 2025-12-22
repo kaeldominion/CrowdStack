@@ -86,6 +86,8 @@ export default function DoorScannerPage() {
   const [stats, setStats] = useState({ checkedIn: 0, registered: 0, remaining: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requiresLogin, setRequiresLogin] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   // Camera scanning state
   const [scanning, setScanning] = useState(false);
@@ -118,19 +120,38 @@ export default function DoorScannerPage() {
 
   const loadEventInfo = async () => {
     try {
-      const response = await fetch(`/api/admin/events/${eventId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setEventInfo({
-          id: data.event.id,
-          name: data.event.name,
-          slug: data.event.slug,
-          venue: data.event.venue,
-          flier_url: data.event.flier_url,
-        });
+      const response = await fetch(`/api/door/events/${eventId}`);
+      const data = await response.json();
+      
+      if (response.status === 401) {
+        // User not logged in
+        setRequiresLogin(true);
+        setError("Please sign in to access the door scanner");
+        return;
       }
+      
+      if (response.status === 403) {
+        // User doesn't have access
+        setAccessDenied(true);
+        setError(data.error || "You don't have access to this event's door scanner");
+        return;
+      }
+      
+      if (!response.ok) {
+        setError(data.error || "Failed to load event");
+        return;
+      }
+      
+      setEventInfo({
+        id: data.event.id,
+        name: data.event.name,
+        slug: data.event.slug,
+        venue: data.event.venue,
+        flier_url: data.event.flier_url,
+      });
     } catch (err) {
       console.error("Error loading event info:", err);
+      setError("Failed to load event. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -410,6 +431,92 @@ export default function DoorScannerPage() {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
         <LoadingSpinner text="Loading event..." size="lg" />
+      </div>
+    );
+  }
+
+  // Auth required screen
+  if (requiresLogin) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-white/20">
+            <User className="h-16 w-16 text-white/40 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Sign In Required</h1>
+            <p className="text-white/60 mb-6">
+              Please sign in to access the door scanner for this event.
+            </p>
+            <Button
+              variant="primary"
+              size="lg"
+              className="w-full"
+              onClick={() => router.push(`/login?redirect=/door/${eventId}`)}
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Access denied screen
+  if (accessDenied) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-red-500/30">
+            <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+            <p className="text-white/60 mb-6">
+              {error || "You don't have permission to access the door scanner for this event."}
+            </p>
+            <p className="text-sm text-white/40 mb-6">
+              Only event organizers, venue admins, and assigned door staff can access this scanner.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
+                onClick={() => router.push("/door")}
+              >
+                Back to Events
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
+                onClick={() => router.push("/me")}
+              >
+                My Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Event not found or other error
+  if (error && !eventInfo) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-yellow-500/30">
+            <AlertTriangle className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Unable to Load Event</h1>
+            <p className="text-white/60 mb-6">{error}</p>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              onClick={() => router.push("/door")}
+            >
+              Back to Events
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
