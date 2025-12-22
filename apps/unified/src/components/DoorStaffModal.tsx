@@ -526,8 +526,8 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                   {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
                     <div className="text-center py-4 text-foreground-muted border border-dashed border-border rounded-lg">
                       <p className="text-sm">No users found with that email</p>
-                      <Button
-                        variant="secondary"
+                    <Button
+                      variant="secondary"
                         size="sm"
                         className="mt-2"
                         onClick={() => setShowInviteLink(true)}
@@ -552,8 +552,8 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                       >
                         <LinkIcon className="h-4 w-4 mr-2" />
                         Generate Invite Link {searchQuery && `for ${searchQuery}`}
-                      </Button>
-                    </div>
+                    </Button>
+                  </div>
                   )}
 
                   {/* Make permanent checkbox */}

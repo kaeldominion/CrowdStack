@@ -156,10 +156,10 @@ export default function MePage() {
         xpResult,
         referralStatsResult,
       ] = await Promise.all([
-        // Load roles
+      // Load roles
         supabase
-          .from("user_roles")
-          .select("role")
+        .from("user_roles")
+        .select("role")
           .eq("user_id", currentUser.id),
         // Load profile
         supabase
@@ -176,8 +176,8 @@ export default function MePage() {
       const { data: userRoles } = userRolesResult;
       const { data: attendee } = attendeeResult;
       const roleList = userRoles ? userRoles.map((r: any) => r.role) : [];
-      setRoles(roleList);
-
+        setRoles(roleList);
+        
       // Process XP data
       let totalXp = 0;
       if (xpResult && xpResult.ok) {
@@ -187,8 +187,8 @@ export default function MePage() {
           totalXp = xpData.total_xp || xpData?.total_xp || 0;
           if (totalXp === 0 && xpData) {
             console.warn("[Me] XP is 0 but data exists:", xpData);
-          }
-        } catch (error) {
+            }
+          } catch (error) {
           console.error("[Me] Error parsing XP data:", error);
         }
       }
@@ -198,7 +198,7 @@ export default function MePage() {
         try {
           const referralData = await referralStatsResult.json();
           setReferralStats(referralData);
-        } catch (error) {
+      } catch (error) {
           console.error("Error parsing referral stats:", error);
         }
       }
@@ -254,7 +254,7 @@ export default function MePage() {
         `)
         .eq("attendee_id", attendee?.id || "")
         .order("registered_at", { ascending: false });
-
+      
       // Wait for promoter stats to complete (non-blocking)
       await promoterStatsPromise;
       

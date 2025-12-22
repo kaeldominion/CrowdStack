@@ -452,11 +452,11 @@ export default function DoorScannerPage() {
         <div className="mb-6 text-center">
           {eventInfo && (
             <div className="space-y-3">
-              <div className="space-y-1">
-                <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
-                {eventInfo.venue && (
-                  <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
-                )}
+            <div className="space-y-1">
+              <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
+              {eventInfo.venue && (
+                <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
+              )}
               </div>
               <a
                 href={`/e/${eventInfo.slug}`}
@@ -646,15 +646,15 @@ export default function DoorScannerPage() {
           
           {eventInfo && (
             <>
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => setShowQRCode(true)}
-                className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
-              >
-                <QrCode className="h-5 w-5 mr-2" />
-                Show Event QR Code
-              </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => setShowQRCode(true)}
+              className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
+            >
+              <QrCode className="h-5 w-5 mr-2" />
+              Show Event QR Code
+            </Button>
               
               <a
                 href={`/e/${eventInfo.slug}`}
