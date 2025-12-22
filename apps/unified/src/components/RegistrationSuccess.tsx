@@ -67,7 +67,7 @@ export function RegistrationSuccess({
           </Link>
           <div className="h-4 w-px bg-white/20 hidden sm:block" />
           <Link href="/me" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-1 sm:px-2">
-            My Events
+            Me
           </Link>
         </div>
       </nav>

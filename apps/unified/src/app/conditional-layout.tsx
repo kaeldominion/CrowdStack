@@ -308,7 +308,7 @@ function PublicNavigationWithAuth() {
   };
 
   const profileItems = [
-    { href: "/me", label: "My Events", icon: User },
+    { href: "/me", label: "Me", icon: User },
     { href: "/me/profile", label: "Profile", icon: Settings },
   ];
 
@@ -442,7 +442,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
   };
 
   const profileItems = [
-    { href: "/me", label: "My Events", icon: User },
+    { href: "/me", label: "Me", icon: User },
     { href: "/me/profile", label: "Profile", icon: Settings },
   ];
 

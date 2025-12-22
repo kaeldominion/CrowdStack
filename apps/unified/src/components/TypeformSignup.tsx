@@ -1204,7 +1204,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                       className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
                     >
                       <User className="h-4 w-4" />
-                      My Events
+                      Me
                     </Link>
                     <Link
                       href="/me/profile"
