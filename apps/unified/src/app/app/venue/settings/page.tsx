@@ -1167,7 +1167,7 @@ export default function VenueSettingsPage() {
       <ConfirmModal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => deleteConfirm && handleDeleteImage(deleteConfirm.id)}
+        onConfirm={() => { if (deleteConfirm) handleDeleteImage(deleteConfirm.id); }}
         title="Delete Image"
         message={`Are you sure you want to delete ${deleteConfirm?.caption || "this image"}? This action cannot be undone.`}
         confirmLabel="Delete"
