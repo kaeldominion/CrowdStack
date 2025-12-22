@@ -448,6 +448,7 @@ export default function RegisterPage() {
     
     // If magic link failed, show password fallback immediately
     const shouldShowPasswordFallback = magicLinkError === "pkce" || magicLinkError === "expired" || magicLinkError === "failed";
+    const fallbackReason = magicLinkError as "pkce" | "expired" | "failed" | undefined;
     
     return (
       <TypeformSignup
@@ -457,6 +458,7 @@ export default function RegisterPage() {
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
         forcePasswordFallback={shouldShowPasswordFallback}
+        fallbackReason={fallbackReason}
         eventName={eventDataForSignup?.name}
         eventDetails={eventDataForSignup ? {
           venueName: eventDataForSignup.venueName,
