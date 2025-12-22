@@ -143,6 +143,8 @@ interface Stats {
   conversionRate?: number;
 }
 
+type ReferralSource = "direct" | "venue" | "organizer" | "promoter" | "user_referral";
+
 interface Attendee {
   id: string;
   name: string;
@@ -151,7 +153,27 @@ interface Attendee {
   registration_date: string;
   checked_in: boolean;
   check_in_time: string | null;
+  referral_source: ReferralSource;
+  promoter_id: string | null;
   promoter_name: string | null;
+  referred_by_user_id: string | null;
+  referred_by_user_name: string | null;
+}
+
+interface PromoterOption {
+  id: string;
+  name: string;
+}
+
+interface AttendeeStats {
+  total: number;
+  checked_in: number;
+  not_checked_in: number;
+  by_source: {
+    direct: number;
+    promoter: number;
+    user_referral: number;
+  };
 }
 
 interface Photo {
@@ -203,9 +225,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [event, setEvent] = useState<EventData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [promoterOptions, setPromoterOptions] = useState<PromoterOption[]>([]);
+  const [attendeeStats, setAttendeeStats] = useState<AttendeeStats | null>(null);
+  const [isPromoterView, setIsPromoterView] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
+  const [sourceFilter, setSourceFilter] = useState<ReferralSource | "all">("all");
+  const [promoterFilter, setPromoterFilter] = useState<string>("all");
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [showPromoterModal, setShowPromoterModal] = useState(false);
@@ -318,12 +346,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   };
 
   const loadAttendees = async () => {
-    if (!config.attendeesApiEndpoint) return;
+    // Use the general attendees API for all roles - it handles permissions internally
+    const endpoint = `/api/events/${eventId}/attendees`;
     try {
-      const response = await fetch(config.attendeesApiEndpoint);
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
         setAttendees(data.attendees || []);
+        setPromoterOptions(data.promoters || []);
+        setAttendeeStats(data.stats || null);
+        setIsPromoterView(data.userContext?.isPromoter || false);
       }
     } catch (error) {
       console.error("Failed to load attendees:", error);
@@ -691,13 +723,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  // Filter attendees by search
+  // Filter attendees by search, status, source, and promoter
   const filteredAttendees = attendees.filter((attendee) => {
+    // Status filter
+    if (statusFilter === "checked_in" && !attendee.checked_in) return false;
+    if (statusFilter === "not_checked_in" && attendee.checked_in) return false;
+    
+    // Source filter
+    if (sourceFilter !== "all" && attendee.referral_source !== sourceFilter) return false;
+    
+    // Promoter filter
+    if (promoterFilter !== "all" && attendee.promoter_id !== promoterFilter) return false;
+    
+    // Search filter
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
       attendee.name.toLowerCase().includes(query) ||
       attendee.email?.toLowerCase().includes(query) ||
+      attendee.promoter_name?.toLowerCase().includes(query) ||
       attendee.phone?.includes(query)
     );
   });
@@ -1243,18 +1287,136 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 </Card>
               )}
 
+              {/* Attendee Stats Summary */}
+              {attendeeStats && !isPromoterView && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-foreground">{attendeeStats.total}</div>
+                    <div className="text-sm text-foreground-muted">Total Registered</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-success">{attendeeStats.checked_in}</div>
+                    <div className="text-sm text-foreground-muted">Checked In</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-warning">{attendeeStats.not_checked_in}</div>
+                    <div className="text-sm text-foreground-muted">Not Checked In</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-info">{attendeeStats.by_source.direct}</div>
+                    <div className="text-sm text-foreground-muted">Direct</div>
+                  </Card>
+                  <Card className="p-4">
+                    <div className="text-2xl font-bold text-primary">{attendeeStats.by_source.promoter}</div>
+                    <div className="text-sm text-foreground-muted">Via Promoters</div>
+                  </Card>
+                </div>
+              )}
+
+              {/* Promoter View Header */}
+              {isPromoterView && (
+                <Card className="mb-4 p-4 bg-primary/10 border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold text-foreground">Your Referrals</h3>
+                      <p className="text-sm text-foreground-muted">
+                        Showing only guests you brought to this event
+                      </p>
+                    </div>
+                  </div>
+                  {attendeeStats && (
+                    <div className="flex gap-6 mt-4">
+                      <div>
+                        <span className="text-2xl font-bold text-foreground">{attendeeStats.total}</span>
+                        <span className="text-sm text-foreground-muted ml-2">registered</span>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-success">{attendeeStats.checked_in}</span>
+                        <span className="text-sm text-foreground-muted ml-2">checked in</span>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-foreground">
+                          {attendeeStats.total > 0 ? Math.round((attendeeStats.checked_in / attendeeStats.total) * 100) : 0}%
+                        </span>
+                        <span className="text-sm text-foreground-muted ml-2">conversion</span>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
+
               <Card>
-                <div className="flex items-center justify-between mb-4">
+                {/* Header with title and search */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <h2 className="text-xl font-semibold text-foreground">
-                    Attendees ({attendees.length})
+                    {isPromoterView ? "Your Guests" : "Attendees"} ({filteredAttendees.length})
                   </h2>
                   <Input
-                    placeholder="Search attendees..."
+                    placeholder="Search by name, email, or promoter..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="max-w-xs"
                   />
                 </div>
+
+                {/* Filters Row */}
+                {!isPromoterView && (
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    {/* Status Filter */}
+                    <div className="flex gap-1">
+                      <Button
+                        variant={statusFilter === "all" ? "primary" : "secondary"}
+                        size="sm"
+                        onClick={() => setStatusFilter("all")}
+                      >
+                        All
+                      </Button>
+                      <Button
+                        variant={statusFilter === "checked_in" ? "primary" : "secondary"}
+                        size="sm"
+                        onClick={() => setStatusFilter("checked_in")}
+                      >
+                        <UserCheck className="h-3 w-3 mr-1" />
+                        Checked In
+                      </Button>
+                      <Button
+                        variant={statusFilter === "not_checked_in" ? "primary" : "secondary"}
+                        size="sm"
+                        onClick={() => setStatusFilter("not_checked_in")}
+                      >
+                        <Clock className="h-3 w-3 mr-1" />
+                        Not Checked In
+                      </Button>
+                    </div>
+
+                    {/* Source Filter */}
+                    <Select
+                      value={sourceFilter}
+                      onValueChange={(value) => setSourceFilter(value as ReferralSource | "all")}
+                    >
+                      <option value="all">All Sources</option>
+                      <option value="direct">Direct Registration</option>
+                      <option value="promoter">Via Promoter</option>
+                      <option value="user_referral">User Referral</option>
+                    </Select>
+
+                    {/* Promoter Filter (only if promoters exist) */}
+                    {promoterOptions.length > 0 && (
+                      <Select
+                        value={promoterFilter}
+                        onValueChange={setPromoterFilter}
+                      >
+                        <option value="all">All Promoters</option>
+                        {promoterOptions.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </Select>
+                    )}
+                  </div>
+                )}
+
+                {/* Privacy Notice */}
                 {config.role !== "admin" && (
                   <div className="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
                     <p className="text-sm text-foreground-muted">
@@ -1263,6 +1425,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     </p>
                   </div>
                 )}
+
+                {/* Attendees Table */}
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1271,14 +1435,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <TableHead>Phone</TableHead>
                       <TableHead>Registered</TableHead>
                       <TableHead>Status</TableHead>
-                      {config.role !== "promoter" && <TableHead>Promoter</TableHead>}
+                      {!isPromoterView && <TableHead>Source</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAttendees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={config.role === "promoter" ? 5 : 6} className="text-center text-foreground-muted py-8">
-                          No attendees found
+                        <TableCell colSpan={isPromoterView ? 5 : 6} className="text-center text-foreground-muted py-8">
+                          {isPromoterView ? "You haven't referred any guests to this event yet" : "No attendees found"}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1303,8 +1467,22 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               </Badge>
                             )}
                           </TableCell>
-                          {config.role !== "promoter" && (
-                            <TableCell>{attendee.promoter_name || "-"}</TableCell>
+                          {!isPromoterView && (
+                            <TableCell>
+                              {attendee.referral_source === "promoter" && attendee.promoter_name ? (
+                                <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                                  <Users className="h-3 w-3" />
+                                  {attendee.promoter_name}
+                                </Badge>
+                              ) : attendee.referral_source === "user_referral" && attendee.referred_by_user_name ? (
+                                <Badge variant="info" className="flex items-center gap-1 w-fit">
+                                  <Share2 className="h-3 w-3" />
+                                  {attendee.referred_by_user_name}
+                                </Badge>
+                              ) : (
+                                <span className="text-foreground-muted text-sm">Direct</span>
+                              )}
+                            </TableCell>
                           )}
                         </TableRow>
                       ))
