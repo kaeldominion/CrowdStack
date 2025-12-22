@@ -123,7 +123,6 @@ export default function MePage() {
 
   useEffect(() => {
     loadUserData();
-    loadReferralStats();
   }, []);
 
   const loadReferralStats = async () => {
@@ -150,63 +149,58 @@ export default function MePage() {
 
       setUser(currentUser);
 
-      // Load roles
-      const { data: userRoles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", currentUser.id);
+      // Parallelize all independent data loading
+      const [
+        userRolesResult,
+        attendeeResult,
+        xpResult,
+        referralStatsResult,
+      ] = await Promise.all([
+        // Load roles
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", currentUser.id),
+        // Load profile
+        supabase
+          .from("attendees")
+          .select("id, name, email, phone, user_id")
+          .eq("user_id", currentUser.id)
+          .single(),
+        // Load XP from unified XP system
+        fetch("/api/xp/me").catch(() => null),
+        // Load referral stats
+        fetch("/api/referral/stats").catch(() => null),
+      ]);
 
-      if (userRoles) {
-        const roleList = userRoles.map((r: any) => r.role);
-        setRoles(roleList);
-        
-        // Load promoter stats if user is a promoter
-        if (roleList.includes("promoter")) {
-          try {
-            const statsResponse = await fetch("/api/promoter/dashboard-stats");
-            if (statsResponse.ok) {
-              const statsData = await statsResponse.json();
-              setPromoterStats({
-                totalCheckIns: statsData.stats?.totalCheckIns || 0,
-                conversionRate: statsData.stats?.conversionRate || 0,
-                totalEarnings: statsData.stats?.totalEarnings || 0,
-                referrals: statsData.stats?.referrals || 0,
-                eventsPromoted: 0, // Not in stats, but we can calculate from event_promoters if needed
-              });
-            }
-          } catch (error) {
-            console.error("Error loading promoter stats:", error);
+      const { data: userRoles } = userRolesResult;
+      const { data: attendee } = attendeeResult;
+      const roleList = userRoles ? userRoles.map((r: any) => r.role) : [];
+      setRoles(roleList);
+
+      // Process XP data
+      let totalXp = 0;
+      if (xpResult && xpResult.ok) {
+        try {
+          const xpData = await xpResult.json();
+          console.log("[Me] XP data received:", xpData);
+          totalXp = xpData.total_xp || xpData?.total_xp || 0;
+          if (totalXp === 0 && xpData) {
+            console.warn("[Me] XP is 0 but data exists:", xpData);
           }
+        } catch (error) {
+          console.error("[Me] Error parsing XP data:", error);
         }
       }
 
-      // Load profile
-      const { data: attendee } = await supabase
-        .from("attendees")
-        .select("id, name, email, phone, user_id")
-        .eq("user_id", currentUser.id)
-        .single();
-
-      // Load XP from unified XP system
-      let totalXp = 0;
-      try {
-        if (attendee?.user_id || currentUser) {
-          const xpResponse = await fetch("/api/xp/me");
-          if (xpResponse.ok) {
-            const xpData = await xpResponse.json();
-            console.log("[Me] XP data received:", xpData);
-            // Handle both direct total_xp and nested structure
-            totalXp = xpData.total_xp || xpData?.total_xp || 0;
-            if (totalXp === 0 && xpData) {
-              console.warn("[Me] XP is 0 but data exists:", xpData);
-            }
-          } else {
-            const errorData = await xpResponse.json().catch(() => ({}));
-            console.error("[Me] XP API error:", xpResponse.status, errorData);
-          }
+      // Process referral stats
+      if (referralStatsResult && referralStatsResult.ok) {
+        try {
+          const referralData = await referralStatsResult.json();
+          setReferralStats(referralData);
+        } catch (error) {
+          console.error("Error parsing referral stats:", error);
         }
-      } catch (error) {
-        console.error("[Me] Error loading XP:", error);
       }
 
       setProfile({
@@ -216,6 +210,24 @@ export default function MePage() {
         xp_points: totalXp,
         attendee_id: attendee?.id || null,
       });
+
+      // Load promoter stats if user is a promoter (can be done in parallel with registrations)
+      const promoterStatsPromise = roleList.includes("promoter")
+        ? fetch("/api/promoter/dashboard-stats")
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+              if (data?.stats) {
+                setPromoterStats({
+                  totalCheckIns: data.stats.totalCheckIns || 0,
+                  conversionRate: data.stats.conversionRate || 0,
+                  totalEarnings: data.stats.totalEarnings || 0,
+                  referrals: data.stats.referrals || 0,
+                  eventsPromoted: 0,
+                });
+              }
+            })
+            .catch((error) => console.error("Error loading promoter stats:", error))
+        : Promise.resolve();
 
       // Load registrations with events
       console.log("[Me] Loading registrations for attendee:", attendee?.id, "user_id:", currentUser.id);
@@ -242,6 +254,9 @@ export default function MePage() {
         `)
         .eq("attendee_id", attendee?.id || "")
         .order("registered_at", { ascending: false });
+
+      // Wait for promoter stats to complete (non-blocking)
+      await promoterStatsPromise;
       
       console.log("[Me] Registrations result:", {
         count: registrations?.length || 0,
@@ -430,7 +445,7 @@ export default function MePage() {
                 </p>
               </div>
               <Link
-                href="/app/promoter"
+                href="/app"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30 transition-colors"
               >
                 View Full Dashboard

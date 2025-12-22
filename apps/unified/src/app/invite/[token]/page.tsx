@@ -66,11 +66,10 @@ export default function InviteAcceptPage() {
     
     switch (role) {
       case "venue_admin":
-        return `${appUrl}/app/venue`;
       case "event_organizer":
-        return `${appUrl}/app/organizer`;
       case "promoter":
-        return `${appUrl}/app/promoter`;
+        // All B2B roles go to unified workspace
+        return `${appUrl}/app`;
       case "door_staff":
         return `${appUrl}/door`;
       default:

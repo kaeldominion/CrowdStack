@@ -174,14 +174,11 @@ function AuthCallbackContent() {
 
             if (roleNames.includes("superadmin")) {
               targetPath = "/admin";
-            } else if (roleNames.includes("venue_admin")) {
-              targetPath = "/app/venue";
-            } else if (roleNames.includes("event_organizer")) {
-              targetPath = "/app/organizer";
-            } else if (roleNames.includes("promoter")) {
-              targetPath = "/app/promoter";
             } else if (roleNames.includes("door_staff")) {
               targetPath = "/door";
+            } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
+              // All B2B roles go to unified workspace
+              targetPath = "/app";
             }
           }
         }

@@ -280,7 +280,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
                 }
                 items={[
                   {
-                    label: "My Events",
+                    label: "My Dashboard",
                     onClick: () => router.push("/me"),
                     icon: <Calendar className="h-4 w-4" />,
                   },
