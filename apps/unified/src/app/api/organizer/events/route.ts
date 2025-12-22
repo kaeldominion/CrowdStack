@@ -13,8 +13,10 @@ export async function GET() {
 
     // Get organizer ID (handles impersonation for superadmin)
     const organizerId = await getUserOrganizerId();
+    console.log("[OrganizerEvents] User ID:", user.id, "Organizer ID:", organizerId);
 
     if (!organizerId) {
+      console.log("[OrganizerEvents] No organizer found for user");
       return NextResponse.json({ error: "No organizer found" }, { status: 404 });
     }
 
@@ -44,7 +46,13 @@ export async function GET() {
       .order("start_time", { ascending: false });
 
     if (error) {
+      console.error("[OrganizerEvents] Query error:", error);
       throw error;
+    }
+
+    console.log("[OrganizerEvents] Found", events?.length || 0, "events for organizer", organizerId);
+    if (events && events.length > 0) {
+      console.log("[OrganizerEvents] Event names:", events.map(e => e.name).join(", "));
     }
 
     // Get registration counts for each event
