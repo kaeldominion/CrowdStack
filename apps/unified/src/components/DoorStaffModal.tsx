@@ -571,7 +571,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                             Grant permanent access
                           </p>
                           <p className="text-xs text-foreground-muted mt-0.5">
-                            Access to all {venueId ? "venue" : "organizer"} events, not just this one
+                            Access to all {organizerId ? "organizer" : "venue"} events, not just this one
                           </p>
                         </div>
                       </label>

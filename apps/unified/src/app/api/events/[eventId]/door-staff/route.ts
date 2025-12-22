@@ -299,28 +299,10 @@ export async function POST(
         return NextResponse.json({ error: "Failed to assign door staff" }, { status: 500 });
       }
 
-      // If make_permanent is true, also add to venue or organizer permanent staff
+      // If make_permanent is true, also add to organizer or venue permanent staff
+      // Priority: organizer first (organizers "own" their staff), then venue
       if (make_permanent) {
-        if (venue_id) {
-          // Add to venue permanent door staff
-          const { error: venueError } = await supabase
-            .from("venue_door_staff")
-            .upsert({
-              venue_id: venue_id,
-              user_id: user_id,
-              assigned_by: userId,
-              notes: notes || null,
-              status: "active",
-            }, {
-              onConflict: "venue_id,user_id",
-              ignoreDuplicates: false,
-            });
-
-          if (venueError && venueError.code !== "23505") {
-            console.error("Error adding permanent venue door staff:", venueError);
-            // Don't fail the request - event assignment succeeded
-          }
-        } else if (organizer_id) {
+        if (organizer_id) {
           // Add to organizer permanent door staff
           const { error: organizerError } = await supabase
             .from("organizer_door_staff")
@@ -337,6 +319,25 @@ export async function POST(
 
           if (organizerError && organizerError.code !== "23505") {
             console.error("Error adding permanent organizer door staff:", organizerError);
+            // Don't fail the request - event assignment succeeded
+          }
+        } else if (venue_id) {
+          // Add to venue permanent door staff (only if no organizer)
+          const { error: venueError } = await supabase
+            .from("venue_door_staff")
+            .upsert({
+              venue_id: venue_id,
+              user_id: user_id,
+              assigned_by: userId,
+              notes: notes || null,
+              status: "active",
+            }, {
+              onConflict: "venue_id,user_id",
+              ignoreDuplicates: false,
+            });
+
+          if (venueError && venueError.code !== "23505") {
+            console.error("Error adding permanent venue door staff:", venueError);
             // Don't fail the request - event assignment succeeded
           }
         }
