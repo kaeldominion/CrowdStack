@@ -133,35 +133,33 @@ export async function GET(
       return NextResponse.json({ error: "Failed to fetch door staff" }, { status: 500 });
     }
 
-    // Get user details for each door staff
-    const staffWithDetails = await Promise.all(
-      (doorStaff || []).map(async (staff) => {
-        const { data: userData } = await supabase
-          .from("auth.users")
-          .select("email, raw_user_meta_data")
-          .eq("id", staff.user_id)
-          .single();
+    // Get all users from auth admin API (we need this for emails)
+    const { data: { users: allUsers } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const userMap = new Map(allUsers.map(u => [u.id, u]));
 
-        // Fallback: try to get from auth.users view
-        let email = userData?.email;
-        let name = userData?.raw_user_meta_data?.full_name || userData?.raw_user_meta_data?.name;
+    // Get attendee profiles for names
+    const userIds = (doorStaff || []).map(s => s.user_id);
+    const { data: attendees } = await supabase
+      .from("attendees")
+      .select("user_id, name, avatar_url")
+      .in("user_id", userIds);
+    const attendeeMap = new Map((attendees || []).map(a => [a.user_id, a]));
 
-        if (!email) {
-          // Try admin lookup
-          const { data: { users } } = await supabase.auth.admin.listUsers({
-            perPage: 1,
-            page: 1,
-          });
-          // This won't work for filtering, so we'll use a different approach
-        }
-
-        return {
-          ...staff,
-          user_email: email || "Unknown",
-          user_name: name || email || "Unknown User",
-        };
-      })
-    );
+    // Build staff details
+    const staffWithDetails = (doorStaff || []).map((staff) => {
+      const authUser = userMap.get(staff.user_id);
+      const attendee = attendeeMap.get(staff.user_id);
+      
+      const email = authUser?.email || "Unknown";
+      const name = attendee?.name || authUser?.user_metadata?.name || authUser?.email?.split("@")[0] || "Unknown User";
+      
+      return {
+        ...staff,
+        user_email: email,
+        user_name: name,
+        avatar_url: attendee?.avatar_url,
+      };
+    });
 
     // Get pending invites
     const { data: invites } = await supabase
