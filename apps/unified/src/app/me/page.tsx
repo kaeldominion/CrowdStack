@@ -194,7 +194,15 @@ export default function MePage() {
           const xpResponse = await fetch("/api/xp/me");
           if (xpResponse.ok) {
             const xpData = await xpResponse.json();
-            totalXp = xpData.total_xp || 0;
+            console.log("[Me] XP data received:", xpData);
+            // Handle both direct total_xp and nested structure
+            totalXp = xpData.total_xp || xpData?.total_xp || 0;
+            if (totalXp === 0 && xpData) {
+              console.warn("[Me] XP is 0 but data exists:", xpData);
+            }
+          } else {
+            const errorData = await xpResponse.json().catch(() => ({}));
+            console.error("[Me] XP API error:", xpResponse.status, errorData);
           }
         }
       } catch (error) {
@@ -210,7 +218,11 @@ export default function MePage() {
       });
 
       // Load registrations with events
-      console.log("[Me] Loading registrations for attendee:", attendee?.id);
+      console.log("[Me] Loading registrations for attendee:", attendee?.id, "user_id:", currentUser.id);
+      if (!attendee?.id) {
+        console.warn("[Me] No attendee record found for user, cannot load registrations");
+      }
+      
       const { data: registrations, error: regError } = await supabase
         .from("registrations")
         .select(`
@@ -231,7 +243,12 @@ export default function MePage() {
         .eq("attendee_id", attendee?.id || "")
         .order("registered_at", { ascending: false });
       
-      console.log("[Me] Registrations result:", registrations, "Error:", regError);
+      console.log("[Me] Registrations result:", {
+        count: registrations?.length || 0,
+        registrations: registrations?.slice(0, 3), // Log first 3
+        error: regError?.message,
+        attendeeId: attendee?.id,
+      });
 
       if (registrations) {
         const now = new Date();
