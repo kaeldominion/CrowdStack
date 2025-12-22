@@ -77,6 +77,13 @@ export async function GET(request: Request) {
       }
     }
 
+    // Get venue name
+    const { data: venue } = await serviceSupabase
+      .from("venues")
+      .select("name")
+      .eq("id", venueId)
+      .single();
+
     // Transform the data to match our type
     const users = (venueUsers || []).map((vu: any) => ({
       id: vu.id,
@@ -89,7 +96,11 @@ export async function GET(request: Request) {
       user: userMap.get(vu.user_id),
     }));
 
-    return NextResponse.json({ users });
+    return NextResponse.json({ 
+      users,
+      venue_id: venueId,
+      venue_name: venue?.name || "Unknown Venue",
+    });
   } catch (error: any) {
     console.error("Error in GET /api/venue/users:", error);
     return NextResponse.json(
