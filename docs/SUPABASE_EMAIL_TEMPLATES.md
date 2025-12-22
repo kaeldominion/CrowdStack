@@ -33,7 +33,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/logo.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -135,7 +135,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/logo.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -237,7 +237,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/logo.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -314,7 +314,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/logo.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
