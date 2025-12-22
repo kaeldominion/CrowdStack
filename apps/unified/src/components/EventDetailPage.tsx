@@ -49,6 +49,7 @@ import {
   Eye,
   CheckCircle2,
   AlertCircle,
+  Check,
   Globe,
   EyeOff,
   Trash2,
@@ -57,6 +58,12 @@ import {
   ArrowDown,
   Copy,
   Upload,
+  Download,
+  Link as LinkIcon,
+  Share,
+  Play,
+  X,
+  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -110,7 +117,7 @@ interface EventData {
   venue_rejection_reason?: string | null;
   created_at: string;
   organizer?: { id: string; name: string; email: string | null };
-  venue?: { id: string; name: string; address: string | null; city: string | null };
+  venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
   event_promoters?: Array<{
     id: string;
     promoter: { id: string; name: string; email: string | null } | null;
@@ -141,6 +148,11 @@ interface Stats {
   referrals?: number;
   checkins?: number;
   conversionRate?: number;
+  leaderboard_position?: number;
+  total_promoters?: number;
+  // Overall event stats (for promoters to see context)
+  event_total_registrations?: number;
+  event_total_checkins?: number;
 }
 
 type ReferralSource = "direct" | "venue" | "organizer" | "promoter" | "user_referral";
@@ -227,7 +239,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [promoterOptions, setPromoterOptions] = useState<PromoterOption[]>([]);
   const [attendeeStats, setAttendeeStats] = useState<AttendeeStats | null>(null);
-  const [isPromoterView, setIsPromoterView] = useState(false);
+  const [isPromoterView, setIsPromoterView] = useState(config.role === "promoter");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -257,6 +269,23 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [publishingPhotos, setPublishingPhotos] = useState(false);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [organizers, setOrganizers] = useState<any[]>([]);
+  const [promoterRequests, setPromoterRequests] = useState<Array<{
+    id: string;
+    promoter_id: string;
+    promoter: { id: string; name: string; email: string | null; phone?: string | null };
+    message: string | null;
+    status: string;
+    created_at: string;
+  }>>([]);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  
+  // Referral state (for promoters and organizers)
+  const [promoterId, setPromoterId] = useState<string | null>(null);
+  const [organizerId, setOrganizerId] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [copiedReferral, setCopiedReferral] = useState(false);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -293,6 +322,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     if (config.role === "admin") {
       loadOrganizers();
     }
+    // Load promoter requests for organizers and venues
+    if (config.canManagePromoters) {
+      loadPromoterRequests();
+    }
     
     // Refresh stats every 30 seconds if viewing stats
     if (config.canViewStats && config.statsApiEndpoint) {
@@ -301,12 +334,104 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   }, [eventId, config]);
 
+  // Load promoter ID for referral link generation
+  useEffect(() => {
+    if (config.role === "promoter") {
+      const loadPromoterId = async () => {
+        try {
+          const response = await fetch("/api/me/promoter-status");
+          if (response.ok) {
+            const data = await response.json();
+            if (data.promoterId) {
+              setPromoterId(data.promoterId);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load promoter ID:", error);
+        }
+      };
+      loadPromoterId();
+    }
+  }, [config.role]);
+
+  // Load leaderboard when tab is selected
+  useEffect(() => {
+    if (activeTab === "leaderboard" && event && leaderboard.length === 0 && !loadingLeaderboard) {
+      const loadLeaderboard = async () => {
+        setLoadingLeaderboard(true);
+        try {
+          const response = await fetch(`/api/events/${event.id}/leaderboard`);
+          if (response.ok) {
+            const data = await response.json();
+            setLeaderboard(data.leaderboard || []);
+          }
+        } catch (error) {
+          console.error("Failed to load leaderboard:", error);
+        } finally {
+          setLoadingLeaderboard(false);
+        }
+      };
+      loadLeaderboard();
+    }
+  }, [activeTab, event, leaderboard.length, loadingLeaderboard]);
+
+  // Generate referral link for promoter
+  // Get referral code based on role
+  const getReferralCode = () => {
+    if (config.role === "promoter" && promoterId) {
+      return promoterId;
+    }
+    if (config.role === "organizer" && organizerId) {
+      return `org_${organizerId}`;
+    }
+    return null;
+  };
+
+  const getReferralLink = () => {
+    const refCode = getReferralCode();
+    if (!refCode || !event) return "";
+    let webUrl = "";
+    if (typeof window !== "undefined") {
+      const origin = window.location.origin;
+      if (origin.includes("app.crowdstack.app")) {
+        webUrl = origin.replace("app.crowdstack.app", "crowdstack.app");
+      } else if (origin.includes("app-beta.crowdstack.app")) {
+        webUrl = origin.replace("app-beta.crowdstack.app", "beta.crowdstack.app");
+      } else {
+        webUrl = origin;
+      }
+    }
+    return `${webUrl}/e/${event.slug}?ref=${refCode}`;
+  };
+
+  // Generate QR code URL
+  const getQRCodeUrl = () => {
+    const link = getReferralLink();
+    if (!link) return null;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&margin=10`;
+  };
+
+  // Copy referral link
+  const copyReferralLink = () => {
+    const link = getReferralLink();
+    if (link) {
+      navigator.clipboard.writeText(link);
+      setCopiedReferral(true);
+      setTimeout(() => setCopiedReferral(false), 2000);
+    }
+  };
+
   const loadEventData = async (resetForm = true) => {
     try {
       const response = await fetch(config.eventApiEndpoint);
       if (response.ok) {
         const data = await response.json();
+        console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
         setEvent(data.event);
+        // Set organizer ID for organizer role (for their own referral link)
+        if (config.role === "organizer" && data.event.organizer_id) {
+          setOrganizerId(data.event.organizer_id);
+        }
         // Only reset the form if requested (don't reset during image uploads while modal is open)
         if (config.canEdit && resetForm) {
           setEditForm({
@@ -334,12 +459,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   };
 
   const loadStats = async () => {
-    if (!config.statsApiEndpoint) return;
+    if (!config.statsApiEndpoint) {
+      console.log("No stats endpoint configured");
+      return;
+    }
     try {
+      console.log("Loading stats from:", config.statsApiEndpoint);
       const response = await fetch(config.statsApiEndpoint);
       if (response.ok) {
         const data = await response.json();
+        console.log("Stats loaded:", data);
         setStats(data);
+      } else {
+        console.error("Stats API returned error:", response.status, await response.text());
       }
     } catch (error) {
       console.error("Failed to load stats:", error);
@@ -559,6 +691,78 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
+  const loadPromoterRequests = async () => {
+    console.log("Loading promoter requests for event:", eventId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/promoter-requests`);
+      console.log("Promoter requests response status:", response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Promoter requests loaded:", data);
+        setPromoterRequests(data.requests || []);
+      } else {
+        const errorData = await response.text();
+        console.error("Failed to load promoter requests:", response.status, errorData);
+      }
+    } catch (error) {
+      console.error("Failed to load promoter requests:", error);
+    }
+  };
+
+  const handlePromoterRequest = async (requestId: string, action: "approve" | "decline") => {
+    try {
+      setProcessingRequest(requestId);
+      const response = await fetch(`/api/events/${eventId}/promoter-requests`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action }),
+      });
+
+      const data = await response.json();
+      console.log(`Promoter request ${action} response:`, data);
+      
+      if (response.ok) {
+        // Remove the request from the list
+        setPromoterRequests((prev) => prev.filter((r) => r.id !== requestId));
+        // If approved, reload event data to get updated promoters list
+        if (action === "approve") {
+          console.log("Reloading event data after approval...");
+          await loadEventData(false);
+          console.log("Event data reloaded");
+        }
+      } else {
+        alert(data.error || `Failed to ${action} request`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing request:`, error);
+      alert(`Failed to ${action} request`);
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const handleRemovePromoter = async (eventPromoterId: string) => {
+    if (!confirm("Are you sure you want to remove this promoter from the event?")) {
+      return;
+    }
+    try {
+      const response = await fetch(`/api/events/${eventId}/promoters`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventPromoterId }),
+      });
+      if (response.ok) {
+        await loadEventData(false);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to remove promoter");
+      }
+    } catch (error) {
+      console.error("Error removing promoter:", error);
+      alert("Failed to remove promoter");
+    }
+  };
+
   const handleDeletePhoto = async (photoId: string) => {
     if (!confirm("Are you sure you want to delete this photo?")) {
       return;
@@ -775,7 +979,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   }
 
   // Determine which tabs to show
-  const tabs = [];
+  const tabs: Array<{ value: string; label: string }> = [];
   if (config.canViewStats || config.role === "promoter") {
     tabs.push({ value: "overview", label: "Overview" });
   }
@@ -785,7 +989,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (config.canViewPromoters) {
     tabs.push({ value: "promoters", label: "Promoters" });
   }
+  // Leaderboard tab - show for promoters and organizers/venues with promoters
+  if (config.role === "promoter" || config.canViewPromoters) {
+    tabs.push({ value: "leaderboard", label: "Leaderboard" });
+  }
   if (config.canViewPhotos) {
+    tabs.push({ value: "media", label: "Media" });
     tabs.push({ value: "photos", label: "Photos" });
   }
   if (config.canViewSettings) {
@@ -793,28 +1002,48 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href={config.backUrl}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-        </Link>
-      </div>
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-foreground">
-            {event.name}
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            {getStatusBadge(event.status)}
-            {config.showVenueApproval && getApprovalBadge(event.venue_approval_status)}
-          </div>
+    <div className="relative min-h-screen">
+      {/* Blurred Flyer Background */}
+      {event.flier_url && (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
+            style={{
+              backgroundImage: `url(${event.flier_url})`,
+              filter: "blur(60px) saturate(1.2)",
+              opacity: 0.15,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
         </div>
-        <div className="flex flex-wrap gap-2">
+      )}
+
+      <div className="relative z-10 space-y-6">
+        {/* Header */}
+        <div className="space-y-4">
+          {/* Back Button */}
+          <div className="flex items-center gap-4">
+            <Link href={config.backUrl}>
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            </Link>
+          </div>
+
+          {/* Event Title with Status Badges on the right */}
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+              {event.name}
+            </h1>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {getStatusBadge(event.status)}
+              {config.showVenueApproval && getApprovalBadge(event.venue_approval_status)}
+            </div>
+          </div>
+
+          {/* Action Buttons - On their own line */}
+          <div className="flex flex-wrap gap-2">
           <Link href={config.liveUrl}>
             <Button variant="primary">
               <Radio className="h-4 w-4 mr-2" />
@@ -828,12 +1057,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 Door Scanner
               </Button>
             </Link>
-          )}
-          {config.canManagePromoters && (
-            <Button variant="secondary" onClick={() => setShowPromoterModal(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Manage Promoters
-            </Button>
           )}
           {config.canManageDoorStaff && (
             <Button variant="secondary" onClick={() => setShowDoorStaffModal(true)}>
@@ -875,18 +1098,46 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               )}
             </>
           )}
-          {config.canPublish && event && (
-            (event.status || "draft") === "published" ? (
-              <Button
-                variant="secondary"
-                onClick={handlePublishToggle}
-                disabled={publishing}
-                loading={publishing}
-              >
-                <EyeOff className="h-4 w-4 mr-2" />
-                Unpublish Event
-              </Button>
-            ) : (
+          {config.canPublish && event && (() => {
+            const needsVenueApproval = event.venue_id && event.venue_approval_status !== "approved";
+            const isPublished = (event.status || "draft") === "published";
+            
+            if (isPublished) {
+              return (
+                <Button
+                  variant="secondary"
+                  onClick={handlePublishToggle}
+                  disabled={publishing}
+                  loading={publishing}
+                >
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Unpublish Event
+                </Button>
+              );
+            }
+            
+            if (needsVenueApproval) {
+              return (
+                <div className="relative group">
+                  <Button
+                    variant="secondary"
+                    disabled
+                    className="opacity-50 cursor-not-allowed"
+                  >
+                    <Globe className="h-4 w-4 mr-2" />
+                    Publish Event
+                  </Button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-background-secondary border border-border rounded-lg shadow-lg text-xs text-foreground-muted whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="h-3 w-3 text-warning" />
+                      <span>Requires venue approval before publishing</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            
+            return (
               <Button
                 variant="primary"
                 onClick={handlePublishToggle}
@@ -896,22 +1147,22 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <Globe className="h-4 w-4 mr-2" />
                 Publish Event
               </Button>
-            )
-          )}
-          {config.role === "promoter" && (
+            );
+          })()}
+          {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
             <>
-              <Link href={`/events/${event.id}/share`} target="_blank">
-                <Button variant="secondary">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share Link
-                </Button>
-              </Link>
-              <Link href={`/promoter/qr/${eventId}`} target="_blank">
-                <Button variant="secondary">
-                  <QrCode className="h-4 w-4 mr-2" />
-                  My QR Code
-                </Button>
-              </Link>
+              <Button variant="secondary" onClick={copyReferralLink}>
+                {copiedReferral ? (
+                  <Check className="h-4 w-4 mr-2 text-green-400" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                {copiedReferral ? "Copied!" : "Copy Link"}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowQRModal(true)}>
+                <QrCode className="h-4 w-4 mr-2" />
+                {config.role === "promoter" ? "My QR Code" : "Event QR"}
+              </Button>
             </>
           )}
         </div>
@@ -983,50 +1234,88 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       )}
 
       {/* Stats Cards */}
+      {config.canViewStats && !stats && (
+        <div className="text-center py-4 text-foreground-muted text-sm">
+          <InlineSpinner size="sm" /> Loading stats...
+        </div>
+      )}
       {config.canViewStats && stats && (
         <div className={`grid gap-4 ${
           config.role === "promoter" 
-            ? "md:grid-cols-3" 
+            ? "grid-cols-2 lg:grid-cols-4" 
             : "md:grid-cols-2 lg:grid-cols-4"
         }`}>
           {config.role === "promoter" ? (
             <>
-              <Card>
+              {/* Your Stats Section */}
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-foreground-muted">My Referrals</p>
+                    <p className="text-xs text-foreground-muted uppercase tracking-wide">My Referrals</p>
                     <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
                       {stats.referrals || 0}
                     </p>
+                    {stats.event_total_registrations && stats.event_total_registrations > 0 && (
+                      <p className="text-xs text-primary mt-1">
+                        {Math.round(((stats.referrals || 0) / stats.event_total_registrations) * 100)}% of total
+                      </p>
+                    )}
                   </div>
-                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-primary/10">
+                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-primary/20">
                     <Users className="h-6 w-6 text-primary" />
                   </div>
                 </div>
               </Card>
-              <Card>
+              <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-foreground-muted">Check-ins</p>
+                    <p className="text-xs text-foreground-muted uppercase tracking-wide">My Check-ins</p>
                     <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
                       {stats.checkins || 0}
                     </p>
+                    <p className="text-xs text-success mt-1">
+                      {stats.conversionRate?.toFixed(0) || 0}% conversion
+                    </p>
                   </div>
-                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-success/10">
+                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-success/20">
                     <UserCheck className="h-6 w-6 text-success" />
                   </div>
                 </div>
               </Card>
-              <Card>
+              
+              {/* Leaderboard Position */}
+              <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-foreground-muted">Conversion Rate</p>
+                    <p className="text-xs text-foreground-muted uppercase tracking-wide">Leaderboard</p>
                     <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
-                      {stats.conversionRate?.toFixed(0) || 0}%
+                      #{stats.leaderboard_position || "-"}
                     </p>
+                    {stats.total_promoters && (
+                      <p className="text-xs text-warning mt-1">
+                        of {stats.total_promoters} promoter{stats.total_promoters !== 1 ? "s" : ""}
+                      </p>
+                    )}
                   </div>
-                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-warning/10">
-                    <TrendingUp className="h-6 w-6 text-warning" />
+                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-warning/20">
+                    <Star className="h-6 w-6 text-warning" />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Overall Event Stats */}
+              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+                <div className="space-y-2">
+                  <p className="text-xs text-foreground-muted uppercase tracking-wide">Event Overall</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{stats.event_total_registrations || 0}</p>
+                      <p className="text-xs text-foreground-muted">Total Registered</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-foreground">{stats.event_total_checkins || 0}</p>
+                      <p className="text-xs text-foreground-muted">Total Check-ins</p>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -1100,135 +1389,286 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           <TabsList>
             {tabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.value === "media" && <Video className="h-4 w-4 mr-1" />}
                 {tab.value === "photos" && <ImageIcon className="h-4 w-4 mr-1" />}
+                {tab.value === "leaderboard" && <Trophy className="h-4 w-4 mr-1" />}
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Event Info */}
-            <Card>
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-foreground">Event Details</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-foreground-muted">Start Time</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Calendar className="h-4 w-4 text-foreground-muted" />
-                      <span className="text-foreground">
-                        {new Date(event.start_time).toLocaleString()}
-                      </span>
-                    </div>
+            {/* Event Details */}
+            <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Flyer - Larger */}
+                {event.flier_url && (
+                  <div 
+                    className="flex-shrink-0 w-full sm:w-40 md:w-48 aspect-[3/4] rounded-lg overflow-hidden border border-border/50 cursor-pointer hover:opacity-90 hover:scale-[1.02] transition-all shadow-lg"
+                    onClick={() => window.open(event.flier_url!, "_blank")}
+                  >
+                    <img
+                      src={event.flier_url}
+                      alt={`${event.name} flyer`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  {event.end_time && (
-                    <div>
-                      <div className="text-sm text-foreground-muted">End Time</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock className="h-4 w-4 text-foreground-muted" />
-                        <span className="text-foreground">
-                          {new Date(event.end_time).toLocaleString()}
-                        </span>
+                )}
+                
+                {/* Details Grid - Compact */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold text-foreground mb-3">Event Details</h2>
+                  
+                  {/* Compact Info Grid */}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                    {/* Start */}
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-foreground-muted text-xs">Start</div>
+                        <div className="text-foreground truncate">{new Date(event.start_time).toLocaleDateString()}</div>
+                        <div className="text-foreground-muted text-xs">{new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                    </div>
+                    
+                    {/* End */}
+                    {event.end_time && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-foreground-muted text-xs">End</div>
+                          <div className="text-foreground truncate">{new Date(event.end_time).toLocaleDateString()}</div>
+                          <div className="text-foreground-muted text-xs">{new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Timezone */}
+                    {event.timezone && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-foreground-muted text-xs">Timezone</div>
+                          <div className="text-foreground truncate">{event.timezone}</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Venue */}
+                    {event.venue && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-foreground-muted text-xs">Venue</div>
+                          {event.venue.slug && event.venue.slug.trim() !== "" ? (
+                            <Link 
+                              href={`/venues/${event.venue.slug}`}
+                              target="_blank"
+                              className="text-primary hover:underline font-medium truncate block"
+                            >
+                              {event.venue.name}
+                            </Link>
+                          ) : (
+                            <div className="text-foreground font-medium truncate">{event.venue.name}</div>
+                          )}
+                          {event.venue.address && (
+                            <div className="text-foreground-muted text-xs truncate">{event.venue.address}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Organizer */}
+                    {event.organizer && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-foreground-muted text-xs">Organizer</div>
+                          <div className="text-foreground truncate">{event.organizer.name}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Description - Below the grid */}
+                  {event.description && (
+                    <div className="mt-4 pt-3 border-t border-border/50">
+                      <p className="text-sm text-foreground-muted line-clamp-3">{event.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {/* Share Links and Charts - Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Share Event Card */}
+              <Card className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Share className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-semibold text-foreground">Share Event</h2>
+                  </div>
+
+                  {/* Your Tracking Link (for promoters and organizers) */}
+                  {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
+                    <div className="space-y-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium text-foreground">
+                          {config.role === "promoter" ? "Your Referral Link" : "Your Tracking Link"}
+                        </div>
+                        <Badge variant="secondary" className="bg-primary/20 text-primary text-xs">
+                          {config.role === "promoter" ? "Earn commissions" : "Track referrals"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-background rounded border border-primary/30 overflow-hidden">
+                          <LinkIcon className="h-3 w-3 text-primary flex-shrink-0" />
+                          <code className="text-xs text-foreground truncate">{getReferralLink()}</code>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={copyReferralLink}
+                        >
+                          {copiedReferral ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                          {copiedReferral ? "Copied!" : "Copy"}
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={async () => {
+                            const link = getReferralLink();
+                            if (navigator.share) {
+                              try {
+                                await navigator.share({
+                                  title: event.name,
+                                  text: `Check out ${event.name}!`,
+                                  url: link,
+                                });
+                              } catch {
+                                // User cancelled or share failed
+                              }
+                            } else {
+                              navigator.clipboard.writeText(link);
+                              setCopiedReferral(true);
+                              setTimeout(() => setCopiedReferral(false), 2000);
+                            }
+                          }}
+                        >
+                          <Share className="h-3 w-3 mr-1" />
+                          Share
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowQRModal(true)}
+                        >
+                          <QrCode className="h-3 w-3 mr-1" />
+                          QR
+                        </Button>
+                      </div>
+                      
+                      {/* Compact Referral Explainer */}
+                      <div className="pt-2 border-t border-primary/10">
+                        <p className="text-xs text-foreground-muted">
+                          {config.role === "promoter" 
+                            ? "Share to earn commissions when referrals attend" 
+                            : "Track registrations from your personal shares"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Public Event URL */}
+                  {eventUrl && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-foreground-muted">
+                        {(config.role === "promoter" || config.role === "organizer") ? "Direct Link (no tracking)" : "Public Event Page"}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-background rounded border border-border overflow-hidden">
+                          <LinkIcon className="h-3 w-3 text-foreground-muted flex-shrink-0" />
+                          <code className="text-xs text-foreground truncate">{eventUrl}</code>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => navigator.clipboard.writeText(eventUrl)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => window.open(eventUrl, "_blank")}
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                   )}
                 </div>
-                {event.venue && (
-                  <div>
-                    <div className="text-sm text-foreground-muted">Venue</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin className="h-4 w-4 text-foreground-muted" />
-                      <span className="text-foreground">{event.venue.name}</span>
-                      {event.venue.address && (
-                        <span className="text-foreground-muted text-sm">- {event.venue.address}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {event.organizer && (
-                  <div>
-                    <div className="text-sm text-foreground-muted">Organizer</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Building2 className="h-4 w-4 text-foreground-muted" />
-                      <span className="text-foreground">{event.organizer.name}</span>
-                    </div>
-                  </div>
-                )}
-                {event.description && (
-                  <div>
-                    <div className="text-sm text-foreground-muted mb-2">Description</div>
-                    <p className="text-foreground">{event.description}</p>
-                  </div>
-                )}
-                {eventUrl && (
-                  <div>
-                    <div className="text-sm text-foreground-muted mb-2">Public URL</div>
-                    <div className="flex items-center gap-2">
-                      <code className="text-sm bg-background-secondary px-2 py-1 rounded">
-                        {eventUrl}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(eventUrl);
-                          window.open(eventUrl, "_blank");
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+              </Card>
 
-            {/* Charts (for organizer/venue) */}
-            {config.role !== "promoter" && config.canViewStats && stats && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Activity Chart - For all roles */}
+              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  {config.role === "promoter" ? "Your Referral Activity" : "Event Activity"}
+                </h3>
                 {chartData.length > 0 ? (
-                  <Card>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">
-                      Registrations Over Time
-                    </h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="registrations" stroke="#8884d8" name="Registrations" />
-                        <Line type="monotone" dataKey="checkins" stroke="#10b981" name="Check-ins" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </Card>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                      <XAxis dataKey="date" stroke="var(--color-foreground-muted)" fontSize={12} />
+                      <YAxis stroke="var(--color-foreground-muted)" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: "var(--color-background)", 
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "8px"
+                        }} 
+                      />
+                      <Line type="monotone" dataKey="registrations" stroke="#8884d8" name="Registrations" strokeWidth={2} />
+                      <Line type="monotone" dataKey="checkins" stroke="#10b981" name="Check-ins" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <Card>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">
-                      Registrations Over Time
-                    </h3>
-                    <div className="flex items-center justify-center h-[200px] text-foreground-muted">
-                      No registration data yet
+                  <div className="flex items-center justify-center h-[200px] text-foreground-muted">
+                    <div className="text-center">
+                      <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No activity data yet</p>
                     </div>
-                  </Card>
+                  </div>
                 )}
-                {stats.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
-                  <Card>
-                    <h3 className="text-lg font-semibold text-foreground mb-4">
-                      Promoter Performance
-                    </h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={stats.promoter_breakdown}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="promoter_name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="check_ins" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </Card>
-                )}
-              </div>
+              </Card>
+            </div>
+
+            {/* Promoter Performance Chart (for organizer/venue only) */}
+            {config.role !== "promoter" && config.canViewStats && stats?.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
+              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  Promoter Performance
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={stats.promoter_breakdown}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                    <XAxis dataKey="promoter_name" stroke="var(--color-foreground-muted)" fontSize={12} />
+                    <YAxis stroke="var(--color-foreground-muted)" fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: "var(--color-background)", 
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "8px"
+                      }} 
+                    />
+                    <Bar dataKey="registrations" fill="#8884d8" name="Registrations" />
+                    <Bar dataKey="check_ins" fill="#10b981" name="Check-ins" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
             )}
           </TabsContent>
 
@@ -1496,14 +1936,98 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {config.canViewPromoters && (
             <TabsContent value="promoters" className="space-y-4">
+              {/* Pending Promoter Requests */}
+              {/* Debug: Show request count */}
+              {config.canManagePromoters && (
+                <div className="text-xs text-foreground-muted mb-2">
+                  Total requests loaded: {promoterRequests.length} | Pending: {promoterRequests.filter(r => r.status === "pending").length}
+                </div>
+              )}
+              
+              {config.canManagePromoters && promoterRequests.filter(r => r.status === "pending").length > 0 && (
+                <Card className="border-warning/30 bg-warning/5 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="h-4 w-4 text-warning" />
+                    <h2 className="text-base font-semibold text-foreground">
+                      Pending Requests ({promoterRequests.filter(r => r.status === "pending").length})
+                    </h2>
+                  </div>
+                  <div className="space-y-2">
+                    {promoterRequests
+                      .filter((r) => r.status === "pending")
+                      .map((request) => (
+                        <div
+                          key={request.id}
+                          className="flex items-center gap-3 p-2 bg-background rounded-lg border border-border"
+                        >
+                          {/* Promoter Info - Compact */}
+                          <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-foreground">
+                                {request.promoter?.name || "Unknown"}
+                              </span>
+                              <span className="text-foreground-muted text-xs ml-2">
+                                {new Date(request.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="text-foreground-muted truncate">
+                              {request.promoter?.email && (
+                                <a href={`mailto:${request.promoter.email}`} className="hover:text-primary">
+                                  {request.promoter.email}
+                                </a>
+                              )}
+                            </div>
+                            <div className="text-foreground-muted">
+                              {request.promoter?.phone && (
+                                <a href={`tel:${request.promoter.phone}`} className="hover:text-primary">
+                                  {request.promoter.phone}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          {request.message && (
+                            <div className="hidden lg:block text-xs text-foreground-muted italic max-w-[200px] truncate" title={request.message}>
+                              &quot;{request.message}&quot;
+                            </div>
+                          )}
+                          {/* Actions */}
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handlePromoterRequest(request.id, "approve")}
+                              loading={processingRequest === request.id}
+                              disabled={processingRequest !== null}
+                              className="px-2 py-1 text-xs"
+                            >
+                              <Check className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handlePromoterRequest(request.id, "decline")}
+                              loading={processingRequest === request.id}
+                              disabled={processingRequest !== null}
+                              className="px-2 py-1 text-xs"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Assigned Promoters */}
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Promoters</h2>
+                  <h2 className="text-xl font-semibold text-foreground">Assigned Promoters</h2>
                   <div className="flex gap-2">
                     {config.canManagePromoters && (
                       <Button variant="primary" onClick={() => setShowPromoterModal(true)}>
                         <UserPlus className="h-4 w-4 mr-2" />
-                        Manage Promoters
+                        Add Promoter
                       </Button>
                     )}
                     {config.role === "organizer" && (
@@ -1529,6 +2053,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             <TableHead>Check-ins</TableHead>
                           </>
                         )}
+                        {config.canManagePromoters && (
+                          <TableHead className="w-16">Actions</TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1543,13 +2070,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             </TableCell>
                             <TableCell>{ep.promoter?.email || "-"}</TableCell>
                             <TableCell>
-                              <Badge variant="default">{ep.commission_type}</Badge>
+                              <Badge variant="default">{ep.commission_type?.replace(/_/g, ' ')}</Badge>
                             </TableCell>
                             {config.canViewStats && (
                               <>
                                 <TableCell>{promoterStats?.registrations || 0}</TableCell>
                                 <TableCell>{promoterStats?.check_ins || 0}</TableCell>
                               </>
+                            )}
+                            {config.canManagePromoters && (
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleRemovePromoter(ep.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
                             )}
                           </TableRow>
                         );
@@ -1558,13 +2097,122 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </Table>
                 ) : (
                   <div className="text-center text-foreground-muted py-8">
-                    No promoters assigned to this event
+                    No promoters assigned to this event yet.
+                    {config.canManagePromoters && (
+                      <p className="text-sm mt-2">
+                        Click &quot;Add Promoter&quot; to assign promoters, or wait for promoters to request access.
+                      </p>
+                    )}
                   </div>
                 )}
               </Card>
             </TabsContent>
           )}
 
+          {/* Media Tab */}
+          {config.canViewPhotos && (
+            <TabsContent value="media" className="space-y-6">
+              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold text-foreground">Event Media</h2>
+                  
+                  {/* Flyer Section */}
+                  {event.flier_url ? (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium text-foreground-muted">Event Flyer</h3>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative w-full sm:w-64 aspect-[3/4] rounded-lg overflow-hidden border border-border bg-background">
+                          <img
+                            src={event.flier_url}
+                            alt={`${event.name} flyer`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="secondary"
+                            onClick={() => window.open(event.flier_url!, "_blank")}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Full Size
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = event.flier_url!;
+                              link.download = `${event.slug || event.name}-flyer`;
+                              link.target = "_blank";
+                              link.click();
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Flyer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-foreground-muted">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No flyer uploaded for this event</p>
+                    </div>
+                  )}
+                  
+                  {/* Video Section */}
+                  {event.flier_video_url && (
+                    <div className="space-y-3 pt-4 border-t border-border">
+                      <h3 className="text-sm font-medium text-foreground-muted">Promo Video</h3>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="relative w-full sm:w-64 aspect-video rounded-lg overflow-hidden border border-border bg-black">
+                          <video
+                            src={event.flier_video_url}
+                            className="w-full h-full object-cover"
+                            controls
+                            poster={event.flier_url || undefined}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="secondary"
+                            onClick={() => window.open(event.flier_video_url!, "_blank")}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Open Video
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = event.flier_video_url!;
+                              link.download = `${event.slug || event.name}-video`;
+                              link.target = "_blank";
+                              link.click();
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Video
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!event.flier_url && !event.flier_video_url && (
+                    <div className="text-center py-8 text-foreground-muted">
+                      <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No media uploaded for this event</p>
+                      {config.canEdit && (
+                        <p className="text-sm mt-2">Upload media in the Settings tab</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Photos Tab */}
           {config.canViewPhotos && (
             <TabsContent value="photos" className="space-y-4">
               <Card>
@@ -1675,6 +2323,88 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
             </TabsContent>
           )}
+
+          {/* Leaderboard Tab */}
+          <TabsContent value="leaderboard" className="space-y-4">
+              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-warning" />
+                    Promoter Leaderboard
+                  </h2>
+                </div>
+                
+                {loadingLeaderboard ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner />
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <div className="text-center py-8 text-foreground-muted">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No promoters assigned to this event yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-2 text-sm font-medium text-foreground-muted">Rank</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-foreground-muted">Promoter</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Referrals</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Check-ins</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Conversion</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leaderboard.map((entry: any, index: number) => {
+                          const isCurrentPromoter = promoterId === entry.promoter_id;
+                          return (
+                            <tr 
+                              key={entry.promoter_id} 
+                              className={`border-b border-border/50 ${isCurrentPromoter ? "bg-primary/10" : ""}`}
+                            >
+                              <td className="py-3 px-2">
+                                <div className="flex items-center gap-2">
+                                  {entry.rank === 1 && <span className="text-xl">🥇</span>}
+                                  {entry.rank === 2 && <span className="text-xl">🥈</span>}
+                                  {entry.rank === 3 && <span className="text-xl">🥉</span>}
+                                  {entry.rank > 3 && <span className="text-foreground-muted font-medium">#{entry.rank}</span>}
+                                </div>
+                              </td>
+                              <td className="py-3 px-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                                    {entry.name?.charAt(0)?.toUpperCase() || "?"}
+                                  </div>
+                                  <div>
+                                    <p className={`font-medium ${isCurrentPromoter ? "text-primary" : "text-foreground"}`}>
+                                      {entry.name}
+                                      {isCurrentPromoter && <span className="ml-2 text-xs text-primary">(You)</span>}
+                                    </p>
+                                    <p className="text-xs text-foreground-muted">{entry.email}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <span className="font-semibold text-foreground">{entry.referrals}</span>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <span className="font-semibold text-success">{entry.checkins}</span>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <Badge variant={entry.conversion_rate >= 50 ? "success" : entry.conversion_rate >= 25 ? "warning" : "secondary"}>
+                                  {entry.conversion_rate}%
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+          </TabsContent>
 
           {config.canViewSettings && (
             <TabsContent value="settings" className="space-y-4">
@@ -2259,6 +2989,96 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         variant="danger"
         loading={removingVideo}
       />
+
+      {/* Promoter QR Code Modal */}
+      {showQRModal && config.role === "promoter" && event && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-background border border-border rounded-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-foreground">
+                Your Referral QR Code
+              </h3>
+              <button
+                onClick={() => setShowQRModal(false)}
+                className="text-foreground-muted hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-sm text-foreground-muted">
+              {event.name}
+            </p>
+
+            <div className="flex flex-col items-center py-4">
+              {getQRCodeUrl() ? (
+                <div className="bg-white p-4 rounded-lg">
+                  <img
+                    src={getQRCodeUrl()!}
+                    alt="Your Referral QR Code"
+                    className="w-64 h-64"
+                  />
+                </div>
+              ) : (
+                <div className="text-foreground-muted">Loading QR code...</div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-foreground-muted text-center">
+                Anyone who scans this QR code and registers will be attributed to you
+              </p>
+              
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border">
+                <input
+                  type="text"
+                  value={getReferralLink() || "Loading..."}
+                  readOnly
+                  className="flex-1 bg-transparent text-foreground text-xs font-mono truncate"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyReferralLink}
+                  className="shrink-0"
+                >
+                  {copiedReferral ? (
+                    <Check className="h-4 w-4 text-success" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    const qrUrl = getQRCodeUrl();
+                    if (qrUrl) {
+                      const link = document.createElement("a");
+                      link.href = qrUrl;
+                      link.download = `${event.slug}-referral-qr.png`;
+                      link.click();
+                    }
+                  }}
+                >
+                  Download QR
+                </Button>
+                <Button
+                  variant="primary"
+                  className="flex-1"
+                  onClick={() => setShowQRModal(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
     </div>
   );
 }

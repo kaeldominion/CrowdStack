@@ -33,9 +33,20 @@ export async function GET(
         venue_approval_status,
         venue_rejection_reason,
         cover_image_url,
+        flier_url,
+        flier_video_url,
+        timezone,
         created_at,
         venue_id,
-        organizer:organizers(id, name, email)
+        organizer_id,
+        organizer:organizers(id, name, email),
+        venue:venues(id, name, slug, address, city),
+        event_promoters(
+          id,
+          promoter:promoters(id, name, email),
+          commission_type,
+          commission_config
+        )
       `)
       .eq("id", eventId)
       .single();

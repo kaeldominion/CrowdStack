@@ -21,6 +21,8 @@ import {
   DollarSign,
   Target,
   Share2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface Registration {
@@ -35,6 +37,7 @@ interface Registration {
     start_time: string;
     end_time: string | null;
     cover_image_url: string | null;
+    flier_url?: string | null;
     venue?: {
       name: string;
       city: string | null;
@@ -120,6 +123,7 @@ export default function MePage() {
       registrations: number;
     }>;
   } | null>(null);
+  const [hideEarnings, setHideEarnings] = useState(true); // Hidden by default for privacy
 
   useEffect(() => {
     loadUserData();
@@ -183,12 +187,8 @@ export default function MePage() {
       if (xpResult && xpResult.ok) {
         try {
           const xpData = await xpResult.json();
-          console.log("[Me] XP data received:", xpData);
-          totalXp = xpData.total_xp || xpData?.total_xp || 0;
-          if (totalXp === 0 && xpData) {
-            console.warn("[Me] XP is 0 but data exists:", xpData);
-            }
-          } catch (error) {
+          totalXp = xpData.total_xp || 0;
+        } catch (error) {
           console.error("[Me] Error parsing XP data:", error);
         }
       }
@@ -248,6 +248,7 @@ export default function MePage() {
             start_time,
             end_time,
             cover_image_url,
+            flier_url,
             venue:venues(name, city)
           ),
           checkins(checked_in_at)
@@ -386,6 +387,21 @@ export default function MePage() {
     return !!(profile.name && profile.phone && profile.email);
   };
 
+  // Get the next event's flyer for background
+  const getNextEventFlyer = (): string | null => {
+    // Priority: happening now > today > upcoming
+    const nextEvent = 
+      happeningNowEvents[0]?.event ||
+      todayEvents[0]?.event ||
+      upcomingEvents[0]?.event;
+    
+    if (!nextEvent) return null;
+    // Prefer flier_url, fall back to cover_image_url
+    return nextEvent.flier_url || nextEvent.cover_image_url || null;
+  };
+
+  const backgroundFlyer = getNextEventFlyer();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
@@ -395,8 +411,24 @@ export default function MePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl">
+    <div className="relative min-h-screen bg-[#0B0D10]">
+      {/* Blurred Flyer Background */}
+      {backgroundFlyer && (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
+            style={{
+              backgroundImage: `url(${backgroundFlyer})`,
+              filter: "blur(40px) saturate(1.2)",
+              opacity: 0.25,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D10]/50 via-[#0B0D10]/70 to-[#0B0D10]/90" />
+        </div>
+      )}
+
+      <div className="relative z-10 px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
         {/* Welcome Header with Inline Stats */}
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -412,17 +444,17 @@ export default function MePage() {
 
             {/* Right: Compact Stats Row */}
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-indigo-500/10 backdrop-blur-sm border border-indigo-500/20">
                 <Star className="h-4 w-4 text-indigo-400" />
                 <span className="text-sm font-semibold text-white">{profile?.xp_points || 0}</span>
                 <span className="text-xs text-white/50 hidden sm:inline">XP</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-500/10 border border-green-500/20">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-500/10 backdrop-blur-sm border border-green-500/20">
                 <Calendar className="h-4 w-4 text-green-400" />
                 <span className="text-sm font-semibold text-white">{happeningNowEvents.length + todayEvents.length + upcomingEvents.length}</span>
                 <span className="text-xs text-white/50 hidden sm:inline">Upcoming</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-amber-500/10 border border-amber-500/20">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-amber-500/10 backdrop-blur-sm border border-amber-500/20">
                 <TrendingUp className="h-4 w-4 text-amber-400" />
                 <span className="text-sm font-semibold text-white">{pastEvents.filter(reg => reg.checkins && reg.checkins.length > 0).length}</span>
                 <span className="text-xs text-white/50 hidden sm:inline">Attended</span>
@@ -456,7 +488,7 @@ export default function MePage() {
 
         {/* Promoter Badge and Stats */}
         {roles.includes("promoter") && promoterStats && (
-          <div className="mb-8 rounded-2xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-pink-500/5 p-6">
+          <div className="mb-8 rounded-2xl border border-purple-500/30 bg-purple-500/5 backdrop-blur-sm p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -478,7 +510,7 @@ export default function MePage() {
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4 text-purple-400" />
                   <p className="text-xs text-white/60 uppercase tracking-wide">Referrals</p>
@@ -486,7 +518,7 @@ export default function MePage() {
                 <p className="text-2xl font-bold text-white">{promoterStats.referrals}</p>
               </div>
               
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-2 mb-2">
                   <Target className="h-4 w-4 text-green-400" />
                   <p className="text-xs text-white/60 uppercase tracking-wide">Check-ins</p>
@@ -494,7 +526,7 @@ export default function MePage() {
                 <p className="text-2xl font-bold text-white">{promoterStats.totalCheckIns}</p>
               </div>
               
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-blue-400" />
                   <p className="text-xs text-white/60 uppercase tracking-wide">Conversion</p>
@@ -502,12 +534,27 @@ export default function MePage() {
                 <p className="text-2xl font-bold text-white">{promoterStats.conversionRate}%</p>
               </div>
               
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-4 w-4 text-amber-400" />
-                  <p className="text-xs text-white/60 uppercase tracking-wide">Earnings</p>
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-amber-400" />
+                    <p className="text-xs text-white/60 uppercase tracking-wide">Earnings</p>
+                  </div>
+                  <button
+                    onClick={() => setHideEarnings(!hideEarnings)}
+                    className="p-1 rounded hover:bg-white/10 transition-colors"
+                    title={hideEarnings ? "Show earnings" : "Hide earnings"}
+                  >
+                    {hideEarnings ? (
+                      <EyeOff className="h-4 w-4 text-white/40" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-white/40" />
+                    )}
+                  </button>
                 </div>
-                <p className="text-2xl font-bold text-white">${promoterStats.totalEarnings.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-white">
+                  {hideEarnings ? "••••••" : `$${promoterStats.totalEarnings.toFixed(2)}`}
+                </p>
               </div>
             </div>
           </div>
@@ -525,7 +572,7 @@ export default function MePage() {
               {happeningNowEvents.map((reg) => (
                 <div
                   key={reg.id}
-                  className="rounded-2xl border-2 border-green-500/50 bg-gradient-to-r from-green-500/10 to-emerald-500/5 overflow-hidden"
+                  className="rounded-2xl border-2 border-green-500/50 bg-green-500/10 backdrop-blur-sm overflow-hidden"
                 >
                   <Link
                     href={`/e/${reg.event?.slug}`}
@@ -533,9 +580,9 @@ export default function MePage() {
                   >
                     <div className="flex items-center gap-4 p-4">
                       <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-green-500/30 to-emerald-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {reg.event?.cover_image_url ? (
+                        {(reg.event?.flier_url || reg.event?.cover_image_url) ? (
                           <img
-                            src={reg.event.cover_image_url}
+                            src={reg.event.flier_url || reg.event.cover_image_url || ""}
                             alt={reg.event.name}
                             className="h-full w-full object-cover"
                           />
@@ -585,7 +632,7 @@ export default function MePage() {
               {todayEvents.map((reg) => (
                 <div
                   key={reg.id}
-                  className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 overflow-hidden"
+                  className="rounded-2xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm overflow-hidden"
                 >
                   <Link
                     href={`/e/${reg.event?.slug}`}
@@ -593,9 +640,9 @@ export default function MePage() {
                   >
                     <div className="flex items-center gap-4 p-4">
                       <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {reg.event?.cover_image_url ? (
+                        {(reg.event?.flier_url || reg.event?.cover_image_url) ? (
                           <img
-                            src={reg.event.cover_image_url}
+                            src={reg.event.flier_url || reg.event.cover_image_url || ""}
                             alt={reg.event.name}
                             className="h-full w-full object-cover"
                           />
@@ -658,7 +705,7 @@ export default function MePage() {
               {upcomingEvents.slice(0, 3).map((reg) => (
                 <div
                   key={reg.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
+                  className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
                 >
                   <Link
                     href={`/e/${reg.event?.slug}`}
@@ -667,9 +714,9 @@ export default function MePage() {
                     <div className="flex items-center gap-4 p-4">
                       {/* Event Image or Placeholder */}
                       <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {reg.event?.cover_image_url ? (
+                        {(reg.event?.flier_url || reg.event?.cover_image_url) ? (
                           <img
-                            src={reg.event.cover_image_url}
+                            src={reg.event.flier_url || reg.event.cover_image_url || ""}
                             alt={reg.event.name}
                             className="h-full w-full object-cover"
                           />
@@ -719,7 +766,7 @@ export default function MePage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center">
+            <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 backdrop-blur-sm p-8 text-center">
               <Ticket className="h-12 w-12 text-white/20 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-white mb-2">No upcoming events</h3>
               <p className="text-white/50 mb-4">
@@ -737,7 +784,7 @@ export default function MePage() {
 
         {/* Profile Completion Prompt */}
         {!isProfileComplete(profile) && (
-          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-5">
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm p-5">
             <div className="flex items-start gap-4">
               <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
                 <UserPlus className="h-5 w-5 text-amber-400" />
@@ -762,7 +809,7 @@ export default function MePage() {
 
         {/* Referral Stats Section */}
         {referralStats && (referralStats.totalClicks > 0 || referralStats.totalRegistrations > 0) && (
-          <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-5">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Share2 className="h-4 w-4 text-indigo-400" />
@@ -771,15 +818,15 @@ export default function MePage() {
             </div>
             
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.totalClicks}</p>
                 <p className="text-xs text-white/50">Link Clicks</p>
               </div>
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.totalRegistrations}</p>
                 <p className="text-xs text-white/50">Registrations</p>
               </div>
-              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.conversionRate}%</p>
                 <p className="text-xs text-white/50">Click → Register</p>
               </div>
@@ -805,7 +852,7 @@ export default function MePage() {
                 <Link
                   key={reg.id}
                   href={`/e/${reg.event?.slug}`}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-white/10 transition-all group"
+                  className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all group"
                 >
                   <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                     <Ticket className="h-6 w-6 text-white/30" />
@@ -832,6 +879,7 @@ export default function MePage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

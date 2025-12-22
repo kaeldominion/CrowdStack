@@ -16,6 +16,7 @@ interface Registration {
     start_time: string;
     end_time: string | null;
     cover_image_url: string | null;
+    flier_url?: string | null;
     venue?: {
       name: string;
       city: string | null;
@@ -55,38 +56,57 @@ export default function UpcomingEventsPage() {
         return;
       }
 
-      // Get upcoming registrations
-      const now = new Date().toISOString();
-      const { data: registrations } = await supabase
+      // Get all registrations and filter client-side for upcoming
+      const { data: registrations, error: regError } = await supabase
         .from("registrations")
         .select(`
           id,
-          event:events!inner(
+          event:events(
             id,
             name,
             slug,
             start_time,
             end_time,
             cover_image_url,
+            flier_url,
             venue:venues(name, city)
           )
         `)
         .eq("attendee_id", attendee.id)
-        .gte("event.start_time", now)
-        .order("created_at", { ascending: true });
+        .order("registered_at", { ascending: false });
+      
+      if (regError) {
+        console.error("[Upcoming] Query error:", regError);
+      }
 
       if (registrations) {
-        const normalized = registrations.map((reg: any) => ({
-          ...reg,
-          event: Array.isArray(reg.event) ? reg.event[0] : reg.event,
-        })).map((reg: any) => ({
-          ...reg,
-          event: reg.event ? {
-            ...reg.event,
-            venue: Array.isArray(reg.event.venue) ? reg.event.venue[0] : reg.event.venue,
-          } : null,
-        }));
-        setEvents(normalized);
+        const now = new Date();
+        
+        const upcoming = registrations
+          .map((reg: any) => ({
+            ...reg,
+            event: Array.isArray(reg.event) ? reg.event[0] : reg.event,
+          }))
+          .map((reg: any) => ({
+            ...reg,
+            event: reg.event ? {
+              ...reg.event,
+              venue: Array.isArray(reg.event.venue) ? reg.event.venue[0] : reg.event.venue,
+            } : null,
+          }))
+          .filter((reg: any) => {
+            if (!reg.event) return false;
+            const startTime = new Date(reg.event.start_time);
+            // Include events that haven't started yet
+            return startTime > now;
+          })
+          .sort((a: any, b: any) => {
+            const aTime = new Date(a.event?.start_time || 0).getTime();
+            const bTime = new Date(b.event?.start_time || 0).getTime();
+            return aTime - bTime;
+          });
+        
+        setEvents(upcoming);
       }
     } catch (error) {
       console.error("Error loading events:", error);
@@ -143,10 +163,10 @@ export default function UpcomingEventsPage() {
                 className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden"
               >
                 {/* Event Image */}
-                {reg.event?.cover_image_url && (
+                {(reg.event?.flier_url || reg.event?.cover_image_url) && (
                   <div className="h-40 sm:h-48 relative">
                     <img
-                      src={reg.event.cover_image_url}
+                      src={reg.event.flier_url || reg.event.cover_image_url || ""}
                       alt={reg.event.name}
                       className="w-full h-full object-cover"
                     />

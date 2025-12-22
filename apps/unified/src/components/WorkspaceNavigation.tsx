@@ -19,7 +19,6 @@ import {
   Building2,
   Users,
   Megaphone,
-  QrCode,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -83,7 +82,6 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
     } else if (roles.includes("promoter")) {
       items.push({ href: "/app/promoter/events", label: "Events", icon: Calendar });
       items.push({ href: "/app/promoter/earnings", label: "Earnings", icon: CreditCard });
-      items.push({ href: "/app/promoter/tools", label: "Tools", icon: QrCode });
     }
 
     // Admin link for superadmins

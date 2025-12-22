@@ -6,3 +6,4 @@ ALTER COLUMN mobile_style SET DEFAULT 'flip';
 
 COMMENT ON COLUMN events.mobile_style IS 'Mobile event page style: flip (default) or scroll';
 
+

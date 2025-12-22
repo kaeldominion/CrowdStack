@@ -19,12 +19,22 @@ export async function GET(request: NextRequest) {
     // Use service role to bypass RLS
     const serviceSupabase = createServiceRoleClient();
     
-    // Check if user is a promoter
-    const { data: promoter } = await serviceSupabase
+    // Check if user is a promoter (check both user_id and created_by for compatibility)
+    let { data: promoter } = await serviceSupabase
       .from("promoters")
       .select("id")
-      .eq("created_by", user.id)
+      .eq("user_id", user.id)
       .single();
+
+    // Fallback to created_by if not found by user_id
+    if (!promoter) {
+      const { data: createdPromoter } = await serviceSupabase
+        .from("promoters")
+        .select("id")
+        .eq("created_by", user.id)
+        .single();
+      promoter = createdPromoter;
+    }
 
     if (!promoter) {
       return NextResponse.json({ isPromoter: false, isAssigned: false });
