@@ -1984,7 +1984,21 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             // Validate size client-side
                             if (file.size > 100 * 1024 * 1024) {
                               alert("Video must be under 100MB");
+                              e.target.value = "";
                               return;
+                            }
+                            
+                            // Warn if file is large on mobile
+                            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                            if (isIOS && file.size > 30 * 1024 * 1024) {
+                              const proceed = confirm(
+                                `Large video files (${Math.round(file.size / 1024 / 1024)}MB) may fail to upload on mobile devices. ` +
+                                `For best results, try uploading from a desktop browser or use a smaller file. Continue anyway?`
+                              );
+                              if (!proceed) {
+                                e.target.value = "";
+                                return;
+                              }
                             }
                             
                             const formData = new FormData();
@@ -1998,15 +2012,29 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                 body: formData,
                               });
                               if (!response.ok) {
-                                const error = await response.json();
-                                throw new Error(error.error || "Failed to upload video");
+                                let errorMessage = "Failed to upload video";
+                                try {
+                                  const error = await response.json();
+                                  errorMessage = error.error || errorMessage;
+                                } catch {
+                                  // Response wasn't JSON (network error)
+                                  if (response.status === 0 || !response.status) {
+                                    errorMessage = "Upload failed - please check your internet connection and try again. For large files, try using a desktop browser.";
+                                  }
+                                }
+                                throw new Error(errorMessage);
                               }
                               await loadEventData(false);
                               setVideoUploadSuccess(true);
                               // Auto-hide success after 3 seconds
                               setTimeout(() => setVideoUploadSuccess(false), 3000);
                             } catch (error: any) {
-                              alert(error.message || "Failed to upload video");
+                              // Better error message for common iOS failures
+                              let message = error.message || "Failed to upload video";
+                              if (message.includes("Load failed") || message.includes("load failed") || message.includes("Failed to fetch")) {
+                                message = "Upload failed - this can happen with large files on mobile. Please try a smaller file or upload from a desktop browser.";
+                              }
+                              alert(message);
                             } finally {
                               setUploadingVideo(false);
                             }
