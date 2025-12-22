@@ -1394,24 +1394,24 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <Select
                       value={sourceFilter}
                       onChange={(e) => setSourceFilter(e.target.value as ReferralSource | "all")}
-                    >
-                      <option value="all">All Sources</option>
-                      <option value="direct">Direct Registration</option>
-                      <option value="promoter">Via Promoter</option>
-                      <option value="user_referral">User Referral</option>
-                    </Select>
+                      options={[
+                        { value: "all", label: "All Sources" },
+                        { value: "direct", label: "Direct Registration" },
+                        { value: "promoter", label: "Via Promoter" },
+                        { value: "user_referral", label: "User Referral" },
+                      ]}
+                    />
 
                     {/* Promoter Filter (only if promoters exist) */}
                     {promoterOptions.length > 0 && (
                       <Select
                         value={promoterFilter}
                         onChange={(e) => setPromoterFilter(e.target.value)}
-                      >
-                        <option value="all">All Promoters</option>
-                        {promoterOptions.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </Select>
+                        options={[
+                          { value: "all", label: "All Promoters" },
+                          ...promoterOptions.map((p) => ({ value: p.id, label: p.name })),
+                        ]}
+                      />
                     )}
                   </div>
                 )}
