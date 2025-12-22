@@ -101,7 +101,29 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Determine which steps to show based on existing profile and email verification status
+  // Calculate which profile fields need to be filled (based on existingProfile only, not formData)
+  // This is stable and won't change as the user types
+  const requiredProfileSteps = useMemo(() => {
+    const visible: StepId[] = [];
+    
+    // Helper to check if a value is valid (not empty, null, undefined, or whitespace-only)
+    const hasValue = (val: string | null | undefined): boolean => {
+      return !!(val && val.trim().length > 0);
+    };
+    
+    // Only check existingProfile - we want to show fields that are missing in the DB
+    // This won't change as the user types, preventing the jumping issue
+    if (!hasValue(existingProfile?.name)) visible.push("name");
+    if (!hasValue(existingProfile?.surname)) visible.push("surname");
+    if (!hasValue(existingProfile?.date_of_birth)) visible.push("date_of_birth");
+    if (!(existingProfile as any)?.gender) visible.push("gender");
+    if (!hasValue(existingProfile?.whatsapp)) visible.push("whatsapp");
+    if (!hasValue(existingProfile?.instagram_handle)) visible.push("instagram_handle");
+    
+    return visible;
+  }, [existingProfile]);
+
+  // Determine which steps to show - email step + required profile steps
   const visibleSteps = useMemo(() => {
     const visible: StepId[] = [];
     
@@ -110,29 +132,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       visible.push("email");
     }
     
-    // Helper to check if a value is valid (not empty, null, undefined, or whitespace-only)
-    const hasValue = (val: string | null | undefined): boolean => {
-      return !!(val && val.trim().length > 0);
-    };
-    
-    // Check both existingProfile AND formData to prevent skipping fields
-    // Only show fields that are missing or have invalid values in BOTH places
-    const nameValue = formData.name || existingProfile?.name;
-    const surnameValue = formData.surname || existingProfile?.surname;
-    const dobValue = formData.date_of_birth || existingProfile?.date_of_birth;
-    const genderValue = formData.gender || (existingProfile as any)?.gender;
-    const whatsappValue = formData.whatsapp || existingProfile?.whatsapp;
-    const instagramValue = formData.instagram_handle || existingProfile?.instagram_handle;
-    
-    if (!hasValue(nameValue)) visible.push("name");
-    if (!hasValue(surnameValue)) visible.push("surname");
-    if (!hasValue(dobValue)) visible.push("date_of_birth");
-    if (!genderValue) visible.push("gender");
-    if (!hasValue(whatsappValue)) visible.push("whatsapp");
-    if (!hasValue(instagramValue)) visible.push("instagram_handle");
+    // Add the required profile steps (stable, won't change as user types)
+    visible.push(...requiredProfileSteps);
     
     return visible;
-  }, [emailVerified, existingProfile, formData]);
+  }, [emailVerified, requiredProfileSteps]);
 
   // Detect mobile/iOS on mount
   useEffect(() => {
