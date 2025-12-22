@@ -147,7 +147,7 @@ export default function BrandAssetsPage() {
       // Generate at higher base resolution for better quality
       const baseSize = 128;
       const svg = getSVGForVariant(variant, colors, baseSize);
-      
+    
       // Parse to get actual dimensions
       const parser = new DOMParser();
       const doc = parser.parseFromString(svg, "image/svg+xml");
@@ -157,16 +157,16 @@ export default function BrandAssetsPage() {
       
       // Create scaled SVG
       const scaledSvg = getSVGForVariant(variant, colors, baseSize * scale);
-      
+    
       // Convert to data URL
       const svgBlob = new Blob([scaledSvg], { type: "image/svg+xml;charset=utf-8" });
       const svgUrl = URL.createObjectURL(svgBlob);
-      
+    
       // Create canvas
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Could not get canvas context");
       
       // Load and draw image
@@ -177,10 +177,10 @@ export default function BrandAssetsPage() {
           // Fill background for light scheme, transparent for others
           if (scheme === "light") {
             ctx.fillStyle = colors.bg;
-            ctx.fillRect(0, 0, width, height);
-          }
-          
-          ctx.drawImage(img, 0, 0, width, height);
+      ctx.fillRect(0, 0, width, height);
+    }
+    
+      ctx.drawImage(img, 0, 0, width, height);
           resolve();
         };
         img.onerror = reject;
@@ -210,7 +210,7 @@ export default function BrandAssetsPage() {
     
     for (const variant of variants) {
       for (const scheme of schemes) {
-        downloadSVG(variant, scheme);
+          downloadSVG(variant, scheme);
         await new Promise((r) => setTimeout(r, 200));
       }
     }
@@ -278,35 +278,35 @@ export default function BrandAssetsPage() {
                     const colors = colorSchemes[scheme];
                     return (
                       <div key={scheme} className="rounded-lg overflow-hidden">
-                        <div
+                      <div
                           className="p-6 flex items-center justify-center min-h-[80px]"
                           style={{ backgroundColor: colors.bg }}
                         >
                           <LogoPreview variant={logoVar.value} scheme={scheme} />
-                        </div>
-                        <div className="flex gap-2 p-2 bg-surface-elevated">
-                          <button
+                      </div>
+                      <div className="flex gap-2 p-2 bg-surface-elevated">
+                        <button
                             onClick={() => downloadSVG(logoVar.value, scheme)}
-                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
-                          >
-                            SVG
-                          </button>
-                          <button
+                          className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
+                        >
+                          SVG
+                        </button>
+                        <button
                             onClick={() => downloadPNG(logoVar.value, scheme, 2)}
                             disabled={downloading === `${logoVar.value}-${scheme}-2`}
                             className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
-                          >
+                        >
                             {downloading === `${logoVar.value}-${scheme}-2` ? "..." : "PNG 2x"}
-                          </button>
-                          <button
+                        </button>
+                        <button
                             onClick={() => downloadPNG(logoVar.value, scheme, 4)}
                             disabled={downloading === `${logoVar.value}-${scheme}-4`}
                             className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
-                          >
+                        >
                             {downloading === `${logoVar.value}-${scheme}-4` ? "..." : "PNG 4x"}
-                          </button>
-                        </div>
+                        </button>
                       </div>
+                    </div>
                     );
                   })}
                 </div>

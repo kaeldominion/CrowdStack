@@ -495,7 +495,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   // OTP Verification - for iOS/Safari users who can't use magic links
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length < 6) {
-      setOtpError("Please enter the 6-digit code from your email");
+      setOtpError("Please enter the verification code from your email");
       return;
     }
 
@@ -505,19 +505,37 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     try {
       const supabase = createBrowserClient();
       
-      // Verify OTP - Supabase sends a code along with the magic link
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      console.log("[OTP Verify] Attempting verification for:", formData.email, "with code length:", otpCode.trim().length);
+      
+      // Verify OTP - try with type 'email' first (standard for signInWithOtp)
+      let { data, error: verifyError } = await supabase.auth.verifyOtp({
         email: formData.email,
         token: otpCode.trim(),
         type: "email",
       });
 
+      // If that fails, try with type 'signup' (for new users)
+      if (verifyError && (verifyError.message.includes("expired") || verifyError.message.includes("invalid"))) {
+        console.log("[OTP Verify] Retrying with type 'signup'...");
+        const retryResult = await supabase.auth.verifyOtp({
+          email: formData.email,
+          token: otpCode.trim(),
+          type: "signup",
+        });
+        if (!retryResult.error) {
+          data = retryResult.data;
+          verifyError = null;
+        }
+      }
+
       if (verifyError) {
-        console.error("[OTP Verify] Error:", verifyError.message);
-        if (verifyError.message.includes("expired")) {
-          setOtpError("Code expired. Please request a new one.");
+        console.error("[OTP Verify] Error:", verifyError.message, verifyError);
+        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired")) {
+          setOtpError("Code expired. Please click 'Send new code' below.");
         } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token")) {
-          setOtpError("Invalid code. Please check and try again.");
+          setOtpError("Invalid code. Please check the code and try again.");
+        } else if (verifyError.message.includes("User not found")) {
+          setOtpError("User not found. Please request a new code.");
         } else {
           setOtpError(verifyError.message);
         }
@@ -773,12 +791,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">Enter verification code</h3>
-                <p className="text-white/70 text-sm">
+                    <p className="text-white/70 text-sm">
                   We sent a 6-digit code to <span className="font-medium">{formData.email}</span>
-                </p>
+                    </p>
                 <p className="text-white/50 text-xs mt-1">
                   Check your email and enter the code below
-                </p>
+                    </p>
               </div>
               
               {magicLinkError && (
@@ -788,7 +806,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                       ? "Email rate limit reached. Please wait a moment before trying again."
                       : "There was an issue. Please try again or use password."}
                   </p>
-                </div>
+              </div>
               )}
               
               {/* OTP Input */}
@@ -798,22 +816,22 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   value={otpCode}
                   onChange={(e) => {
                     // Only allow digits and limit to 6 characters
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
                     setOtpCode(value);
                     if (otpError) setOtpError(null);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && otpCode.length === 6) {
+                    if (e.key === "Enter" && otpCode.length >= 6) {
                       e.preventDefault();
                       handleVerifyOtp();
                     }
                   }}
-                  placeholder="000000"
-                  className="text-3xl py-6 text-center tracking-[0.5em] font-mono border-2 focus:border-primary w-full"
+                  placeholder="Enter code"
+                  className="text-2xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-primary w-full"
                   autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={8}
                 />
                 
                 {otpError && (
@@ -824,6 +842,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   variant="primary"
                   onClick={handleVerifyOtp}
                   disabled={verifyingOtp || otpCode.length < 6}
+                  style={{ minWidth: '160px' }}
                   loading={verifyingOtp}
                   className="w-full"
                 >
