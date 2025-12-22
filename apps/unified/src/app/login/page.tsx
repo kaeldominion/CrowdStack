@@ -532,12 +532,8 @@ function LoginContent() {
       } else {
         console.log("[Login] Magic link sent successfully");
         setMagicLinkSent(true);
-        // On mobile, show OTP input directly
-        if (isMobileDevice) {
-          setShowOtpInput(true);
-        } else {
-          setMessage("Check your email for the magic link! If you don't receive it within a minute, check your spam folder or try password login instead.");
-        }
+        // Always show OTP input (OTP-only flow)
+        setShowOtpInput(true);
       }
     } catch (err: any) {
       console.error("[Login] Magic link exception:", err);
@@ -807,16 +803,6 @@ function LoginContent() {
             </Button>
           )}
 
-          {/* Desktop: After magic link sent, show option to enter code */}
-          {magicLinkSent && !showOtpInput && !isMobileDevice && (
-            <button
-              type="button"
-              onClick={() => setShowOtpInput(true)}
-              className="w-full text-sm text-[#3B82F6] hover:text-[#3B82F6]/80 transition-colors mt-2"
-            >
-              Enter verification code manually instead
-            </button>
-          )}
 
           {!showOtpInput && (
             <div className="text-center space-y-3">
