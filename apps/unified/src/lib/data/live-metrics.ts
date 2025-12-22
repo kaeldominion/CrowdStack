@@ -116,10 +116,17 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   if (promoterIds.length > 0) {
     const { data: promoters } = await supabase
       .from("promoters")
-      .select("id, name")
+      .select("id, name, email")
       .in("id", promoterIds);
     
-    promoters?.forEach(p => promoterNameMap.set(p.id, p.name));
+    promoters?.forEach(p => {
+      // Use name if it looks valid, otherwise fall back to email or "Promoter"
+      const isValidName = p.name && p.name.length > 0 && !p.name.match(/^[0-9a-f]{8}-[0-9a-f]{4}/i);
+      const displayName = isValidName 
+        ? p.name 
+        : (p.email ? p.email.split("@")[0] : "Promoter");
+      promoterNameMap.set(p.id, displayName);
+    });
   }
 
   const currentAttendance = checkins?.length || 0;
@@ -217,10 +224,17 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     if (newPromoterIds.length > 0) {
       const { data: promoters } = await supabase
         .from("promoters")
-        .select("id, name")
+        .select("id, name, email")
         .in("id", newPromoterIds);
       
-      promoters?.forEach(p => regPromoterMap.set(p.id, p.name));
+      promoters?.forEach(p => {
+        // Use name if it looks valid, otherwise fall back to email or "Promoter"
+        const isValidName = p.name && p.name.length > 0 && !p.name.match(/^[0-9a-f]{8}-[0-9a-f]{4}/i);
+        const displayName = isValidName 
+          ? p.name 
+          : (p.email ? p.email.split("@")[0] : "Promoter");
+        regPromoterMap.set(p.id, displayName);
+      });
     }
     // Merge with existing map
     regPromoterIds.forEach(id => {

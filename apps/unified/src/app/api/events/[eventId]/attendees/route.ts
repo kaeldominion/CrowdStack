@@ -179,10 +179,17 @@ export async function GET(
     if (promoterIds.length > 0) {
       const { data: promoters } = await serviceSupabase
         .from("promoters")
-        .select("id, name")
+        .select("id, name, email")
         .in("id", promoterIds);
       
-      promoters?.forEach(p => promoterMap.set(p.id, p.name));
+      promoters?.forEach(p => {
+        // Use name if it looks valid, otherwise fall back to email or "Promoter"
+        const isValidName = p.name && p.name.length > 0 && !p.name.match(/^[0-9a-f]{8}-[0-9a-f]{4}/i);
+        const displayName = isValidName 
+          ? p.name 
+          : (p.email ? p.email.split("@")[0] : "Promoter");
+        promoterMap.set(p.id, displayName);
+      });
     }
 
     // Get user names for user referrals
