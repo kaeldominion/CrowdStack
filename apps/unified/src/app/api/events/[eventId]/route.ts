@@ -51,13 +51,24 @@ export async function GET(
 
     // Check if user is the organizer or superadmin
     if (!isSuperadmin) {
-      const { data: organizer } = await serviceSupabase
+      // Get organizers this user owns
+      const { data: ownedOrganizers } = await serviceSupabase
         .from("organizers")
         .select("id")
-        .eq("created_by", userId)
-        .single();
+        .eq("created_by", userId);
 
-      if (!organizer || event.organizer_id !== organizer.id) {
+      // Get organizers this user is a team member of
+      const { data: memberOrganizers } = await serviceSupabase
+        .from("organizer_users")
+        .select("organizer_id")
+        .eq("user_id", userId);
+
+      const organizerIds = [
+        ...(ownedOrganizers?.map((o) => o.id) || []),
+        ...(memberOrganizers?.map((o) => o.organizer_id) || []),
+      ];
+
+      if (!organizerIds.includes(event.organizer_id)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
@@ -104,13 +115,24 @@ export async function PATCH(
 
     // Check if user can manage this event
     if (!isSuperadmin) {
-      const { data: organizer } = await serviceSupabase
+      // Get organizers this user owns
+      const { data: ownedOrganizers } = await serviceSupabase
         .from("organizers")
         .select("id")
-        .eq("created_by", userId)
-        .single();
+        .eq("created_by", userId);
 
-      if (!organizer) {
+      // Get organizers this user is a team member of
+      const { data: memberOrganizers } = await serviceSupabase
+        .from("organizer_users")
+        .select("organizer_id")
+        .eq("user_id", userId);
+
+      const organizerIds = [
+        ...(ownedOrganizers?.map((o) => o.id) || []),
+        ...(memberOrganizers?.map((o) => o.organizer_id) || []),
+      ];
+
+      if (organizerIds.length === 0) {
         return NextResponse.json({ error: "Organizer not found" }, { status: 404 });
       }
 
@@ -128,7 +150,7 @@ export async function PATCH(
         return NextResponse.json({ error: "Event is locked" }, { status: 403 });
       }
 
-      if (event.organizer_id !== organizer.id) {
+      if (!organizerIds.includes(event.organizer_id)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }

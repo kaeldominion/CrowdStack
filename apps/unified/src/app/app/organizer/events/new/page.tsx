@@ -26,6 +26,8 @@ export default function NewEventPage() {
     selected_promoters: [] as string[],
   });
   const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
+  const [flierVideoFile, setFlierVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     loadVenues();
@@ -187,7 +189,7 @@ export default function NewEventPage() {
       const data = await response.json();
       const eventId = data.event.id;
 
-      // Upload flier if provided
+      // Upload flier image if provided
       if (flierImageFile) {
         try {
           const flierFormData = new FormData();
@@ -199,6 +201,21 @@ export default function NewEventPage() {
         } catch (error) {
           console.error("Failed to upload flier:", error);
           // Continue even if image upload fails
+        }
+      }
+
+      // Upload video flier if provided
+      if (flierVideoFile) {
+        try {
+          const videoFormData = new FormData();
+          videoFormData.append("file", flierVideoFile);
+          await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+            method: "POST",
+            body: videoFormData,
+          });
+        } catch (error) {
+          console.error("Failed to upload video flier:", error);
+          // Continue even if video upload fails
         }
       }
 
@@ -326,9 +343,9 @@ export default function NewEventPage() {
           </div>
 
           {/* Flier Upload */}
-          <div className="border-t border-border pt-6">
+          <div className="border-t border-border pt-6 space-y-6">
             <EventImageUpload
-              label="Event Flier"
+              label="Event Flier (Image)"
               aspectRatio="9:16"
               onUpload={async (file) => {
                 setFlierImageFile(file);
@@ -339,8 +356,71 @@ export default function NewEventPage() {
                   reader.readAsDataURL(file);
                 });
               }}
-              helperText="Digital flier/poster for the event (9:16 portrait format required)"
+              helperText="Digital flier/poster for the event (9:16 portrait format recommended)"
             />
+
+            {/* Video Flier Upload */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Video Flier (Optional)
+              </label>
+              <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Check file size (max 50MB)
+                      if (file.size > 50 * 1024 * 1024) {
+                        alert("Video file too large. Maximum size is 50MB.");
+                        return;
+                      }
+                      setFlierVideoFile(file);
+                      setVideoPreviewUrl(URL.createObjectURL(file));
+                    }
+                  }}
+                  className="hidden"
+                  id="video-flier-upload"
+                />
+                <label htmlFor="video-flier-upload" className="cursor-pointer">
+                  {videoPreviewUrl ? (
+                    <div className="relative mx-auto w-32 aspect-[9/16] rounded-lg overflow-hidden bg-black">
+                      <video
+                        src={videoPreviewUrl}
+                        className="w-full h-full object-contain"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setFlierVideoFile(null);
+                          setVideoPreviewUrl(null);
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="py-6">
+                      <svg className="mx-auto h-12 w-12 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <p className="mt-2 text-sm text-foreground">Click to upload video</p>
+                      <p className="mt-1 text-xs text-foreground-muted">MP4, WebM, MOV · Max 50MB · 9:16 format recommended</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-foreground-muted">
+                Short video flier for enhanced promotion (max 30 seconds recommended)
+              </p>
+            </div>
           </div>
 
           {/* Promoter Settings */}
