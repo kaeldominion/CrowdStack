@@ -1,49 +1,28 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { cookies } from "next/headers";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
     const supabase = await createClient();
-
-    // Check for localhost development mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const userId = user?.id || localhostUser;
-
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get organizer ID (handles impersonation for superadmin)
+    const organizerId = await getUserOrganizerId();
+
+    if (!organizerId) {
+      return NextResponse.json({ events: [] });
     }
 
     const serviceClient = createServiceRoleClient();
 
-    // Get organizers this user manages
-    const { data: organizerUsers } = await serviceClient
-      .from("organizer_users")
-      .select("organizer_id")
-      .eq("user_id", userId);
-
-    const { data: ownedOrganizers } = await serviceClient
-      .from("organizers")
-      .select("id")
-      .eq("created_by", userId);
-
-    const organizerIds = [
-      ...(organizerUsers?.map((o) => o.organizer_id) || []),
-      ...(ownedOrganizers?.map((o) => o.id) || []),
-    ].filter((id, index, self) => self.indexOf(id) === index);
-
-    if (organizerIds.length === 0) {
-      return NextResponse.json({ events: [] });
-    }
-
-    // Fetch live events (currently happening) by these organizers
+    // Fetch live events (currently happening) by this organizer
     const now = new Date().toISOString();
     const { data: events, error } = await serviceClient
       .from("events")
@@ -64,7 +43,7 @@ export async function GET() {
           name
         )
       `)
-      .in("organizer_id", organizerIds)
+      .eq("organizer_id", organizerId)
       .eq("status", "published")
       .lte("start_time", now)
       .or(`end_time.is.null,end_time.gte.${now}`)
