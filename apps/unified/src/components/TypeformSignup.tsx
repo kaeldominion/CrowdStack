@@ -23,6 +23,7 @@ interface TypeformSignupProps {
     instagram_handle?: string | null;
   } | null;
   forcePasswordFallback?: boolean; // If true, show password fallback immediately
+  fallbackReason?: "pkce" | "expired" | "failed" | "rate_limit"; // Reason for password fallback
   eventName?: string; // Event name to display throughout registration
   eventDetails?: {
     venueName?: string | null;
@@ -54,7 +55,7 @@ const steps: Array<{ id: StepId; label: string; mobileLabel?: string }> = [
   { id: "instagram_handle", label: "What's your Instagram handle?", mobileLabel: "Instagram handle?" },
 ];
 
-export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false, eventName, eventDetails }: TypeformSignupProps) {
+export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false, fallbackReason, eventName, eventDetails }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -559,12 +560,39 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   If you already have an account, use your existing password to sign in.
                 </p>
               </div>
-            ) : (
+            ) : fallbackReason === "pkce" ? (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+                <p className="text-blue-400 text-sm text-center mb-2">
+                  Please open the magic link in the same browser where you requested it.
+                </p>
+                <p className="text-blue-300/70 text-xs text-center">
+                  Or create a password below to continue.
+                </p>
+              </div>
+            ) : fallbackReason === "expired" ? (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
+                <p className="text-amber-400 text-sm text-center mb-2">
+                  This magic link has expired or was already used.
+                </p>
+                <p className="text-amber-300/70 text-xs text-center">
+                  Create a password below to continue, or request a new magic link.
+                </p>
+              </div>
+            ) : fallbackReason === "rate_limit" ? (
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
                 <p className="text-yellow-400 text-sm text-center mb-2">
                   Email rate limit reached. Please set a password to continue.
                 </p>
                 <p className="text-yellow-300/70 text-xs text-center">
+                  If you already have an account, use your existing password to sign in.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
+                <p className="text-blue-400 text-sm text-center mb-2">
+                  Let's set up your account with a password.
+                </p>
+                <p className="text-blue-300/70 text-xs text-center">
                   If you already have an account, use your existing password to sign in.
                 </p>
               </div>
