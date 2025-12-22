@@ -71,6 +71,7 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
     // Role-specific navigation
     if (roles.includes("venue_admin") || roles.includes("superadmin")) {
       items.push({ href: "/app/venue/events", label: "Events", icon: Calendar });
+      items.push({ href: "/app/venue/attendees", label: "Attendees", icon: Users });
       items.push({ href: "/app/venue/organizers", label: "Organizers", icon: Building2 });
       items.push({ href: "/app/venue/users", label: "Team", icon: Users });
       items.push({ href: "/app/venue/promoters", label: "Promoters", icon: Megaphone });

@@ -69,6 +69,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     avgAttendance: 0,
     topEvent: "N/A",
   });
+  const [attendeeStats, setAttendeeStats] = useState({
+    totalAttendees: 0,
+    totalCheckins: 0,
+    newThisMonth: 0,
+    repeatVisitors: 0,
+    flaggedCount: 0,
+    topAttendees: [] as Array<{ id: string; name: string; checkins: number; events: number; xp_points: number }>,
+  });
   const [venue, setVenue] = useState<{
     id: string;
     name: string;
@@ -156,6 +164,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             }
           })
           .catch((e) => console.error("Failed to load venue stats:", e))
+      );
+      promises.push(
+        fetch("/api/venue/attendees/stats")
+          .then((r) => r.json())
+          .then((data) => {
+            setAttendeeStats(data);
+          })
+          .catch((e) => console.error("Failed to load attendee stats:", e))
       );
     }
 
@@ -554,6 +570,78 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </div>
             </BentoCard>
           </div>
+
+          {/* Attendees Card */}
+          <Link href="/app/venue/attendees" className="block">
+            <BentoCard span={4} className="hover:bg-white/10 transition-colors cursor-pointer group">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Users className="h-5 w-5 text-indigo-400" />
+                    Attendee Database
+                  </h3>
+                  <span className="text-sm text-white/40 group-hover:text-white/60 transition-colors flex items-center gap-1">
+                    View All
+                    <ExternalLink className="h-3 w-3" />
+                  </span>
+                </div>
+                
+                {/* Quick Stats Row */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-2xl font-bold text-white">{attendeeStats.totalAttendees}</p>
+                    <p className="text-xs text-white/50">Total Guests</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-2xl font-bold text-green-400">+{attendeeStats.newThisMonth}</p>
+                    <p className="text-xs text-white/50">New This Month</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-2xl font-bold text-indigo-400">{attendeeStats.repeatVisitors}</p>
+                    <p className="text-xs text-white/50">Repeat Visitors</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-2xl font-bold text-white">{attendeeStats.totalCheckins}</p>
+                    <p className="text-xs text-white/50">Total Check-ins</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <p className="text-2xl font-bold text-amber-400">{attendeeStats.flaggedCount}</p>
+                    <p className="text-xs text-white/50">Flagged</p>
+                  </div>
+                </div>
+
+                {/* Top Attendees */}
+                {attendeeStats.topAttendees.length > 0 && (
+                  <div className="pt-2">
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-3">Top Attendees</p>
+                    <div className="flex flex-wrap gap-2">
+                      {attendeeStats.topAttendees.map((attendee, index) => (
+                        <div
+                          key={attendee.id}
+                          className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-1.5 border border-white/10"
+                        >
+                          <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white">
+                            {index + 1}
+                          </div>
+                          <span className="text-sm text-white font-medium">{attendee.name}</span>
+                          <div className="flex items-center gap-1 text-xs text-white/50">
+                            <UserCheck className="h-3 w-3" />
+                            {attendee.checkins}
+                          </div>
+                          {attendee.xp_points > 0 && (
+                            <div className="flex items-center gap-0.5 text-xs text-amber-400">
+                              <Zap className="h-3 w-3" />
+                              {attendee.xp_points}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </BentoCard>
+          </Link>
         </section>
       )}
 
