@@ -26,6 +26,7 @@ export default function VenueEventDetailPage() {
         canViewSettings: false,
         canViewStats: true,
         canApprove: false,
+        canPublish: true,
         showEditHistory: true,
       }}
     />
