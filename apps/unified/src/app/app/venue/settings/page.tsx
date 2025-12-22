@@ -1170,7 +1170,7 @@ export default function VenueSettingsPage() {
         onConfirm={() => { if (deleteConfirm) handleDeleteImage(deleteConfirm.id); }}
         title="Delete Image"
         message={`Are you sure you want to delete ${deleteConfirm?.caption || "this image"}? This action cannot be undone.`}
-        confirmLabel="Delete"
+        confirmText="Delete"
         variant="danger"
       />
     </div>
