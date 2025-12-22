@@ -2,6 +2,16 @@
 
 To enable OTP code verification (especially for iOS users) and add CrowdStack branding, you need to customize the email templates in Supabase.
 
+## ⚠️ Important: Logo Format
+
+**Email clients (Gmail, Outlook, Yahoo) do NOT support SVG images!**
+
+The templates below use the PNG version at `https://crowdstack.app/crowdstack-full-dark-2x.png`.
+
+This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
+
+---
+
 ## How to Update Email Templates
 
 1. Go to your **Supabase Dashboard**
@@ -33,7 +43,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -135,7 +145,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -237,7 +247,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           
@@ -314,7 +324,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <!-- Logo Header -->
           <tr>
             <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark.svg" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
             </td>
           </tr>
           

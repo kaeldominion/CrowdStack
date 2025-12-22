@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { MobileStickyCTA } from "@/components/MobileStickyCTA";
 import { useReferralUserId } from "@/components/ReferralTracker";
@@ -25,6 +26,25 @@ export function MobileStickyCTAWrapper({
 }) {
   const userId = useReferralUserId();
   const searchParams = useSearchParams();
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [passUrl, setPassUrl] = useState<string | null>(null);
+  
+  // Check if user is already registered
+  useEffect(() => {
+    const checkRegistration = async () => {
+      try {
+        const res = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+        const data = await res.json();
+        if (data.registered) {
+          setIsRegistered(true);
+          setPassUrl(`/e/${eventSlug}/pass`);
+        }
+      } catch (error) {
+        // Silently fail - just show register button
+      }
+    };
+    checkRegistration();
+  }, [eventSlug]);
   
   // Preserve ref parameter in register link
   const getRegisterUrl = () => {
@@ -38,8 +58,9 @@ export function MobileStickyCTAWrapper({
   
   return (
     <MobileStickyCTA
-      href={getRegisterUrl()}
-      label="Register Now"
+      href={isRegistered && passUrl ? passUrl : getRegisterUrl()}
+      label={isRegistered ? "View Pass" : "Register Now"}
+      isRegistered={isRegistered}
       eventName={eventName}
       shareUrl={shareUrl}
       shareTitle={eventName}

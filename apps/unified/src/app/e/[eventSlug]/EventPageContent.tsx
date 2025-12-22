@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Container, Section, Button, Badge } from "@crowdstack/ui";
-import { Calendar, MapPin, Users, Clock, ExternalLink, Info } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, ExternalLink, Info, QrCode } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
 import { EventQRCode } from "@/components/EventQRCode";
@@ -52,6 +53,23 @@ export function EventPageContent({
   // Get userId from ReferralTracker context
   const userId = useReferralUserId();
   const searchParams = useSearchParams();
+  const [isRegistered, setIsRegistered] = useState(false);
+  
+  // Check if user is already registered
+  useEffect(() => {
+    const checkRegistration = async () => {
+      try {
+        const res = await fetch(`/api/events/by-slug/${params.eventSlug}/check-registration`);
+        const data = await res.json();
+        if (data.registered) {
+          setIsRegistered(true);
+        }
+      } catch (error) {
+        // Silently fail - just show register button
+      }
+    };
+    checkRegistration();
+  }, [params.eventSlug]);
   
   // Preserve ref parameter in register link
   const getRegisterUrl = () => {
@@ -62,6 +80,9 @@ export function EventPageContent({
     }
     return baseUrl;
   };
+  
+  // Get pass URL for registered users
+  const getPassUrl = () => `/e/${params.eventSlug}/pass`;
   // Card styles - floating transparent when there's a flier background (mobile and desktop)
   const useFloatingCards = event.flier_url;
   const cardStyle = useFloatingCards 
@@ -357,10 +378,15 @@ export function EventPageContent({
                       )}
                     </div>
 
-                  {/* Register Now - Desktop only */}
-                  <Link href={getRegisterUrl()} className="hidden lg:block">
-                      <Button variant="primary" size="lg" className="w-full">
-                        Register Now
+                  {/* Register Now / View Pass - Desktop only */}
+                  <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="hidden lg:block">
+                      <Button 
+                        variant={isRegistered ? "secondary" : "primary"} 
+                        size="lg" 
+                        className={`w-full ${isRegistered ? 'bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/50 hover:from-emerald-500 hover:to-teal-500' : ''}`}
+                      >
+                        {isRegistered && <QrCode className="h-4 w-4 mr-2" />}
+                        {isRegistered ? "View Pass" : "Register Now"}
                       </Button>
                     </Link>
 
