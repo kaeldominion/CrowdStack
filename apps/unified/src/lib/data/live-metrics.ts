@@ -98,15 +98,28 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       registrations!inner(
         event_id,
         attendee:attendees(id, name),
-        referral_promoter_id,
-        promoters(name)
+        referral_promoter_id
       )
     `)
     .eq("registrations.event_id", eventId)
     .is("undo_at", null);
 
   if (checkinsError) {
+    console.error("[LiveMetrics] Error fetching checkins:", checkinsError);
     throw checkinsError;
+  }
+
+  // Fetch promoter names separately
+  const promoterIds = [...new Set((checkins || []).map((c: any) => c.registrations?.referral_promoter_id).filter(Boolean))];
+  const promoterNameMap = new Map<string, string>();
+  
+  if (promoterIds.length > 0) {
+    const { data: promoters } = await supabase
+      .from("promoters")
+      .select("id, name")
+      .in("id", promoterIds);
+    
+    promoters?.forEach(p => promoterNameMap.set(p.id, p.name));
   }
 
   const currentAttendance = checkins?.length || 0;
@@ -144,8 +157,8 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   const promoterCounts = new Map<string, { name: string; count: number }>();
   checkins?.forEach((c: any) => {
     const promoterId = c.registrations?.referral_promoter_id;
-    const promoterName = c.registrations?.promoters?.name || "Unknown";
     if (promoterId) {
+      const promoterName = promoterNameMap.get(promoterId) || "Unknown";
       const existing = promoterCounts.get(promoterId);
       promoterCounts.set(promoterId, {
         name: promoterName,
@@ -176,7 +189,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       attendee_id: c.registrations?.attendee?.id || "",
       attendee_name: c.registrations?.attendee?.name || "Unknown",
       checked_in_at: c.checked_in_at,
-      promoter_name: c.registrations?.promoters?.name || null,
+      promoter_name: c.registrations?.referral_promoter_id 
+        ? promoterNameMap.get(c.registrations.referral_promoter_id) || null 
+        : null,
     }));
 
   // Get recent registrations (last 50)
@@ -186,12 +201,34 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       id,
       registered_at,
       attendee:attendees(id, name),
-      referral_promoter_id,
-      promoters(name)
+      referral_promoter_id
     `)
     .eq("event_id", eventId)
     .order("registered_at", { ascending: false })
     .limit(50);
+
+  // Get promoter names for registrations
+  const regPromoterIds = [...new Set((recentRegistrationsData || []).map((r: any) => r.referral_promoter_id).filter(Boolean))];
+  const regPromoterMap = new Map<string, string>();
+  
+  if (regPromoterIds.length > 0) {
+    // Only fetch promoters we don't already have
+    const newPromoterIds = regPromoterIds.filter(id => !promoterNameMap.has(id));
+    if (newPromoterIds.length > 0) {
+      const { data: promoters } = await supabase
+        .from("promoters")
+        .select("id, name")
+        .in("id", newPromoterIds);
+      
+      promoters?.forEach(p => regPromoterMap.set(p.id, p.name));
+    }
+    // Merge with existing map
+    regPromoterIds.forEach(id => {
+      if (promoterNameMap.has(id)) {
+        regPromoterMap.set(id, promoterNameMap.get(id)!);
+      }
+    });
+  }
 
   const recentRegistrations: RecentRegistration[] = (recentRegistrationsData || [])
     .map((r: any) => ({
@@ -199,7 +236,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       attendee_id: r.attendee?.id || "",
       attendee_name: r.attendee?.name || "Unknown",
       registered_at: r.registered_at,
-      promoter_name: r.promoters?.name || null,
+      promoter_name: r.referral_promoter_id 
+        ? regPromoterMap.get(r.referral_promoter_id) || promoterNameMap.get(r.referral_promoter_id) || null 
+        : null,
     }));
 
   // Combine recent check-ins and registrations into unified activity feed
