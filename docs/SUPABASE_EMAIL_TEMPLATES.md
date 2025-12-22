@@ -41,7 +41,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <tr>
             <td style="padding: 32px;">
               <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
-                Sign in to CrowdStack
+                Sign In
               </h1>
               
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
@@ -143,7 +143,7 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
           <tr>
             <td style="padding: 32px;">
               <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
-                Welcome to CrowdStack! 🎉
+                Welcome! 🎉
               </h1>
               
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
