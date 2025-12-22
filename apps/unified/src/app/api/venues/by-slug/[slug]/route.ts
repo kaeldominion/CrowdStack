@@ -43,12 +43,12 @@ export async function GET(
       .order("tag_type", { ascending: true })
       .order("tag_value", { ascending: true });
 
-    // Get upcoming events (next 30 days, published only)
     const now = new Date();
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(now.getDate() + 30);
 
-    const { data: events } = await supabase
+    // Get all relevant events for this venue
+    const { data: allEvents } = await supabase
       .from("events")
       .select(`
         id,
@@ -58,18 +58,17 @@ export async function GET(
         start_time,
         end_time,
         cover_image_url,
+        flier_url,
         capacity,
         organizer:organizers(id, name)
       `)
       .eq("venue_id", venue.id)
       .eq("status", "published")
-      .gte("start_time", now.toISOString())
-      .lte("start_time", thirtyDaysFromNow.toISOString())
-      .order("start_time", { ascending: true })
-      .limit(10);
+      .order("start_time", { ascending: false })
+      .limit(50);
 
-    // Get registration counts for events
-    const eventIds = events?.map((e) => e.id) || [];
+    // Get registration counts for all events
+    const eventIds = allEvents?.map((e) => e.id) || [];
     let registrationCounts: Record<string, number> = {};
 
     if (eventIds.length > 0) {
@@ -87,18 +86,47 @@ export async function GET(
       );
     }
 
-    // Add registration counts to events
-    const eventsWithCounts = (events || []).map((event) => ({
-      ...event,
-      registration_count: registrationCounts[event.id] || 0,
-    }));
+    // Categorize events
+    const liveEvents: any[] = [];
+    const upcomingEvents: any[] = [];
+    const pastEvents: any[] = [];
+
+    (allEvents || []).forEach((event) => {
+      const eventWithCount = {
+        ...event,
+        registration_count: registrationCounts[event.id] || 0,
+      };
+      
+      const startTime = new Date(event.start_time);
+      const endTime = event.end_time ? new Date(event.end_time) : null;
+      
+      // Event is live if started but not ended (or no end time and started within last 8 hours)
+      const isLive = startTime <= now && (
+        (endTime && endTime >= now) || 
+        (!endTime && now.getTime() - startTime.getTime() < 8 * 60 * 60 * 1000)
+      );
+      
+      if (isLive) {
+        liveEvents.push(eventWithCount);
+      } else if (startTime > now) {
+        upcomingEvents.push(eventWithCount);
+      } else {
+        pastEvents.push(eventWithCount);
+      }
+    });
+
+    // Sort upcoming by start time ascending, past by start time descending
+    upcomingEvents.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    pastEvents.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
     return NextResponse.json({
       venue: {
         ...venue,
         gallery: gallery || [],
         tags: tags || [],
-        upcoming_events: eventsWithCounts,
+        live_events: liveEvents,
+        upcoming_events: upcomingEvents.slice(0, 10),
+        past_events: pastEvents.slice(0, 6),
       },
     });
   } catch (error: any) {
