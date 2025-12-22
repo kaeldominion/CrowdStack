@@ -559,42 +559,51 @@ function LoginContent() {
       
       console.log("[OTP Verify] Attempting verification for:", email, "with code length:", otpCode.trim().length);
       
-      // Verify OTP - try with type 'email' first (standard for signInWithOtp)
-      let { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: otpCode.trim(),
-        type: "email",
-      });
-
-      // If that fails, try with type 'signup' (for new users)
-      if (verifyError && (verifyError.message.includes("expired") || verifyError.message.includes("invalid"))) {
-        console.log("[OTP Verify] Retrying with type 'signup'...");
-        const retryResult = await supabase.auth.verifyOtp({
+      // Try all possible OTP types in order
+      const typesToTry = ["email", "signup", "magiclink"];
+      let data = null;
+      let verifyError = null;
+      const trimmedCode = otpCode.trim();
+      
+      for (const type of typesToTry) {
+        console.log(`[OTP Verify] Trying type: ${type}`);
+        const result = await supabase.auth.verifyOtp({
           email,
-          token: otpCode.trim(),
-          type: "signup",
+          token: trimmedCode,
+          type: type as any,
         });
-        if (!retryResult.error) {
-          data = retryResult.data;
+        
+        if (!result.error && result.data?.session) {
+          console.log(`[OTP Verify] Success with type: ${type}`);
+          data = result.data;
           verifyError = null;
+          break;
+        } else if (result.error) {
+          console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
+          verifyError = result.error;
+          // Continue to next type unless it's a clear non-retryable error
+          if (result.error.message.includes("User not found") || 
+              result.error.message.includes("Email rate limit")) {
+            break; // Don't retry for these errors
+          }
         }
       }
 
       if (verifyError) {
-        console.error("[OTP Verify] Error:", verifyError.message, verifyError);
-        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired")) {
-          setOtpError("Code expired. Please click 'Send new code' below.");
-        } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token")) {
-          setOtpError("Invalid code. Please check the code and try again.");
+        console.error("[OTP Verify] All types failed. Last error:", verifyError.message, verifyError);
+        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired") || verifyError.message.includes("has expired")) {
+          setOtpError("Code expired. The code is only valid for 60 seconds. Please request a new code.");
+        } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token") || verifyError.message.includes("Invalid")) {
+          setOtpError("Invalid code. Please check the 8-digit code from your email and try again.");
         } else if (verifyError.message.includes("User not found")) {
           setOtpError("User not found. Please request a new code.");
         } else {
-          setOtpError(verifyError.message);
+          setOtpError(`Verification failed: ${verifyError.message}. Please try requesting a new code.`);
         }
         return;
       }
 
-      if (!data.session) {
+      if (!data?.session) {
         setOtpError("Verification failed. Please try again.");
         return;
       }

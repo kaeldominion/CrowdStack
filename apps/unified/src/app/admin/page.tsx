@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -131,6 +131,12 @@ export default function AdminDashboardPage() {
       href: "/admin/tools/brand-assets",
       description: "Download logos, icons, and brand materials",
       icon: <Download className="h-6 w-6" />,
+    },
+    {
+      name: "XP Ledger",
+      href: "/admin/tools/xp-ledger",
+      description: "View and analyze XP transactions",
+      icon: <TrendingUp className="h-6 w-6" />,
     },
   ];
 

@@ -1,49 +1,107 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Ticket, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@crowdstack/ui";
+import { Logo, LoadingSpinner } from "@crowdstack/ui";
 
 export default function QRPassPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const eventSlug = params.eventSlug as string;
-  const token = searchParams.get("token");
+  const tokenFromQuery = searchParams.get("token");
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [eventName, setEventName] = useState<string>("");
   const [venueName, setVenueName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch registration and QR token if not provided in URL
   useEffect(() => {
-    if (token) {
-      // Generate QR code URL using qrserver.com API
-      // The QR code encodes the token which can be scanned at the door
-      const qrData = encodeURIComponent(token);
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
-      setQrCodeUrl(qrUrl);
+    const loadPassData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // If token is provided in URL, use it
+        if (tokenFromQuery) {
+          const qrData = encodeURIComponent(tokenFromQuery);
+          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
+          setQrCodeUrl(qrUrl);
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise, fetch registration status to get the token
+        const response = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
+        if (!response.ok) {
+          throw new Error("Failed to check registration");
+        }
+        
+        const data = await response.json();
+        if (!data.registered) {
+          setError("You are not registered for this event");
+          setLoading(false);
+          return;
+        }
+        
+        // Set event details from response
+        if (data.event) {
+          setEventName(data.event.name || "");
+          setVenueName(data.event.venue?.name || "");
+        }
+        
+        if (data.qr_pass_token) {
+          const qrData = encodeURIComponent(data.qr_pass_token);
+          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
+          setQrCodeUrl(qrUrl);
+          
+          // Update URL to include token for sharing/bookmarking
+          if (typeof window !== "undefined") {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set("token", data.qr_pass_token);
+            window.history.replaceState({}, "", newUrl.toString());
+          }
+        } else {
+          setError("QR pass token not available");
+        }
+      } catch (err: any) {
+        console.error("Error loading pass data:", err);
+        setError(err.message || "Failed to load pass");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (eventSlug) {
+      loadPassData();
     }
-  }, [token]);
+  }, [eventSlug, tokenFromQuery]);
 
-  // Fetch event details
+  // Fetch event details (fallback if token is provided directly in URL)
   useEffect(() => {
     const fetchEventDetails = async () => {
-      try {
-        const response = await fetch(`/api/events/by-slug/${eventSlug}`);
-        if (response.ok) {
-          const data = await response.json();
-          setEventName(data.name || "");
-          setVenueName(data.venue?.name || "");
+      // Only fetch if we have a token in URL but no event details yet
+      if (tokenFromQuery && !eventName) {
+        try {
+          const response = await fetch(`/api/events/by-slug/${eventSlug}`);
+          if (response.ok) {
+            const data = await response.json();
+            setEventName(data.name || "");
+            setVenueName(data.venue?.name || "");
+          }
+        } catch (err) {
+          console.error("Failed to fetch event details:", err);
         }
-      } catch (err) {
-        console.error("Failed to fetch event details:", err);
       }
     };
     
     if (eventSlug) {
       fetchEventDetails();
     }
-  }, [eventSlug]);
+  }, [eventSlug, tokenFromQuery, eventName]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
@@ -76,7 +134,21 @@ export default function QRPassPage() {
 
           {/* QR Code */}
           <div className="p-8 flex flex-col items-center">
-            {qrCodeUrl ? (
+            {loading ? (
+              <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center">
+                <LoadingSpinner text="Loading QR code..." />
+              </div>
+            ) : error ? (
+              <div className="w-64 h-64 bg-red-50 rounded-xl flex flex-col items-center justify-center p-4">
+                <p className="text-red-600 text-center font-medium mb-2">{error}</p>
+                <Link 
+                  href={`/e/${eventSlug}/register`}
+                  className="text-red-600 text-sm underline hover:no-underline"
+                >
+                  Register for this event
+                </Link>
+              </div>
+            ) : qrCodeUrl ? (
               <>
                 <div className="bg-white p-4 rounded-xl shadow-inner border-2 border-gray-100">
                   <img 
@@ -93,11 +165,7 @@ export default function QRPassPage() {
                   Keep your screen brightness high for easy scanning
                 </p>
               </>
-            ) : (
-              <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center">
-                <p className="text-gray-500">Loading QR code...</p>
-              </div>
-            )}
+            ) : null}
           </div>
 
           {/* Footer */}
