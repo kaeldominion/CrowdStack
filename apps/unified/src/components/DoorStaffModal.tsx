@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Modal, Button, Input, Badge, LoadingSpinner, InlineSpinner } from "@crowdstack/ui";
+import { Modal, Button, Input, Badge, LoadingSpinner, InlineSpinner, ConfirmModal } from "@crowdstack/ui";
 import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail, Shield, Search, X } from "lucide-react";
 
 interface DoorStaff {
@@ -62,6 +62,10 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [newInviteUrl, setNewInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Confirmation modal state
+  const [confirmRevoke, setConfirmRevoke] = useState<{ staffId: string; name: string } | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -233,13 +237,12 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
     }
   };
 
-  const handleRevokeAccess = async (staffId: string) => {
-    if (!confirm("Are you sure you want to revoke this person's door staff access?")) {
-      return;
-    }
+  const handleRevokeAccess = async () => {
+    if (!confirmRevoke) return;
 
+    setRevoking(true);
     try {
-      const response = await fetch(`/api/events/${eventId}/door-staff?staff_id=${staffId}`, {
+      const response = await fetch(`/api/events/${eventId}/door-staff?staff_id=${confirmRevoke.staffId}`, {
         method: "DELETE",
       });
 
@@ -247,9 +250,12 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
         throw new Error("Failed to revoke access");
       }
 
+      setConfirmRevoke(null);
       loadDoorStaff();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to revoke access");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -358,7 +364,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRevokeAccess(staff.id)}
+                        onClick={() => setConfirmRevoke({ staffId: staff.id, name: staff.user_name })}
                         className="text-danger hover:text-danger hover:bg-danger/10"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -582,6 +588,24 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
           </>
         )}
       </div>
+
+      {/* Revoke Access Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!confirmRevoke}
+        onClose={() => setConfirmRevoke(null)}
+        onConfirm={handleRevokeAccess}
+        title="Remove Door Staff Access"
+        message={
+          <>
+            Are you sure you want to remove <strong>{confirmRevoke?.name}</strong> from door staff? 
+            They will no longer be able to check in attendees for this event.
+          </>
+        }
+        confirmText="Remove Access"
+        cancelText="Cancel"
+        variant="danger"
+        loading={revoking}
+      />
     </Modal>
   );
 }
