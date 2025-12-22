@@ -15,15 +15,11 @@ import {
   Calendar,
   CreditCard,
   Shield,
-  Bell,
   Home,
   Building2,
   Users,
   Megaphone,
-  LayoutDashboard,
   QrCode,
-  BarChart3,
-  Ticket,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -55,22 +51,48 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
   const profileRef = useRef<HTMLDivElement>(null);
   const supabase = createBrowserClient();
 
-  // All navigation items with role requirements
-  const allNavItems: NavItem[] = [
-    { href: "/app", label: "Home", icon: Home },
-    { href: "/app/events", label: "Events", icon: Calendar },
-    { href: "/app/venues", label: "Venues", icon: Building2, roles: ["venue_admin", "superadmin"] },
-    { href: "/app/team", label: "Team", icon: Users, roles: ["venue_admin", "event_organizer", "superadmin"] },
-    { href: "/app/promoters", label: "Promoters", icon: Megaphone, roles: ["event_organizer", "superadmin"] },
-    { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/admin", label: "Admin", icon: Shield, roles: ["superadmin"] },
-  ];
+  // Determine primary role for routing
+  const getPrimaryRole = (): "venue" | "organizer" | "promoter" | "admin" => {
+    if (roles.includes("superadmin")) return "admin";
+    if (roles.includes("venue_admin")) return "venue";
+    if (roles.includes("event_organizer")) return "organizer";
+    if (roles.includes("promoter")) return "promoter";
+    return "organizer"; // fallback
+  };
 
-  // Filter nav items based on user roles
-  const navItems = allNavItems.filter(item => {
-    if (!item.roles) return true;
-    return item.roles.some(role => roles.includes(role));
-  });
+  const primaryRole = getPrimaryRole();
+
+  // Build navigation items based on user's role
+  const getNavItems = (): NavItem[] => {
+    const items: NavItem[] = [
+      { href: "/app", label: "Dashboard", icon: Home },
+    ];
+
+    // Role-specific navigation
+    if (roles.includes("venue_admin") || roles.includes("superadmin")) {
+      items.push({ href: "/app/venue/events", label: "Events", icon: Calendar });
+      items.push({ href: "/app/venue/organizers", label: "Organizers", icon: Building2 });
+      items.push({ href: "/app/venue/users", label: "Team", icon: Users });
+      items.push({ href: "/app/venue/promoters", label: "Promoters", icon: Megaphone });
+    } else if (roles.includes("event_organizer")) {
+      items.push({ href: "/app/organizer/events", label: "Events", icon: Calendar });
+      items.push({ href: "/app/organizer/promoters", label: "Promoters", icon: Megaphone });
+      items.push({ href: "/app/organizer/settings", label: "Settings", icon: Settings });
+    } else if (roles.includes("promoter")) {
+      items.push({ href: "/app/promoter/events", label: "Events", icon: Calendar });
+      items.push({ href: "/app/promoter/earnings", label: "Earnings", icon: CreditCard });
+      items.push({ href: "/app/promoter/tools", label: "Tools", icon: QrCode });
+    }
+
+    // Admin link for superadmins
+    if (roles.includes("superadmin")) {
+      items.push({ href: "/admin", label: "Admin", icon: Shield });
+    }
+
+    return items;
+  };
+
+  const navItems = getNavItems();
 
   useEffect(() => {
     loadUser();
