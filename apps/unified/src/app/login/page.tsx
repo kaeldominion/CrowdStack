@@ -546,8 +546,8 @@ function LoginContent() {
 
   // OTP Verification - for iOS/Safari users who can't use magic links
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) {
-      setOtpError("Please enter the verification code from your email");
+    if (!otpCode || otpCode.length < 8) {
+      setOtpError("Please enter the 8-digit code from your email");
       return;
     }
 
@@ -746,7 +746,7 @@ function LoginContent() {
                     if (otpError) setOtpError(null);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && otpCode.length >= 6) {
+                    if (e.key === "Enter" && otpCode.length >= 8) {
                       e.preventDefault();
                       handleVerifyOtp();
                     }
@@ -769,7 +769,7 @@ function LoginContent() {
               <Button
                 type="button"
                 onClick={handleVerifyOtp}
-                disabled={verifyingOtp || otpCode.length < 6}
+                disabled={verifyingOtp || otpCode.length < 8}
                 loading={verifyingOtp}
                 className="w-full"
                 size="lg"

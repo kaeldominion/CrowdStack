@@ -494,8 +494,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   // OTP Verification - for iOS/Safari users who can't use magic links
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length < 6) {
-      setOtpError("Please enter the verification code from your email");
+    if (!otpCode || otpCode.length < 8) {
+      setOtpError("Please enter the 8-digit code from your email");
       return;
     }
 
@@ -821,7 +821,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     if (otpError) setOtpError(null);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && otpCode.length >= 6) {
+                    if (e.key === "Enter" && otpCode.length >= 8) {
                       e.preventDefault();
                       handleVerifyOtp();
                     }
@@ -841,7 +841,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 <Button
                   variant="primary"
                   onClick={handleVerifyOtp}
-                  disabled={verifyingOtp || otpCode.length < 6}
+                  disabled={verifyingOtp || otpCode.length < 8}
                   style={{ minWidth: '160px' }}
                   loading={verifyingOtp}
                   className="w-full"
