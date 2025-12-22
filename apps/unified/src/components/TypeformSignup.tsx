@@ -842,7 +842,6 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   variant="primary"
                   onClick={handleVerifyOtp}
                   disabled={verifyingOtp || otpCode.length < 8}
-                  style={{ minWidth: '160px' }}
                   loading={verifyingOtp}
                   className="w-full"
                 >
