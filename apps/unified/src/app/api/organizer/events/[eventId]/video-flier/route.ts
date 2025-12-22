@@ -4,6 +4,10 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { uploadToStorage } from "@crowdstack/shared/storage/upload";
 
+// Extend timeout for large video uploads (Vercel Pro: up to 300s, Hobby: 60s)
+export const maxDuration = 120; // 2 minutes
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/organizer/events/[eventId]/video-flier
  * Upload event video flier (9:16 format, max 30 seconds recommended)
@@ -99,14 +103,28 @@ export async function POST(
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const storagePath = `events/${eventId}/video-flier/${fileName}`;
 
+    console.log(`[VideoFlier] Starting upload: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) to ${storagePath}`);
+
     // Upload to storage
-    const fileBuffer = await file.arrayBuffer();
-    const publicUrl = await uploadToStorage(
-      "event-photos", // Using existing bucket
-      storagePath,
-      Buffer.from(fileBuffer),
-      file.type
-    );
+    let publicUrl: string;
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      console.log(`[VideoFlier] ArrayBuffer created, size: ${fileBuffer.byteLength} bytes`);
+      
+      publicUrl = await uploadToStorage(
+        "event-photos", // Using existing bucket
+        storagePath,
+        Buffer.from(fileBuffer),
+        file.type
+      );
+      console.log(`[VideoFlier] Upload successful: ${publicUrl}`);
+    } catch (uploadError: any) {
+      console.error(`[VideoFlier] Storage upload failed:`, uploadError);
+      return NextResponse.json(
+        { error: `Storage upload failed: ${uploadError.message}` },
+        { status: 500 }
+      );
+    }
 
     // Delete old video if exists
     if (event.flier_video_url) {
