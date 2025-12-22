@@ -311,10 +311,12 @@ export default async function VenuePage({
                 </Button>
               )}
               {mapsUrl && (
-                <Button variant="secondary" size="lg" href={mapsUrl} target="_blank">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Get Directions
-                </Button>
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="secondary" size="lg">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Get Directions
+                  </Button>
+                </a>
               )}
               <ShareButton
                 title={venue.name}
