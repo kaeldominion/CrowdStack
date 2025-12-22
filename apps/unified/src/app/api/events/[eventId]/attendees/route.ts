@@ -38,6 +38,8 @@ export async function GET(
   
   try {
     const userId = await getUserId();
+    console.log("[EventAttendees] User ID:", userId, "Event ID:", eventId);
+    
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -74,15 +76,29 @@ export async function GET(
     let userVenueId: string | null = null;
 
     if (isOrganizer && !hasAccess) {
-      const { data: organizer } = await serviceSupabase
-        .from("organizers")
-        .select("id")
-        .eq("created_by", userId)
+      // Check organizer_users junction table first (preferred method)
+      const { data: organizerUser } = await serviceSupabase
+        .from("organizer_users")
+        .select("organizer_id")
+        .eq("user_id", userId)
+        .eq("organizer_id", event.organizer_id)
         .single();
       
-      if (organizer && organizer.id === event.organizer_id) {
+      if (organizerUser) {
         hasAccess = true;
-        userOrganizerId = organizer.id;
+        userOrganizerId = organizerUser.organizer_id;
+      } else {
+        // Fallback to created_by for backward compatibility
+        const { data: organizer } = await serviceSupabase
+          .from("organizers")
+          .select("id")
+          .eq("created_by", userId)
+          .single();
+        
+        if (organizer && organizer.id === event.organizer_id) {
+          hasAccess = true;
+          userOrganizerId = organizer.id;
+        }
       }
     }
 
@@ -122,7 +138,10 @@ export async function GET(
       }
     }
 
+    console.log("[EventAttendees] Access check:", { hasAccess, isSuperadmin, isVenueAdmin, isOrganizer, isPromoter, userOrganizerId, userVenueId, userPromoterId });
+    
     if (!hasAccess) {
+      console.log("[EventAttendees] Access denied for user", userId);
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

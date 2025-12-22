@@ -30,23 +30,68 @@ export async function GET(
 
     // Check if user can access this event
     if (!isSuperadmin) {
-      const { data: organizer } = await serviceSupabase
-        .from("organizers")
-        .select("id")
-        .eq("created_by", userId)
-        .single();
-
-      if (!organizer) {
-        return NextResponse.json({ error: "Organizer not found" }, { status: 404 });
-      }
-
       const { data: event } = await serviceSupabase
         .from("events")
-        .select("organizer_id")
+        .select("organizer_id, venue_id")
         .eq("id", params.eventId)
         .single();
 
-      if (!event || event.organizer_id !== organizer.id) {
+      if (!event) {
+        return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      let hasAccess = false;
+
+      // Check if user is organizer (via junction table first, then created_by)
+      if (roles.includes("event_organizer")) {
+        const { data: organizerUser } = await serviceSupabase
+          .from("organizer_users")
+          .select("organizer_id")
+          .eq("user_id", userId)
+          .eq("organizer_id", event.organizer_id)
+          .single();
+        
+        if (organizerUser) {
+          hasAccess = true;
+        } else {
+          // Fallback to created_by
+          const { data: organizer } = await serviceSupabase
+            .from("organizers")
+            .select("id")
+            .eq("created_by", userId)
+            .single();
+          
+          if (organizer && organizer.id === event.organizer_id) {
+            hasAccess = true;
+          }
+        }
+      }
+
+      // Check if user is venue admin
+      if (!hasAccess && roles.includes("venue_admin") && event.venue_id) {
+        const { data: venueUser } = await serviceSupabase
+          .from("venue_users")
+          .select("venue_id")
+          .eq("user_id", userId)
+          .eq("venue_id", event.venue_id)
+          .single();
+        
+        if (venueUser) {
+          hasAccess = true;
+        } else {
+          const { data: venue } = await serviceSupabase
+            .from("venues")
+            .select("id")
+            .eq("created_by", userId)
+            .single();
+          
+          if (venue && venue.id === event.venue_id) {
+            hasAccess = true;
+          }
+        }
+      }
+
+      if (!hasAccess) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
