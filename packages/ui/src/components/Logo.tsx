@@ -91,12 +91,7 @@ export function Logo({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Subtle grid lines - data structure pattern */}
-        <line x1="16" y1="2" x2="16" y2="24" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
-        <line x1="6" y1="11" x2="26" y2="11" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
-        <line x1="6" y1="17" x2="26" y2="17" stroke="currentColor" strokeWidth="0.5" opacity="0.15" />
-        
-        {/* Stack layers - bottom to top */}
+        {/* Stack layers - bottom to top (4 bars) */}
         {/* Bottom layer (widest) */}
         {loading ? (
           <motion.rect

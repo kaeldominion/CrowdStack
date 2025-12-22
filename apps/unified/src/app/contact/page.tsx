@@ -15,17 +15,31 @@ export default function ContactPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
-      // TODO: Implement form submission to API route
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to send message");
+      }
+
       setSubmitted(true);
-    } catch (error) {
-      console.error("Form submission error:", error);
+    } catch (err) {
+      console.error("Form submission error:", err);
+      setError(err instanceof Error ? err.message : "Failed to send message. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -114,6 +128,12 @@ export default function ContactPage() {
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="What events do you host? How many attendees per event? Any specific features you're interested in?"
             />
+
+            {error && (
+              <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
+                {error}
+              </div>
+            )}
 
             <Button
               type="submit"
