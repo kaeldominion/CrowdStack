@@ -547,7 +547,7 @@ function LoginContent() {
   // OTP Verification - for iOS/Safari users who can't use magic links
   const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length < 6) {
-      setOtpError("Please enter the 6-digit code from your email");
+      setOtpError("Please enter the verification code from your email");
       return;
     }
 
@@ -557,19 +557,37 @@ function LoginContent() {
     try {
       const supabase = createBrowserClient();
       
-      // Verify OTP
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      console.log("[OTP Verify] Attempting verification for:", email, "with code length:", otpCode.trim().length);
+      
+      // Verify OTP - try with type 'email' first (standard for signInWithOtp)
+      let { data, error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: otpCode.trim(),
         type: "email",
       });
 
+      // If that fails, try with type 'signup' (for new users)
+      if (verifyError && (verifyError.message.includes("expired") || verifyError.message.includes("invalid"))) {
+        console.log("[OTP Verify] Retrying with type 'signup'...");
+        const retryResult = await supabase.auth.verifyOtp({
+          email,
+          token: otpCode.trim(),
+          type: "signup",
+        });
+        if (!retryResult.error) {
+          data = retryResult.data;
+          verifyError = null;
+        }
+      }
+
       if (verifyError) {
-        console.error("[OTP Verify] Error:", verifyError.message);
-        if (verifyError.message.includes("expired")) {
-          setOtpError("Code expired. Please request a new one.");
+        console.error("[OTP Verify] Error:", verifyError.message, verifyError);
+        if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired")) {
+          setOtpError("Code expired. Please click 'Send new code' below.");
         } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token")) {
-          setOtpError("Invalid code. Please check and try again.");
+          setOtpError("Invalid code. Please check the code and try again.");
+        } else if (verifyError.message.includes("User not found")) {
+          setOtpError("User not found. Please request a new code.");
         } else {
           setOtpError(verifyError.message);
         }
@@ -617,20 +635,20 @@ function LoginContent() {
 
         <form onSubmit={useMagicLink ? handleMagicLink : handlePasswordLogin} className="space-y-6">
           {!showOtpInput && (
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
-                placeholder="you@example.com"
-              />
-            </div>
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+              placeholder="you@example.com"
+            />
+          </div>
           )}
 
           {!useMagicLink && !showOtpInput && (
@@ -723,22 +741,22 @@ function LoginContent() {
                   type="text"
                   value={otpCode}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
                     setOtpCode(value);
                     if (otpError) setOtpError(null);
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && otpCode.length === 6) {
+                    if (e.key === "Enter" && otpCode.length >= 6) {
                       e.preventDefault();
                       handleVerifyOtp();
                     }
                   }}
-                  placeholder="000000"
-                  className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-4 text-white text-center text-2xl tracking-[0.5em] font-mono placeholder-white/20 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+                  placeholder="Enter code"
+                  className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-4 text-white text-center text-2xl tracking-[0.3em] font-mono placeholder-white/20 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
                   autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={8}
                 />
               </div>
               
@@ -792,66 +810,66 @@ function LoginContent() {
           )}
 
           {!showOtpInput && (
-            <Button
-              type="submit"
-              disabled={loading}
-              loading={loading}
-              className="w-full"
-              size="lg"
-            >
-              {useMagicLink ? "Send Magic Link" : (isSignup ? "Create Account" : "Sign In")}
-            </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            loading={loading}
+            className="w-full"
+            size="lg"
+          >
+            {useMagicLink ? "Send Magic Link" : (isSignup ? "Create Account" : "Sign In")}
+          </Button>
           )}
 
 
           {!showOtpInput && (
-            <div className="text-center space-y-3">
-              {/* Password login toggle - only show when using magic link */}
-              {useMagicLink ? (
+          <div className="text-center space-y-3">
+            {/* Password login toggle - only show when using magic link */}
+            {useMagicLink ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setUseMagicLink(false);
+                  setError("");
+                  setMessage("");
+                    setMagicLinkSent(false);
+                }}
+                className="text-sm text-white/50 hover:text-white/80 transition-colors"
+              >
+                Use password instead
+              </button>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setUseMagicLink(false);
+                    setIsSignup(!isSignup);
                     setError("");
                     setMessage("");
-                    setMagicLinkSent(false);
+                    setPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                >
+                  {isSignup ? "Already have an account?" : "Need an account?"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseMagicLink(true);
+                    setIsSignup(false);
+                    setError("");
+                    setMessage("");
+                    setPassword("");
+                    setConfirmPassword("");
                   }}
                   className="text-sm text-white/50 hover:text-white/80 transition-colors"
                 >
-                  Use password instead
+                  Use magic link instead
                 </button>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsSignup(!isSignup);
-                      setError("");
-                      setMessage("");
-                      setPassword("");
-                      setConfirmPassword("");
-                    }}
-                    className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
-                  >
-                    {isSignup ? "Already have an account?" : "Need an account?"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUseMagicLink(true);
-                      setIsSignup(false);
-                      setError("");
-                      setMessage("");
-                      setPassword("");
-                      setConfirmPassword("");
-                    }}
-                    className="text-sm text-white/50 hover:text-white/80 transition-colors"
-                  >
-                    Use magic link instead
-                  </button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
           )}
         </form>
       </Card>
