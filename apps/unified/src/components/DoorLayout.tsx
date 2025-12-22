@@ -91,19 +91,6 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
 
           <div className="h-4 w-px bg-white/20" />
 
-          {/* Dashboard Link (if has access) */}
-          {hasDashboardAccess && (
-            <Link
-              href="/app"
-              className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 hover:text-white transition-colors px-2"
-            >
-              <Home className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </Link>
-          )}
-
-          {hasDashboardAccess && <div className="h-4 w-px bg-white/20" />}
-
           {/* Profile Dropdown - Avatar only */}
           <div className="relative" ref={profileRef}>
             <button
@@ -138,8 +125,18 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                     className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
                   >
                     <Calendar className="h-4 w-4" />
-                    My Events
+                    My Dashboard
                   </Link>
+                  {hasDashboardAccess && (
+                    <Link
+                      href="/app"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <Home className="h-4 w-4" />
+                      Workspace
+                    </Link>
+                  )}
                   <Link
                     href="/me/profile"
                     onClick={() => setIsProfileOpen(false)}
