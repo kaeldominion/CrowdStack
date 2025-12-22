@@ -13,10 +13,10 @@ export default function VenueEventDetailPage() {
       config={{
         role: "venue",
         eventApiEndpoint: `/api/venue/events/${eventId}`,
-        statsApiEndpoint: `/api/venue/events/${eventId}/stats`,
-        attendeesApiEndpoint: `/api/venue/events/${eventId}/attendees`,
+        statsApiEndpoint: `/api/events/${eventId}/stats`,
+        attendeesApiEndpoint: `/api/events/${eventId}/attendees`,
         backUrl: "/app/venue/events",
-        liveUrl: `/app/organizer/live/${eventId}`,
+        liveUrl: `/app/venue/live/${eventId}`,
         canEdit: true,
         canManagePromoters: true,
         canManageDoorStaff: true,
