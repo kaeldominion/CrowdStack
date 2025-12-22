@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
@@ -27,6 +27,24 @@ interface LiveEvent {
   organizer?: { id: string; name: string } | null;
   registrations: number;
   checkins: number;
+}
+
+interface PromoterEvent {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  end_time: string | null;
+  status: string;
+  flier_url: string | null;
+  venue_name: string | null;
+  referral_link: string;
+  registrations: number;
+  checkins: number;
+  conversionRate: number;
+  isLive: boolean;
+  isUpcoming: boolean;
+  isPast: boolean;
 }
 
 export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
@@ -109,9 +127,12 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   });
   const [organizerChartData, setOrganizerChartData] = useState<Array<{ date: string; registrations: number; checkins: number }>>([]);
   const [promoterChartData, setPromoterChartData] = useState<Array<{ date: string; earnings: number }>>([]);
-  const [referralLink, setReferralLink] = useState("");
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [promoterEvents, setPromoterEvents] = useState<{
+    liveEvents: PromoterEvent[];
+    upcomingEvents: PromoterEvent[];
+    pastEvents: PromoterEvent[];
+  }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
+  const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
 
@@ -123,9 +144,6 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   useEffect(() => {
     loadAllStats();
     loadLiveEvents();
-    if (isPromoter) {
-      loadReferralLink();
-    }
 
     // Refresh live events every 30 seconds
     const interval = setInterval(loadLiveEvents, 30000);
@@ -204,38 +222,28 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           })
           .catch((e) => console.error("Failed to load promoter stats:", e))
       );
+      promises.push(
+        fetch("/api/promoter/dashboard-events")
+          .then((r) => r.json())
+          .then((data) => {
+            setPromoterEvents({
+              liveEvents: data.liveEvents || [],
+              upcomingEvents: data.upcomingEvents || [],
+              pastEvents: data.pastEvents || [],
+            });
+          })
+          .catch((e) => console.error("Failed to load promoter events:", e))
+      );
     }
 
     await Promise.all(promises);
     setLoading(false);
   };
 
-  const loadReferralLink = async () => {
-    try {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: promoter } = await supabase
-        .from("promoters")
-        .select("id")
-        .eq("created_by", user.id)
-        .single();
-
-      if (promoter) {
-        const link = `/e/[eventSlug]?ref=${promoter.id}`;
-        setReferralLink(link);
-        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`);
-      }
-    } catch (error) {
-      console.error("Error loading referral link:", error);
-    }
-  };
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyEventLink = (eventId: string, link: string) => {
+    navigator.clipboard.writeText(link);
+    setCopiedEventId(eventId);
+    setTimeout(() => setCopiedEventId(null), 2000);
   };
 
   if (loading) {
@@ -787,57 +795,25 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
       {/* Promoter Section */}
       {isPromoter && (
-        <section className="space-y-4">
+        <section className="space-y-6">
           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Promoter Tools
+            Your Events
           </h2>
-          
-          {/* QR Code & Referral Link */}
-          <BentoCard span={3}>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white">Your Promoter Card</p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="QR Code" className="w-32 h-32 mb-4" />
-                  ) : (
-                    <QrCode className="w-32 h-32 text-white/20 mb-4" />
-                  )}
-                  <p className="text-xs text-white/60 text-center">Scan to share your link</p>
-                </div>
-                <div className="flex flex-col justify-center space-y-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Referral Link</p>
-                    <div className="flex items-center gap-2 p-3 rounded-md bg-white/5 border border-white/10">
-                      <input
-                        type="text"
-                        value={referralLink || "Loading..."}
-                        readOnly
-                        className="flex-1 bg-transparent text-white text-sm font-mono"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={copyLink}
-                        className="shrink-0"
-                      >
-                        {copied ? (
-                          <Check className="h-4 w-4 text-green-400" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </BentoCard>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* Stats Summary */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Events</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">
+                    {promoterEvents.liveEvents.length + promoterEvents.upcomingEvents.length + promoterEvents.pastEvents.length}
+                  </p>
+                </div>
+                <Calendar className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
@@ -867,8 +843,194 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </BentoCard>
           </div>
 
+          {/* Live Events */}
+          {promoterEvents.liveEvents.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
+                <h3 className="text-lg font-semibold text-white">Live Now</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {promoterEvents.liveEvents.map((event) => (
+                  <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
+                    <BentoCard className="border-l-4 border-l-red-500 hover:bg-white/10 transition-colors cursor-pointer h-full">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-white truncate">{event.name}</h4>
+                            {event.venue_name && (
+                              <p className="text-xs text-white/50 mt-1 flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {event.venue_name}
+                              </p>
+                            )}
+                          </div>
+                          <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="text-white/60">{event.registrations} reg</span>
+                          <span className="text-green-400 font-medium">{event.checkins} in</span>
+                          <span className="text-white/60">{event.conversionRate}%</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
+                          <input
+                            type="text"
+                            value={event.referral_link}
+                            readOnly
+                            className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              copyEventLink(event.id, event.referral_link);
+                            }}
+                            className="shrink-0 h-6 w-6 p-0"
+                          >
+                            {copiedEventId === event.id ? (
+                              <Check className="h-3 w-3 text-green-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </BentoCard>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Events */}
+          {promoterEvents.upcomingEvents.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-indigo-400" />
+                Upcoming Events
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {promoterEvents.upcomingEvents.slice(0, 6).map((event) => (
+                  <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
+                    <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer h-full">
+                      <div className="space-y-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-white truncate">{event.name}</h4>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
+                            {event.venue_name && (
+                              <>
+                                <MapPin className="h-3 w-3" />
+                                <span className="truncate">{event.venue_name}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span>{new Date(event.start_time).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="text-white/60">{event.registrations} reg</span>
+                          <span className="text-green-400 font-medium">{event.checkins} in</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
+                          <input
+                            type="text"
+                            value={event.referral_link}
+                            readOnly
+                            className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              copyEventLink(event.id, event.referral_link);
+                            }}
+                            className="shrink-0 h-6 w-6 p-0"
+                          >
+                            {copiedEventId === event.id ? (
+                              <Check className="h-3 w-3 text-green-400" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </BentoCard>
+                  </Link>
+                ))}
+              </div>
+              {promoterEvents.upcomingEvents.length > 6 && (
+                <Link href="/app/promoter/events" className="block">
+                  <Button variant="ghost" className="w-full">
+                    View all {promoterEvents.upcomingEvents.length} upcoming events
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Past Events */}
+          {promoterEvents.pastEvents.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <History className="h-4 w-4 text-white/40" />
+                Past Events
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {promoterEvents.pastEvents.slice(0, 4).map((event) => (
+                  <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
+                    <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer h-full opacity-75">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-white truncate text-sm">{event.name}</h4>
+                        <p className="text-xs text-white/40">
+                          {new Date(event.start_time).toLocaleDateString()}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="text-white/50">{event.registrations} reg</span>
+                          <span className="text-green-400/70">{event.checkins} in</span>
+                          <span className="text-white/50">{event.conversionRate}%</span>
+                        </div>
+                      </div>
+                    </BentoCard>
+                  </Link>
+                ))}
+              </div>
+              {promoterEvents.pastEvents.length > 4 && (
+                <Link href="/app/promoter/events" className="block">
+                  <Button variant="ghost" className="w-full">
+                    View all {promoterEvents.pastEvents.length} past events
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* No Events State */}
+          {promoterEvents.liveEvents.length === 0 && 
+           promoterEvents.upcomingEvents.length === 0 && 
+           promoterEvents.pastEvents.length === 0 && (
+            <BentoCard>
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No Events Yet</h3>
+                <p className="text-white/60 mb-4">
+                  You're not assigned to any events yet. Browse available events to start promoting!
+                </p>
+                <Link href="/app/promoter/events">
+                  <Button>Browse Events</Button>
+                </Link>
+              </div>
+            </BentoCard>
+          )}
+
+          {/* Earnings Chart */}
           {promoterChartData.length > 0 && (
-            <BentoCard span={3}>
+            <BentoCard span={4}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Earnings Over Time</p>
