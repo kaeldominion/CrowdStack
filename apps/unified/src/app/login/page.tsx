@@ -603,7 +603,7 @@ function LoginContent() {
         return;
       }
 
-      if (!data.session) {
+      if (!data?.session) {
         setOtpError("Verification failed. Please try again.");
         return;
       }
