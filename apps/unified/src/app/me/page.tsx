@@ -489,102 +489,7 @@ export default function MePage() {
           </div>
         )}
 
-        {/* Profile Completion Prompt */}
-        {!isProfileComplete(profile) && (
-          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-6">
-            <div className="flex items-start gap-4">
-              <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <UserPlus className="h-5 w-5 text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Complete Your Profile
-                </h3>
-                <p className="text-sm text-white/70 mb-4">
-                  Add your name, email, and phone number to get the most out of your event experience. Social handles are optional.
-                </p>
-                <Link href="/me/profile">
-                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors">
-                    Complete Profile
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Referral Stats Section */}
-        {referralStats && (referralStats.totalClicks > 0 || referralStats.totalRegistrations > 0) && (
-          <div className="mb-8 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 to-purple-500/5 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-2">Your Referrals</h2>
-                <p className="text-sm text-white/70">
-                  Track how many people you've invited and how many registered
-                </p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Share2 className="h-4 w-4 text-indigo-400" />
-                  <p className="text-xs text-white/60 uppercase tracking-wide">Link Clicks</p>
-                </div>
-                <p className="text-2xl font-bold text-white">{referralStats.totalClicks}</p>
-              </div>
-              
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserPlus className="h-4 w-4 text-green-400" />
-                  <p className="text-xs text-white/60 uppercase tracking-wide">Registrations</p>
-                </div>
-                <p className="text-2xl font-bold text-white">{referralStats.totalRegistrations}</p>
-              </div>
-              
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-blue-400" />
-                  <p className="text-xs text-white/60 uppercase tracking-wide">Conversion</p>
-                </div>
-                <p className="text-2xl font-bold text-white">{referralStats.conversionRate}%</p>
-              </div>
-              
-              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-purple-400" />
-                  <p className="text-xs text-white/60 uppercase tracking-wide">Events</p>
-                </div>
-                <p className="text-2xl font-bold text-white">{referralStats.eventBreakdown.length}</p>
-              </div>
-            </div>
-
-            {/* Event Breakdown */}
-            {referralStats.eventBreakdown.length > 0 && (
-              <div className="mt-6 space-y-2">
-                <h3 className="text-sm font-semibold text-white/80 mb-3">By Event</h3>
-                {referralStats.eventBreakdown.slice(0, 5).map((event) => (
-                  <Link
-                    key={event.eventId}
-                    href={`/e/${event.eventSlug}`}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{event.eventName}</p>
-                      <p className="text-xs text-white/50 mt-1">
-                        {event.registrations} registered from {event.clicks} clicks
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-white/40 flex-shrink-0 ml-2" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Stats Cards */}
+        {/* Stats Cards - Primary stats first */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/10 p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-2">
@@ -618,6 +523,31 @@ export default function MePage() {
             <p className="text-sm text-white/50">Attended</p>
           </div>
         </div>
+
+        {/* Profile Completion Prompt */}
+        {!isProfileComplete(profile) && (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <UserPlus className="h-5 w-5 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  Complete Your Profile
+                </h3>
+                <p className="text-sm text-white/70 mb-4">
+                  Add your name, email, and phone number to get the most out of your event experience. Social handles are optional.
+                </p>
+                <Link href="/me/profile">
+                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors">
+                    Complete Profile
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Attendance Motivation Card - Conditional based on show rate */}
         {(() => {
@@ -691,6 +621,59 @@ export default function MePage() {
           
           return null;
         })()}
+
+        {/* Referral Stats Section - Less prominent, after main stats */}
+        {referralStats && (referralStats.totalClicks > 0 || referralStats.totalRegistrations > 0) && (
+          <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+                  <Share2 className="h-5 w-5 text-indigo-400" />
+                  Your Referrals
+                </h2>
+                <p className="text-sm text-white/60">
+                  People you've invited to events
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+                <p className="text-xl font-bold text-white">{referralStats.totalClicks}</p>
+                <p className="text-xs text-white/50">Clicks</p>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+                <p className="text-xl font-bold text-white">{referralStats.totalRegistrations}</p>
+                <p className="text-xs text-white/50">Signups</p>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
+                <p className="text-xl font-bold text-white">{referralStats.conversionRate}%</p>
+                <p className="text-xs text-white/50">Rate</p>
+              </div>
+            </div>
+
+            {/* Event Breakdown - Collapsed */}
+            {referralStats.eventBreakdown.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-xs text-white/50 mb-2">Top events</p>
+                <div className="space-y-1">
+                  {referralStats.eventBreakdown.slice(0, 3).map((event) => (
+                    <Link
+                      key={event.eventId}
+                      href={`/e/${event.eventSlug}`}
+                      className="flex items-center justify-between py-2 text-sm hover:text-indigo-400 transition-colors"
+                    >
+                      <span className="text-white/80 truncate flex-1">{event.eventName}</span>
+                      <span className="text-white/50 text-xs ml-2">{event.registrations} signups</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Happening Now - Most prominent */}
         {happeningNowEvents.length > 0 && (
