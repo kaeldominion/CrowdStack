@@ -245,22 +245,56 @@ export async function POST(
         },
       });
     } else if (action === "assign" && user_id) {
-      // Directly assign a user to the event
-      const { data: assignment, error } = await supabase
+      // Check if user already exists (including revoked)
+      const { data: existingStaff } = await supabase
         .from("event_door_staff")
-        .insert({
-          event_id: params.eventId,
-          user_id: user_id,
-          assigned_by: userId,
-          notes: notes || null,
-        })
-        .select()
+        .select("id, status")
+        .eq("event_id", params.eventId)
+        .eq("user_id", user_id)
         .single();
 
-      if (error) {
-        if (error.code === "23505") {
+      let assignment;
+      let error;
+
+      if (existingStaff) {
+        // Re-activate if revoked, or return error if already active
+        if (existingStaff.status === "active") {
           return NextResponse.json({ error: "User already assigned as door staff" }, { status: 400 });
         }
+        
+        // Re-activate the revoked assignment
+        const result = await supabase
+          .from("event_door_staff")
+          .update({
+            status: "active",
+            assigned_by: userId,
+            assigned_at: new Date().toISOString(),
+            notes: notes || null,
+          })
+          .eq("id", existingStaff.id)
+          .select()
+          .single();
+        
+        assignment = result.data;
+        error = result.error;
+      } else {
+        // Insert new assignment
+        const result = await supabase
+          .from("event_door_staff")
+          .insert({
+            event_id: params.eventId,
+            user_id: user_id,
+            assigned_by: userId,
+            notes: notes || null,
+          })
+          .select()
+          .single();
+        
+        assignment = result.data;
+        error = result.error;
+      }
+
+      if (error) {
         console.error("Error assigning door staff:", error);
         return NextResponse.json({ error: "Failed to assign door staff" }, { status: 500 });
       }
