@@ -1,38 +1,49 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Card, Container, Section, Button, Logo } from "@crowdstack/ui";
+import { Card, Container, Section, Button } from "@crowdstack/ui";
 import { ArrowLeft, Download, Check, Copy } from "lucide-react";
 
 type LogoVariant = "full" | "icon" | "wordmark";
-type LogoSize = "sm" | "md" | "lg" | "xl";
 type ColorScheme = "light" | "dark" | "blue";
 
-interface LogoOption {
-  variant: LogoVariant;
-  size: LogoSize;
-  colorScheme: ColorScheme;
+interface ColorConfig {
+  primary: string;
+  secondary: string;
+  accent: string;
+  bg: string;
   label: string;
 }
+
+const colorSchemes: Record<ColorScheme, ColorConfig> = {
+  dark: {
+    primary: "#FFFFFF",
+    secondary: "rgba(255, 255, 255, 0.8)",
+    accent: "#3B82F6",
+    bg: "#0B0D10",
+    label: "Dark (White Logo)",
+  },
+  light: {
+    primary: "#1F2937",
+    secondary: "rgba(31, 41, 55, 0.8)",
+    accent: "#3B82F6",
+    bg: "#FFFFFF",
+    label: "Light (Dark Logo)",
+  },
+  blue: {
+    primary: "#3B82F6",
+    secondary: "rgba(59, 130, 246, 0.8)",
+    accent: "#3B82F6",
+    bg: "#0B0D10",
+    label: "Blue Accent",
+  },
+};
 
 const logoVariants: { value: LogoVariant; label: string; description: string }[] = [
   { value: "full", label: "Full Logo", description: "Icon + Wordmark" },
   { value: "icon", label: "Icon Only", description: "Stacked bars icon" },
   { value: "wordmark", label: "Wordmark Only", description: "Text only" },
-];
-
-const logoSizes: { value: LogoSize; label: string; px: number }[] = [
-  { value: "sm", label: "Small", px: 24 },
-  { value: "md", label: "Medium", px: 32 },
-  { value: "lg", label: "Large", px: 48 },
-  { value: "xl", label: "Extra Large", px: 64 },
-];
-
-const colorSchemes: { value: ColorScheme; label: string; bg: string; text: string }[] = [
-  { value: "dark", label: "Dark (White Logo)", bg: "#0B0D10", text: "text-white" },
-  { value: "light", label: "Light (Dark Logo)", bg: "#FFFFFF", text: "text-gray-900" },
-  { value: "blue", label: "Blue Accent", bg: "#0B0D10", text: "text-[#3B82F6]" },
 ];
 
 // Brand colors for reference
@@ -45,9 +56,65 @@ const brandColors = [
   { name: "Text Muted", hex: "#9CA3AF", rgb: "156, 163, 175" },
 ];
 
+// Generate clean SVG strings for export
+function generateIconSVG(colors: ColorConfig, size: number = 64): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32" fill="none">
+  <!-- Stack layers - 4 bars from bottom to top -->
+  <rect x="4" y="20" width="24" height="3" rx="1" fill="${colors.primary}" opacity="0.4"/>
+  <rect x="6" y="14" width="20" height="3" rx="1" fill="${colors.primary}" opacity="0.6"/>
+  <rect x="8" y="8" width="16" height="3" rx="1" fill="${colors.primary}" opacity="0.8"/>
+  <rect x="10" y="2" width="12" height="3" rx="1" fill="${colors.accent}"/>
+</svg>`;
+}
+
+function generateWordmarkSVG(colors: ColorConfig, size: number = 64): string {
+  const scale = size / 64;
+  const width = Math.round(160 * scale);
+  const height = size;
+  const fontSize = Math.round(24 * scale);
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 160 64" fill="none">
+  <text x="0" y="42" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="600">
+    <tspan fill="${colors.accent}">Crowd</tspan><tspan fill="${colors.primary}">Stack</tspan>
+  </text>
+</svg>`;
+}
+
+function generateFullLogoSVG(colors: ColorConfig, size: number = 64): string {
+  const scale = size / 64;
+  const totalWidth = Math.round((32 + 8 + 130) * scale); // icon + gap + text
+  const height = size;
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" viewBox="0 0 170 32" fill="none">
+  <!-- Icon - 4 stacked bars -->
+  <g>
+    <rect x="4" y="20" width="24" height="3" rx="1" fill="${colors.primary}" opacity="0.4"/>
+    <rect x="6" y="14" width="20" height="3" rx="1" fill="${colors.primary}" opacity="0.6"/>
+    <rect x="8" y="8" width="16" height="3" rx="1" fill="${colors.primary}" opacity="0.8"/>
+    <rect x="10" y="2" width="12" height="3" rx="1" fill="${colors.accent}"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="40" y="23" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600" letter-spacing="-0.02em">
+    <tspan fill="${colors.accent}">Crowd</tspan><tspan fill="${colors.primary}">Stack</tspan>
+  </text>
+</svg>`;
+}
+
+function getSVGForVariant(variant: LogoVariant, colors: ColorConfig, size: number = 64): string {
+  switch (variant) {
+    case "icon":
+      return generateIconSVG(colors, size);
+    case "wordmark":
+      return generateWordmarkSVG(colors, size);
+    case "full":
+    default:
+      return generateFullLogoSVG(colors, size);
+  }
+}
+
 export default function BrandAssetsPage() {
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
-  const svgRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, colorName: string) => {
     navigator.clipboard.writeText(text);
@@ -55,108 +122,111 @@ export default function BrandAssetsPage() {
     setTimeout(() => setCopiedColor(null), 2000);
   };
 
-  const downloadSVG = (variant: LogoVariant, colorScheme: ColorScheme) => {
-    const key = `${variant}-${colorScheme}`;
-    const container = svgRefs.current[key];
-    if (!container) return;
-
-    const svg = container.querySelector("svg");
-    if (!svg) return;
-
-    // Clone the SVG and set proper attributes
-    const clonedSvg = svg.cloneNode(true) as SVGElement;
+  const downloadSVG = (variant: LogoVariant, scheme: ColorScheme) => {
+    const colors = colorSchemes[scheme];
+    const svg = getSVGForVariant(variant, colors, 64);
     
-    // Set explicit dimensions
-    const sizeMap = { sm: 24, md: 32, lg: 48, xl: 64 };
-    clonedSvg.setAttribute("width", "64");
-    clonedSvg.setAttribute("height", "64");
+    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     
-    // Set the color based on scheme
-    const color = colorScheme === "light" ? "#1F2937" : colorScheme === "blue" ? "#3B82F6" : "#FFFFFF";
-    clonedSvg.style.color = color;
-    
-    // Convert to blob and download
-    const svgData = new XMLSerializer().serializeToString(clonedSvg);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    
-    const downloadLink = document.createElement("a");
-    downloadLink.href = svgUrl;
-    downloadLink.download = `crowdstack-logo-${variant}-${colorScheme}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    URL.revokeObjectURL(svgUrl);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `crowdstack-${variant}-${scheme}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  const downloadPNG = async (variant: LogoVariant, colorScheme: ColorScheme, scale: number = 4) => {
-    const key = `${variant}-${colorScheme}`;
-    const container = svgRefs.current[key];
-    if (!container) return;
-
-    const svg = container.querySelector("svg");
-    if (!svg) return;
-
-    // Clone and prepare SVG
-    const clonedSvg = svg.cloneNode(true) as SVGElement;
-    const color = colorScheme === "light" ? "#1F2937" : colorScheme === "blue" ? "#3B82F6" : "#FFFFFF";
+  const downloadPNG = async (variant: LogoVariant, scheme: ColorScheme, scale: number = 2) => {
+    const key = `${variant}-${scheme}-${scale}`;
+    setDownloading(key);
     
-    // Get original dimensions
-    const bbox = svg.getBoundingClientRect();
-    const width = bbox.width * scale;
-    const height = bbox.height * scale;
-    
-    clonedSvg.setAttribute("width", String(width));
-    clonedSvg.setAttribute("height", String(height));
-    clonedSvg.style.color = color;
-    
-    // Convert SVG to data URL
-    const svgData = new XMLSerializer().serializeToString(clonedSvg);
-    const svgDataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
-    
-    // Create canvas and draw
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    
-    // For transparent background, don't fill
-    // For dark/blue schemes, we might want transparent
-    // For light scheme, we might want white background
-    if (colorScheme === "light") {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, width, height);
-    }
-    
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, width, height);
+    try {
+      const colors = colorSchemes[scheme];
+      // Generate at higher base resolution for better quality
+      const baseSize = 128;
+      const svg = getSVGForVariant(variant, colors, baseSize);
       
-      // Download
+      // Parse to get actual dimensions
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svg, "image/svg+xml");
+      const svgEl = doc.querySelector("svg");
+      const width = parseInt(svgEl?.getAttribute("width") || "128") * scale;
+      const height = parseInt(svgEl?.getAttribute("height") || "128") * scale;
+      
+      // Create scaled SVG
+      const scaledSvg = getSVGForVariant(variant, colors, baseSize * scale);
+      
+      // Convert to data URL
+      const svgBlob = new Blob([scaledSvg], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      // Create canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Could not get canvas context");
+      
+      // Load and draw image
+      const img = new Image();
+      
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          // Fill background for light scheme, transparent for others
+          if (scheme === "light") {
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, width, height);
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve();
+        };
+        img.onerror = reject;
+        img.src = svgUrl;
+      });
+      
+      URL.revokeObjectURL(svgUrl);
+      
+      // Download PNG
       const pngUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `crowdstack-logo-${variant}-${colorScheme}-${scale}x.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    };
-    img.src = svgDataUrl;
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = `crowdstack-${variant}-${scheme}-${scale}x.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error generating PNG:", error);
+    } finally {
+      setDownloading(null);
+    }
   };
 
-  const downloadAllAssets = () => {
-    // Download all combinations
+  const downloadAllAssets = async () => {
     const variants: LogoVariant[] = ["full", "icon", "wordmark"];
     const schemes: ColorScheme[] = ["dark", "light", "blue"];
     
-    variants.forEach((variant) => {
-      schemes.forEach((scheme) => {
-        setTimeout(() => {
-          downloadSVG(variant, scheme);
-        }, 100);
-      });
-    });
+    for (const variant of variants) {
+      for (const scheme of schemes) {
+        downloadSVG(variant, scheme);
+        await new Promise((r) => setTimeout(r, 200));
+      }
+    }
+  };
+
+  // Preview component using actual SVG
+  const LogoPreview = ({ variant, scheme }: { variant: LogoVariant; scheme: ColorScheme }) => {
+    const colors = colorSchemes[scheme];
+    const svg = getSVGForVariant(variant, colors, 48);
+    
+    return (
+      <div
+        dangerouslySetInnerHTML={{ __html: svg }}
+        className="flex items-center justify-center"
+      />
+    );
   };
 
   return (
@@ -204,49 +274,71 @@ export default function BrandAssetsPage() {
                 
                 {/* Preview for each color scheme */}
                 <div className="space-y-3">
-                  {colorSchemes.map((scheme) => (
-                    <div key={scheme.value} className="rounded-lg overflow-hidden">
-                      <div
-                        className="p-6 flex items-center justify-center"
-                        style={{ backgroundColor: scheme.bg }}
-                        ref={(el) => {
-                          svgRefs.current[`${logoVar.value}-${scheme.value}`] = el;
-                        }}
-                      >
-                        <Logo
-                          variant={logoVar.value}
-                          size="lg"
-                          animated={false}
-                          className={scheme.text}
-                        />
+                  {(Object.keys(colorSchemes) as ColorScheme[]).map((scheme) => {
+                    const colors = colorSchemes[scheme];
+                    return (
+                      <div key={scheme} className="rounded-lg overflow-hidden">
+                        <div
+                          className="p-6 flex items-center justify-center min-h-[80px]"
+                          style={{ backgroundColor: colors.bg }}
+                        >
+                          <LogoPreview variant={logoVar.value} scheme={scheme} />
+                        </div>
+                        <div className="flex gap-2 p-2 bg-surface-elevated">
+                          <button
+                            onClick={() => downloadSVG(logoVar.value, scheme)}
+                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
+                          >
+                            SVG
+                          </button>
+                          <button
+                            onClick={() => downloadPNG(logoVar.value, scheme, 2)}
+                            disabled={downloading === `${logoVar.value}-${scheme}-2`}
+                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
+                          >
+                            {downloading === `${logoVar.value}-${scheme}-2` ? "..." : "PNG 2x"}
+                          </button>
+                          <button
+                            onClick={() => downloadPNG(logoVar.value, scheme, 4)}
+                            disabled={downloading === `${logoVar.value}-${scheme}-4`}
+                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
+                          >
+                            {downloading === `${logoVar.value}-${scheme}-4` ? "..." : "PNG 4x"}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2 p-2 bg-surface-elevated">
-                        <button
-                          onClick={() => downloadSVG(logoVar.value, scheme.value)}
-                          className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
-                        >
-                          SVG
-                        </button>
-                        <button
-                          onClick={() => downloadPNG(logoVar.value, scheme.value, 2)}
-                          className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
-                        >
-                          PNG 2x
-                        </button>
-                        <button
-                          onClick={() => downloadPNG(logoVar.value, scheme.value, 4)}
-                          className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
-                        >
-                          PNG 4x
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             ))}
           </div>
         </div>
+
+        {/* High-Res Downloads */}
+        <Card className="mb-12">
+          <h2 className="text-lg font-semibold text-foreground mb-4">High Resolution Downloads</h2>
+          <p className="text-sm text-foreground-muted mb-4">
+            Download larger PNG files for print and high-DPI displays
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {(["full", "icon"] as LogoVariant[]).map((variant) =>
+              (["dark", "light"] as ColorScheme[]).map((scheme) => (
+                <button
+                  key={`${variant}-${scheme}-8`}
+                  onClick={() => downloadPNG(variant, scheme, 8)}
+                  disabled={downloading === `${variant}-${scheme}-8`}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50 text-sm"
+                >
+                  <Download className="h-4 w-4" />
+                  {downloading === `${variant}-${scheme}-8` 
+                    ? "Generating..." 
+                    : `${variant === "full" ? "Full" : "Icon"} ${scheme === "dark" ? "White" : "Dark"} 8x`}
+                </button>
+              ))
+            )}
+          </div>
+        </Card>
 
         {/* Brand Colors */}
         <div className="mb-12">
@@ -313,4 +405,3 @@ export default function BrandAssetsPage() {
     </Section>
   );
 }
-
