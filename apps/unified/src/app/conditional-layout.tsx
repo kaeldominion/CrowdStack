@@ -164,8 +164,10 @@ function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "
             {isOpen && (
               <>
                 <div
-                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 sm:hidden"
+                  className="fixed inset-0 z-40 sm:hidden"
                   onClick={() => setIsOpen(false)}
+                  onTouchEnd={(e) => { e.preventDefault(); setIsOpen(false); }}
+                  style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
                 />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden">
                   <div className="flex flex-col py-2">
@@ -222,8 +224,10 @@ function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "
             {isMobileMenuOpen && (
               <>
                 <div
-                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 sm:hidden"
+                  className="fixed inset-0 z-40 sm:hidden"
                   onClick={() => setIsMobileMenuOpen(false)}
+                  onTouchEnd={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); }}
+                  style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
                 />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden">
                   <PublicNavigationWithAuthMobile onClose={() => setIsMobileMenuOpen(false)} />

@@ -21,6 +21,7 @@ import {
   Clock,
   User,
   X,
+  ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -450,11 +451,22 @@ export default function DoorScannerPage() {
         {/* Header with Event Info */}
         <div className="mb-6 text-center">
           {eventInfo && (
-            <div className="space-y-1">
-              <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
-              {eventInfo.venue && (
-                <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
-              )}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
+                {eventInfo.venue && (
+                  <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
+                )}
+              </div>
+              <a
+                href={`/e/${eventInfo.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 rounded-full transition-all duration-200 backdrop-blur-md"
+              >
+                <span>View Public Page</span>
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </div>
           )}
         </div>
@@ -633,15 +645,33 @@ export default function DoorScannerPage() {
           </Button>
           
           {eventInfo && (
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setShowQRCode(true)}
-              className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
-            >
-              <QrCode className="h-5 w-5 mr-2" />
-              Show Event QR Code
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setShowQRCode(true)}
+                className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
+              >
+                <QrCode className="h-5 w-5 mr-2" />
+                Show Event QR Code
+              </Button>
+              
+              <a
+                href={`/e/${eventInfo.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full"
+              >
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
+                >
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  View Public Page
+                </Button>
+              </a>
+            </>
           )}
         </div>
 

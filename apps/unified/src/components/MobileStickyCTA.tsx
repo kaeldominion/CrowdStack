@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video, QrCode } from "lucide-react";
 import { InlineSpinner } from "@crowdstack/ui";
 import { useFlierToggle } from "./MobileFlierExperience";
 
@@ -16,6 +16,7 @@ interface MobileStickyCTAProps {
   shareImageUrl?: string; // Optional image URL for Instagram Stories sharing
   shareVideoUrl?: string; // Optional video URL for sharing video fliers
   userId?: string; // Optional user ID to append as ?ref= parameter for referral tracking
+  isRegistered?: boolean; // If true, show QR icon instead of arrow
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -44,6 +45,7 @@ export function MobileStickyCTA({
   shareImageUrl,
   shareVideoUrl,
   userId,
+  isRegistered = false,
 }: MobileStickyCTAProps) {
   // Append userId as ref parameter if provided
   const getShareUrl = () => {
@@ -329,23 +331,25 @@ export function MobileStickyCTA({
           </button>
         )}
 
-        {/* Register Now Button */}
+        {/* Register Now / View Pass Button */}
         <Link 
           href={href} 
-          className="flex items-center gap-2 px-4 py-3 rounded-full 
-                     bg-gradient-to-r from-indigo-600 to-purple-600 
+          className={`flex items-center gap-2 px-4 py-3 rounded-full 
                      text-white font-semibold text-sm
-                     shadow-lg shadow-indigo-500/40
                      border border-white/20
                      backdrop-blur-sm
                      whitespace-nowrap
-                     hover:shadow-xl hover:shadow-indigo-500/50 
                      hover:scale-105 
                      active:scale-95
-                     transition-all duration-200"
+                     transition-all duration-200
+                     ${isRegistered 
+                       ? 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-lg shadow-emerald-500/40 hover:shadow-xl hover:shadow-emerald-500/50' 
+                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/50'
+                     }`}
         >
+          {isRegistered && <QrCode className="h-4 w-4 flex-shrink-0" />}
           {label}
-          <ArrowRight className="h-4 w-4 flex-shrink-0" />
+          {!isRegistered && <ArrowRight className="h-4 w-4 flex-shrink-0" />}
         </Link>
       </div>
     </div>
