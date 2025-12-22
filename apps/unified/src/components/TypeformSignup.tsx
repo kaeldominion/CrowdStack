@@ -286,9 +286,23 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
     if (stepKey === "date_of_birth") {
       const date = new Date(value);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        setErrors({ [stepKey]: "Please enter a valid date of birth" });
+        return false;
+      }
       const today = new Date();
-      const age = today.getFullYear() - date.getFullYear();
-      if (age < 13 || age > 120) {
+      // Calculate age more accurately
+      let age = today.getFullYear() - date.getFullYear();
+      const monthDiff = today.getMonth() - date.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+        age--;
+      }
+      if (age < 13) {
+        setErrors({ [stepKey]: "You must be at least 13 years old" });
+        return false;
+      }
+      if (age > 120) {
         setErrors({ [stepKey]: "Please enter a valid date of birth" });
         return false;
       }
@@ -421,9 +435,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           }
         }
         
-        if (visibleSteps.length > 1) {
-          setCurrentStep(1);
-        }
+        // Don't manually set currentStep here - let the useEffect handle it
+        // after visibleSteps recalculates without the email step
         return;
       }
 
@@ -490,9 +503,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         }
       }
       
-      if (visibleSteps.length > 1) {
-        setCurrentStep(1); // Move to next step
-      }
+      // Don't manually set currentStep here - let the useEffect handle it
+      // after visibleSteps recalculates without the email step
     } catch (err: any) {
       setErrors({ email: err.message || "Failed to create account" });
     } finally {
@@ -583,9 +595,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         }
       }
       
-      if (visibleSteps.length > 1) {
-        setCurrentStep(1); // Move to next step
-      }
+      // Don't manually set currentStep here - let the useEffect handle it
+      // after visibleSteps recalculates without the email step
     } catch (err: any) {
       console.error("[OTP Verify] Exception:", err);
       setOtpError(err.message || "Verification failed");
@@ -974,17 +985,25 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       case "date_of_birth":
         return (
           <div className="space-y-3 sm:space-y-4">
-            <Input
-              type="date"
-              value={value}
-              onChange={(e) => {
-                setFormData({ ...formData, date_of_birth: e.target.value });
-                if (error) setErrors({ ...errors, date_of_birth: undefined });
-              }}
-              onKeyDown={handleKeyDown}
-              className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
-              autoFocus
-            />
+            <div className="relative">
+              <Calendar className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40 pointer-events-none" />
+              <Input
+                type="date"
+                value={value}
+                onChange={(e) => {
+                  setFormData({ ...formData, date_of_birth: e.target.value });
+                  if (error) setErrors({ ...errors, date_of_birth: undefined });
+                }}
+                onKeyDown={handleKeyDown}
+                className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 pr-4 border-2 focus:border-primary w-full [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                autoFocus
+                max={new Date().toISOString().split("T")[0]}
+                min="1900-01-01"
+              />
+            </div>
+            <p className="text-xs sm:text-sm text-white/60 text-center px-4">
+              You must be at least 13 years old
+            </p>
           </div>
         );
 
