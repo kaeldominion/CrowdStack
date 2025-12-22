@@ -92,13 +92,18 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       visible.push("email");
     }
     
-    // Only show fields that are missing
-    if (!existingProfile?.name) visible.push("name");
-    if (!existingProfile?.surname) visible.push("surname");
-    if (!existingProfile?.date_of_birth) visible.push("date_of_birth");
+    // Helper to check if a value is valid (not empty, null, undefined, or whitespace-only)
+    const hasValue = (val: string | null | undefined): boolean => {
+      return !!(val && val.trim().length > 0);
+    };
+    
+    // Only show fields that are missing or have invalid values
+    if (!hasValue(existingProfile?.name)) visible.push("name");
+    if (!hasValue(existingProfile?.surname)) visible.push("surname");
+    if (!hasValue(existingProfile?.date_of_birth)) visible.push("date_of_birth");
     if (!(existingProfile as any)?.gender) visible.push("gender");
-    if (!existingProfile?.whatsapp) visible.push("whatsapp");
-    if (!existingProfile?.instagram_handle) visible.push("instagram_handle");
+    if (!hasValue(existingProfile?.whatsapp)) visible.push("whatsapp");
+    if (!hasValue(existingProfile?.instagram_handle)) visible.push("instagram_handle");
     
     return visible;
   }, [emailVerified, existingProfile]);
@@ -188,14 +193,23 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   // Update formData when existingProfile changes
   useEffect(() => {
     if (existingProfile) {
+      // Helper to get a valid trimmed value or empty string
+      const getValue = (existing: string | null | undefined, current: string): string => {
+        // If current has a value, keep it
+        if (current && current.trim()) return current;
+        // Otherwise use existing if valid
+        if (existing && existing.trim()) return existing.trim();
+        return "";
+      };
+
       setFormData(prev => ({
         ...prev,
-        name: prev.name || existingProfile.name || "",
-        surname: prev.surname || existingProfile.surname || "",
-        date_of_birth: prev.date_of_birth || existingProfile.date_of_birth || "",
+        name: getValue(existingProfile.name, prev.name),
+        surname: getValue(existingProfile.surname, prev.surname),
+        date_of_birth: getValue(existingProfile.date_of_birth, prev.date_of_birth),
         gender: prev.gender || (existingProfile as any)?.gender || "male",
-        whatsapp: prev.whatsapp || existingProfile.whatsapp || "",
-        instagram_handle: prev.instagram_handle || existingProfile.instagram_handle || "",
+        whatsapp: getValue(existingProfile.whatsapp, prev.whatsapp),
+        instagram_handle: getValue(existingProfile.instagram_handle, prev.instagram_handle),
       }));
     }
   }, [existingProfile]);
