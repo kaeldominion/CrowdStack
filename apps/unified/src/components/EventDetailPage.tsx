@@ -1876,18 +1876,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               helperText="Timezone for event times"
             />
             
-            {/* Mobile Page Style - A/B Testing */}
-            <Select
-              label="Mobile Page Style"
-              value={editForm.mobile_style}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, mobile_style: e.target.value as "flip" | "scroll" }))}
-              options={[
-                { value: "flip", label: "Flip (Card flip animation)" },
-                { value: "scroll", label: "Scroll (Parallax blur effect)" },
-              ]}
-              helperText="How the event page displays on mobile devices"
-            />
-
             {config.role === "venue" && (
               <Textarea
                 label="Reason for Changes (Optional)"
@@ -1945,7 +1933,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <Badge variant="secondary" className="text-xs">Premium</Badge>
                 </div>
                 <p className="text-xs text-foreground-muted">
-                  Upload a video flier (9:16 format, max 30 seconds, 50MB). Shown instead of static image on mobile.
+                  Upload a video flier (9:16 format, max 30 seconds, 100MB). Shown instead of static image on mobile.
                 </p>
                 
                 {videoUploadSuccess && (
@@ -1994,8 +1982,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             if (!file) return;
                             
                             // Validate size client-side
-                            if (file.size > 50 * 1024 * 1024) {
-                              alert("Video must be under 50MB");
+                            if (file.size > 100 * 1024 * 1024) {
+                              alert("Video must be under 100MB");
                               return;
                             }
                             

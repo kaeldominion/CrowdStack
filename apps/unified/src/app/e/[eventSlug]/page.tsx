@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { MobileFlierExperience } from "@/components/MobileFlierExperience";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
 import { ReferralTracker } from "@/components/ReferralTracker";
@@ -156,14 +155,11 @@ export default async function EventPage({
   const isUpcoming = now < startDate;
   const isLive = now >= startDate && (!endDate || now < endDate);
 
-  // For events with fliers, show mobile experience on mobile and regular content on desktop
-  // Mobile style: 'flip' (default) or 'scroll'
-  const mobileStyle = event.mobile_style || 'flip';
-  
+  // For events with fliers, show mobile scroll experience on mobile and regular content on desktop
   // For events without fliers, show regular content everywhere
   if (event.flier_url) {
-    // Choose mobile experience component based on style
-    const MobileExperience = mobileStyle === 'scroll' ? MobileScrollExperience : MobileFlierExperience;
+    // Always use scroll parallax experience for mobile
+    const MobileExperience = MobileScrollExperience;
     
     return (
       <Suspense fallback={null}>
@@ -188,7 +184,7 @@ export default async function EventPage({
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
             </div>
 
-            {/* Mobile: Flier experience (flip or scroll based on event setting) */}
+            {/* Mobile: Scroll parallax flier experience */}
             <MobileExperience
               flierUrl={event.flier_url}
               videoUrl={event.flier_video_url || undefined}
@@ -204,7 +200,7 @@ export default async function EventPage({
                   isUpcoming={isUpcoming}
                   isLive={isLive}
                   isMobileFlierView={true}
-                  isScrollMode={mobileStyle === 'scroll'}
+                  isScrollMode={true}
                 />
               </Suspense>
             </MobileExperience>

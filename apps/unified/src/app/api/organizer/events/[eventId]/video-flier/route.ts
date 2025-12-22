@@ -85,11 +85,11 @@ export async function POST(
       );
     }
 
-    // Validate file size (50MB max for videos)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file size (100MB max for videos)
+    const maxSize = 100 * 1024 * 1024; // 100MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File size exceeds 50MB limit" },
+        { error: "File size exceeds 100MB limit" },
         { status: 400 }
       );
     }
