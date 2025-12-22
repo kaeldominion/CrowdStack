@@ -22,12 +22,14 @@ export async function POST(
     
     const { searchParams } = new URL(request.url);
     const ref = searchParams.get("ref"); // referral user ID, promoter ID, or invite code
+    console.log("[Register API] Referral ref parameter:", ref);
     
     // Track referral attribution - can be any user ID (not just promoter)
     let referredByUserId: string | null = null;
     let referralPromoterId: string | null = null;
     
     if (ref) {
+      console.log("[Register API] Processing referral ref:", ref);
       // Check if ref is a valid UUID format (could be user ID or promoter ID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(ref)) {
@@ -52,9 +54,12 @@ export async function POST(
           }
         } else {
           // It's likely a user ID - verify it exists
-          const { data: refUser } = await serviceSupabase.auth.admin.getUserById(ref).catch(() => ({ data: { user: null } }));
+          console.log("[Register API] Checking if ref is a user ID:", ref);
+          const { data: refUser, error: refUserError } = await serviceSupabase.auth.admin.getUserById(ref).catch((err) => ({ data: { user: null }, error: err }));
+          console.log("[Register API] User lookup result:", { found: !!refUser?.user, error: refUserError?.message });
           if (refUser?.user) {
             referredByUserId = ref;
+            console.log("[Register API] Set referredByUserId:", referredByUserId);
             // Check if this user is also a promoter
             const { data: userPromoter } = await serviceSupabase
               .from("promoters")
@@ -63,6 +68,7 @@ export async function POST(
               .single();
             if (userPromoter) {
               referralPromoterId = userPromoter.id;
+              console.log("[Register API] User is also a promoter:", referralPromoterId);
             }
           } else {
             console.log("[Register API] Ref is not a valid user or promoter ID:", ref);
@@ -370,6 +376,11 @@ export async function POST(
     }
 
     // Create registration with both referral fields
+    console.log("[Register API] Creating registration with referral data:", {
+      referral_promoter_id: defaultPromoterId || referralPromoterId,
+      referred_by_user_id: referredByUserId,
+    });
+    
     const { data: registration, error: regError } = await serviceSupabase
       .from("registrations")
       .insert({
@@ -384,6 +395,11 @@ export async function POST(
     if (regError) {
       throw regError;
     }
+    
+    console.log("[Register API] Registration created:", {
+      id: registration.id,
+      referred_by_user_id: registration.referred_by_user_id,
+    });
 
     // Update referral_clicks to mark as converted if we have a matching click
     if (referredByUserId) {

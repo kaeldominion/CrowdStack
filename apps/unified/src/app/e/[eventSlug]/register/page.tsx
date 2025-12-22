@@ -15,6 +15,11 @@ export default function RegisterPage() {
   // Also check sessionStorage for ref (set by ReferralTracker when clicking shared link)
   const sessionRef = typeof window !== "undefined" ? sessionStorage.getItem("referral_ref") : null;
   const ref = urlRef || sessionRef; // Prefer URL ref, fallback to sessionStorage
+  
+  // Debug logging for referral tracking
+  if (typeof window !== "undefined") {
+    console.log("[Register] Referral tracking:", { urlRef, sessionRef, ref });
+  }
   const magicLinkError = searchParams.get("magic_link_error"); // Error from magic link callback
   const eventSlug = params.eventSlug as string;
 
@@ -413,12 +418,22 @@ export default function RegisterPage() {
     );
   }
 
+  // Build redirect URL that preserves the ref parameter
+  const buildRedirectUrl = (): string | undefined => {
+    if (typeof window === "undefined") return undefined;
+    
+    const url = new URL(window.location.href);
+    // Ensure ref is in the URL (from URL or sessionStorage)
+    if (ref && !url.searchParams.has("ref")) {
+      url.searchParams.set("ref", ref);
+    }
+    return url.toString();
+  };
+
   // If authenticated, show Typeform signup (skip email step, only show missing fields)
   if (authenticated && userEmail && showSignup) {
     console.log("[Register] Rendering TypeformSignup for authenticated user");
-    const redirectUrl = typeof window !== "undefined" 
-      ? window.location.href 
-      : `/e/${eventSlug}/register`;
+    const redirectUrl = buildRedirectUrl() || `/e/${eventSlug}/register`;
     
     return (
       <TypeformSignup
@@ -442,9 +457,7 @@ export default function RegisterPage() {
   // Show Typeform signup for unauthenticated users
   if (!authenticated) {
     console.log("[Register] Rendering TypeformSignup for unauthenticated user");
-    const redirectUrl = typeof window !== "undefined"
-      ? window.location.href
-      : null;
+    const redirectUrl = buildRedirectUrl();
     
     // If magic link failed, show password fallback immediately
     const shouldShowPasswordFallback = magicLinkError === "pkce" || magicLinkError === "expired" || magicLinkError === "failed";
