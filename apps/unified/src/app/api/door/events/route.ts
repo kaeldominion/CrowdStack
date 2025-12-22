@@ -166,6 +166,40 @@ export async function GET() {
         }
       }
 
+      // Check for permanent venue door staff access
+      const { data: venueDoorStaff } = await serviceSupabase
+        .from("venue_door_staff")
+        .select("venue_id")
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      if (venueDoorStaff && venueDoorStaff.length > 0) {
+        const venueIds = venueDoorStaff.map((v) => v.venue_id);
+        const { data: venueEvents } = await serviceSupabase
+          .from("events")
+          .select("id")
+          .in("venue_id", venueIds)
+          .eq("status", "published");
+        additionalEventIds.push(...(venueEvents?.map((e) => e.id) || []));
+      }
+
+      // Check for permanent organizer door staff access
+      const { data: organizerDoorStaff } = await serviceSupabase
+        .from("organizer_door_staff")
+        .select("organizer_id")
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      if (organizerDoorStaff && organizerDoorStaff.length > 0) {
+        const organizerIds = organizerDoorStaff.map((o) => o.organizer_id);
+        const { data: organizerEvents } = await serviceSupabase
+          .from("events")
+          .select("id")
+          .in("organizer_id", organizerIds)
+          .eq("status", "published");
+        additionalEventIds.push(...(organizerEvents?.map((e) => e.id) || []));
+      }
+
       // Combine all event IDs
       const allEventIds = [...new Set([...assignedEventIds, ...additionalEventIds])];
 

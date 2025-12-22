@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Organizer, OrganizerTeamMember } from "@crowdstack/shared/types";
 import { OrganizerLogo } from "@/components/organizer/OrganizerLogo";
 import { TeamMemberCard } from "@/components/organizer/TeamMemberCard";
+import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
 
 interface OrganizerSettingsData {
   organizer: Organizer;
@@ -208,6 +209,7 @@ export default function OrganizerSettingsPage() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
+          <TabsTrigger value="door-staff">Door Staff</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -391,6 +393,14 @@ export default function OrganizerSettingsPage() {
               )}
             </div>
           </Card>
+        </TabsContent>
+
+        {/* Door Staff Tab */}
+        <TabsContent value="door-staff">
+          <PermanentDoorStaffSection 
+            type="organizer" 
+            entityName={data?.organizer?.name}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -19,6 +19,7 @@ import {
 } from "@crowdstack/ui";
 import { Plus, Trash2, Edit, User as UserIcon, Mail } from "lucide-react";
 import { PermissionsEditor } from "@/components/PermissionsEditor";
+import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
 import type { VenueUser, VenuePermissions } from "@crowdstack/shared/types";
 import { DEFAULT_VENUE_PERMISSIONS } from "@crowdstack/shared/constants/permissions";
 
@@ -323,6 +324,14 @@ export default function VenueUsersPage() {
               </div>
             </div>
           </Modal>
+
+          {/* Door Staff Section */}
+          <div className="mt-8">
+            <PermanentDoorStaffSection 
+              type="venue" 
+              entityId={venueId || undefined}
+            />
+          </div>
 
           {/* Edit Permissions Modal */}
           {editingUser && (

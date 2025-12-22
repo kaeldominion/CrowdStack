@@ -1933,6 +1933,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           onClose={() => setShowDoorStaffModal(false)}
           eventId={event.id}
           eventName={event.name}
+          venueId={event.venue_id || undefined}
+          organizerId={event.organizer_id || undefined}
         />
       )}
 
