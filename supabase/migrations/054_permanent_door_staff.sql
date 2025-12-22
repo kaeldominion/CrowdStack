@@ -48,14 +48,16 @@ CREATE INDEX IF NOT EXISTS idx_organizer_door_staff_status ON public.organizer_d
 ALTER TABLE public.venue_door_staff ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.organizer_door_staff ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for venue_door_staff
+-- RLS Policies for venue_door_staff (drop if exists first for idempotency)
 
+DROP POLICY IF EXISTS "Superadmins can manage all venue door staff" ON public.venue_door_staff;
 CREATE POLICY "Superadmins can manage all venue door staff"
   ON public.venue_door_staff
   FOR ALL
   USING (public.user_has_role(auth.uid(), 'superadmin'::user_role))
   WITH CHECK (public.user_has_role(auth.uid(), 'superadmin'::user_role));
 
+DROP POLICY IF EXISTS "Venue admins can manage their venue door staff" ON public.venue_door_staff;
 CREATE POLICY "Venue admins can manage their venue door staff"
   ON public.venue_door_staff
   FOR ALL
@@ -76,19 +78,22 @@ CREATE POLICY "Venue admins can manage their venue door staff"
     )
   );
 
+DROP POLICY IF EXISTS "Door staff can view their own venue assignments" ON public.venue_door_staff;
 CREATE POLICY "Door staff can view their own venue assignments"
   ON public.venue_door_staff
   FOR SELECT
   USING (user_id = auth.uid());
 
--- RLS Policies for organizer_door_staff
+-- RLS Policies for organizer_door_staff (drop if exists first for idempotency)
 
+DROP POLICY IF EXISTS "Superadmins can manage all organizer door staff" ON public.organizer_door_staff;
 CREATE POLICY "Superadmins can manage all organizer door staff"
   ON public.organizer_door_staff
   FOR ALL
   USING (public.user_has_role(auth.uid(), 'superadmin'::user_role))
   WITH CHECK (public.user_has_role(auth.uid(), 'superadmin'::user_role));
 
+DROP POLICY IF EXISTS "Organizers can manage their organizer door staff" ON public.organizer_door_staff;
 CREATE POLICY "Organizers can manage their organizer door staff"
   ON public.organizer_door_staff
   FOR ALL
@@ -109,29 +114,34 @@ CREATE POLICY "Organizers can manage their organizer door staff"
     )
   );
 
+DROP POLICY IF EXISTS "Door staff can view their own organizer assignments" ON public.organizer_door_staff;
 CREATE POLICY "Door staff can view their own organizer assignments"
   ON public.organizer_door_staff
   FOR SELECT
   USING (user_id = auth.uid());
 
 -- Trigger for venue_door_staff to add door_staff role
+DROP TRIGGER IF EXISTS on_venue_door_staff_assigned ON public.venue_door_staff;
 CREATE TRIGGER on_venue_door_staff_assigned
   AFTER INSERT ON public.venue_door_staff
   FOR EACH ROW
   EXECUTE FUNCTION public.trigger_ensure_door_staff_role();
 
 -- Trigger for organizer_door_staff to add door_staff role
+DROP TRIGGER IF EXISTS on_organizer_door_staff_assigned ON public.organizer_door_staff;
 CREATE TRIGGER on_organizer_door_staff_assigned
   AFTER INSERT ON public.organizer_door_staff
   FOR EACH ROW
   EXECUTE FUNCTION public.trigger_ensure_door_staff_role();
 
 -- Add updated_at triggers
+DROP TRIGGER IF EXISTS set_venue_door_staff_updated_at ON public.venue_door_staff;
 CREATE TRIGGER set_venue_door_staff_updated_at
   BEFORE UPDATE ON public.venue_door_staff
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at();
 
+DROP TRIGGER IF EXISTS set_organizer_door_staff_updated_at ON public.organizer_door_staff;
 CREATE TRIGGER set_organizer_door_staff_updated_at
   BEFORE UPDATE ON public.organizer_door_staff
   FOR EACH ROW
