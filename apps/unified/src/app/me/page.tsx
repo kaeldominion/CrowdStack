@@ -773,15 +773,15 @@ export default function MePage() {
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.totalClicks}</p>
-                <p className="text-xs text-white/50">Clicks</p>
+                <p className="text-xs text-white/50">Link Clicks</p>
               </div>
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.totalRegistrations}</p>
-                <p className="text-xs text-white/50">Signups</p>
+                <p className="text-xs text-white/50">Registrations</p>
               </div>
               <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-center">
                 <p className="text-lg font-bold text-white">{referralStats.conversionRate}%</p>
-                <p className="text-xs text-white/50">Rate</p>
+                <p className="text-xs text-white/50">Click → Register</p>
               </div>
             </div>
           </div>
