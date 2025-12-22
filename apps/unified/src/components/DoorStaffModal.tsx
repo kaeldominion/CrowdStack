@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Button, Input, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail } from "lucide-react";
+import { Modal, Button, Input, Badge, LoadingSpinner, Checkbox } from "@crowdstack/ui";
+import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail, Shield } from "lucide-react";
 
 interface DoorStaff {
   id: string;
@@ -12,6 +12,8 @@ interface DoorStaff {
   status: string;
   notes: string | null;
   assigned_at: string;
+  is_permanent?: boolean;
+  permanent_source?: "venue" | "organizer";
 }
 
 interface Invite {
@@ -28,10 +30,13 @@ interface DoorStaffModalProps {
   onClose: () => void;
   eventId: string;
   eventName: string;
+  venueId?: string;
+  organizerId?: string;
 }
 
-export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaffModalProps) {
+export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, organizerId }: DoorStaffModalProps) {
   const [doorStaff, setDoorStaff] = useState<DoorStaff[]>([]);
+  const [permanentStaff, setPermanentStaff] = useState<DoorStaff[]>([]);
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +44,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
   // Create invite state
   const [showCreateInvite, setShowCreateInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [makePermanent, setMakePermanent] = useState(false);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [newInviteUrl, setNewInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -57,6 +63,51 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
       const data = await response.json();
       setDoorStaff(data.door_staff || []);
       setPendingInvites(data.pending_invites || []);
+
+      // Also load permanent staff from venue/organizer
+      const permanentList: DoorStaff[] = [];
+
+      if (venueId) {
+        try {
+          const venueResponse = await fetch(`/api/venue/door-staff?venueId=${venueId}`);
+          if (venueResponse.ok) {
+            const venueData = await venueResponse.json();
+            (venueData.door_staff || []).forEach((staff: DoorStaff) => {
+              if (staff.status === "active") {
+                permanentList.push({
+                  ...staff,
+                  is_permanent: true,
+                  permanent_source: "venue",
+                });
+              }
+            });
+          }
+        } catch (e) {
+          // Ignore venue fetch errors
+        }
+      }
+
+      if (organizerId) {
+        try {
+          const organizerResponse = await fetch(`/api/organizer/door-staff?organizerId=${organizerId}`);
+          if (organizerResponse.ok) {
+            const organizerData = await organizerResponse.json();
+            (organizerData.door_staff || []).forEach((staff: DoorStaff) => {
+              if (staff.status === "active" && !permanentList.some(p => p.user_id === staff.user_id)) {
+                permanentList.push({
+                  ...staff,
+                  is_permanent: true,
+                  permanent_source: "organizer",
+                });
+              }
+            });
+          }
+        } catch (e) {
+          // Ignore organizer fetch errors
+        }
+      }
+
+      setPermanentStaff(permanentList);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -73,6 +124,9 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
         body: JSON.stringify({
           action: "invite",
           email: inviteEmail || undefined,
+          make_permanent: makePermanent,
+          venue_id: venueId,
+          organizer_id: organizerId,
         }),
       });
 
@@ -84,6 +138,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
       const data = await response.json();
       setNewInviteUrl(data.invite.invite_url);
       setInviteEmail("");
+      setMakePermanent(false);
       loadDoorStaff();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create invite");
@@ -160,16 +215,53 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
           <div className="text-center py-8 text-danger">{error}</div>
         ) : (
           <>
-            {/* Current door staff */}
+            {/* Permanent door staff (from venue/organizer) */}
+            {permanentStaff.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Permanent Door Staff ({permanentStaff.length})
+                </h3>
+                <div className="space-y-2">
+                  {permanentStaff.map((staff) => (
+                    <div
+                      key={`permanent-${staff.id}`}
+                      className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-primary/20"
+                    >
+                      <div>
+                        <p className="font-medium text-foreground flex items-center gap-2">
+                          {staff.user_name}
+                          <Badge variant="primary" size="sm">
+                            {staff.permanent_source === "venue" ? "Venue Staff" : "Organizer Staff"}
+                          </Badge>
+                        </p>
+                        <p className="text-sm text-foreground-muted">{staff.user_email}</p>
+                        {staff.notes && (
+                          <p className="text-xs text-foreground-muted mt-1">{staff.notes}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-foreground-muted">
+                        Managed in settings
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Event-specific door staff */}
             <div>
               <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Current Door Staff ({activeStaff.length})
+                Event Door Staff ({activeStaff.length})
               </h3>
               
               {activeStaff.length === 0 ? (
                 <div className="text-center py-6 text-foreground-muted border border-dashed border-border rounded-lg">
-                  No door staff assigned yet
+                  No event-specific door staff assigned yet
+                  {permanentStaff.length > 0 && (
+                    <p className="text-xs mt-1">Permanent staff above will have access</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -278,6 +370,29 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
                     onChange={(e) => setInviteEmail(e.target.value)}
                     helperText="Leave blank to create a shareable link"
                   />
+                  
+                  {/* Make permanent checkbox */}
+                  {(venueId || organizerId) && (
+                    <div className="p-3 bg-surface-secondary rounded-lg">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={makePermanent}
+                          onChange={(e) => setMakePermanent(e.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            Grant permanent access
+                          </p>
+                          <p className="text-xs text-foreground-muted mt-0.5">
+                            This person will have door staff access to all {venueId ? "venue" : "organizer"} events, not just this one
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       onClick={handleCreateInvite}
@@ -289,7 +404,10 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName }: DoorStaf
                     </Button>
                     <Button
                       variant="secondary"
-                      onClick={() => setShowCreateInvite(false)}
+                      onClick={() => {
+                        setShowCreateInvite(false);
+                        setMakePermanent(false);
+                      }}
                     >
                       Cancel
                     </Button>
