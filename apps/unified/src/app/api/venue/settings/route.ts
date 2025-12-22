@@ -4,6 +4,40 @@ import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
 /**
+ * Normalize Instagram input to just the username (without @ or URL parts)
+ * Accepts: @username, username, https://instagram.com/username, https://www.instagram.com/username/
+ */
+function normalizeInstagramHandle(input: string): string {
+  if (!input) return "";
+  
+  let handle = input.trim();
+  
+  // Remove @ prefix if present
+  if (handle.startsWith("@")) {
+    handle = handle.slice(1);
+  }
+  
+  // Extract username from URL patterns
+  const urlPatterns = [
+    /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([^\/\?\#]+)/i,
+    /(?:https?:\/\/)?(?:www\.)?instagr\.am\/([^\/\?\#]+)/i,
+  ];
+  
+  for (const pattern of urlPatterns) {
+    const match = handle.match(pattern);
+    if (match && match[1]) {
+      handle = match[1];
+      break;
+    }
+  }
+  
+  // Remove any trailing slashes or query params that might remain
+  handle = handle.split(/[\/\?\#]/)[0];
+  
+  return handle;
+}
+
+/**
  * GET /api/venue/settings
  * Get venue settings (for logged-in venue admin or superadmin)
  * Query params: ?venueId=xxx (optional, for admin access)
@@ -173,6 +207,7 @@ export async function PUT(request: NextRequest) {
         "phone",
         "email",
         "website",
+        "instagram_url",
         "logo_url",
         "cover_image_url",
         "accent_color",
@@ -190,7 +225,14 @@ export async function PUT(request: NextRequest) {
 
       for (const field of allowedFields) {
         if (field in body.venue) {
-          updateData[field] = body.venue[field];
+          let value = body.venue[field];
+          
+          // Normalize Instagram handle - extract just the username
+          if (field === "instagram_url" && value) {
+            value = normalizeInstagramHandle(value);
+          }
+          
+          updateData[field] = value;
         }
       }
 
