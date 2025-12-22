@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Modal, Button, Input, Badge, LoadingSpinner, Checkbox } from "@crowdstack/ui";
-import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail, Shield } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Modal, Button, Input, Badge, LoadingSpinner, InlineSpinner } from "@crowdstack/ui";
+import { UserPlus, Link as LinkIcon, Copy, Check, Trash2, Users, Clock, Mail, Shield, Search, X } from "lucide-react";
 
 interface DoorStaff {
   id: string;
@@ -25,6 +25,14 @@ interface Invite {
   invite_url?: string;
 }
 
+interface SearchUser {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  already_assigned: boolean;
+}
+
 interface DoorStaffModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,10 +49,16 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Create invite state
-  const [showCreateInvite, setShowCreateInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
+  // Add staff state
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
   const [makePermanent, setMakePermanent] = useState(false);
+
+  // Invite link state (fallback for users not in system)
+  const [showInviteLink, setShowInviteLink] = useState(false);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [newInviteUrl, setNewInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -115,6 +129,70 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
     }
   };
 
+  // Debounced search
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      searchUsers(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, eventId]);
+
+  const searchUsers = async (query: string) => {
+    setSearching(true);
+    try {
+      const response = await fetch(
+        `/api/events/${eventId}/door-staff/search-users?q=${encodeURIComponent(query)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.users || []);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleAssignUser = async (user: SearchUser) => {
+    setAssigningUserId(user.id);
+    try {
+      const response = await fetch(`/api/events/${eventId}/door-staff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "assign",
+          user_id: user.id,
+          make_permanent: makePermanent,
+          venue_id: venueId,
+          organizer_id: organizerId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to assign user");
+      }
+
+      // Reset and reload
+      setSearchQuery("");
+      setSearchResults([]);
+      setMakePermanent(false);
+      setShowAddStaff(false);
+      loadDoorStaff();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to assign user");
+    } finally {
+      setAssigningUserId(null);
+    }
+  };
+
   const handleCreateInvite = async () => {
     setCreatingInvite(true);
     try {
@@ -123,7 +201,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "invite",
-          email: inviteEmail || undefined,
+          email: searchQuery || undefined,
           make_permanent: makePermanent,
           venue_id: venueId,
           organizer_id: organizerId,
@@ -137,7 +215,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
 
       const data = await response.json();
       setNewInviteUrl(data.invite.invite_url);
-      setInviteEmail("");
+      setSearchQuery("");
       setMakePermanent(false);
       loadDoorStaff();
     } catch (err) {
@@ -331,7 +409,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
               </div>
             )}
 
-            {/* Create invite section */}
+            {/* Add staff section */}
             <div className="border-t border-border pt-4">
               {newInviteUrl ? (
                 <div className="space-y-3">
@@ -357,20 +435,121 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                     size="sm"
                     onClick={() => setNewInviteUrl(null)}
                   >
-                    Create Another Invite
+                    Add Another
                   </Button>
                 </div>
-              ) : showCreateInvite ? (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-foreground">Create Invite Link</h3>
-                  <Input
-                    label="Email (optional)"
-                    placeholder="staff@example.com"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    helperText="Leave blank to create a shareable link"
-                  />
-                  
+              ) : showAddStaff ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-foreground">Add Door Staff</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowAddStaff(false);
+                        setSearchQuery("");
+                        setSearchResults([]);
+                        setMakePermanent(false);
+                        setShowInviteLink(false);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Search input */}
+                  <div className="relative">
+                    <Input
+                      placeholder="Search by email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pr-10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {searching ? (
+                        <InlineSpinner size="sm" />
+                      ) : (
+                        <Search className="h-4 w-4 text-foreground-muted" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Search results */}
+                  {searchResults.length > 0 && (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {searchResults.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt=""
+                                className="h-8 w-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
+                                {user.name?.[0]?.toUpperCase() || "?"}
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{user.name}</p>
+                              <p className="text-xs text-foreground-muted">{user.email}</p>
+                            </div>
+                          </div>
+                          {user.already_assigned ? (
+                            <Badge variant="secondary" size="sm">Already Added</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleAssignUser(user)}
+                              disabled={assigningUserId === user.id}
+                              loading={assigningUserId === user.id}
+                            >
+                              Add
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No results / Create invite option */}
+                  {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
+                    <div className="text-center py-4 text-foreground-muted border border-dashed border-border rounded-lg">
+                      <p className="text-sm">No users found with that email</p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => setShowInviteLink(true)}
+                      >
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Create Invite Link Instead
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Create invite link section */}
+                  {showInviteLink && (
+                    <div className="p-3 bg-surface-secondary rounded-lg space-y-3">
+                      <p className="text-sm text-foreground-muted">
+                        User not in system? Create an invite link they can use to get access.
+                      </p>
+                      <Button
+                        onClick={handleCreateInvite}
+                        disabled={creatingInvite}
+                        loading={creatingInvite}
+                        className="w-full"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Generate Invite Link {searchQuery && `for ${searchQuery}`}
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Make permanent checkbox */}
                   {(venueId || organizerId) && (
                     <div className="p-3 bg-surface-secondary rounded-lg">
@@ -386,35 +565,15 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                             Grant permanent access
                           </p>
                           <p className="text-xs text-foreground-muted mt-0.5">
-                            This person will have door staff access to all {venueId ? "venue" : "organizer"} events, not just this one
+                            Access to all {venueId ? "venue" : "organizer"} events, not just this one
                           </p>
                         </div>
                       </label>
                     </div>
                   )}
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleCreateInvite}
-                      disabled={creatingInvite}
-                      loading={creatingInvite}
-                    >
-                      <LinkIcon className="h-4 w-4 mr-2" />
-                      Generate Invite Link
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setShowCreateInvite(false);
-                        setMakePermanent(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
                 </div>
               ) : (
-                <Button onClick={() => setShowCreateInvite(true)} className="w-full">
+                <Button onClick={() => setShowAddStaff(true)} className="w-full">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Door Staff
                 </Button>
