@@ -32,13 +32,10 @@ export async function POST(
 
     switch (role) {
       case "venue_admin":
-        redirectUrl = `${appUrl}/app/venue`;
-        break;
       case "event_organizer":
-        redirectUrl = `${appUrl}/app/organizer`;
-        break;
       case "promoter":
-        redirectUrl = `${appUrl}/app/promoter`;
+        // All B2B roles go to unified workspace
+        redirectUrl = `${appUrl}/app`;
         break;
       case "door_staff":
         redirectUrl = `${appUrl}/door`;

@@ -430,7 +430,7 @@ export default function MePage() {
                 </p>
               </div>
               <Link
-                href="/app/promoter"
+                href="/app"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-500/30 transition-colors"
               >
                 View Full Dashboard

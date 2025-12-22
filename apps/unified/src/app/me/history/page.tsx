@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { LoadingSpinner } from "@crowdstack/ui";
-import { Calendar, CheckCircle2, XCircle, Ticket } from "lucide-react";
+import { Calendar, CheckCircle2, XCircle, Ticket, ArrowLeft } from "lucide-react";
 
 interface Registration {
   id: string;
@@ -54,38 +55,59 @@ export default function HistoryPage() {
         return;
       }
 
-      // Get past registrations
-      const now = new Date().toISOString();
-      const { data: registrations } = await supabase
+      // Get all registrations with events, then filter past events client-side
+      // (Supabase doesn't support filtering on nested fields like event.start_time)
+      const { data: registrations, error: regError } = await supabase
         .from("registrations")
         .select(`
           id,
           created_at,
-          event:events!inner(
+          registered_at,
+          event:events(
             id,
             name,
             slug,
             start_time,
+            end_time,
             cover_image_url,
             venue:venues(name)
           ),
           checkins(checked_in_at)
         `)
         .eq("attendee_id", attendee.id)
-        .lt("event.start_time", now)
-        .order("created_at", { ascending: false });
+        .order("registered_at", { ascending: false });
+
+      if (regError) {
+        console.error("[History] Error loading registrations:", regError);
+      }
 
       if (registrations) {
-        const normalized = registrations.map((reg: any) => ({
-          ...reg,
-          event: Array.isArray(reg.event) ? reg.event[0] : reg.event,
-        })).map((reg: any) => ({
-          ...reg,
-          event: reg.event ? {
-            ...reg.event,
-            venue: Array.isArray(reg.event.venue) ? reg.event.venue[0] : reg.event.venue,
-          } : null,
-        }));
+        const now = new Date();
+        const normalized = registrations
+          .map((reg: any) => ({
+            ...reg,
+            event: Array.isArray(reg.event) ? reg.event[0] : reg.event,
+          }))
+          .map((reg: any) => ({
+            ...reg,
+            event: reg.event ? {
+              ...reg.event,
+              venue: Array.isArray(reg.event.venue) ? reg.event.venue[0] : reg.event.venue,
+            } : null,
+          }))
+          // Filter to only past events
+          .filter((reg: any) => {
+            if (!reg.event?.start_time) return false;
+            const startTime = new Date(reg.event.start_time);
+            // For events without end_time, consider them "past" if they started more than 24 hours ago
+            const hoursAgo24 = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            if (reg.event.end_time) {
+              return new Date(reg.event.end_time) < now;
+            }
+            return startTime < hoursAgo24;
+          });
+        
+        console.log("[History] Filtered past events:", normalized.length, "out of", registrations.length);
         setEvents(normalized);
       }
     } catch (error) {
@@ -134,6 +156,13 @@ export default function HistoryPage() {
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <div className="mb-8">
+          <Link
+            href="/me"
+            className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-4 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Dashboard</span>
+          </Link>
           <h1 className="text-3xl font-bold tracking-tight text-white">
             Event History
           </h1>

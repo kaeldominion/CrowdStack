@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { EarningsChart } from "@/components/charts/EarningsChart";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -68,6 +69,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     avgAttendance: 0,
     topEvent: "N/A",
   });
+  const [venue, setVenue] = useState<{
+    id: string;
+    name: string;
+    slug: string | null;
+    logo_url: string | null;
+    cover_image_url: string | null;
+  } | null>(null);
   const [organizerStats, setOrganizerStats] = useState({
     totalEvents: 0,
     registrations: 0,
@@ -141,7 +149,12 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       promises.push(
         fetch("/api/venue/dashboard-stats")
           .then((r) => r.json())
-          .then((data) => setVenueStats(data.stats || venueStats))
+          .then((data) => {
+            setVenueStats(data.stats || venueStats);
+            if (data.venue) {
+              setVenue(data.venue);
+            }
+          })
           .catch((e) => console.error("Failed to load venue stats:", e))
       );
     }
@@ -357,6 +370,120 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <Building2 className="h-5 w-5" />
             Venue Performance
           </h2>
+
+          {/* Public Profile Card */}
+          {venue && (
+            <BentoCard span={4}>
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Venue Image/Logo Preview */}
+                <div className="flex-shrink-0">
+                  {venue.cover_image_url ? (
+                    <div className="relative w-full md:w-48 h-32 rounded-lg overflow-hidden border border-white/10">
+                      <Image
+                        src={venue.cover_image_url}
+                        alt={venue.name || "Venue"}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : venue.logo_url ? (
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                      <Image
+                        src={venue.logo_url}
+                        alt={venue.name || "Venue"}
+                        fill
+                        className="object-contain p-4"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full md:w-48 h-32 rounded-lg border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                      <Building2 className="h-12 w-12 text-white/40" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Venue Info */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Globe className="h-4 w-4 text-white/60" />
+                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                        Public Profile
+                      </p>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-2">{venue.name || "Venue"}</h3>
+                    {venue.slug ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 p-2 bg-white/5 rounded-md border border-white/10">
+                          <code className="text-sm text-white/80 font-mono flex-1 truncate">
+                            {(() => {
+                              if (typeof window !== "undefined") {
+                                const origin = window.location.origin;
+                                const webUrl = origin.replace(/app(-beta)?\./, "");
+                                return `${webUrl}/v/${venue.slug}`;
+                              }
+                              return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
+                            })()}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const origin = window.location.origin;
+                              const webUrl = origin.replace(/app(-beta)?\./, "");
+                              const url = `${webUrl}/v/${venue.slug}`;
+                              navigator.clipboard.writeText(url);
+                              alert("Link copied to clipboard!");
+                            }}
+                            className="text-xs"
+                          >
+                            Copy
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <a
+                            href={(() => {
+                              if (typeof window !== "undefined") {
+                                const origin = window.location.origin;
+                                const webUrl = origin.replace(/app(-beta)?\./, "");
+                                return `${webUrl}/v/${venue.slug}`;
+                              }
+                              return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
+                            })()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="primary" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Live Profile
+                              <ExternalLink className="h-4 w-4 ml-2" />
+                            </Button>
+                          </a>
+                          <Link href="/app/venue/settings">
+                            <Button variant="secondary" size="sm">
+                              Edit Profile
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-white/60">
+                          Set up your public profile to share your venue with event-goers
+                        </p>
+                        <Link href="/app/venue/settings">
+                          <Button variant="primary" size="sm">
+                            Set Up Public Profile
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </BentoCard>
+          )}
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <BentoCard>
               <div className="flex items-center justify-between">
@@ -392,6 +519,38 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                   <p className="text-3xl font-bold tracking-tighter text-white">{venueStats.repeatRate}%</p>
                 </div>
                 <Repeat className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+          </div>
+
+          {/* Additional Venue Stats */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <BentoCard span={2}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Average Attendance</p>
+                  <Users className="h-4 w-4 text-white/40" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-bold tracking-tighter text-white">{venueStats.avgAttendance}</p>
+                  <span className="text-sm text-white/40">per event</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                    style={{ width: "75%" }}
+                  />
+                </div>
+              </div>
+            </BentoCard>
+
+            <BentoCard span={2}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
+                  <BarChart3 className="h-4 w-4 text-white/40" />
+                </div>
+                <p className="text-2xl font-bold tracking-tighter text-white">{venueStats.topEvent}</p>
               </div>
             </BentoCard>
           </div>
@@ -454,6 +613,43 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </div>
             </BentoCard>
           )}
+
+          {/* Additional Organizer Stats */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <BentoCard span={2}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Conversion Rate</p>
+                  <Activity className="h-4 w-4 text-white/40" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-bold tracking-tighter text-white">{organizerStats.conversionRate}%</p>
+                  <span className="text-sm text-white/40">registrations → check-ins</span>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                    style={{ width: `${Math.min(organizerStats.conversionRate, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </BentoCard>
+
+            <BentoCard span={2}>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Total Revenue</p>
+                  <BarChart3 className="h-4 w-4 text-white/40" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-bold tracking-tighter text-white font-mono">
+                    ${organizerStats.revenue.toLocaleString()}
+                  </p>
+                  <span className="text-sm text-white/40">this month</span>
+                </div>
+              </div>
+            </BentoCard>
+          </div>
         </section>
       )}
 

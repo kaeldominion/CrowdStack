@@ -69,7 +69,7 @@ CrowdStack is a dual-app monorepo with distinct user experiences:
 ### apps/app (B2B Dashboards)
 **Domain**: `app.crowdstack.app` (prod) / `app-beta.crowdstack.app` (preview)
 
-**Venue Dashboard** (`/app/venue`):
+**Venue Workspace** (`/app/venue`):
 - KPIs overview
 - Events list & detail
 - Promoters management
@@ -78,7 +78,7 @@ CrowdStack is a dual-app monorepo with distinct user experiences:
 - Reports & analytics
 - Settings
 
-**Organizer Dashboard** (`/app/organizer`):
+**Organizer Workspace** (`/app/organizer`):
 - Dashboard overview
 - Events (list, new, detail)
 - Promoters management
@@ -86,7 +86,7 @@ CrowdStack is a dual-app monorepo with distinct user experiences:
 - Event photos
 - Settings
 
-**Promoter Portal** (`/app/promoter`):
+**Promoter Workspace** (`/app/promoter`):
 - Dashboard
 - Event stats
 - Tools (links/QR codes)

@@ -11,7 +11,6 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  Ticket,
   History,
   Bell,
   QrCode,
@@ -81,7 +80,6 @@ export function AttendeeNavigation() {
   };
 
   const navItems = [
-    { href: "/me", label: "My Events", icon: Ticket },
     { href: "/me/history", label: "History", icon: History },
   ];
 

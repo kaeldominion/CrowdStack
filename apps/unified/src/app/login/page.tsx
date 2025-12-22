@@ -240,14 +240,11 @@ function LoginContent() {
             let targetPath = "/admin";
             if (roleNames.includes("superadmin")) {
               targetPath = "/admin";
-            } else if (roleNames.includes("venue_admin")) {
-              targetPath = "/app/venue";
-            } else if (roleNames.includes("event_organizer")) {
-              targetPath = "/app/organizer";
-            } else if (roleNames.includes("promoter")) {
-              targetPath = "/app/promoter";
             } else if (roleNames.includes("door_staff")) {
               targetPath = "/door";
+            } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
+              // All B2B roles go to unified workspace
+              targetPath = "/app";
             }
             
             window.location.href = targetPath;
@@ -410,14 +407,11 @@ function LoginContent() {
               let targetPath = "/admin";
               if (roleNames.includes("superadmin")) {
                 targetPath = "/admin";
-              } else if (roleNames.includes("venue_admin")) {
-                targetPath = "/app/venue";
-              } else if (roleNames.includes("event_organizer")) {
-                targetPath = "/app/organizer";
-              } else if (roleNames.includes("promoter")) {
-                targetPath = "/app/promoter";
               } else if (roleNames.includes("door_staff")) {
                 targetPath = "/door";
+              } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
+                // All B2B roles go to unified workspace
+                targetPath = "/app";
               }
               
               console.log("[Login] Redirecting B2B user to:", targetPath);
@@ -738,7 +732,7 @@ function LoginContent() {
               <div className="rounded-md p-4 bg-[#3B82F6]/10 border border-[#3B82F6]/20">
                 <p className="text-[#3B82F6] text-sm font-medium mb-1">Check your email</p>
                 <p className="text-white/70 text-xs">
-                  We sent a 6-digit code to <span className="font-medium text-white">{email}</span>
+                  We sent an 8-digit code to <span className="font-medium text-white">{email}</span>
                 </p>
               </div>
               
@@ -826,7 +820,7 @@ function LoginContent() {
             className="w-full"
             size="lg"
           >
-            {useMagicLink ? "Send Magic Link" : (isSignup ? "Create Account" : "Sign In")}
+            {useMagicLink ? "Send OTP Code" : (isSignup ? "Create Account" : "Sign In")}
           </Button>
           )}
 

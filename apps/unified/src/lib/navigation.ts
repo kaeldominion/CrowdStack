@@ -34,13 +34,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["venue_admin", "event_organizer", "promoter", "superadmin"],
   },
 
-  // Venue Admin Routes
-  {
-    label: "Venue Dashboard",
-    href: "/app/venue",
-    icon: Building2,
-    roles: ["venue_admin"],
-  },
   {
     label: "Events",
     href: "/app/venue/events",
@@ -102,13 +95,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["venue_admin"],
   },
 
-  // Event Organizer Routes
-  {
-    label: "Organizer Dashboard",
-    href: "/app/organizer",
-    icon: LayoutDashboard,
-    roles: ["event_organizer"],
-  },
   {
     label: "My Events",
     href: "/app/organizer/events",
@@ -140,13 +126,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["event_organizer"],
   },
 
-  // Promoter Routes
-  {
-    label: "Promoter Dashboard",
-    href: "/app/promoter",
-    icon: LayoutDashboard,
-    roles: ["promoter"],
-  },
   {
     label: "Events",
     href: "/app/promoter/events",
