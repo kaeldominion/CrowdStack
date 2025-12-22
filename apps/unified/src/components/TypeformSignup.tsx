@@ -100,6 +100,16 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   const [navLoading, setNavLoading] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll form into view when keyboard opens (for mobile)
+  const scrollFormIntoView = () => {
+    if (formContainerRef.current && typeof window !== "undefined" && window.innerWidth < 640) {
+      setTimeout(() => {
+        formContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  };
 
   // Calculate which profile fields need to be filled (based on existingProfile only, not formData)
   // This is stable and won't change as the user types
@@ -935,6 +945,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   handleNext();
                 }
               }}
+              onFocus={scrollFormIntoView}
               placeholder="your@email.com"
               className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-primary w-full"
               autoFocus
@@ -960,6 +971,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 if (error) setErrors({ ...errors, name: undefined });
               }}
               onKeyDown={handleKeyDown}
+              onFocus={scrollFormIntoView}
               placeholder="First name"
               className="text-2xl sm:text-3xl py-6 sm:py-8 text-center border-2 focus:border-primary w-full"
               autoFocus
@@ -978,6 +990,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 if (error) setErrors({ ...errors, surname: undefined });
               }}
               onKeyDown={handleKeyDown}
+              onFocus={scrollFormIntoView}
               placeholder="Last name"
               className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
               autoFocus
@@ -1000,7 +1013,6 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }}
                 onKeyDown={handleKeyDown}
                 className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 pr-4 border-2 focus:border-primary w-full [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                autoFocus
                 max={new Date().toISOString().split("T")[0]}
                 min="1900-01-01"
               />
@@ -1059,6 +1071,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   if (error) setErrors({ ...errors, whatsapp: undefined });
                 }}
                 onKeyDown={handleKeyDown}
+                onFocus={scrollFormIntoView}
                 placeholder="+1234567890"
                 className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
                 autoFocus
@@ -1084,6 +1097,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   if (error) setErrors({ ...errors, instagram_handle: undefined });
                 }}
                 onKeyDown={handleKeyDown}
+                onFocus={scrollFormIntoView}
                 placeholder="username"
                 className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
                 autoFocus
@@ -1116,11 +1130,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   return (
     <div 
-      className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 overflow-hidden"
+      className="fixed inset-0 flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden"
       style={{ 
-        paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))",
+        paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
         // Use 100dvh on mobile to account for dynamic viewport changes (keyboard)
-        height: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
+        minHeight: typeof window !== "undefined" && window.innerWidth < 640 ? "100dvh" : "100vh",
       }}
     >
       {/* Blurred Flier Background */}
@@ -1329,18 +1343,16 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
         {/* Form Container */}
         <motion.div
+          ref={formContainerRef}
           key={currentStep}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink min-w-0 overflow-y-auto overscroll-contain"
+          className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
           style={{ 
-            maxHeight: typeof window !== "undefined" && window.innerWidth < 640 
-              ? "calc(100dvh - 6rem)" 
-              : "calc(100vh - 12rem)",
-            // Prevent scroll bounce on iOS
-            WebkitOverflowScrolling: "touch",
+            // Add scroll margin to ensure form stays visible above keyboard
+            scrollMarginBottom: "2rem",
           }}
         >
           {/* Question */}
