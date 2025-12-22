@@ -210,26 +210,28 @@ export default function XPLedgerPage() {
                 <Select
                   value={filters.sourceType}
                   onChange={(e) => setFilters({ ...filters, sourceType: e.target.value })}
-                >
-                  <option value="">All Source Types</option>
-                  <option value="ATTENDED_EVENT">Attended Event</option>
-                  <option value="EARLY_REGISTRATION">Early Registration</option>
-                  <option value="PROMOTER_REFERRAL_REGISTRATION">Promoter Referral Registration</option>
-                  <option value="PROMOTER_REFERRAL_CHECKIN">Promoter Referral Check-in</option>
-                  <option value="USER_REFERRAL_REGISTRATION">User Referral Registration</option>
-                  <option value="USER_REFERRAL_CLICK">User Referral Click</option>
-                  <option value="NO_SHOW_PENALTY">No Show Penalty</option>
-                </Select>
+                  options={[
+                    { value: "", label: "All Source Types" },
+                    { value: "ATTENDED_EVENT", label: "Attended Event" },
+                    { value: "EARLY_REGISTRATION", label: "Early Registration" },
+                    { value: "PROMOTER_REFERRAL_REGISTRATION", label: "Promoter Referral Registration" },
+                    { value: "PROMOTER_REFERRAL_CHECKIN", label: "Promoter Referral Check-in" },
+                    { value: "USER_REFERRAL_REGISTRATION", label: "User Referral Registration" },
+                    { value: "USER_REFERRAL_CLICK", label: "User Referral Click" },
+                    { value: "NO_SHOW_PENALTY", label: "No Show Penalty" },
+                  ]}
+                />
                 <Select
                   value={filters.roleContext}
                   onChange={(e) => setFilters({ ...filters, roleContext: e.target.value })}
-                >
-                  <option value="">All Roles</option>
-                  <option value="attendee">Attendee</option>
-                  <option value="promoter">Promoter</option>
-                  <option value="organizer">Organizer</option>
-                  <option value="venue">Venue</option>
-                </Select>
+                  options={[
+                    { value: "", label: "All Roles" },
+                    { value: "attendee", label: "Attendee" },
+                    { value: "promoter", label: "Promoter" },
+                    { value: "organizer", label: "Organizer" },
+                    { value: "venue", label: "Venue" },
+                  ]}
+                />
               </div>
               <div className="mt-4 flex gap-2">
                 <Button
