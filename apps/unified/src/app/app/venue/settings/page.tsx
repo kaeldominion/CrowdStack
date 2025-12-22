@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check } from "lucide-react";
+import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal, ConfirmModal } from "@crowdstack/ui";
+import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 
@@ -40,6 +40,13 @@ export default function VenueSettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
   const [savedTab, setSavedTab] = useState<string | null>(null);
+  
+  // Gallery upload state
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [uploadSuccess, setUploadSuccess] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; caption: string } | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -147,27 +154,82 @@ export default function VenueSettingsPage() {
     }
   };
 
-  const handleGalleryUpload = async (file: File) => {
-    if (!data) return;
+  const handleGalleryUpload = async (files: FileList | null) => {
+    if (!data || !files || files.length === 0) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const fileArray = Array.from(files);
+    const fileNames = fileArray.map(f => f.name);
+    
+    setUploadingFiles(fileNames);
+    setUploadError(null);
+    setUploadSuccess([]);
+    
+    // Initialize progress for each file
+    const initialProgress: Record<string, number> = {};
+    fileNames.forEach(name => { initialProgress[name] = 0; });
+    setUploadProgress(initialProgress);
 
-    try {
-      const url = venueId 
-        ? `/api/venue/gallery?venueId=${venueId}` 
-        : "/api/venue/gallery";
-      const response = await fetch(url, {
-        method: "POST",
-        body: formData,
-      });
+    const url = venueId 
+      ? `/api/venue/gallery?venueId=${venueId}` 
+      : "/api/venue/gallery";
 
-      if (!response.ok) throw new Error("Failed to upload");
-      const result = await response.json();
-      await loadSettings();
-    } catch (error) {
-      console.error("Failed to upload gallery image:", error);
+    const successfulUploads: string[] = [];
+    const failedUploads: string[] = [];
+
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
+      const fileName = file.name;
+      
+      try {
+        // Simulate progress (since fetch doesn't support progress natively for uploads without XHR)
+        setUploadProgress(prev => ({ ...prev, [fileName]: 20 }));
+        
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        setUploadProgress(prev => ({ ...prev, [fileName]: 50 }));
+
+        const response = await fetch(url, {
+          method: "POST",
+          body: formData,
+        });
+
+        setUploadProgress(prev => ({ ...prev, [fileName]: 80 }));
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to upload");
+        }
+        
+        setUploadProgress(prev => ({ ...prev, [fileName]: 100 }));
+        successfulUploads.push(fileName);
+      } catch (error: any) {
+        console.error(`Failed to upload ${fileName}:`, error);
+        failedUploads.push(fileName);
+        setUploadProgress(prev => ({ ...prev, [fileName]: -1 })); // -1 indicates error
+      }
     }
+
+    // Show success message
+    if (successfulUploads.length > 0) {
+      setUploadSuccess(successfulUploads);
+      await loadSettings();
+      
+      // Clear success after 3 seconds
+      setTimeout(() => {
+        setUploadSuccess([]);
+      }, 3000);
+    }
+
+    if (failedUploads.length > 0) {
+      setUploadError(`Failed to upload: ${failedUploads.join(", ")}`);
+    }
+
+    // Clear uploading state after a brief delay
+    setTimeout(() => {
+      setUploadingFiles([]);
+      setUploadProgress({});
+    }, 1000);
   };
 
   const handleSetHero = async (imageId: string) => {
@@ -183,14 +245,13 @@ export default function VenueSettingsPage() {
   };
 
   const handleDeleteImage = async (imageId: string) => {
-    if (!confirm("Are you sure you want to delete this image?")) return;
-
     try {
       const response = await fetch(`/api/venue/gallery/${imageId}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete");
       await loadSettings();
+      setDeleteConfirm(null);
     } catch (error) {
       console.error("Failed to delete image:", error);
     }
@@ -626,67 +687,156 @@ export default function VenueSettingsPage() {
           <Card>
             <div className="space-y-6">
               <h2 className="text-2xl font-semibold text-foreground">Gallery</h2>
+              <p className="text-sm text-foreground-muted">
+                Upload photos to showcase your venue. You can select multiple images at once.
+              </p>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Upload Image</label>
+              {/* Upload Area */}
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleGalleryUpload(file);
-                  }}
-                  className="text-sm"
+                  multiple
+                  onChange={(e) => handleGalleryUpload(e.target.files)}
+                  className="hidden"
+                  id="gallery-upload"
+                  disabled={uploadingFiles.length > 0}
                 />
+                <label 
+                  htmlFor="gallery-upload" 
+                  className={`cursor-pointer flex flex-col items-center gap-3 ${uploadingFiles.length > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {uploadingFiles.length > 0 ? (
+                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-10 w-10 text-foreground-muted" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {uploadingFiles.length > 0 ? 'Uploading...' : 'Click to upload photos'}
+                    </p>
+                    <p className="text-xs text-foreground-muted mt-1">
+                      PNG, JPG, WEBP up to 10MB each
+                    </p>
+                  </div>
+                </label>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {(data.gallery || []).map((image) => {
-                  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-                  const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
-                  const imageUrl = image.storage_path.startsWith("http")
-                    ? image.storage_path
-                    : supabaseProjectRef
-                    ? `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
-                    : image.storage_path;
-
-                  return (
-                    <div key={image.id} className="relative group border-2 border-border">
-                      <div className="relative aspect-square">
-                        <Image
-                          src={imageUrl}
-                          alt={image.caption || "Gallery image"}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        {!image.is_hero && (
-                          <button
-                            onClick={() => handleSetHero(image.id)}
-                            className="p-2 bg-primary text-white"
-                            title="Set as hero"
-                          >
-                            <Star className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteImage(image.id)}
-                          className="p-2 bg-error text-white"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      {image.is_hero && (
-                        <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 text-xs">
-                          Hero
+              {/* Upload Progress */}
+              {uploadingFiles.length > 0 && (
+                <div className="space-y-2 bg-surface-secondary rounded-lg p-4">
+                  <p className="text-sm font-medium text-foreground mb-3">
+                    Uploading {uploadingFiles.length} {uploadingFiles.length === 1 ? 'file' : 'files'}...
+                  </p>
+                  {uploadingFiles.map((fileName) => {
+                    const progress = uploadProgress[fileName] || 0;
+                    const isError = progress === -1;
+                    const isComplete = progress === 100;
+                    
+                    return (
+                      <div key={fileName} className="flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-foreground truncate">{fileName}</p>
+                          <div className="w-full bg-border rounded-full h-2 mt-1 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-300 ${
+                                isError ? 'bg-error' : isComplete ? 'bg-success' : 'bg-primary'
+                              }`}
+                              style={{ width: isError ? '100%' : `${progress}%` }}
+                            />
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        <div className="flex-shrink-0 w-6">
+                          {isComplete && <CheckCircle2 className="h-4 w-4 text-success" />}
+                          {isError && <X className="h-4 w-4 text-error" />}
+                          {!isComplete && !isError && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Success Message */}
+              {uploadSuccess.length > 0 && (
+                <div className="flex items-center gap-2 bg-success/10 text-success border border-success/20 rounded-lg p-3">
+                  <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">
+                    Successfully uploaded {uploadSuccess.length} {uploadSuccess.length === 1 ? 'image' : 'images'}!
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {uploadError && (
+                <div className="flex items-center gap-2 bg-error/10 text-error border border-error/20 rounded-lg p-3">
+                  <X className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{uploadError}</p>
+                  <button 
+                    onClick={() => setUploadError(null)}
+                    className="ml-auto p-1 hover:bg-error/20 rounded"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Gallery Grid */}
+              {(data.gallery || []).length === 0 ? (
+                <div className="text-center py-12 text-foreground-muted">
+                  <ImagePlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No images yet. Upload some photos to get started!</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(data.gallery || []).map((image) => {
+                    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+                    const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+                    const imageUrl = image.storage_path.startsWith("http")
+                      ? image.storage_path
+                      : supabaseProjectRef
+                      ? `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
+                      : image.storage_path;
+
+                    return (
+                      <div key={image.id} className="relative group border-2 border-border rounded-lg overflow-hidden">
+                        <div className="relative aspect-square">
+                          <Image
+                            src={imageUrl}
+                            alt={image.caption || "Gallery image"}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {!image.is_hero && (
+                            <button
+                              onClick={() => handleSetHero(image.id)}
+                              className="p-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
+                              title="Set as hero image"
+                            >
+                              <Star className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setDeleteConfirm({ id: image.id, caption: image.caption || "this image" })}
+                            className="p-2 bg-error text-white rounded-lg hover:bg-error/80 transition-colors"
+                            title="Delete image"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                        {image.is_hero && (
+                          <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 text-xs rounded-md flex items-center gap-1">
+                            <Star className="h-3 w-3" />
+                            Hero
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
@@ -1012,6 +1162,17 @@ export default function VenueSettingsPage() {
           </div>
         </Modal>
       )}
+
+      {/* Delete Image Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => deleteConfirm && handleDeleteImage(deleteConfirm.id)}
+        title="Delete Image"
+        message={`Are you sure you want to delete ${deleteConfirm?.caption || "this image"}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
