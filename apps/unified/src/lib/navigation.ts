@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "@crowdstack/shared";
 import {
-  LayoutDashboard,
+  LayoutGrid,
   Calendar,
   Users,
   DollarSign,
@@ -30,7 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     label: "Home",
     href: "/app",
-    icon: LayoutDashboard,
+    icon: LayoutGrid,
     roles: ["venue_admin", "event_organizer", "promoter", "superadmin"],
   },
 

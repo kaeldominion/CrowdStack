@@ -11,7 +11,6 @@ import {
   Settings,
   LogOut,
   ChevronDown,
-  History,
   Bell,
   QrCode,
 } from "lucide-react";
@@ -79,9 +78,7 @@ export function AttendeeNavigation() {
     router.push("/");
   };
 
-  const navItems = [
-    { href: "/me/history", label: "History", icon: History },
-  ];
+  const navItems: Array<{ href: string; label: string; icon: any }> = [];
 
   const profileItems = [
     { href: "/me/profile", label: "Edit Profile", icon: User },
@@ -104,28 +101,31 @@ export function AttendeeNavigation() {
         <div className="h-4 w-px bg-white/20 hidden sm:block" />
 
         {/* Desktop Navigation */}
-        <div className="hidden sm:flex items-center gap-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-all duration-300 ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden lg:inline">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="h-4 w-px bg-white/20 hidden sm:block" />
+        {navItems.length > 0 && (
+          <>
+            <div className="hidden sm:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-all duration-300 ${
+                      isActive
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden lg:inline">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="h-4 w-px bg-white/20 hidden sm:block" />
+          </>
+        )}
 
         {/* Desktop Profile Dropdown */}
         <div className="relative hidden sm:block" ref={profileRef}>
@@ -235,29 +235,32 @@ export function AttendeeNavigation() {
             </div>
 
             {/* Navigation Links */}
-            <div className="py-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                      isActive
-                        ? "text-white bg-white/10"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="h-px bg-white/10" />
+            {navItems.length > 0 && (
+              <>
+                <div className="py-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                          isActive
+                            ? "text-white bg-white/10"
+                            : "text-white/70 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+                <div className="h-px bg-white/10" />
+              </>
+            )}
 
             {/* Profile Links */}
             <div className="py-2">

@@ -41,8 +41,9 @@ export default function RegisterPage() {
   const [registrationCount, setRegistrationCount] = useState<number>(0);
   const [eventDetails, setEventDetails] = useState<{
     name: string;
-    venue?: { name: string } | null;
+    venue?: { name: string; slug?: string; address?: string } | null;
     start_time?: string | null;
+    end_time?: string | null;
     registration_count?: number;
     flier_url?: string | null;
   } | null>(null);
@@ -76,6 +77,7 @@ export default function RegisterPage() {
                 name: data.event.name,
                 venue: data.event.venue,
                 start_time: data.event.start_time,
+                end_time: data.event.end_time || null,
                 registration_count: data.event.registration_count || 0,
                 flier_url: data.event.flier_url || null,
               });
@@ -125,6 +127,7 @@ export default function RegisterPage() {
                 name: checkData.event.name,
                 venue: checkData.event.venue,
                 start_time: checkData.event.start_time,
+                end_time: checkData.event.end_time || null,
                 flier_url: checkData.event.flier_url,
               });
               setLoading(false);
@@ -268,6 +271,7 @@ export default function RegisterPage() {
           name: data.event.name,
           venue: data.event.venue,
           start_time: data.event.start_time,
+          end_time: data.event.end_time || null,
           flier_url: data.event.flier_url,
         });
       } else {
@@ -280,6 +284,7 @@ export default function RegisterPage() {
               name: eventData.event?.name || eventData.name,
               venue: eventData.event?.venue || eventData.venue || null,
               start_time: eventData.event?.start_time || eventData.start_time || null,
+              end_time: eventData.event?.end_time || eventData.end_time || null,
               flier_url: eventData.event?.flier_url || eventData.flier_url || null,
             });
           }
@@ -339,9 +344,12 @@ export default function RegisterPage() {
         eventName={eventDetails.name}
         eventSlug={eventSlug}
         venueName={eventDetails.venue?.name || null}
+        venueSlug={eventDetails.venue?.slug || null}
         startTime={eventDetails.start_time || null}
+        endTime={eventDetails.end_time || null}
         qrToken={qrToken}
         flierUrl={flierUrl}
+        venueAddress={eventDetails.venue?.address || null}
       />
     );
   }

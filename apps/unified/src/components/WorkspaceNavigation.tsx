@@ -15,7 +15,7 @@ import {
   Calendar,
   CreditCard,
   Shield,
-  Home,
+  LayoutGrid,
   Building2,
   Users,
   Megaphone,
@@ -64,7 +64,7 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
   // Build navigation items based on user's role
   const getNavItems = (): NavItem[] => {
     const items: NavItem[] = [
-      { href: "/app", label: "Dashboard", icon: Home },
+      { href: "/app", label: "Dashboard", icon: LayoutGrid },
     ];
 
     // Role-specific navigation

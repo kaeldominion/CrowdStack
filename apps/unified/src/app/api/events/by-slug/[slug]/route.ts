@@ -19,7 +19,7 @@ export async function GET(
       .select(`
         *,
         organizer:organizers(id, name),
-        venue:venues(id, name, address, city, state, country)
+        venue:venues(id, name, slug, address, city, state, country)
       `)
       .eq("slug", params.slug)
       .eq("status", "published")

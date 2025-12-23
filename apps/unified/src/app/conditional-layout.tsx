@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Footer, Logo } from "@crowdstack/ui";
 import Link from "next/link";
-import { Menu, X, User, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutGrid } from "lucide-react";
 import { AttendeeNavigation } from "@/components/AttendeeNavigation";
 import { createBrowserClient } from "@crowdstack/shared";
 
@@ -244,38 +244,74 @@ function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "
 function PublicNavigationWithAuth() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Shared user loading logic
-  const loadUser = async () => {
-    try {
-      const supabase = createBrowserClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        // Try to get attendee name
-        const { data: attendee } = await supabase
-          .from("attendees")
-          .select("name")
-          .eq("user_id", authUser.id)
-          .single();
-
-        setUser({
-          id: authUser.id,
-          email: authUser.email || "",
-          name: attendee?.name || authUser.user_metadata?.name,
-        });
-      }
-    } catch (error) {
-      console.error("Error loading user:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    // Shared user loading logic
+    const loadUser = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Error getting user:", error);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
+        if (authUser) {
+          // Try to get attendee name
+          const { data: attendee } = await supabase
+            .from("attendees")
+            .select("name")
+            .eq("user_id", authUser.id)
+            .single();
+
+          // Get user roles to check dashboard access
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", authUser.id);
+
+          const roleList = (roles || []).map((r: any) => r.role);
+          setUserRoles(roleList);
+
+          setUser({
+            id: authUser.id,
+            email: authUser.email || "",
+            name: attendee?.name || authUser.user_metadata?.name,
+          });
+        } else {
+          setUser(null);
+          setUserRoles([]);
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+        setUser(null);
+        setUserRoles([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadUser();
+
+    // Listen for auth state changes
+    const supabase = createBrowserClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        loadUser();
+      }
+      // Note: We skip TOKEN_REFRESHED to avoid unnecessary reloads
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -307,10 +343,19 @@ function PublicNavigationWithAuth() {
     return "User";
   };
 
-  const profileItems = [
+  // Build profile items - add dashboard if user has access
+  const hasDashboardAccess = userRoles.some(role => 
+    ["venue_admin", "event_organizer", "promoter", "superadmin"].includes(role)
+  );
+  
+  const profileItems = [];
+  if (hasDashboardAccess) {
+    profileItems.push({ href: "/app", label: "Dashboard", icon: LayoutGrid });
+  }
+  profileItems.push(
     { href: "/me", label: "Me", icon: User },
-    { href: "/me/profile", label: "Profile", icon: Settings },
-  ];
+    { href: "/me/profile", label: "Profile", icon: Settings }
+  );
 
   // Show loading state (simple "Log in" link while checking)
   if (loading) {
@@ -397,36 +442,73 @@ function PublicNavigationWithAuth() {
 function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    // Shared user loading logic
+    const loadUser = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Error getting user:", error);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
+        if (authUser) {
+          // Try to get attendee name
+          const { data: attendee } = await supabase
+            .from("attendees")
+            .select("name")
+            .eq("user_id", authUser.id)
+            .single();
 
-  const loadUser = async () => {
-    try {
-      const supabase = createBrowserClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        // Try to get attendee name
-        const { data: attendee } = await supabase
-          .from("attendees")
-          .select("name")
-          .eq("user_id", authUser.id)
-          .single();
+          // Get user roles to check dashboard access
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", authUser.id);
 
-        setUser({
-          id: authUser.id,
-          email: authUser.email || "",
-          name: attendee?.name || authUser.user_metadata?.name,
-        });
+          const roleList = (roles || []).map((r: any) => r.role);
+          setUserRoles(roleList);
+
+          setUser({
+            id: authUser.id,
+            email: authUser.email || "",
+            name: attendee?.name || authUser.user_metadata?.name,
+          });
+        } else {
+          setUser(null);
+          setUserRoles([]);
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+        setUser(null);
+        setUserRoles([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading user:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadUser();
+
+    // Listen for auth state changes
+    const supabase = createBrowserClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        loadUser();
+      }
+      // Note: We skip TOKEN_REFRESHED to avoid unnecessary reloads
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createBrowserClient();
@@ -441,10 +523,19 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     return "U";
   };
 
-  const profileItems = [
+  // Build profile items - add dashboard if user has access
+  const hasDashboardAccess = userRoles.some(role => 
+    ["venue_admin", "event_organizer", "promoter", "superadmin"].includes(role)
+  );
+  
+  const profileItems = [];
+  if (hasDashboardAccess) {
+    profileItems.push({ href: "/app", label: "Dashboard", icon: LayoutGrid });
+  }
+  profileItems.push(
     { href: "/me", label: "Me", icon: User },
-    { href: "/me/profile", label: "Profile", icon: Settings },
-  ];
+    { href: "/me/profile", label: "Profile", icon: Settings }
+  );
 
   if (loading) {
     return (

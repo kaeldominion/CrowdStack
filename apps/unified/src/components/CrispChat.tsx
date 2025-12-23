@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 declare global {
   interface Window {
@@ -29,6 +29,9 @@ function getEnvironment(): "production" | "beta" | "development" {
 
 export function CrispChat() {
   const [mounted, setMounted] = useState(false);
+  const loadingRef = useRef(false);
+  const xpCacheRef = useRef<{ xp: number; timestamp: number } | null>(null);
+  const XP_CACHE_TTL = 30000; // Cache XP for 30 seconds
 
   // Only run on client
   useEffect(() => {
@@ -61,6 +64,9 @@ export function CrispChat() {
 
     // Load user data function
     const loadUserData = async () => {
+      // Prevent concurrent calls
+      if (loadingRef.current) return;
+      loadingRef.current = true;
       try {
         // Dynamic import to avoid SSR issues
         const { createBrowserClient } = await import("@crowdstack/shared");
@@ -120,17 +126,28 @@ export function CrispChat() {
           window.$crisp.push(["set", "user:phone", [attendee.phone]]);
         }
 
-        // Load XP data
+        // Load XP data - TEMPORARILY DISABLED to prevent excessive API calls
+        // TODO: Re-enable with proper caching/throttling once performance issue is resolved
         let totalXp = 0;
-        try {
-          const xpResponse = await fetch("/api/xp/me");
-          if (xpResponse.ok) {
-            const xpData = await xpResponse.json();
-            totalXp = xpData.total_xp || 0;
-          }
-        } catch {
-          // XP fetch failed, continue without it
-        }
+        // const now = Date.now();
+        // const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+        // 
+        // if (xpCacheRef.current && (now - xpCacheRef.current.timestamp) < CACHE_DURATION) {
+        //   totalXp = xpCacheRef.current.xp;
+        // } else if (!xpCacheRef.current && !xpFetchInProgressRef.current) {
+        //   xpFetchInProgressRef.current = true;
+        //   fetch("/api/xp/me")
+        //     .then((xpResponse) => xpResponse.ok ? xpResponse.json() : null)
+        //     .then((xpData) => {
+        //       if (xpData?.total_xp !== undefined) {
+        //         xpCacheRef.current = { xp: xpData.total_xp || 0, timestamp: Date.now() };
+        //       }
+        //     })
+        //     .catch(() => {})
+        //     .finally(() => { xpFetchInProgressRef.current = false; });
+        // } else if (xpCacheRef.current) {
+        //   totalXp = xpCacheRef.current.xp;
+        // }
 
         // Set session segments based on roles (for support routing)
         const segments: string[] = ["logged-in", `env:${environment}`];
@@ -221,12 +238,15 @@ export function CrispChat() {
         }
 
         // Set up auth state change listener
+        // Only reload on actual auth changes, not token refreshes (which happen frequently)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event) => {
-            if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+            if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
               // Reload user data on auth change
               loadUserData();
             }
+            // Note: We skip TOKEN_REFRESHED events to prevent excessive API calls
+            // User data doesn't change on token refresh, so no need to reload
           }
         );
 
@@ -235,6 +255,8 @@ export function CrispChat() {
 
       } catch (error) {
         console.error("[CrispChat] Error loading user data:", error);
+      } finally {
+        loadingRef.current = false;
       }
     };
 

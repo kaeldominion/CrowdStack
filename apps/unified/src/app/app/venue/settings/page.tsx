@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal, ConfirmModal } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2 } from "lucide-react";
+import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin } from "lucide-react";
 import Image from "next/image";
+import { MapPreview } from "@/components/venue/MapPreview";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 
 interface VenueSettingsData {
@@ -13,15 +14,6 @@ interface VenueSettingsData {
   gallery: VenueGalleryType[];
   tags: VenueTag[];
 }
-
-const PRESET_COLORS = [
-  { name: "Blue", value: "#3B82F6" },
-  { name: "Purple", value: "#8B5CF6" },
-  { name: "Red", value: "#EF4444" },
-  { name: "Green", value: "#10B981" },
-  { name: "Orange", value: "#F59E0B" },
-  { name: "Pink", value: "#EC4899" },
-];
 
 const TAG_OPTIONS = {
   music: ["Electronic", "Hip-Hop", "House", "Techno", "R&B", "Pop", "Rock", "Jazz", "Latin", "Reggae"],
@@ -449,110 +441,109 @@ export default function VenueSettingsPage() {
                 type="url"
                 value={data.venue.google_maps_url || ""}
                 onChange={(e) => updateVenueField("google_maps_url", e.target.value)}
-                placeholder="https://www.google.com/maps/place/..."
-                helperText="Paste the Google Maps URL for your venue. This will be used for the map display and location link."
+                placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
+                helperText="Paste any Google Maps URL (including short links like maps.app.goo.gl). Click 'Update Address' below to extract the address."
               />
 
-              {/* Map Preview */}
-              {data.venue.google_maps_url && (() => {
-                const getEmbedUrl = () => {
-                  const url = data.venue.google_maps_url;
-                  
-                  if (!url) return null;
+              {/* Update Address Button */}
+              {data.venue.google_maps_url && (
+                <div>
+                  <Button
+                    variant="secondary"
+                    onClick={async () => {
+                      try {
+                        setSaving(true);
+                        const url = venueId 
+                          ? `/api/venue/settings/extract-address?venueId=${venueId}` 
+                          : "/api/venue/settings/extract-address";
+                        const response = await fetch(url, {
+                          method: "POST",
+                        });
 
-                  // Extract coordinates from URL (most reliable method)
-                  // Pattern: @lat,lng or @lat,lng,zoom
-                  const coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-                  if (coordsMatch) {
-                    const lat = coordsMatch[1];
-                    const lng = coordsMatch[2];
-                    
-                    // Try API key approach first (better quality)
-                    const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-                    if (googleMapsApiKey) {
-                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${lat},${lng}&zoom=15`;
-                    }
-                    
-                    // Fallback: Use simple embed format (works without API key but may have limitations)
-                    return `https://www.google.com/maps?q=${lat},${lng}&hl=en&z=15&output=embed`;
-                  }
+                        if (!response.ok) {
+                          const error = await response.json();
+                          throw new Error(error.error || "Failed to extract address");
+                        }
 
-                  // Try API key approach for place names or queries
-                  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-                  if (googleMapsApiKey) {
-                    // Try to extract place name
-                    const placeMatch = url.match(/\/place\/([^/@?]+)/);
-                    if (placeMatch) {
-                      const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
-                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(placeName)}&zoom=15`;
-                    }
+                        const result = await response.json();
+                        
+                        // Reload settings to get updated data from server
+                        await loadSettings();
 
-                    // Try query parameter
-                    const queryMatch = url.match(/[?&]q=([^&]+)/);
-                    if (queryMatch) {
-                      const query = decodeURIComponent(queryMatch[1]);
-                      return `https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(query)}&zoom=15`;
-                    }
-                  }
-
-                  return null;
-                };
-
-                const embedUrl = getEmbedUrl();
-
-                return (
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-foreground">Map Preview</p>
-                    {embedUrl ? (
-                      <div className="w-full h-64 border-2 border-border overflow-hidden">
-                        <iframe
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          loading="lazy"
-                          allowFullScreen
-                          referrerPolicy="no-referrer-when-downgrade"
-                          src={embedUrl}
-                        />
-                      </div>
+                        // Show success message
+                        setSavedTab("location");
+                        setTimeout(() => setSavedTab(null), 3000);
+                      } catch (error: any) {
+                        setErrors({ extractAddress: error.message });
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Extracting...
+                      </>
                     ) : (
-                      <div className="w-full h-64 border-2 border-border bg-surface flex items-center justify-center">
-                        <div className="text-center space-y-2 px-4">
-                          <p className="text-foreground-muted text-sm font-medium">
-                            Map preview unavailable
-                          </p>
-                          <p className="text-foreground-muted text-xs">
-                            Unable to extract location from this URL format
-                          </p>
-                          <p className="text-foreground-muted text-xs mt-2">
-                            The URL will still work for the "Open in Google Maps" button on your public page
-                          </p>
-                          <p className="text-foreground-muted text-xs mt-3 pt-3 border-t border-border">
-                            <strong>Tip:</strong> Use a Google Maps URL with coordinates:
-                            <br />
-                            <code className="text-xs bg-surface px-2 py-1 mt-1 inline-block border border-border">
-                              https://www.google.com/maps/place/Venue/@40.7128,-74.0060
-                            </code>
-                            <br />
-                            <span className="text-xs mt-1 block">
-                              (Right-click on Google Maps → "Share" → "Copy link" to get the correct format)
-                            </span>
-                          </p>
-                        </div>
-                      </div>
+                      <>
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Update Address from Google Maps
+                      </>
                     )}
-                    <a
-                      href={data.venue.google_maps_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline text-sm inline-flex items-center gap-1 break-all"
-                    >
-                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{data.venue.google_maps_url}</span>
-                    </a>
+                  </Button>
+                  {errors.extractAddress && (
+                    <p className="text-sm text-error mt-2">{errors.extractAddress}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Map Preview */}
+              {data.venue.google_maps_url && (
+                <MapPreview url={data.venue.google_maps_url} />
+              )}
+
+              {/* Address Fields - Manual Editing */}
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Address</h3>
+                <p className="text-sm text-foreground-muted mb-4">
+                  Click "Update Address from Google Maps" above to automatically extract the address, or manually edit the fields below.
+                </p>
+                
+                <div className="space-y-4">
+                  <Input
+                    label="Street Address"
+                    value={data.venue.address || ""}
+                    onChange={(e) => updateVenueField("address", e.target.value)}
+                    placeholder="123 Main Street, 12345"
+                    helperText="Street address with postal code if available"
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="City"
+                      value={data.venue.city || ""}
+                      onChange={(e) => updateVenueField("city", e.target.value)}
+                      placeholder="New York"
+                    />
+
+                    <Input
+                      label="State/Province"
+                      value={data.venue.state || ""}
+                      onChange={(e) => updateVenueField("state", e.target.value)}
+                      placeholder="NY"
+                    />
                   </div>
-                );
-              })()}
+
+                  <Input
+                    label="Country"
+                    value={data.venue.country || ""}
+                    onChange={(e) => updateVenueField("country", e.target.value)}
+                    placeholder="US"
+                  />
+                </div>
+              </div>
 
               <div className="flex items-center gap-3">
                 <Button
@@ -623,42 +614,6 @@ export default function VenueSettingsPage() {
                   }}
                   className="text-sm"
                 />
-              </div>
-
-              {/* Accent Color */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Accent Color</label>
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_COLORS.map((color) => (
-                      <button
-                        key={color.value}
-                        type="button"
-                        onClick={() => updateVenueField("accent_color", color.value)}
-                        className={`w-12 h-12 border-2 ${
-                          data.venue.accent_color === color.value
-                            ? "border-primary"
-                            : "border-border"
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
-                    ))}
-                  </div>
-                  <Input
-                    label="Custom Color (Hex)"
-                    value={data.venue.accent_color || ""}
-                    onChange={(e) => updateVenueField("accent_color", e.target.value)}
-                    placeholder="#3B82F6"
-                    pattern="^#[0-9A-Fa-f]{6}$"
-                  />
-                  {data.venue.accent_color && (
-                    <div
-                      className="w-full h-12 border-2 border-border"
-                      style={{ backgroundColor: data.venue.accent_color }}
-                    />
-                  )}
-                </div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -1064,7 +1019,6 @@ export default function VenueSettingsPage() {
                 <div className="flex-1">
                   <h1
                     className="text-3xl font-bold tracking-tight text-foreground"
-                    style={data.venue.accent_color ? { color: data.venue.accent_color } : undefined}
                   >
                     {data.venue.name || "Venue Name"}
                   </h1>

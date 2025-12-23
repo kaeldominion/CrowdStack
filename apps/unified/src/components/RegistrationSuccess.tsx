@@ -7,23 +7,30 @@ import Link from "next/link";
 import Image from "next/image";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { ShareButton } from "./ShareButton";
+import { AddToCalendar } from "./AddToCalendar";
 
 interface RegistrationSuccessProps {
   eventName: string;
   eventSlug: string;
   venueName?: string | null;
+  venueSlug?: string | null;
   startTime?: string | null;
+  endTime?: string | null;
   qrToken: string;
   flierUrl?: string | null;
+  venueAddress?: string | null;
 }
 
 export function RegistrationSuccess({
   eventName,
   eventSlug,
   venueName,
+  venueSlug,
   startTime,
+  endTime,
   qrToken,
   flierUrl,
+  venueAddress,
 }: RegistrationSuccessProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
@@ -151,7 +158,13 @@ export function RegistrationSuccess({
                   <MapPin className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-white/50 mb-0.5">Venue</p>
-                    <p className="text-sm font-semibold text-white">{venueName}</p>
+                    {venueSlug ? (
+                      <Link href={`/v/${venueSlug}`} className="text-sm font-semibold text-white hover:text-primary transition-colors">
+                        {venueName}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-semibold text-white">{venueName}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -177,7 +190,7 @@ export function RegistrationSuccess({
               )}
             </div>
 
-            {/* CTA Button */}
+            {/* CTA Buttons */}
             <div className="mt-6 space-y-3">
               <Link href={`/e/${eventSlug}/pass?token=${qrToken}`}>
                 <Button variant="primary" size="lg" className="w-full flex items-center justify-center gap-2">
@@ -188,6 +201,17 @@ export function RegistrationSuccess({
               <p className="text-xs text-white/40 text-center">
                 Show your QR pass at the event entrance
               </p>
+              
+              {/* Add to Calendar */}
+              {startTime && (
+                <AddToCalendar
+                  eventName={eventName}
+                  startTime={startTime}
+                  endTime={endTime || null}
+                  description={`You're registered for ${eventName}`}
+                  location={venueAddress || venueName || undefined}
+                />
+              )}
               
               {/* Share Button */}
               <div className="mt-6 pt-4 border-t border-white/10">

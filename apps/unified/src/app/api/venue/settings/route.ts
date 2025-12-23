@@ -4,6 +4,120 @@ import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
 /**
+ * Extract address components from Google Maps URL using Geocoding API
+ */
+async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+}> {
+  try {
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    
+    if (!googleMapsApiKey) {
+      console.error("Google Maps API key not configured");
+      return { address: null, city: null, state: null, country: null };
+    }
+
+    // First, resolve short URLs if needed
+    let resolvedUrl = url;
+    const isShortUrl = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)/.test(url);
+    
+    if (isShortUrl) {
+      try {
+        const resolveResponse = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; CrowdStack/1.0)",
+          },
+        });
+        resolvedUrl = resolveResponse.url || url;
+      } catch (error) {
+        console.error("Error resolving short URL:", error);
+        // Continue with original URL
+      }
+    }
+
+    // Extract coordinates from URL
+    const coordsMatch = resolvedUrl.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    
+    if (!coordsMatch) {
+      console.error("Could not extract coordinates from URL:", resolvedUrl);
+      return { address: null, city: null, state: null, country: null };
+    }
+
+    const lat = parseFloat(coordsMatch[1]);
+    const lng = parseFloat(coordsMatch[2]);
+
+    // Use Google Geocoding API to reverse geocode
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleMapsApiKey}`;
+    
+    const geocodeResponse = await fetch(geocodeUrl);
+    const geocodeData = await geocodeResponse.json();
+
+    if (geocodeData.status !== "OK" || !geocodeData.results || geocodeData.results.length === 0) {
+      console.error("Geocoding failed:", geocodeData.status);
+      return { address: null, city: null, state: null, country: null };
+    }
+
+    // Parse address components from the first result
+    const result = geocodeData.results[0];
+    const addressComponents = result.address_components || [];
+    
+    let address: string | null = null;
+    let city: string | null = null;
+    let state: string | null = null;
+    let country: string | null = null;
+
+    // Extract street address (street_number + route + postal_code)
+    const streetNumber = addressComponents.find((c: any) => c.types.includes("street_number"))?.long_name;
+    const route = addressComponents.find((c: any) => c.types.includes("route"))?.long_name;
+    const postalCode = addressComponents.find((c: any) => c.types.includes("postal_code"))?.long_name;
+    
+    const addressParts = [streetNumber, route].filter(Boolean);
+    if (addressParts.length > 0) {
+      address = addressParts.join(" ");
+      // Append postal code if available
+      if (postalCode) {
+        address = `${address}, ${postalCode}`;
+      }
+    } else {
+      // Fallback to formatted address if we can't parse components
+      address = result.formatted_address || null;
+    }
+
+    // Extract city (locality or administrative_area_level_2)
+    city = addressComponents.find((c: any) => 
+      c.types.includes("locality") || 
+      c.types.includes("administrative_area_level_2")
+    )?.long_name || null;
+
+    // Extract state (administrative_area_level_1)
+    state = addressComponents.find((c: any) => 
+      c.types.includes("administrative_area_level_1")
+    )?.short_name || null;
+
+    // Extract country
+    const countryComponent = addressComponents.find((c: any) => 
+      c.types.includes("country")
+    );
+    country = countryComponent?.short_name || null;
+
+    return {
+      address,
+      city,
+      state,
+      country,
+    };
+  } catch (error) {
+    console.error("Error extracting address from Google Maps URL:", error);
+    return { address: null, city: null, state: null, country: null };
+  }
+}
+
+/**
  * Normalize Instagram input to just the username (without @ or URL parts)
  * Accepts: @username, username, https://instagram.com/username, https://www.instagram.com/username/
  */
@@ -194,6 +308,13 @@ export async function PUT(request: NextRequest) {
 
     // Update venue
     if (body.venue) {
+      // Get current venue data to compare
+      const { data: currentVenue } = await supabase
+        .from("venues")
+        .select("google_maps_url, address, city, state, country")
+        .eq("id", venueId)
+        .single();
+
       const updateData: any = {};
       const allowedFields = [
         "name",
@@ -210,7 +331,6 @@ export async function PUT(request: NextRequest) {
         "instagram_url",
         "logo_url",
         "cover_image_url",
-        "accent_color",
         "latitude",
         "longitude",
         "google_maps_url",
@@ -223,6 +343,7 @@ export async function PUT(request: NextRequest) {
         "default_message_templates",
       ];
 
+      // Process allowed fields (no automatic address extraction - user must use "Update Address" button)
       for (const field of allowedFields) {
         if (field in body.venue) {
           let value = body.venue[field];

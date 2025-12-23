@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
-// Disable caching for this route - responses can exceed 2MB due to gallery images and events
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 /**
- * GET /api/venues/by-slug/[slug]
- * Get venue by slug (public route)
- * Returns venue data with gallery, tags, and upcoming events
+ * GET /api/venues/by-slug/[slug]/all-events
+ * Get all events for a venue (public route)
+ * Returns all published events (live, upcoming, and past) without limits
  */
 export async function GET(
   request: NextRequest,
@@ -20,7 +16,7 @@ export async function GET(
     // Get venue by slug
     const { data: venue, error: venueError } = await supabase
       .from("venues")
-      .select("*")
+      .select("id")
       .eq("slug", params.slug)
       .single();
 
@@ -31,27 +27,9 @@ export async function GET(
       );
     }
 
-    // Get gallery images (ordered by display_order, hero first)
-    const { data: gallery } = await supabase
-      .from("venue_gallery")
-      .select("*")
-      .eq("venue_id", venue.id)
-      .order("is_hero", { ascending: false })
-      .order("display_order", { ascending: true });
-
-    // Get tags
-    const { data: tags } = await supabase
-      .from("venue_tags")
-      .select("*")
-      .eq("venue_id", venue.id)
-      .order("tag_type", { ascending: true })
-      .order("tag_value", { ascending: true });
-
     const now = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(now.getDate() + 30);
 
-    // Get all relevant events for this venue
+    // Get all events for this venue (no limit)
     const { data: allEvents } = await supabase
       .from("events")
       .select(`
@@ -68,10 +46,8 @@ export async function GET(
       `)
       .eq("venue_id", venue.id)
       .eq("status", "published")
-      .order("start_time", { ascending: false })
-      .limit(50);
+      .order("start_time", { ascending: false });
 
-    // Get registration counts for all events
     const eventIds = allEvents?.map((e) => e.id) || [];
     let registrationCounts: Record<string, number> = {};
 
@@ -124,19 +100,14 @@ export async function GET(
     pastEvents.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
     return NextResponse.json({
-      venue: {
-        ...venue,
-        gallery: gallery || [],
-        tags: tags || [],
-        live_events: liveEvents,
-        upcoming_events: upcomingEvents.slice(0, 10),
-        past_events: pastEvents.slice(0, 6),
-      },
+      live_events: liveEvents,
+      upcoming_events: upcomingEvents,
+      past_events: pastEvents,
     });
   } catch (error: any) {
-    console.error("Failed to fetch venue:", error);
+    console.error("Failed to fetch all events:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch venue" },
+      { error: error.message || "Failed to fetch events" },
       { status: 500 }
     );
   }

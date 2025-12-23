@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
 import { LoadingSpinner } from "@crowdstack/ui";
 import Link from "next/link";
+import { VenueCard } from "@/components/venue/VenueCard";
 import {
   Calendar,
   Clock,
@@ -12,6 +13,7 @@ import {
   Ticket,
   Star,
   TrendingUp,
+  Heart,
   QrCode,
   ChevronRight,
   Sparkles,
@@ -101,6 +103,7 @@ export default function MePage() {
   const [todayEvents, setTodayEvents] = useState<Registration[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Registration[]>([]);
   const [pastEvents, setPastEvents] = useState<Registration[]>([]);
+  const [favoriteVenues, setFavoriteVenues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
   const [promoterStats, setPromoterStats] = useState<{
@@ -314,6 +317,17 @@ export default function MePage() {
         setTodayEvents(today);
         setUpcomingEvents(upcoming);
         setPastEvents(past);
+
+        // Load favorite venues
+        try {
+          const favoritesResponse = await fetch("/api/me/favorite-venues");
+          if (favoritesResponse.ok) {
+            const favoritesData = await favoritesResponse.json();
+            setFavoriteVenues(favoritesData.venues || []);
+          }
+        } catch (error) {
+          console.error("Error loading favorite venues:", error);
+        }
         
         if (process.env.NODE_ENV === "development") {
           console.log("[Me] Event categorization:", {
@@ -812,6 +826,21 @@ export default function MePage() {
                 <p className="text-lg font-bold text-white">{referralStats.conversionRate}%</p>
                 <p className="text-xs text-white/50">Click → Register</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Favorite Venues */}
+        {favoriteVenues.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Heart className="h-6 w-6 text-primary" />
+              <h2 className="text-xl font-semibold text-white">Favorite Venues</h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {favoriteVenues.map((venue) => (
+                <VenueCard key={venue.id} venue={venue} />
+              ))}
             </div>
           </div>
         )}

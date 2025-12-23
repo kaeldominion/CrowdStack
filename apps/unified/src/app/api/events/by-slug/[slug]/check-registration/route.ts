@@ -64,6 +64,7 @@ export async function GET(
         name,
         slug,
         start_time,
+        end_time,
         venue_id,
         flier_url
       `)
@@ -74,7 +75,7 @@ export async function GET(
     if (eventDetails?.venue_id) {
       const { data: venueData } = await serviceSupabase
         .from("venues")
-        .select("id, name")
+        .select("id, name, slug")
         .eq("id", eventDetails.venue_id)
         .single();
       venue = venueData;
@@ -97,7 +98,8 @@ export async function GET(
         slug: eventDetails.slug,
         start_time: eventDetails.start_time,
         flier_url: eventDetails.flier_url,
-        venue: venue ? { id: venue.id, name: venue.name } : null,
+        venue: venue ? { id: venue.id, name: venue.name, slug: venue.slug } : null,
+        end_time: eventDetails.end_time,
       } : null,
     });
   } catch (error: any) {

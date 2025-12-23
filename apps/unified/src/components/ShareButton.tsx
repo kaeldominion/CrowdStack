@@ -55,6 +55,10 @@ export function ShareButton({
   const [copied, setCopied] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
+  
+  // Use centered modal instead of positioned menu
+  // No need for position calculation - menu will be centered
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -151,11 +155,17 @@ export function ShareButton({
     }
   };
 
-  const menuContent = (
-    <div 
-      ref={menuRef}
-      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-xl border border-white/20 backdrop-blur-xl bg-black/90 shadow-2xl shadow-black/50 overflow-hidden z-50"
-    >
+  const menuContent = showMenu ? (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+        onClick={() => setShowMenu(false)}
+      />
+      <div 
+        ref={menuRef}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 rounded-xl border border-white/20 backdrop-blur-xl bg-black/95 shadow-2xl shadow-black/50 overflow-hidden z-[110]"
+      >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
         <span className="text-sm font-medium text-white">Share</span>
@@ -241,11 +251,12 @@ export function ShareButton({
         )}
       </div>
     </div>
-  );
+    </>
+  ) : null;
 
   if (compact) {
     return (
-      <div className="relative flex-1">
+      <div className="relative flex-1" ref={buttonRef}>
       <button
           onClick={() => setShowMenu(!showMenu)}
           disabled={isLoading}
@@ -258,22 +269,27 @@ export function ShareButton({
           )}
         {label}
       </button>
-        {showMenu && menuContent}
+        {showMenu && typeof window !== 'undefined' && menuContent}
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      <Button variant="secondary" size="lg" onClick={() => setShowMenu(!showMenu)} disabled={isLoading}>
+    <div className="relative" ref={buttonRef}>
+      <Button 
+        variant="secondary" 
+        size="lg" 
+        onClick={() => setShowMenu(!showMenu)} 
+        disabled={isLoading}
+        aria-label={label || "Share"}
+      >
         {isLoading ? (
-          <InlineSpinner size="sm" className="mr-2" />
+          <InlineSpinner size="sm" />
         ) : (
-      <Share2 className="h-4 w-4 mr-2" />
+          <Share2 className="h-4 w-4" />
         )}
-      {label}
-    </Button>
-      {showMenu && menuContent}
+      </Button>
+      {showMenu && typeof window !== 'undefined' && menuContent}
     </div>
   );
 }
