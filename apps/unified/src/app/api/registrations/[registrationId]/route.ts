@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserId } from "@crowdstack/shared/auth/server";
+import { getUserId } from "@/lib/auth/check-role";
 
 /**
  * DELETE /api/registrations/[registrationId]
