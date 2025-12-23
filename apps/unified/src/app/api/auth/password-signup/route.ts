@@ -27,62 +27,67 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Check if user already exists
-    const { data: existingUsers } = await serviceSupabase.auth.admin.listUsers();
-    const existingUser = existingUsers.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existingUser) {
-      // Check if user has a password set
-      // If user was created via magic link, they might not have a password
-      // Try to update the password for them
-      try {
-        const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(
-          existingUser.id,
-          { password }
-        );
-
-        if (updateError) {
-          console.error("Failed to update password for existing user:", updateError);
-          // If update fails, user might already have a password - return success so client can try sign in
-          return NextResponse.json({
-            success: true,
-            userExists: true,
-            message: "User account exists. Please sign in with your password.",
-          });
-        }
-
-        // Password updated successfully - return success so client can sign in
-        return NextResponse.json({
-          success: true,
-          userExists: true,
-          passwordUpdated: true,
-          message: "Password set successfully. You can now sign in.",
-        });
-      } catch (updateErr: any) {
-        console.error("Error updating password:", updateErr);
-        // Return success anyway so client can try to sign in
-        return NextResponse.json({
-          success: true,
-          userExists: true,
-          message: "User account exists. Please sign in with your password.",
-        });
-      }
-    }
-
-    // Create new user with password (auto-confirm email to bypass rate limits)
+    // Try to create new user with password (auto-confirm email to bypass rate limits)
     const { data: newUser, error: createError } = await serviceSupabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm email to bypass rate limits
-      user_metadata: {
-        // Add any metadata if needed
-      },
     });
 
     if (createError) {
-      console.error("Failed to create user:", createError);
+      console.error("[Password Signup] Create error:", createError.message);
+      
+      // Check if user already exists
+      if (createError.message?.toLowerCase().includes("already") || 
+          createError.message?.toLowerCase().includes("duplicate") ||
+          createError.message?.toLowerCase().includes("exists")) {
+        
+        // User exists - try to find and update their password
+        // Use a more efficient approach: query auth.users view through RPC or just try to update
+        try {
+          // First, get the user ID by querying the identities table (which has email index)
+          const { data: identities, error: identityError } = await serviceSupabase
+            .from("auth.identities")
+            .select("user_id")
+            .eq("provider", "email")
+            .ilike("email", email)
+            .limit(1);
+
+          if (identityError) {
+            console.log("[Password Signup] Could not query identities:", identityError.message);
+          }
+
+          if (identities && identities.length > 0) {
+            const userId = identities[0].user_id;
+            
+            // Try to update the password
+            const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(
+              userId,
+              { password }
+            );
+
+            return NextResponse.json({
+              success: true,
+              userExists: true,
+              passwordUpdated: !updateError,
+              message: updateError 
+                ? "User account exists. Please sign in with your existing password."
+                : "Password updated. You can now sign in.",
+            });
+          }
+        } catch (lookupErr) {
+          console.log("[Password Signup] Lookup failed, returning generic response");
+        }
+
+        // Fallback: just tell client user exists (they can try to sign in)
+        return NextResponse.json({
+          success: true,
+          userExists: true,
+          message: "An account with this email already exists. Please sign in with your password.",
+        });
+      }
+
+      // Other create errors
       return NextResponse.json(
         { error: createError.message || "Failed to create account" },
         { status: 400 }
@@ -96,8 +101,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log("[Password Signup] User created successfully:", newUser.user.id);
+
     // Return user info (client will sign in with password after a brief delay)
-    // Note: There may be a small delay before the password is available for sign-in
     return NextResponse.json({
       success: true,
       userExists: false,
@@ -108,11 +114,10 @@ export async function POST(request: NextRequest) {
       message: "Account created successfully.",
     });
   } catch (error: any) {
-    console.error("Failed to create account:", error);
+    console.error("[Password Signup] Exception:", error);
     return NextResponse.json(
       { error: error.message || "Failed to create account" },
       { status: 500 }
     );
   }
 }
-

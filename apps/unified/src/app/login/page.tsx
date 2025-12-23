@@ -108,23 +108,38 @@ function LoginContent() {
     setMessage("");
 
     try {
+      console.log("[Login] Starting password signup for:", email);
+      
       // Use API endpoint to create account (bypasses email confirmation and rate limits)
-      const response = await fetch("/api/auth/password-signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      // Add timeout to prevent indefinite hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      let response: Response;
+      try {
+        response = await fetch("/api/auth/password-signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
+      console.log("[Login] API response status:", response.status);
       const data = await response.json();
+      console.log("[Login] API response data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to create account");
       }
 
-      // Account created - now sign in with password
+      // Account created or exists - now sign in with password
+      console.log("[Login] Account ready, attempting sign in...");
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const supabase = createBrowserClient();
@@ -135,6 +150,7 @@ function LoginContent() {
       
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
+          console.log(`[Login] Sign in attempt ${attempt + 1}...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
         
@@ -145,20 +161,27 @@ function LoginContent() {
 
         if (!signInErr && signInData.session) {
           signInSuccess = true;
+          console.log("[Login] Sign in successful, redirecting...");
           // Continue with the same redirect logic as password login
           await handleSuccessfulAuth(signInData);
           return;
         }
         
         signInError = signInErr;
+        console.log(`[Login] Sign in attempt ${attempt + 1} failed:`, signInErr?.message);
       }
 
       if (!signInSuccess) {
+        // If user exists but password doesn't work, show helpful message
+        if (data.userExists) {
+          throw new Error("Could not sign in. Please check your password or use the 'Forgot password' option.");
+        }
         throw new Error(`Account created but failed to sign in: ${signInError?.message || "Unknown error"}. Please try logging in manually.`);
       }
     } catch (err: any) {
       console.error("[Login] Password signup error:", err);
       setError(err.message || "Failed to create account");
+    } finally {
       setLoading(false);
     }
   };
