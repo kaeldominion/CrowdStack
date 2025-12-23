@@ -10,8 +10,8 @@ WITH CHECK (
   bucket_id = 'event-photos'
   AND (
     -- Check if path matches video-flier pattern: events/{eventId}/video-flier/{filename}
-    (storage.foldername(name))[1] = 'events'
-    AND (storage.foldername(name))[3] = 'video-flier'
+    (storage.foldername(storage.objects.name))[1] = 'events'
+    AND (storage.foldername(storage.objects.name))[3] = 'video-flier'
     AND (
       -- User is a superadmin
       EXISTS (
@@ -24,7 +24,7 @@ WITH CHECK (
       EXISTS (
         SELECT 1 FROM public.events e
         INNER JOIN public.organizers o ON o.id = e.organizer_id
-        WHERE e.id::text = (storage.foldername(name))[2]
+        WHERE e.id::text = (storage.foldername(storage.objects.name))[2]
         AND o.created_by = auth.uid()
       )
     )
@@ -38,8 +38,8 @@ TO authenticated
 USING (
   bucket_id = 'event-photos'
   AND (
-    (storage.foldername(name))[1] = 'events'
-    AND (storage.foldername(name))[3] = 'video-flier'
+    (storage.foldername(storage.objects.name))[1] = 'events'
+    AND (storage.foldername(storage.objects.name))[3] = 'video-flier'
     AND (
       EXISTS (
         SELECT 1 FROM public.user_roles ur
@@ -50,7 +50,7 @@ USING (
       EXISTS (
         SELECT 1 FROM public.events e
         INNER JOIN public.organizers o ON o.id = e.organizer_id
-        WHERE e.id::text = (storage.foldername(name))[2]
+        WHERE e.id::text = (storage.foldername(storage.objects.name))[2]
         AND o.created_by = auth.uid()
       )
     )
@@ -64,8 +64,8 @@ TO authenticated
 USING (
   bucket_id = 'event-photos'
   AND (
-    (storage.foldername(name))[1] = 'events'
-    AND (storage.foldername(name))[3] = 'video-flier'
+    (storage.foldername(storage.objects.name))[1] = 'events'
+    AND (storage.foldername(storage.objects.name))[3] = 'video-flier'
     AND (
       EXISTS (
         SELECT 1 FROM public.user_roles ur
@@ -76,7 +76,7 @@ USING (
       EXISTS (
         SELECT 1 FROM public.events e
         INNER JOIN public.organizers o ON o.id = e.organizer_id
-        WHERE e.id::text = (storage.foldername(name))[2]
+        WHERE e.id::text = (storage.foldername(storage.objects.name))[2]
         AND o.created_by = auth.uid()
       )
     )
