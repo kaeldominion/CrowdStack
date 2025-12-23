@@ -28,17 +28,21 @@ export async function POST(request: NextRequest) {
     const origin = requestOrigin || envOrigin || 'https://beta.crowdstack.app';
     const redirectTo = `${origin}/auth/reset-password`;
 
-    console.log("[Forgot Password] Sending reset email to:", email);
-    console.log("[Forgot Password] Request origin:", requestOrigin);
-    console.log("[Forgot Password] Env origin:", envOrigin);
-    console.log("[Forgot Password] Final redirect URL:", redirectTo);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Forgot Password] Sending reset email to:", email);
+      console.log("[Forgot Password] Request origin:", requestOrigin);
+      console.log("[Forgot Password] Env origin:", envOrigin);
+      console.log("[Forgot Password] Final redirect URL:", redirectTo);
+    }
     
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
     });
 
-    console.log("[Forgot Password] Supabase response:", { data, error: error?.message });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Forgot Password] Supabase response:", { data, error: error?.message });
+    }
 
     if (error) {
       console.error("[Forgot Password] Error:", error.message, error.status);
@@ -58,7 +62,9 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    console.log("[Forgot Password] Email sent successfully (according to Supabase)");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Forgot Password] Email sent successfully (according to Supabase)");
+    }
 
     return NextResponse.json({
       success: true,

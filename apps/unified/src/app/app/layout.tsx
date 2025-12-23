@@ -72,7 +72,9 @@ export default async function AuthenticatedLayout({
         console.log("[App Layout] User from localhost cookie:", authenticatedUser?.email || "none");
       }
     } else {
-      console.log("[App Layout] ⚠️ No user from Supabase in production - this should not happen normally");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[App Layout] ⚠️ No user from Supabase in production - this should not happen normally");
+      }
     }
   }
 
@@ -94,15 +96,19 @@ export default async function AuthenticatedLayout({
   }
 
   // Get user roles
-  console.log("[App Layout] Calling getUserRoles() for user:", authenticatedUser.id);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[App Layout] Calling getUserRoles() for user:", authenticatedUser.id);
+  }
   const roles = await getUserRoles();
-  console.log("[App Layout] User roles from DB:", {
-    roles,
-    rolesCount: roles.length,
-    hasSuperadmin: roles.includes("superadmin"),
-    userId: authenticatedUser.id,
-    userEmail: authenticatedUser.email,
-  });
+  if (process.env.NODE_ENV === "development") {
+    console.log("[App Layout] User roles from DB:", {
+      roles,
+      rolesCount: roles.length,
+      hasSuperadmin: roles.includes("superadmin"),
+      userId: authenticatedUser.id,
+      userEmail: authenticatedUser.email,
+    });
+  }
 
   // Check if user is superadmin (needed for impersonation)
   const isSuperadmin = roles.includes("superadmin");

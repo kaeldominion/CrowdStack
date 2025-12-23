@@ -25,13 +25,17 @@ export default function AdminVenuesPage() {
 
   const loadVenues = async () => {
     try {
-      console.log("[Admin Venues] Starting to load venues...");
-      console.log("[Admin Venues] Fetching from:", "/api/admin/venues");
-      console.log("[Admin Venues] Current URL:", typeof window !== "undefined" ? window.location.href : "server");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Admin Venues] Starting to load venues...");
+        console.log("[Admin Venues] Fetching from:", "/api/admin/venues");
+        console.log("[Admin Venues] Current URL:", typeof window !== "undefined" ? window.location.href : "server");
+      }
       
       const response = await fetch("/api/admin/venues");
-      console.log("[Admin Venues] Response status:", response.status, response.statusText);
-      console.log("[Admin Venues] Response headers:", Object.fromEntries(response.headers.entries()));
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Admin Venues] Response status:", response.status, response.statusText);
+        console.log("[Admin Venues] Response headers:", Object.fromEntries(response.headers.entries()));
+      }
       
       if (!response.ok) {
         const errorData = await response.json().catch((e) => {
@@ -53,8 +57,10 @@ export default function AdminVenuesPage() {
       }
       
       const data = await response.json();
-      console.log("[Admin Venues] Received data:", data);
-      console.log("[Admin Venues] Venues count:", data.venues?.length || 0);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Admin Venues] Received data:", data);
+        console.log("[Admin Venues] Venues count:", data.venues?.length || 0);
+      }
       setVenues(data.venues || []);
     } catch (error) {
       console.error("[Admin Venues] Error loading venues:", error);

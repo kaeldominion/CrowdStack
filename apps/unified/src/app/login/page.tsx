@@ -108,7 +108,9 @@ function LoginContent() {
     setMessage("");
 
     try {
-      console.log("[Login] Starting password signup for:", email);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Starting password signup for:", email);
+      }
       
       // Use API endpoint to create account (bypasses email confirmation and rate limits)
       // Add timeout to prevent indefinite hanging
@@ -130,16 +132,22 @@ function LoginContent() {
         clearTimeout(timeoutId);
       }
 
-      console.log("[Login] API response status:", response.status);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] API response status:", response.status);
+      }
       const data = await response.json();
-      console.log("[Login] API response data:", data);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] API response data:", data);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to create account");
       }
 
       // Account created or exists - now sign in with password
-      console.log("[Login] Account ready, attempting sign in...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Account ready, attempting sign in...");
+      }
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const supabase = createBrowserClient();
@@ -150,7 +158,9 @@ function LoginContent() {
       
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
-          console.log(`[Login] Sign in attempt ${attempt + 1}...`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(`[Login] Sign in attempt ${attempt + 1}...`);
+          }
           await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
         
@@ -161,14 +171,18 @@ function LoginContent() {
 
         if (!signInErr && signInData.session) {
           signInSuccess = true;
-          console.log("[Login] Sign in successful, redirecting...");
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Sign in successful, redirecting...");
+          }
           // Continue with the same redirect logic as password login
           await handleSuccessfulAuth(signInData);
           return;
         }
         
         signInError = signInErr;
-        console.log(`[Login] Sign in attempt ${attempt + 1} failed:`, signInErr?.message);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[Login] Sign in attempt ${attempt + 1} failed:`, signInErr?.message);
+        }
       }
 
       if (!signInSuccess) {
@@ -188,7 +202,9 @@ function LoginContent() {
 
   const handleSuccessfulAuth = async (authData: any) => {
     try {
-      console.log("[Login] handleSuccessfulAuth called");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] handleSuccessfulAuth called");
+      }
       const session = authData.session;
       
       if (!session) {
@@ -198,7 +214,9 @@ function LoginContent() {
         return;
       }
 
-      console.log("[Login] Setting auth cookie...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Setting auth cookie...");
+      }
       // Set custom cookie for server-side auth
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
@@ -219,12 +237,16 @@ function LoginContent() {
 
       // Skip session verification - we already have a valid session from sign in
       // The getSession() call can sometimes hang, so just proceed with redirect
-      console.log("[Login] Session set, proceeding to redirect...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Session set, proceeding to redirect...");
+      }
 
       // Check for redirect param
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get("redirect");
-      console.log("[Login] Redirect param:", redirect);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Redirect param:", redirect);
+      }
       
       const isRedirectingToApp = redirect?.startsWith("/app") || 
                                   redirect?.startsWith("/door") || 
@@ -239,7 +261,9 @@ function LoginContent() {
             finalPath = redirect.startsWith("/") ? redirect : "/admin";
           }
         }
-        console.log("[Login] Redirecting to app path:", finalPath);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Login] Redirecting to app path:", finalPath);
+        }
         window.location.href = finalPath;
         return;
       }
@@ -248,7 +272,9 @@ function LoginContent() {
       // This avoids race conditions where the new Supabase client doesn't have the session yet
       // The /me page will check roles and redirect B2B users appropriately
       const finalRedirect = redirect || "/me";
-      console.log("[Login] Redirecting to:", finalRedirect);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Redirecting to:", finalRedirect);
+      }
       window.location.href = finalRedirect;
     } catch (err: any) {
       console.error("[Login] handleSuccessfulAuth error:", err);
@@ -272,7 +298,9 @@ function LoginContent() {
     try {
       const supabase = createBrowserClient();
       
-      console.log("[Login] Attempting password login for:", email);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Attempting password login for:", email);
+      }
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -290,11 +318,13 @@ function LoginContent() {
       // Use the session directly from login response (don't call getSession again)
       const session = data.session;
       
-      console.log("[Login] Password login response:", {
-        hasSession: !!session,
-        hasUser: !!data.user,
-        userEmail: data.user?.email,
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Password login response:", {
+          hasSession: !!session,
+          hasUser: !!data.user,
+          userEmail: data.user?.email,
+        });
+      }
       
       if (!session) {
         console.error("[Login] No session in response");
@@ -303,7 +333,9 @@ function LoginContent() {
         return;
       }
 
-      console.log("[Login] Session created for:", data.user?.email);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Session created for:", data.user?.email);
+      }
       
       // IMPORTANT: Set the custom cookie format that the server-side expects
       // This ensures the server can read the session on localhost
@@ -326,15 +358,19 @@ function LoginContent() {
         : `; path=/; SameSite=Lax`;
       document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
       
-      console.log("[Login] Custom cookie set for server-side auth");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Custom cookie set for server-side auth");
+      }
       
       // Verify session is accessible (this also ensures cookies are set)
       const { data: { session: verifySession }, error: sessionError } = await supabase.auth.getSession();
-      console.log("[Login] Session verification:", {
-        hasSession: !!verifySession,
-        userEmail: verifySession?.user?.email,
-        error: sessionError?.message,
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Session verification:", {
+          hasSession: !!verifySession,
+          userEmail: verifySession?.user?.email,
+          error: sessionError?.message,
+        });
+      }
       
       if (!verifySession) {
         console.error("[Login] Session not accessible after login. Error:", sessionError);
@@ -346,14 +382,18 @@ function LoginContent() {
           setLoading(false);
           return;
         }
-        console.log("[Login] Session accessible on retry");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Login] Session accessible on retry");
+        }
       }
 
       // Check for redirect param (from middleware)
       const urlParams = new URLSearchParams(window.location.search);
       const redirect = urlParams.get("redirect");
       
-      console.log("[Login] Redirect param:", redirect);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Redirect param:", redirect);
+      }
       
       // Check if redirect is to app routes (/app/*, /door/*, /admin)
       const isRedirectingToApp = redirect?.startsWith("/app") || 
@@ -372,7 +412,9 @@ function LoginContent() {
             finalPath = redirect.startsWith("/") ? redirect : "/admin";
           }
         }
-        console.log("[Login] Redirecting to app path:", finalPath);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Login] Redirecting to app path:", finalPath);
+        }
         // Small delay to ensure cookies are fully set before redirect
         await new Promise(resolve => setTimeout(resolve, 300));
         window.location.href = finalPath;
@@ -410,7 +452,9 @@ function LoginContent() {
                 targetPath = "/app";
               }
               
-              console.log("[Login] Redirecting B2B user to:", targetPath);
+              if (process.env.NODE_ENV === "development") {
+                console.log("[Login] Redirecting B2B user to:", targetPath);
+              }
               // Small delay to ensure cookies are fully set before redirect
               await new Promise(resolve => setTimeout(resolve, 300));
               window.location.href = targetPath;
@@ -491,8 +535,10 @@ function LoginContent() {
         ? `${callbackUrl}?redirect=${encodeURIComponent(redirectParam)}`
         : callbackUrl;
       
-      console.log("[Login] Requesting magic link for:", trimmedEmail);
-      console.log("[Login] Using redirect URL:", redirectTo);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Requesting magic link for:", trimmedEmail);
+        console.log("[Login] Using redirect URL:", redirectTo);
+      }
       const { data, error: magicError } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
@@ -520,7 +566,9 @@ function LoginContent() {
           setError(magicError.message || "An error occurred. Please try again or contact support.");
         }
       } else {
-        console.log("[Login] Magic link sent successfully");
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Login] Magic link sent successfully");
+        }
         setMagicLinkSent(true);
         // Always show OTP input (OTP-only flow)
         setShowOtpInput(true);
@@ -548,7 +596,9 @@ function LoginContent() {
       // Use the same singleton client that sent the OTP to avoid multiple instances
       const supabase = getMagicLinkClient();
       
-      console.log("[OTP Verify] Attempting verification for:", email, "with code length:", otpCode.trim().length);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[OTP Verify] Attempting verification for:", email, "with code length:", otpCode.trim().length);
+      }
       
       // Try all possible OTP types in order with timeout
       const typesToTry = ["email", "signup", "magiclink"];
@@ -557,7 +607,9 @@ function LoginContent() {
       const trimmedCode = otpCode.trim();
       
       for (const type of typesToTry) {
-        console.log(`[OTP Verify] Trying type: ${type}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[OTP Verify] Trying type: ${type}`);
+        }
         
         try {
           // Add timeout to each verification attempt
@@ -574,12 +626,16 @@ function LoginContent() {
           const result = await Promise.race([verifyPromise, timeoutPromise]) as any;
           
           if (!result.error && result.data?.session) {
-            console.log(`[OTP Verify] Success with type: ${type}`);
+            if (process.env.NODE_ENV === "development") {
+              console.log(`[OTP Verify] Success with type: ${type}`);
+            }
             data = result.data;
             verifyError = null;
             break;
           } else if (result.error) {
-            console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
+            if (process.env.NODE_ENV === "development") {
+              console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
+            }
             verifyError = result.error;
             // Continue to next type unless it's a clear non-retryable error
             if (result.error.message.includes("User not found") || 
@@ -588,7 +644,9 @@ function LoginContent() {
             }
           }
         } catch (timeoutErr: any) {
-          console.log(`[OTP Verify] Timeout for type ${type}`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(`[OTP Verify] Timeout for type ${type}`);
+          }
           verifyError = { message: "Verification timed out. Please try again." };
           break;
         }
@@ -616,7 +674,9 @@ function LoginContent() {
       }
 
       // Successfully verified!
-      console.log("[OTP Verify] Success for:", email);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[OTP Verify] Success for:", email);
+      }
       await handleSuccessfulAuth(data);
     } catch (err: any) {
       console.error("[OTP Verify] Exception:", err);

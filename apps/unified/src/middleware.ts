@@ -11,7 +11,9 @@ import { createServerClient } from "@supabase/ssr";
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  console.log("[Middleware] Path:", pathname);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Middleware] Path:", pathname);
+  }
 
   // Public routes that don't require auth
   const publicRoutes = [
@@ -53,7 +55,9 @@ export async function middleware(request: NextRequest) {
     publicApiPatterns.some((pattern) => pathname.startsWith(pattern));
 
   if (isPublicRoute) {
-    console.log("[Middleware] Public route, allowing:", pathname);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Middleware] Public route, allowing:", pathname);
+    }
     // Still refresh session for public routes
     return refreshSession(request);
   }
@@ -130,7 +134,9 @@ export async function middleware(request: NextRequest) {
   // should rarely (if ever) be needed.
   const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
   if (!session && !user && supabaseCookies.length > 0 && isLocalhost) {
-    console.log("[Middleware] Standard SSR failed on localhost, trying manual cookie parse...");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Middleware] Standard SSR failed on localhost, trying manual cookie parse...");
+    }
     try {
       const authCookie = supabaseCookies[0];
       // Only try custom format on localhost (production uses standard Supabase cookie format)
@@ -141,7 +147,9 @@ export async function middleware(request: NextRequest) {
         if (parsed.access_token && parsed.user && parsed.expires_at) {
           const now = Math.floor(Date.now() / 1000);
           if (parsed.expires_at > now) {
-            console.log("[Middleware] ✅ Successfully parsed custom cookie format (localhost)");
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Middleware] ✅ Successfully parsed custom cookie format (localhost)");
+            }
             user = parsed.user;
             session = {
               access_token: parsed.access_token,
@@ -153,41 +161,53 @@ export async function middleware(request: NextRequest) {
             sessionError = null;
             userError = null;
           } else {
-            console.log("[Middleware] Cookie expired");
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Middleware] Cookie expired");
+            }
           }
         }
       }
     } catch (e) {
-      console.log("[Middleware] Failed to parse custom cookie:", e);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Middleware] Failed to parse custom cookie:", e);
+      }
     }
   } else if (!session && !user && !isLocalhost) {
     // In production, if standard SSR fails, log it for debugging
-    console.log("[Middleware] ⚠️ Standard SSR failed in production - this should not happen normally");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Middleware] ⚠️ Standard SSR failed in production - this should not happen normally");
+    }
   }
   
-  console.log("[Middleware] Auth check:", {
-    pathname,
-    hasSession: !!session,
-    hasUser: !!user,
-    userEmail: user?.email,
-    sessionError: sessionError?.message,
-    userError: userError?.message,
-    totalCookies: allCookies.length,
-    cookieNames: cookieNames,
-    supabaseCookies: supabaseCookies.map(c => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length || 0 })),
-  });
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Middleware] Auth check:", {
+      pathname,
+      hasSession: !!session,
+      hasUser: !!user,
+      userEmail: user?.email,
+      sessionError: sessionError?.message,
+      userError: userError?.message,
+      totalCookies: allCookies.length,
+      cookieNames: cookieNames,
+      supabaseCookies: supabaseCookies.map(c => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length || 0 })),
+    });
+  }
 
   // Check both session and user - if either exists, we're authenticated
   // Only fail if BOTH are missing (errors don't matter if we have a valid session/user)
   if (!session && !user) {
-    console.log("[Middleware] ❌ No valid session, redirecting to login. SessionError:", sessionError?.message, "UserError:", userError?.message);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Middleware] ❌ No valid session, redirecting to login. SessionError:", sessionError?.message, "UserError:", userError?.message);
+    }
     const loginUrl = new URL("/login", request.nextUrl.origin);
     loginUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
   const authenticatedUser = user || session?.user;
-  console.log("[Middleware] ✅ User authenticated:", authenticatedUser?.email);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Middleware] ✅ User authenticated:", authenticatedUser?.email);
+  }
   return response;
 }
 

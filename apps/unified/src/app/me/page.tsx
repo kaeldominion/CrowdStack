@@ -240,7 +240,9 @@ export default function MePage() {
       // Wait for promoter stats to complete (non-blocking)
       await promoterStatsPromise;
       
-      console.log("[Me] Registrations loaded:", registrations?.length || 0);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Me] Registrations loaded:", registrations?.length || 0);
+      }
 
       if (registrations) {
         const now = new Date();
@@ -313,12 +315,14 @@ export default function MePage() {
         setUpcomingEvents(upcoming);
         setPastEvents(past);
         
-        console.log("[Me] Event categorization:", {
-          happeningNow: happeningNow.length,
-          today: today.length,
-          upcoming: upcoming.length,
-          past: past.length,
-        });
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Me] Event categorization:", {
+            happeningNow: happeningNow.length,
+            today: today.length,
+            upcoming: upcoming.length,
+            past: past.length,
+          });
+        }
       }
     } catch (error) {
       console.error("Error loading user data:", error);

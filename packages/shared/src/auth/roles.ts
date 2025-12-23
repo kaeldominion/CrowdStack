@@ -56,50 +56,62 @@ export async function getUserRoles(): Promise<UserRole[]> {
   }
 
   if (!user) {
-    console.log("[getUserRoles] No user found, returning empty roles");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[getUserRoles] No user found, returning empty roles");
+    }
     return [];
   }
 
-  console.log("[getUserRoles] Looking up roles for user:", {
-    userId: user.id,
-    email: user.email,
-  });
+  if (process.env.NODE_ENV === "development") {
+    console.log("[getUserRoles] Looking up roles for user:", {
+      userId: user.id,
+      email: user.email,
+    });
+  }
 
   // Use service role client to get roles (bypasses RLS issues)
   try {
     const serviceSupabase = createServiceRoleClient();
-    console.log("[getUserRoles] Querying user_roles table for user_id:", user.id);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[getUserRoles] Querying user_roles table for user_id:", user.id);
+    }
     
     const { data, error } = await serviceSupabase
       .from("user_roles")
       .select("role, user_id")
       .eq("user_id", user.id);
 
-    console.log("[getUserRoles] Query result:", {
-      dataCount: data?.length || 0,
-      data: data,
-      error: error?.message || null,
-      errorCode: error?.code || null,
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[getUserRoles] Query result:", {
+        dataCount: data?.length || 0,
+        data: data,
+        error: error?.message || null,
+        errorCode: error?.code || null,
+      });
+    }
 
     if (error) {
-      console.error("[getUserRoles] Failed to get roles:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-      });
+      console.error("[getUserRoles] Failed to get roles:", error.message);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[getUserRoles] Error details:", {
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
+      }
       return [];
     }
 
     const roles = data?.map((r) => r.role as UserRole) || [];
-    console.log("[getUserRoles] Returning roles:", roles);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[getUserRoles] Returning roles:", roles);
+    }
     return roles;
   } catch (serviceError: any) {
-    console.error("[getUserRoles] Service role query failed:", {
-      error: serviceError?.message,
-      stack: serviceError?.stack,
-    });
+    console.error("[getUserRoles] Service role query failed:", serviceError?.message || "Unknown error");
+    if (process.env.NODE_ENV === "development") {
+      console.error("[getUserRoles] Error stack:", serviceError?.stack);
+    }
     return [];
   }
 }
@@ -166,19 +178,21 @@ export async function assignUserRole(
   });
 
   if (error) {
-    console.error("assignUserRole error:", {
-      userId,
-      role,
-      error: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-    });
+    console.error(`assignUserRole error: Failed to assign role ${role} to user ${userId}:`, error.message);
+    if (process.env.NODE_ENV === "development") {
+      console.error("assignUserRole error details:", {
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+    }
     throw new Error(`Failed to assign role: ${error.message}`);
   }
 
   // Log success for debugging
-  console.log(`Successfully assigned role ${role} to user ${userId} via RPC`);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`Successfully assigned role ${role} to user ${userId} via RPC`);
+  }
 }
 
 /**
