@@ -187,101 +187,118 @@ function LoginContent() {
   };
 
   const handleSuccessfulAuth = async (authData: any) => {
-    const supabase = createBrowserClient();
-    const session = authData.session;
-    
-    if (!session) {
-      setError("Failed to create session");
-      setLoading(false);
-      return;
-    }
-
-    // Set custom cookie for server-side auth
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
-    const cookieName = `sb-${projectRef}-auth-token`;
-    
-    const cookieValue = JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at,
-      user: session.user,
-    });
-    
-    const expiresAt = session.expires_at ? new Date(session.expires_at * 1000) : undefined;
-    const cookieOptions = expiresAt 
-      ? `; expires=${expiresAt.toUTCString()}; path=/; SameSite=Lax`
-      : `; path=/; SameSite=Lax`;
-    document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
-
-    // Verify session is accessible
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const { data: { session: verifySession } } = await supabase.auth.getSession();
-    if (!verifySession) {
-      setError("Session not accessible. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    // Check for redirect param
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirect = urlParams.get("redirect");
-    
-    const isRedirectingToApp = redirect?.startsWith("/app") || 
-                                redirect?.startsWith("/door") || 
-                                redirect?.startsWith("/admin");
-    
-    if (isRedirectingToApp) {
-      let finalPath = "/admin";
-      if (redirect) {
-        try {
-          finalPath = new URL(redirect).pathname;
-        } catch {
-          finalPath = redirect.startsWith("/") ? redirect : "/admin";
-        }
+    try {
+      console.log("[Login] handleSuccessfulAuth called");
+      const supabase = createBrowserClient();
+      const session = authData.session;
+      
+      if (!session) {
+        console.error("[Login] No session in authData");
+        setError("Failed to create session");
+        setLoading(false);
+        return;
       }
-      window.location.href = finalPath;
-      return;
-    }
-    
-    // Check user roles for automatic app redirect (B2B users)
-    const user = authData.user;
-    if (user) {
-      try {
-        const { data: roles } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id);
 
-        if (roles && roles.length > 0) {
-          const roleNames = roles.map((r: any) => r.role);
-          
-          if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
-              roleNames.includes("promoter") || roleNames.includes("door_staff") ||
-              roleNames.includes("superadmin")) {
-            
-            let targetPath = "/admin";
-            if (roleNames.includes("superadmin")) {
-              targetPath = "/admin";
-            } else if (roleNames.includes("door_staff")) {
-              targetPath = "/door";
-            } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
-              // All B2B roles go to unified workspace
-              targetPath = "/app";
-            }
-            
-            window.location.href = targetPath;
-            return;
+      console.log("[Login] Setting auth cookie...");
+      // Set custom cookie for server-side auth
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
+      const cookieName = `sb-${projectRef}-auth-token`;
+      
+      const cookieValue = JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+        user: session.user,
+      });
+      
+      const expiresAt = session.expires_at ? new Date(session.expires_at * 1000) : undefined;
+      const cookieOptions = expiresAt 
+        ? `; expires=${expiresAt.toUTCString()}; path=/; SameSite=Lax`
+        : `; path=/; SameSite=Lax`;
+      document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
+
+      // Verify session is accessible
+      console.log("[Login] Verifying session...");
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const { data: { session: verifySession } } = await supabase.auth.getSession();
+      if (!verifySession) {
+        console.error("[Login] Session verification failed");
+        setError("Session not accessible. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Check for redirect param
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirect = urlParams.get("redirect");
+      console.log("[Login] Redirect param:", redirect);
+      
+      const isRedirectingToApp = redirect?.startsWith("/app") || 
+                                  redirect?.startsWith("/door") || 
+                                  redirect?.startsWith("/admin");
+      
+      if (isRedirectingToApp) {
+        let finalPath = "/admin";
+        if (redirect) {
+          try {
+            finalPath = new URL(redirect).pathname;
+          } catch {
+            finalPath = redirect.startsWith("/") ? redirect : "/admin";
           }
         }
-      } catch (rolesErr: any) {
-        console.warn("[Login] Error checking user roles:", rolesErr.message);
+        console.log("[Login] Redirecting to app path:", finalPath);
+        window.location.href = finalPath;
+        return;
       }
+      
+      // Check user roles for automatic app redirect (B2B users)
+      const user = authData.user;
+      let targetPath = "/me"; // Default for attendees
+      
+      if (user) {
+        console.log("[Login] Checking user roles for:", user.id);
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id);
+
+          if (rolesError) {
+            console.warn("[Login] Error fetching roles:", rolesError.message);
+          } else if (roles && roles.length > 0) {
+            const roleNames = roles.map((r: any) => r.role);
+            console.log("[Login] User roles:", roleNames);
+            
+            if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
+                roleNames.includes("promoter") || roleNames.includes("door_staff") ||
+                roleNames.includes("superadmin")) {
+              
+              if (roleNames.includes("superadmin")) {
+                targetPath = "/admin";
+              } else if (roleNames.includes("door_staff")) {
+                targetPath = "/door";
+              } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
+                targetPath = "/app";
+              }
+            }
+          } else {
+            console.log("[Login] No special roles found, defaulting to /me");
+          }
+        } catch (rolesErr: any) {
+          console.warn("[Login] Exception checking user roles:", rolesErr.message);
+        }
+      }
+      
+      // Apply redirect override if specified
+      const finalRedirect = (redirect && !isRedirectingToApp) ? redirect : targetPath;
+      console.log("[Login] Final redirect:", finalRedirect);
+      window.location.href = finalRedirect;
+    } catch (err: any) {
+      console.error("[Login] handleSuccessfulAuth error:", err);
+      setError("Authentication succeeded but redirect failed. Please go to /me manually.");
+      setLoading(false);
     }
-    
-    // Default: attendee goes to /me
-    const finalRedirect = redirect && !isRedirectingToApp ? redirect : "/me";
-    window.location.href = finalRedirect;
   };
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
