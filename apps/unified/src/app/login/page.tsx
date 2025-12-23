@@ -593,11 +593,12 @@ function LoginContent() {
     setOtpError(null);
 
     try {
-      const supabase = createBrowserClient();
+      // Use the same singleton client that sent the OTP to avoid multiple instances
+      const supabase = getMagicLinkClient();
       
       console.log("[OTP Verify] Attempting verification for:", email, "with code length:", otpCode.trim().length);
       
-      // Try all possible OTP types in order
+      // Try all possible OTP types in order with timeout
       const typesToTry = ["email", "signup", "magiclink"];
       let data = null;
       let verifyError = null;
@@ -605,36 +606,52 @@ function LoginContent() {
       
       for (const type of typesToTry) {
         console.log(`[OTP Verify] Trying type: ${type}`);
-        const result = await supabase.auth.verifyOtp({
-          email,
-          token: trimmedCode,
-          type: type as any,
-        });
         
-        if (!result.error && result.data?.session) {
-          console.log(`[OTP Verify] Success with type: ${type}`);
-          data = result.data;
-          verifyError = null;
-          break;
-        } else if (result.error) {
-          console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
-          verifyError = result.error;
-          // Continue to next type unless it's a clear non-retryable error
-          if (result.error.message.includes("User not found") || 
-              result.error.message.includes("Email rate limit")) {
-            break; // Don't retry for these errors
+        try {
+          // Add timeout to each verification attempt
+          const verifyPromise = supabase.auth.verifyOtp({
+            email,
+            token: trimmedCode,
+            type: type as any,
+          });
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Verification timeout")), 10000)
+          );
+          
+          const result = await Promise.race([verifyPromise, timeoutPromise]) as any;
+          
+          if (!result.error && result.data?.session) {
+            console.log(`[OTP Verify] Success with type: ${type}`);
+            data = result.data;
+            verifyError = null;
+            break;
+          } else if (result.error) {
+            console.log(`[OTP Verify] Failed with type ${type}:`, result.error.message);
+            verifyError = result.error;
+            // Continue to next type unless it's a clear non-retryable error
+            if (result.error.message.includes("User not found") || 
+                result.error.message.includes("Email rate limit")) {
+              break; // Don't retry for these errors
+            }
           }
+        } catch (timeoutErr: any) {
+          console.log(`[OTP Verify] Timeout for type ${type}`);
+          verifyError = { message: "Verification timed out. Please try again." };
+          break;
         }
       }
 
       if (verifyError) {
-        console.error("[OTP Verify] All types failed. Last error:", verifyError.message, verifyError);
+        console.error("[OTP Verify] All types failed. Last error:", verifyError.message);
         if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired") || verifyError.message.includes("has expired")) {
           setOtpError("Code expired. The code is only valid for 60 seconds. Please request a new code.");
         } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token") || verifyError.message.includes("Invalid")) {
           setOtpError("Invalid code. Please check the 8-digit code from your email and try again.");
         } else if (verifyError.message.includes("User not found")) {
           setOtpError("User not found. Please request a new code.");
+        } else if (verifyError.message.includes("timeout")) {
+          setOtpError("Verification timed out. Please try again.");
         } else {
           setOtpError(`Verification failed: ${verifyError.message}. Please try requesting a new code.`);
         }
