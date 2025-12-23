@@ -263,16 +263,14 @@ export function AttendeeDetailModal({
                           )}
                           {/* Remove Registration Button (organizer and venue only) */}
                           {(role === "organizer" || role === "venue") && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveRegistration(reg.id);
-                              }}
-                              disabled={removingRegistrationId === reg.id}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                            >
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleRemoveRegistration(reg.id)}
+                                disabled={removingRegistrationId === reg.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              >
                               {removingRegistrationId === reg.id ? (
                                 <>
                                   <LoadingSpinner size="sm" className="mr-1" />
@@ -284,7 +282,8 @@ export function AttendeeDetailModal({
                                   Remove
                                 </>
                               )}
-                            </Button>
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </div>
