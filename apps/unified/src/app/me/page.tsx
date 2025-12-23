@@ -153,24 +153,40 @@ export default function MePage() {
 
       setUser(currentUser);
 
-      // Parallelize all independent data loading
+      // Helper to add timeout to promises
+      const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+        const timeout = new Promise<T>((resolve) => 
+          setTimeout(() => resolve(fallback), ms)
+        );
+        return Promise.race([promise, timeout]);
+      };
+
+      // Parallelize all independent data loading with timeouts
       const [
         userRolesResult,
         attendeeResult,
         xpResult,
         referralStatsResult,
       ] = await Promise.all([
-      // Load roles
-        supabase
-        .from("user_roles")
-        .select("role")
-          .eq("user_id", currentUser.id),
-        // Load profile
-        supabase
-          .from("attendees")
-          .select("id, name, email, phone, user_id")
-          .eq("user_id", currentUser.id)
-          .single(),
+        // Load roles - with 5s timeout
+        withTimeout(
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", currentUser.id),
+          5000,
+          { data: null, error: { message: "Timeout" } }
+        ),
+        // Load profile - with 5s timeout
+        withTimeout(
+          supabase
+            .from("attendees")
+            .select("id, name, email, phone, user_id")
+            .eq("user_id", currentUser.id)
+            .single(),
+          5000,
+          { data: null, error: { message: "Timeout" } }
+        ),
         // Load XP from unified XP system
         fetch("/api/xp/me").catch(() => null),
         // Load referral stats
@@ -235,26 +251,30 @@ export default function MePage() {
         console.warn("[Me] No attendee record found for user, cannot load registrations");
       }
       
-      const { data: registrations, error: regError } = await supabase
-        .from("registrations")
-        .select(`
-          id,
-          event_id,
-          registered_at,
-          event:events(
+      const { data: registrations, error: regError } = await withTimeout(
+        supabase
+          .from("registrations")
+          .select(`
             id,
-            name,
-            slug,
-            start_time,
-            end_time,
-            cover_image_url,
-            flier_url,
-            venue:venues(name, city)
-          ),
-          checkins(checked_in_at)
-        `)
-        .eq("attendee_id", attendee?.id || "")
-        .order("registered_at", { ascending: false });
+            event_id,
+            registered_at,
+            event:events(
+              id,
+              name,
+              slug,
+              start_time,
+              end_time,
+              cover_image_url,
+              flier_url,
+              venue:venues(name, city)
+            ),
+            checkins(checked_in_at)
+          `)
+          .eq("attendee_id", attendee?.id || "")
+          .order("registered_at", { ascending: false }),
+        5000,
+        { data: null, error: { message: "Timeout" } }
+      );
       
       // Wait for promoter stats to complete (non-blocking)
       await promoterStatsPromise;
