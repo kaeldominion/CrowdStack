@@ -142,88 +142,45 @@ export default function MePage() {
   };
 
   const loadUserData = async () => {
-    console.log("[Me] loadUserData started");
     try {
       const supabase = createBrowserClient();
-      console.log("[Me] Getting user...");
-      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
-
-      if (userError) {
-        console.error("[Me] User error:", userError);
-      }
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
 
       if (!currentUser) {
-        console.log("[Me] No user, redirecting to login");
         router.push("/login");
         return;
       }
 
-      console.log("[Me] User found:", currentUser.id);
       setUser(currentUser);
 
-      // Simple sequential loading with individual try/catch - more reliable than parallel with timeouts
-      let userRoles: any[] = [];
-      let attendee: any = null;
+      // Parallel loading - all queries at once
+      const [rolesResult, attendeeResult, xpResult, referralResult] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", currentUser.id),
+        supabase.from("attendees").select("id, name, email, phone, user_id").eq("user_id", currentUser.id).maybeSingle(),
+        fetch("/api/xp/me").catch(() => null),
+        fetch("/api/referral/stats").catch(() => null),
+      ]);
 
-      // Load roles
-      console.log("[Me] Loading roles...");
-      try {
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", currentUser.id);
-        if (error) {
-          console.error("[Me] Roles error:", error);
-        } else {
-          userRoles = data || [];
-          console.log("[Me] Roles loaded:", userRoles);
-        }
-      } catch (e) {
-        console.error("[Me] Roles exception:", e);
-      }
-
-      // Load attendee profile
-      console.log("[Me] Loading attendee...");
-      try {
-        const { data, error } = await supabase
-          .from("attendees")
-          .select("id, name, email, phone, user_id")
-          .eq("user_id", currentUser.id)
-          .maybeSingle();
-        if (error) {
-          console.error("[Me] Attendee error:", error);
-        } else {
-          attendee = data;
-          console.log("[Me] Attendee loaded:", attendee?.id);
-        }
-      } catch (e) {
-        console.error("[Me] Attendee exception:", e);
-      }
-
-      const roleList = userRoles ? userRoles.map((r: any) => r.role) : [];
+      const userRoles = rolesResult.data || [];
+      const attendee = attendeeResult.data;
+      const roleList = userRoles.map((r: any) => r.role);
       setRoles(roleList);
 
-      // Load XP (non-blocking)
+      // Process XP
       let totalXp = 0;
-      try {
-        const xpResult = await fetch("/api/xp/me");
-        if (xpResult.ok) {
+      if (xpResult && xpResult.ok) {
+        try {
           const xpData = await xpResult.json();
           totalXp = xpData.total_xp || 0;
-        }
-      } catch (e) {
-        console.error("[Me] XP exception:", e);
+        } catch {}
       }
 
-      // Load referral stats (non-blocking)
-      try {
-        const referralResult = await fetch("/api/referral/stats");
-        if (referralResult.ok) {
+      // Process referral stats
+      if (referralResult && referralResult.ok) {
+        try {
           const referralData = await referralResult.json();
           setReferralStats(referralData);
-        }
-      } catch (e) {
-        console.error("[Me] Referral exception:", e);
+        } catch {}
       }
 
       setProfile({
@@ -253,40 +210,31 @@ export default function MePage() {
         : Promise.resolve();
 
       // Load registrations with events
-      console.log("[Me] Loading registrations for attendee:", attendee?.id, "user_id:", currentUser.id);
       let registrations: any[] | null = null;
-      let regError: any = null;
       
       if (attendee?.id) {
-        try {
-          const result = await supabase
-            .from("registrations")
-            .select(`
+        const result = await supabase
+          .from("registrations")
+          .select(`
+            id,
+            event_id,
+            registered_at,
+            event:events(
               id,
-              event_id,
-              registered_at,
-              event:events(
-                id,
-                name,
-                slug,
-                start_time,
-                end_time,
-                cover_image_url,
-                flier_url,
-                venue:venues(name, city)
-              ),
-              checkins(checked_in_at)
-            `)
-            .eq("attendee_id", attendee.id)
-            .order("registered_at", { ascending: false });
-          
-          registrations = result.data;
-          regError = result.error;
-        } catch (e) {
-          console.error("[Me] Registrations exception:", e);
-        }
-      } else {
-        console.warn("[Me] No attendee record found for user, cannot load registrations");
+              name,
+              slug,
+              start_time,
+              end_time,
+              cover_image_url,
+              flier_url,
+              venue:venues(name, city)
+            ),
+            checkins(checked_in_at)
+          `)
+          .eq("attendee_id", attendee.id)
+          .order("registered_at", { ascending: false });
+        
+        registrations = result.data;
       }
       
       // Wait for promoter stats to complete (non-blocking)
