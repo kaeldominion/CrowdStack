@@ -24,6 +24,7 @@ END $$;
 
 -- Policy 1: Authenticated organizers can upload video flyers
 -- Using simple pattern matching and organizer check
+-- Checks both organizer_users junction table AND created_by relationship
 CREATE POLICY "Organizers can upload video flyers"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -38,7 +39,20 @@ WITH CHECK (
       AND ur.role = 'superadmin'
     )
     OR
-    -- User is an organizer
+    -- User has event_organizer role (simplest check)
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid()
+      AND ur.role = 'event_organizer'
+    )
+    OR
+    -- User is assigned to an organizer via organizer_users table
+    EXISTS (
+      SELECT 1 FROM public.organizer_users ou
+      WHERE ou.user_id = auth.uid()
+    )
+    OR
+    -- User created an organizer (legacy check)
     EXISTS (
       SELECT 1 FROM public.organizers o
       WHERE o.created_by = auth.uid()
@@ -61,6 +75,17 @@ USING (
     )
     OR
     EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid()
+      AND ur.role = 'event_organizer'
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.organizer_users ou
+      WHERE ou.user_id = auth.uid()
+    )
+    OR
+    EXISTS (
       SELECT 1 FROM public.organizers o
       WHERE o.created_by = auth.uid()
     )
@@ -79,6 +104,17 @@ USING (
       SELECT 1 FROM public.user_roles ur
       WHERE ur.user_id = auth.uid()
       AND ur.role = 'superadmin'
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid()
+      AND ur.role = 'event_organizer'
+    )
+    OR
+    EXISTS (
+      SELECT 1 FROM public.organizer_users ou
+      WHERE ou.user_id = auth.uid()
     )
     OR
     EXISTS (
