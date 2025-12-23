@@ -70,11 +70,6 @@ export async function POST(
       );
     }
 
-    // #region agent log
-    const requestStartTime = Date.now();
-    console.log(`[VideoFlier] Request received at ${new Date().toISOString()}`);
-    // #endregion
-    
     // Check if this is a direct upload (JSON with URL) or traditional upload (FormData with file)
     const contentType = request.headers.get("content-type") || "";
     let publicUrl: string | null = null;
@@ -97,13 +92,6 @@ export async function POST(
       const formData = await request.formData();
       const file = formData.get("file") as File;
 
-      // #region agent log
-      console.log(`[VideoFlier] Traditional upload flow: FormData parsed, file extracted: ${file ? 'YES' : 'NO'}`);
-      if (file) {
-        console.log(`[VideoFlier] File details: name=${file.name}, type=${file.type}, size=${file.size} bytes (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-      }
-      // #endregion
-
       if (!file) {
         return NextResponse.json(
           { error: "No file provided" },
@@ -123,25 +111,13 @@ export async function POST(
       // Validate file size (50MB max - Supabase Storage default limit)
       const maxSize = 50 * 1024 * 1024; // 50MB
       const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-      const fileSizeKB = (file.size / 1024).toFixed(2);
-      
-      // #region agent log
-      console.log(`[VideoFlier] Size validation: file=${file.size} bytes (${fileSizeMB}MB / ${fileSizeKB}KB), max=${maxSize} bytes (50MB), comparison=${file.size > maxSize ? 'EXCEEDS' : 'OK'}`);
-      // #endregion
       
       if (file.size > maxSize) {
-        // #region agent log
-        console.log(`[VideoFlier] ❌ REJECTED by server-side size check: ${fileSizeMB}MB > 50MB`);
-        // #endregion
         return NextResponse.json(
           { error: `File size (${fileSizeMB}MB) exceeds 50MB limit. Please compress your video or use a smaller file.` },
           { status: 400 }
         );
       }
-      
-      // #region agent log
-      console.log(`[VideoFlier] ✅ Size check PASSED: ${fileSizeMB}MB <= 50MB`);
-      // #endregion
 
       // Generate unique filename
       const fileExt = file.name.split(".").pop() || "mp4";
@@ -153,15 +129,6 @@ export async function POST(
       // Upload to storage
       try {
         const fileBuffer = await file.arrayBuffer();
-        const bufferSizeMB = (fileBuffer.byteLength / 1024 / 1024).toFixed(2);
-        console.log(`[VideoFlier] ArrayBuffer created: original=${file.size} bytes, buffer=${fileBuffer.byteLength} bytes (${bufferSizeMB}MB)`);
-        
-        // #region agent log
-        if (fileBuffer.byteLength !== file.size) {
-          console.log(`[VideoFlier] ⚠️ WARNING: Buffer size (${fileBuffer.byteLength}) differs from file size (${file.size})`);
-        }
-        console.log(`[VideoFlier] Attempting Supabase Storage upload: bucket=event-photos, path=${storagePath}, size=${bufferSizeMB}MB`);
-        // #endregion
         
         publicUrl = await uploadToStorage(
           "event-photos", // Using existing bucket

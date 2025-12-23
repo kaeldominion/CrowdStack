@@ -2725,42 +2725,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             if (!file) return;
                             
                             // Validate size client-side (50MB max - Supabase Storage limit)
-                            const fileSizeBytes = file.size;
-                            const fileSizeMB = (fileSizeBytes / 1024 / 1024).toFixed(2);
-                            const fileSizeKB = (fileSizeBytes / 1024).toFixed(2);
-                            const maxSizeBytes = 50 * 1024 * 1024; // 50MB in bytes
-                            const maxSizeMB = 50;
+                            const maxSizeBytes = 50 * 1024 * 1024; // 50MB
                             
-                            // #region agent log
-                            console.log(`[VideoFlier Client] File selected: ${file.name}`);
-                            console.log(`[VideoFlier Client] File size details:`, {
-                              bytes: fileSizeBytes,
-                              KB: fileSizeKB,
-                              MB: fileSizeMB,
-                              type: typeof fileSizeBytes,
-                              isNumber: typeof fileSizeBytes === 'number'
-                            });
-                            console.log(`[VideoFlier Client] Max size details:`, {
-                              bytes: maxSizeBytes,
-                              MB: maxSizeMB,
-                              type: typeof maxSizeBytes
-                            });
-                            console.log(`[VideoFlier Client] Comparison: ${fileSizeBytes} > ${maxSizeBytes} = ${fileSizeBytes > maxSizeBytes}`);
-                            console.log(`[VideoFlier Client] Comparison (MB): ${fileSizeMB}MB > ${maxSizeMB}MB = ${parseFloat(fileSizeMB) > maxSizeMB}`);
-                            // #endregion
-                            
-                            if (fileSizeBytes > maxSizeBytes) {
-                              // #region agent log
-                              console.error(`[VideoFlier Client] ❌ REJECTED: ${fileSizeMB}MB (${fileSizeBytes} bytes) > 50MB (${maxSizeBytes} bytes)`);
-                              // #endregion
+                            if (file.size > maxSizeBytes) {
+                              const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
                               alert(`Video file (${fileSizeMB}MB) must be under 50MB. Please compress your video or use a smaller file.`);
                               e.target.value = "";
                               return;
                             }
-                            
-                            // #region agent log
-                            console.log(`[VideoFlier Client] ✅ Size check PASSED: ${fileSizeMB}MB <= 50MB, proceeding with upload`);
-                            // #endregion
                             
                             // Warn if file is large on mobile
                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -2785,8 +2757,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               const fileExt = file.name.split(".").pop() || "mp4";
                               const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
                               const storagePath = `events/${eventId}/video-flier/${fileName}`;
-                              
-                              console.log(`[VideoFlier Client] Starting direct upload to Supabase: ${storagePath}`);
                               
                               // Upload directly to Supabase Storage
                               const supabase = createBrowserClient();

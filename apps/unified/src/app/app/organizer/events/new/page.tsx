@@ -372,18 +372,12 @@ export default function NewEventPage() {
                     const file = e.target.files?.[0];
                     if (file) {
                       // Check file size (max 50MB - Supabase Storage limit)
-                      const fileSizeBytes = file.size;
-                      const fileSizeMB = (fileSizeBytes / 1024 / 1024).toFixed(2);
                       const maxSizeBytes = 50 * 1024 * 1024;
-                      console.log(`[NewEvent VideoFlier] File: ${file.name}, size: ${fileSizeMB}MB (${fileSizeBytes} bytes), max: 50MB (${maxSizeBytes} bytes), comparison: ${fileSizeBytes > maxSizeBytes}`);
-                      
-                      if (fileSizeBytes > maxSizeBytes) {
-                        console.error(`[NewEvent VideoFlier] ❌ REJECTED: ${fileSizeMB}MB > 50MB`);
+                      if (file.size > maxSizeBytes) {
+                        const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
                         alert(`Video file (${fileSizeMB}MB) too large. Maximum size is 50MB. Please compress your video or use a smaller file.`);
                         return;
                       }
-                      
-                      console.log(`[NewEvent VideoFlier] ✅ Size check PASSED: ${fileSizeMB}MB <= 50MB`);
                       setFlierVideoFile(file);
                       setVideoPreviewUrl(URL.createObjectURL(file));
                     }
