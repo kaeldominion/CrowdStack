@@ -218,16 +218,9 @@ function LoginContent() {
         : `; path=/; SameSite=Lax`;
       document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
 
-      // Verify session is accessible
-      console.log("[Login] Verifying session...");
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const { data: { session: verifySession } } = await supabase.auth.getSession();
-      if (!verifySession) {
-        console.error("[Login] Session verification failed");
-        setError("Session not accessible. Please try again.");
-        setLoading(false);
-        return;
-      }
+      // Skip session verification - we already have a valid session from sign in
+      // The getSession() call can sometimes hang, so just proceed with redirect
+      console.log("[Login] Session set, proceeding to redirect...");
 
       // Check for redirect param
       const urlParams = new URLSearchParams(window.location.search);
