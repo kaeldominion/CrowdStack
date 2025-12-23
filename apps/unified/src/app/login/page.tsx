@@ -246,16 +246,27 @@ function LoginContent() {
       }
       
       // Check user roles for automatic app redirect (B2B users)
+      // Use a timeout to prevent hanging
       const user = authData.user;
       let targetPath = "/me"; // Default for attendees
       
       if (user) {
         console.log("[Login] Checking user roles for:", user.id);
         try {
-          const { data: roles, error: rolesError } = await supabase
+          // Add timeout to prevent hanging
+          const rolesPromise = supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", user.id);
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Roles query timeout")), 5000)
+          );
+          
+          const { data: roles, error: rolesError } = await Promise.race([
+            rolesPromise,
+            timeoutPromise
+          ]) as any;
 
           if (rolesError) {
             console.warn("[Login] Error fetching roles:", rolesError.message);
@@ -279,7 +290,7 @@ function LoginContent() {
             console.log("[Login] No special roles found, defaulting to /me");
           }
         } catch (rolesErr: any) {
-          console.warn("[Login] Exception checking user roles:", rolesErr.message);
+          console.warn("[Login] Exception checking user roles:", rolesErr.message, "- proceeding with default redirect");
         }
       }
       
