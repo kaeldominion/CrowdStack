@@ -240,12 +240,7 @@ export default function MePage() {
       // Wait for promoter stats to complete (non-blocking)
       await promoterStatsPromise;
       
-      console.log("[Me] Registrations result:", {
-        count: registrations?.length || 0,
-        registrations: registrations?.slice(0, 3), // Log first 3
-        error: regError?.message,
-        attendeeId: attendee?.id,
-      });
+      console.log("[Me] Registrations loaded:", registrations?.length || 0);
 
       if (registrations) {
         const now = new Date();
