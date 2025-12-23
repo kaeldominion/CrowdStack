@@ -10,6 +10,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CrowdStack - Run events with data, not guesswork",
   description: "The operating system for modern events & venues. Track attendance, attribution, payouts, and performance.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export default function RootLayout({
