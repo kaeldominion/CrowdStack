@@ -171,7 +171,7 @@ export function CrispChat() {
               .select("organizer:organizers(name, company_name)")
               .eq("user_id", user.id)
               .limit(1)
-              .single();
+              .maybeSingle();
 
             if (orgUser?.organizer) {
               const org = Array.isArray(orgUser.organizer) 
