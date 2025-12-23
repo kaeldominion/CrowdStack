@@ -19,6 +19,7 @@ interface TypeformSignupProps {
     name?: string | null;
     surname?: string | null;
     date_of_birth?: string | null;
+    gender?: "male" | "female" | null;
     whatsapp?: string | null;
     instagram_handle?: string | null;
   } | null;
