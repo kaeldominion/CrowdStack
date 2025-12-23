@@ -189,7 +189,6 @@ function LoginContent() {
   const handleSuccessfulAuth = async (authData: any) => {
     try {
       console.log("[Login] handleSuccessfulAuth called");
-      const supabase = createBrowserClient();
       const session = authData.session;
       
       if (!session) {
@@ -245,58 +244,11 @@ function LoginContent() {
         return;
       }
       
-      // Check user roles for automatic app redirect (B2B users)
-      // Use a timeout to prevent hanging
-      const user = authData.user;
-      let targetPath = "/me"; // Default for attendees
-      
-      if (user) {
-        console.log("[Login] Checking user roles for:", user.id);
-        try {
-          // Add timeout to prevent hanging
-          const rolesPromise = supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id);
-          
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Roles query timeout")), 5000)
-          );
-          
-          const { data: roles, error: rolesError } = await Promise.race([
-            rolesPromise,
-            timeoutPromise
-          ]) as any;
-
-          if (rolesError) {
-            console.warn("[Login] Error fetching roles:", rolesError.message);
-          } else if (roles && roles.length > 0) {
-            const roleNames = roles.map((r: any) => r.role);
-            console.log("[Login] User roles:", roleNames);
-            
-            if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
-                roleNames.includes("promoter") || roleNames.includes("door_staff") ||
-                roleNames.includes("superadmin")) {
-              
-              if (roleNames.includes("superadmin")) {
-                targetPath = "/admin";
-              } else if (roleNames.includes("door_staff")) {
-                targetPath = "/door";
-              } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
-                targetPath = "/app";
-              }
-            }
-          } else {
-            console.log("[Login] No special roles found, defaulting to /me");
-          }
-        } catch (rolesErr: any) {
-          console.warn("[Login] Exception checking user roles:", rolesErr.message, "- proceeding with default redirect");
-        }
-      }
-      
-      // Apply redirect override if specified
-      const finalRedirect = (redirect && !isRedirectingToApp) ? redirect : targetPath;
-      console.log("[Login] Final redirect:", finalRedirect);
+      // Skip client-side roles check - let server middleware handle role-based redirects
+      // This avoids race conditions where the new Supabase client doesn't have the session yet
+      // The /me page will check roles and redirect B2B users appropriately
+      const finalRedirect = redirect || "/me";
+      console.log("[Login] Redirecting to:", finalRedirect);
       window.location.href = finalRedirect;
     } catch (err: any) {
       console.error("[Login] handleSuccessfulAuth error:", err);
