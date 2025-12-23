@@ -153,12 +153,12 @@ export default function MePage() {
 
       setUser(currentUser);
 
-      // Helper to add timeout to promises
-      const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+      // Helper to add timeout to promises (accepts PromiseLike)
+      const withTimeout = <T,>(promise: PromiseLike<T>, ms: number, fallback: T): Promise<T> => {
         const timeout = new Promise<T>((resolve) => 
           setTimeout(() => resolve(fallback), ms)
         );
-        return Promise.race([promise, timeout]);
+        return Promise.race([Promise.resolve(promise), timeout]);
       };
 
       // Parallelize all independent data loading with timeouts
@@ -173,8 +173,7 @@ export default function MePage() {
           supabase
             .from("user_roles")
             .select("role")
-            .eq("user_id", currentUser.id)
-            .then((res) => res),
+            .eq("user_id", currentUser.id),
           5000,
           { data: null, error: { message: "Timeout" } }
         ),
@@ -184,8 +183,7 @@ export default function MePage() {
             .from("attendees")
             .select("id, name, email, phone, user_id")
             .eq("user_id", currentUser.id)
-            .single()
-            .then((res) => res),
+            .single(),
           5000,
           { data: null, error: { message: "Timeout" } }
         ),
@@ -273,8 +271,7 @@ export default function MePage() {
             checkins(checked_in_at)
           `)
           .eq("attendee_id", attendee?.id || "")
-          .order("registered_at", { ascending: false })
-          .then((res) => res),
+          .order("registered_at", { ascending: false }),
         5000,
         { data: null, error: { message: "Timeout" } }
       );
