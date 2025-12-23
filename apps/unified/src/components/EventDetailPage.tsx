@@ -2664,7 +2664,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <Badge variant="secondary" className="text-xs">Premium</Badge>
                 </div>
                 <p className="text-xs text-foreground-muted">
-                  Upload a video flier (9:16 format, max 30 seconds, 100MB). Shown instead of static image on mobile.
+                  Upload a video flier (9:16 format, max 30 seconds, 50MB). Shown instead of static image on mobile.
                 </p>
                 
                 {videoUploadSuccess && (
@@ -2723,9 +2723,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             
-                            // Validate size client-side
-                            if (file.size > 100 * 1024 * 1024) {
-                              alert("Video must be under 100MB");
+                            // Validate size client-side (50MB max - Supabase Storage limit)
+                            if (file.size > 50 * 1024 * 1024) {
+                              alert("Video must be under 50MB. Please compress your video or use a smaller file.");
                               e.target.value = "";
                               return;
                             }
@@ -2774,7 +2774,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                   if (xhr.status === 504 || xhr.status === 408) {
                                     errorMessage = "Upload timed out - the file may be too large. Try a smaller file or compress the video.";
                                   } else if (xhr.status === 413) {
-                                    errorMessage = "File too large - please use a file under 100MB.";
+                                    errorMessage = "File too large - please use a file under 50MB.";
                                   }
                                 }
                                 alert(errorMessage);

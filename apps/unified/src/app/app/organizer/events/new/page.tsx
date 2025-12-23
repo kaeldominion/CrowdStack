@@ -371,9 +371,9 @@ export default function NewEventPage() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // Check file size (max 100MB)
-                      if (file.size > 100 * 1024 * 1024) {
-                        alert("Video file too large. Maximum size is 100MB.");
+                      // Check file size (max 50MB - Supabase Storage limit)
+                      if (file.size > 50 * 1024 * 1024) {
+                        alert("Video file too large. Maximum size is 50MB. Please compress your video or use a smaller file.");
                         return;
                       }
                       setFlierVideoFile(file);
@@ -412,7 +412,7 @@ export default function NewEventPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                       <p className="mt-2 text-sm text-foreground">Click to upload video</p>
-                      <p className="mt-1 text-xs text-foreground-muted">MP4, WebM, MOV · Max 100MB · 9:16 format recommended</p>
+                      <p className="mt-1 text-xs text-foreground-muted">MP4, WebM, MOV · Max 50MB · 9:16 format recommended</p>
                     </div>
                   )}
                 </label>

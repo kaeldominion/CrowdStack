@@ -89,11 +89,11 @@ export async function POST(
       );
     }
 
-    // Validate file size (100MB max for videos)
-    const maxSize = 100 * 1024 * 1024; // 100MB
+    // Validate file size (50MB max - Supabase Storage default limit)
+    const maxSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "File size exceeds 100MB limit" },
+        { error: "File size exceeds 50MB limit. Please compress your video or use a smaller file." },
         { status: 400 }
       );
     }
@@ -120,6 +120,18 @@ export async function POST(
       console.log(`[VideoFlier] Upload successful: ${publicUrl}`);
     } catch (uploadError: any) {
       console.error(`[VideoFlier] Storage upload failed:`, uploadError);
+      
+      // Check for Supabase Storage size limit error
+      const errorMessage = uploadError?.message || String(uploadError);
+      if (errorMessage.includes("exceeded the maximum allowed size") || 
+          errorMessage.includes("maximum allowed size") ||
+          errorMessage.includes("file too large")) {
+        return NextResponse.json(
+          { error: "File size exceeds storage limit (50MB). Please compress your video or use a smaller file." },
+          { status: 400 }
+        );
+      }
+      
       return NextResponse.json(
         { error: `Storage upload failed: ${uploadError.message}` },
         { status: 500 }
