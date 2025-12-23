@@ -175,7 +175,7 @@ export default function MePage() {
             .select("role")
             .eq("user_id", currentUser.id),
           5000,
-          { data: null, error: { message: "Timeout" } }
+          { data: null, error: { message: "Timeout" } } as any
         ),
         // Load profile - with 5s timeout
         withTimeout(
@@ -185,7 +185,7 @@ export default function MePage() {
             .eq("user_id", currentUser.id)
             .single(),
           5000,
-          { data: null, error: { message: "Timeout" } }
+          { data: null, error: { message: "Timeout" } } as any
         ),
         // Load XP from unified XP system
         fetch("/api/xp/me").catch(() => null),
@@ -273,7 +273,7 @@ export default function MePage() {
           .eq("attendee_id", attendee?.id || "")
           .order("registered_at", { ascending: false }),
         5000,
-        { data: null, error: { message: "Timeout" } }
+        { data: null, error: { message: "Timeout" } } as any
       );
       
       // Wait for promoter stats to complete (non-blocking)
