@@ -19,11 +19,19 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceRoleClient();
 
     // Get the origin to construct the reset URL
-    const origin = request.nextUrl.origin;
+    // For local development, prefer the request origin
+    // For production, use environment variable if available
+    const requestOrigin = request.nextUrl.origin;
+    const envOrigin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_WEB_URL;
+    
+    // Use request origin (works for localhost), fall back to env variable
+    const origin = requestOrigin || envOrigin || 'https://beta.crowdstack.app';
     const redirectTo = `${origin}/auth/reset-password`;
 
     console.log("[Forgot Password] Sending reset email to:", email);
-    console.log("[Forgot Password] Redirect URL:", redirectTo);
+    console.log("[Forgot Password] Request origin:", requestOrigin);
+    console.log("[Forgot Password] Env origin:", envOrigin);
+    console.log("[Forgot Password] Final redirect URL:", redirectTo);
     
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {

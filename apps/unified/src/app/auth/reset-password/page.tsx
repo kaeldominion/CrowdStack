@@ -23,6 +23,12 @@ function ResetPasswordContent() {
       try {
         const supabase = createBrowserClient();
         
+        // Log full URL for debugging
+        console.log("[Reset Password] Full URL:", window.location.href);
+        console.log("[Reset Password] Pathname:", window.location.pathname);
+        console.log("[Reset Password] Search:", window.location.search);
+        console.log("[Reset Password] Hash:", window.location.hash);
+        
         // Check if there's a hash in the URL (token from email)
         const hash = window.location.hash;
         if (hash) {
