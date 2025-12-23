@@ -91,9 +91,13 @@ export async function POST(
 
     // Validate file size (50MB max - Supabase Storage default limit)
     const maxSize = 50 * 1024 * 1024; // 50MB
+    const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+    console.log(`[VideoFlier] File size check: ${fileSizeMB}MB (max: 50MB, limit: ${maxSize} bytes, file: ${file.size} bytes)`);
+    
     if (file.size > maxSize) {
+      console.log(`[VideoFlier] File rejected by size check: ${fileSizeMB}MB > 50MB`);
       return NextResponse.json(
-        { error: "File size exceeds 50MB limit. Please compress your video or use a smaller file." },
+        { error: `File size (${fileSizeMB}MB) exceeds 50MB limit. Please compress your video or use a smaller file.` },
         { status: 400 }
       );
     }
@@ -120,14 +124,18 @@ export async function POST(
       console.log(`[VideoFlier] Upload successful: ${publicUrl}`);
     } catch (uploadError: any) {
       console.error(`[VideoFlier] Storage upload failed:`, uploadError);
+      const errorMessage = uploadError?.message || String(uploadError);
+      const errorString = JSON.stringify(uploadError, null, 2);
+      console.error(`[VideoFlier] Error details - message: ${errorMessage}, full error: ${errorString}, file size: ${fileSizeMB}MB`);
       
       // Check for Supabase Storage size limit error
-      const errorMessage = uploadError?.message || String(uploadError);
       if (errorMessage.includes("exceeded the maximum allowed size") || 
           errorMessage.includes("maximum allowed size") ||
-          errorMessage.includes("file too large")) {
+          errorMessage.includes("file too large") ||
+          errorMessage.includes("File size limit exceeded")) {
+        console.error(`[VideoFlier] Supabase Storage size limit error detected for ${fileSizeMB}MB file`);
         return NextResponse.json(
-          { error: "File size exceeds storage limit (50MB). Please compress your video or use a smaller file." },
+          { error: `File size (${fileSizeMB}MB) exceeds storage limit. Please compress your video or use a smaller file.` },
           { status: 400 }
         );
       }

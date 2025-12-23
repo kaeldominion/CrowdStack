@@ -2724,11 +2724,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             if (!file) return;
                             
                             // Validate size client-side (50MB max - Supabase Storage limit)
-                            if (file.size > 50 * 1024 * 1024) {
-                              alert("Video must be under 50MB. Please compress your video or use a smaller file.");
+                            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                            const maxSizeBytes = 50 * 1024 * 1024;
+                            console.log(`[VideoFlier Client] File selected: ${file.name}, size: ${fileSizeMB}MB (${file.size} bytes), max: 50MB (${maxSizeBytes} bytes)`);
+                            
+                            if (file.size > maxSizeBytes) {
+                              console.log(`[VideoFlier Client] File rejected: ${fileSizeMB}MB > 50MB`);
+                              alert(`Video file (${fileSizeMB}MB) must be under 50MB. Please compress your video or use a smaller file.`);
                               e.target.value = "";
                               return;
                             }
+                            
+                            console.log(`[VideoFlier Client] File size check passed: ${fileSizeMB}MB, proceeding with upload`);
                             
                             // Warn if file is large on mobile
                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
