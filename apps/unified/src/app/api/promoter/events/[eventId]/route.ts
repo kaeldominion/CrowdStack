@@ -56,10 +56,21 @@ export async function GET(
         end_time,
         capacity,
         status,
+        flier_url,
+        flier_video_url,
+        timezone,
+        organizer_id,
+        venue_id,
         venue:venues (
           id,
           name,
-          address
+          slug,
+          address,
+          city
+        ),
+        organizer:organizers (
+          id,
+          name
         )
       `)
       .eq("id", params.eventId)

@@ -129,10 +129,8 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to update profile");
       }
 
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-      // Reload profile to get updated data
-      await loadProfile();
+      // Redirect back to /me after successful save
+      router.push("/me");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -253,11 +251,10 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                   placeholder="+1234567890"
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  required
                 />
               </div>
               <p className="mt-1 text-xs text-white/40">
-                Your WhatsApp number for event updates and communications
+                Optional - Your WhatsApp number for event updates
               </p>
             </div>
 
@@ -274,11 +271,10 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                   max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split('T')[0]}
                   className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  required
                 />
               </div>
               <p className="mt-1 text-xs text-white/40">
-                Required for age verification
+                Optional - Used for age verification at events
               </p>
             </div>
 

@@ -34,7 +34,7 @@ export async function GET(
       .select(`
         *,
         organizer:organizers(id, name, email),
-        venue:venues(id, name, address, city),
+        venue:venues(id, name, slug, address, city),
         event_promoters(
           id,
           promoter:promoters(id, name, email),
@@ -48,6 +48,8 @@ export async function GET(
     if (eventError || !event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
+
+    console.log("Event promoters loaded:", event.event_promoters?.length || 0, event.event_promoters);
 
     // Check if user is the organizer or superadmin
     if (!isSuperadmin) {
@@ -155,7 +157,7 @@ export async function PATCH(
       }
     }
 
-    // Check if trying to publish - prevent if venue approval is pending/rejected
+    // Check if trying to publish - prevent if venue approval is not granted
     if (body.status === "published") {
       const { data: currentEvent } = await serviceSupabase
         .from("events")
@@ -164,16 +166,19 @@ export async function PATCH(
         .single();
 
       if (currentEvent?.venue_id) {
-        // Event has a venue - check approval status
-        if (currentEvent.venue_approval_status === "pending") {
+        // Event has a venue - must be approved before publishing
+        const approvalStatus = currentEvent.venue_approval_status;
+        
+        if (approvalStatus !== "approved") {
+          if (approvalStatus === "rejected") {
+            return NextResponse.json(
+              { error: "Cannot publish event: The venue has rejected this event. Please edit the event or choose a different venue." },
+              { status: 400 }
+            );
+          }
+          // Covers "pending" and null cases
           return NextResponse.json(
             { error: "Cannot publish event: Waiting for venue approval. The venue must approve your event before it can be published." },
-            { status: 400 }
-          );
-        }
-        if (currentEvent.venue_approval_status === "rejected") {
-          return NextResponse.json(
-            { error: "Cannot publish event: The venue has rejected this event. Please edit the event or choose a different venue." },
             { status: 400 }
           );
         }

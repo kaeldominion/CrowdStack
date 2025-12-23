@@ -160,3 +160,4 @@ COMMENT ON FUNCTION public.user_has_organizer_permission IS 'Check if a user has
 
 
 
+

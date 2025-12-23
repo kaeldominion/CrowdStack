@@ -124,23 +124,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ attendee: updated });
     } else {
       // Create new attendee record
-      // Phone is required (NOT NULL), use whatsapp value (they're the same thing)
-      // For WhatsApp-first platform: phone = whatsapp
-      const phoneValue = whatsapp || updateData.whatsapp;
-      
-      if (!phoneValue) {
-        // Phone is required but whatsapp not provided - return error
-        return NextResponse.json(
-          { error: "WhatsApp/Phone number is required" },
-          { status: 400 }
-        );
-      }
+      // Phone and whatsapp are optional now
+      const phoneValue = whatsapp || updateData.whatsapp || null;
       
       const insertData = {
         user_id: user.id,
         name: name || user.user_metadata?.name || user.email?.split("@")[0] || "User",
         email: user.email || null,
-        phone: phoneValue, // Phone = whatsapp (same thing)
+        phone: phoneValue, // Phone = whatsapp (same thing), optional
         whatsapp: phoneValue, // Also set whatsapp field
         ...updateData,
       };

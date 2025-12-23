@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
@@ -140,6 +140,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [pendingPromoterRequests, setPendingPromoterRequests] = useState(0);
 
   const isVenue = effectiveRoles.includes("venue_admin");
   const isOrganizer = effectiveRoles.includes("event_organizer");
@@ -224,6 +225,15 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             });
           })
           .catch((e) => console.error("Failed to load organizer events:", e))
+      );
+      // Fetch pending promoter requests count
+      promises.push(
+        fetch("/api/organizer/promoter-requests")
+          .then((r) => r.json())
+          .then((data) => {
+            setPendingPromoterRequests(data.counts?.pending || 0);
+          })
+          .catch((e) => console.error("Failed to load promoter requests:", e))
       );
     }
 
@@ -719,6 +729,29 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <Calendar className="h-5 w-5" />
             Event Management
           </h2>
+
+          {/* Pending Promoter Requests Alert */}
+          {pendingPromoterRequests > 0 && (
+            <Link href="/app/organizer/promoter-requests">
+              <div className="flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/15 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">
+                      {pendingPromoterRequests} Pending Promoter Request{pendingPromoterRequests > 1 ? "s" : ""}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      Promoters want to promote your events
+                    </p>
+                  </div>
+                </div>
+                <ArrowUpRight className="h-5 w-5 text-yellow-400" />
+              </div>
+            </Link>
+          )}
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <BentoCard>
               <div className="flex items-center justify-between">
@@ -884,10 +917,18 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Promoter Section */}
       {isPromoter && (
         <section className="space-y-6">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Your Events
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Your Events
+            </h2>
+            <Link href="/app/promoter/events">
+              <Button variant="secondary" size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Find Events
+              </Button>
+            </Link>
+          </div>
 
           {/* Stats Summary */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -991,70 +1032,80 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </div>
           )}
 
-          {/* Upcoming Events */}
+          {/* Upcoming Events - List View matching organizer design */}
           {promoterEvents.upcomingEvents.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-indigo-400" />
-                Upcoming Events
-              </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {promoterEvents.upcomingEvents.slice(0, 6).map((event) => (
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-indigo-400" />
+                  Upcoming Events
+                </h3>
+                <Link href="/app/promoter/events">
+                  <Button variant="ghost" size="sm">View All</Button>
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {promoterEvents.upcomingEvents.slice(0, 5).map((event) => (
                   <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                    <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer h-full">
-                      <div className="space-y-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-white truncate">{event.name}</h4>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        {/* Flier thumbnail */}
+                        <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-white/5">
+                          {event.flier_url ? (
+                            <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-white/20" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-white/50 mt-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{new Date(event.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
+                            <span>·</span>
+                            <span>{new Date(event.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
                             {event.venue_name && (
                               <>
+                                <span>·</span>
                                 <MapPin className="h-3 w-3" />
                                 <span className="truncate">{event.venue_name}</span>
-                                <span>•</span>
                               </>
                             )}
-                            <span>{new Date(event.start_time).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-white/60">{event.registrations} reg</span>
-                          <span className="text-green-400 font-medium">{event.checkins} in</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
-                          <input
-                            type="text"
-                            value={event.referral_link}
-                            readOnly
-                            className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyEventLink(event.id, event.referral_link)}
-                              className="shrink-0 h-6 w-6 p-0"
-                            >
-                              {copiedEventId === event.id ? (
-                                <Check className="h-3 w-3 text-green-400" />
-                              ) : (
-                                <Copy className="h-3 w-3" />
-                              )}
-                            </Button>
                           </div>
                         </div>
                       </div>
-                    </BentoCard>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm font-medium text-white">{event.registrations}</p>
+                          <p className="text-xs text-white/40">referrals</p>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm font-medium text-green-400">{event.checkins}</p>
+                          <p className="text-xs text-white/40">check-ins</p>
+                        </div>
+                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyEventLink(event.id, event.referral_link)}
+                            className="h-8 w-8 p-0"
+                            title="Copy referral link"
+                          >
+                            {copiedEventId === event.id ? (
+                              <Check className="h-4 w-4 text-green-400" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-white/60" />
+                            )}
+                          </Button>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
+                      </div>
+                    </div>
                   </Link>
                 ))}
               </div>
-              {promoterEvents.upcomingEvents.length > 6 && (
-                <Link href="/app/promoter/events" className="block">
-                  <Button variant="ghost" className="w-full">
-                    View all {promoterEvents.upcomingEvents.length} upcoming events
-                  </Button>
-                </Link>
-              )}
             </div>
           )}
 
@@ -1151,4 +1202,5 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     </div>
   );
 }
+
 
