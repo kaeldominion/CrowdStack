@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Ticket, ArrowLeft } from "lucide-react";
+import { Ticket, ArrowLeft, XCircle } from "lucide-react";
 import Link from "next/link";
-import { Logo, LoadingSpinner } from "@crowdstack/ui";
+import { Logo, LoadingSpinner, Button } from "@crowdstack/ui";
 
 export default function QRPassPage() {
   const params = useParams();
@@ -17,6 +17,7 @@ export default function QRPassPage() {
   const [venueName, setVenueName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeregistering, setIsDeregistering] = useState(false);
 
   // Fetch registration and QR token if not provided in URL
   useEffect(() => {
@@ -103,6 +104,31 @@ export default function QRPassPage() {
     }
   }, [eventSlug, tokenFromQuery, eventName]);
 
+  async function handleDeregister() {
+    if (!confirm("Are you sure you want to deregister from this event? This action cannot be undone.")) {
+      return;
+    }
+
+    setIsDeregistering(true);
+    try {
+      const response = await fetch(`/api/events/by-slug/${eventSlug}/deregister`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to deregister");
+      }
+
+      // Redirect to event page
+      router.push(`/e/${eventSlug}`);
+    } catch (err: any) {
+      console.error("Error deregistering:", err);
+      alert(err.message || "Failed to deregister. Please try again.");
+      setIsDeregistering(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       {/* Header */}
@@ -169,7 +195,27 @@ export default function QRPassPage() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-100 p-4 bg-gray-50">
+          <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-3">
+            {/* Deregister Button */}
+            <Button
+              variant="secondary"
+              onClick={handleDeregister}
+              disabled={isDeregistering}
+              className="w-full bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
+            >
+              {isDeregistering ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  Deregistering...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Deregister from Event
+                </>
+              )}
+            </Button>
+            
             <div className="flex items-center justify-center gap-2 text-gray-400 text-xs">
               <Logo size="sm" />
               <span>Powered by CrowdStack</span>

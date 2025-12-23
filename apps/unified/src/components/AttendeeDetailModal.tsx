@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Modal, Badge, LoadingSpinner, Button } from "@crowdstack/ui";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2 } from "lucide-react";
 
 interface AttendeeDetailModalProps {
   isOpen: boolean;
@@ -55,6 +55,7 @@ export function AttendeeDetailModal({
   const [details, setDetails] = useState<AttendeeDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [removingRegistrationId, setRemovingRegistrationId] = useState<string | null>(null);
 
   const loadDetails = async () => {
     try {
@@ -107,6 +108,32 @@ export function AttendeeDetailModal({
       ];
     }
     return (details?.events || []).map((e) => ({ ...e, type: "regular" as const }));
+  };
+
+  const handleRemoveRegistration = async (registrationId: string) => {
+    if (!confirm("Are you sure you want to remove this registration? This action cannot be undone.")) {
+      return;
+    }
+
+    setRemovingRegistrationId(registrationId);
+    try {
+      const response = await fetch(`/api/registrations/${registrationId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to remove registration");
+      }
+
+      // Reload details to refresh the list
+      await loadDetails();
+    } catch (err: any) {
+      console.error("Error removing registration:", err);
+      alert(err.message || "Failed to remove registration. Please try again.");
+    } finally {
+      setRemovingRegistrationId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -222,7 +249,7 @@ export function AttendeeDetailModal({
                             </div>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 ml-4">
+                        <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
                           {checkin ? (
                             <div className="flex items-center gap-1 text-success">
                               <CheckCircle2 className="h-5 w-5" />
@@ -233,6 +260,31 @@ export function AttendeeDetailModal({
                               <XCircle className="h-5 w-5" />
                               <span className="text-sm">Not Checked In</span>
                             </div>
+                          )}
+                          {/* Remove Registration Button (organizer and venue only) */}
+                          {(role === "organizer" || role === "venue") && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveRegistration(reg.id);
+                              }}
+                              disabled={removingRegistrationId === reg.id}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            >
+                              {removingRegistrationId === reg.id ? (
+                                <>
+                                  <LoadingSpinner size="sm" className="mr-1" />
+                                  Removing...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="h-3 w-3 mr-1" />
+                                  Remove
+                                </>
+                              )}
+                            </Button>
                           )}
                         </div>
                       </div>
