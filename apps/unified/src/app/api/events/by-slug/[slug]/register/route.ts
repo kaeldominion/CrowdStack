@@ -249,9 +249,13 @@ export async function POST(
       if (!body.email && existingAttendee.email) {
         updateData.email = existingAttendee.email;
       }
-      // Preserve phone if not provided in update (phone is required)
-      if (!body.phone && existingAttendee.phone) {
+      // Preserve phone if not provided in update (preserve existing value)
+      if (!body.phone && !body.whatsapp && existingAttendee.phone) {
         updateData.phone = existingAttendee.phone;
+      }
+      // If WhatsApp is provided, update phone as well
+      if (body.whatsapp && body.whatsapp.trim()) {
+        updateData.phone = body.whatsapp;
       }
       // Link to user if authenticated and not already linked
       if (user?.id && !existingAttendee.user_id) {
@@ -273,14 +277,16 @@ export async function POST(
       attendee = updated;
       console.log("[Register API] Updated attendee:", attendee.id);
     } else {
-      // Create new attendee (phone is required for new attendees)
-      if (!body.phone && !body.whatsapp) {
-        console.error("[Register API] Missing phone/whatsapp for new attendee");
-        throw new Error("Phone number or WhatsApp is required");
+      // Create new attendee - phone/WhatsApp is optional (allowed on first registration)
+      // If WhatsApp is provided, use it as phone
+      if (body.whatsapp && body.whatsapp.trim()) {
+        attendeeData.phone = body.whatsapp;
+        attendeeData.whatsapp = body.whatsapp;
+      } else if (body.phone && body.phone.trim()) {
+        attendeeData.phone = body.phone;
       }
-      if (!body.phone && body.whatsapp) {
-        attendeeData.phone = body.whatsapp; // Use WhatsApp as phone if phone not provided
-      }
+      // If neither phone nor WhatsApp is provided, phone will be null (allowed per schema)
+      
       // Link to user if authenticated
       if (user?.id) {
         attendeeData.user_id = user.id;

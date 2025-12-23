@@ -1,9 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Section, Container, Button, Logo } from "@crowdstack/ui";
-import { CheckCircle2, Calendar, MapPin, Ticket } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+import { ShareButton } from "./ShareButton";
 
 interface RegistrationSuccessProps {
   eventName: string;
@@ -22,6 +25,31 @@ export function RegistrationSuccess({
   qrToken,
   flierUrl,
 }: RegistrationSuccessProps) {
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+
+  // Get current user ID for referral tracking
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+        }
+      } catch (error) {
+        console.error("[RegistrationSuccess] Error loading user:", error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  // Generate share URL with referral tracking
+  const getShareUrl = () => {
+    if (typeof window === "undefined") return "";
+    const origin = window.location.origin;
+    return `${origin}/e/${eventSlug}`;
+  };
+
   return (
     <div 
       className="fixed inset-0 overflow-hidden"
@@ -160,6 +188,37 @@ export function RegistrationSuccess({
               <p className="text-xs text-white/40 text-center">
                 Show your QR pass at the event entrance
               </p>
+              
+              {/* Share Button */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <div className="w-full [&>div]:w-full [&>div>button]:w-full">
+                  <ShareButton
+                    title={eventName}
+                    text={`Check out ${eventName}! Register now and join me.`}
+                    url={getShareUrl()}
+                    imageUrl={flierUrl || undefined}
+                    userId={userId}
+                    label="Share with Friends & Get XP"
+                    compact={false}
+                  />
+                </div>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="mt-4 flex gap-3">
+                <Link href={`/e/${eventSlug}`} className="flex-1">
+                  <Button variant="secondary" size="md" className="w-full flex items-center justify-center gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Event
+                  </Button>
+                </Link>
+                <Link href="/me" className="flex-1">
+                  <Button variant="secondary" size="md" className="w-full flex items-center justify-center gap-2">
+                    <User className="h-4 w-4" />
+                    Home
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </Container>

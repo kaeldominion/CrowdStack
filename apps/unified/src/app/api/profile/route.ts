@@ -30,10 +30,21 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
+    // Get registration count for progressive signup logic
+    let registrationCount = 0;
+    if (attendee?.id) {
+      const { count } = await serviceSupabase
+        .from("registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("attendee_id", attendee.id);
+      registrationCount = count || 0;
+    }
+
     // Return profile data (or null if attendee doesn't exist yet)
     return NextResponse.json({ 
       attendee: attendee || null,
       email: user.email,
+      registrationCount,
     });
   } catch (error: any) {
     console.error("Error fetching profile:", error);

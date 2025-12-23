@@ -22,6 +22,7 @@ interface TypeformSignupProps {
     whatsapp?: string | null;
     instagram_handle?: string | null;
   } | null;
+  registrationCount?: number; // Number of previous registrations for progressive signup
   forcePasswordFallback?: boolean; // If true, show password fallback immediately
   fallbackReason?: "pkce" | "expired" | "failed" | "rate_limit"; // Reason for password fallback
   eventName?: string; // Event name to display throughout registration
@@ -66,7 +67,7 @@ const isIOSSafari = () => {
   return isIOS || isSafari || isInAppBrowser;
 };
 
-export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, forcePasswordFallback = false, fallbackReason, eventName, eventDetails }: TypeformSignupProps) {
+export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEmailVerified, eventSlug, existingProfile, registrationCount = 0, forcePasswordFallback = false, fallbackReason, eventName, eventDetails }: TypeformSignupProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [emailVerified, setEmailVerified] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -93,6 +94,15 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     instagram_handle: existingProfile?.instagram_handle || "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof SignupData, string>>>({});
+  const [skippedWhatsapp, setSkippedWhatsapp] = useState(false); // Track if user skipped WhatsApp on 3rd+ registration
+  const autoSubmittedRef = useRef(false); // Track if we've already auto-submitted
+  const [fetchedProfile, setFetchedProfile] = useState<typeof existingProfile>(null); // Profile fetched after email verification
+  const [fetchedRegistrationCount, setFetchedRegistrationCount] = useState<number | null>(null); // Registration count fetched after email verification
+  const hasFetchedProfile = useRef(false); // Track if we've fetched profile after email verification
+  
+  // Merge prop profile with fetched profile (fetched takes precedence if available)
+  const mergedProfile = fetchedProfile || existingProfile;
+  const mergedRegistrationCount = fetchedRegistrationCount !== null ? fetchedRegistrationCount : registrationCount;
   
   // Navigation auth state
   const router = useRouter();
@@ -111,8 +121,48 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     }
   };
 
-  // Calculate which profile fields need to be filled (based on existingProfile only, not formData)
-  // This is stable and won't change as the user types
+  // Fetch profile data after email verification (always fetch to ensure we have latest data)
+  useEffect(() => {
+    if (emailVerified && !hasFetchedProfile.current) {
+      hasFetchedProfile.current = true;
+      const fetchProfile = async () => {
+        try {
+          const response = await fetch("/api/profile");
+          if (response.ok) {
+            const profileData = await response.json();
+            const attendee = profileData.attendee;
+            
+            if (attendee) {
+              setFetchedProfile({
+                name: attendee.name,
+                surname: attendee.surname,
+                date_of_birth: attendee.date_of_birth,
+                gender: attendee.gender || null,
+                whatsapp: attendee.whatsapp,
+                instagram_handle: attendee.instagram_handle,
+              });
+            }
+            
+            // Update registration count if available
+            if (profileData.registrationCount !== undefined) {
+              setFetchedRegistrationCount(profileData.registrationCount);
+            }
+          }
+        } catch (err) {
+          console.error("[TypeformSignup] Error fetching profile after email verification:", err);
+          // Reset flag on error so we can retry if needed
+          hasFetchedProfile.current = false;
+        }
+      };
+      
+      fetchProfile();
+    }
+  }, [emailVerified]);
+
+  // Progressive signup logic based on registration count
+  // First registration (0): name, surname, gender, instagram_handle
+  // Second registration (1): instagram_handle if missing
+  // Third+ registration (2+): whatsapp if missing (skippable)
   const requiredProfileSteps = useMemo(() => {
     const visible: StepId[] = [];
     
@@ -121,17 +171,23 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       return !!(val && val.trim().length > 0);
     };
     
-    // Only check existingProfile - we want to show fields that are missing in the DB
-    // This won't change as the user types, preventing the jumping issue
-    if (!hasValue(existingProfile?.name)) visible.push("name");
-    if (!hasValue(existingProfile?.surname)) visible.push("surname");
-    if (!hasValue(existingProfile?.date_of_birth)) visible.push("date_of_birth");
-    if (!(existingProfile as any)?.gender) visible.push("gender");
-    if (!hasValue(existingProfile?.whatsapp)) visible.push("whatsapp");
-    if (!hasValue(existingProfile?.instagram_handle)) visible.push("instagram_handle");
+    if (mergedRegistrationCount === 0) {
+      // First registration: only ask for name, surname, gender, instagram
+      if (!hasValue(mergedProfile?.name)) visible.push("name");
+      if (!hasValue(mergedProfile?.surname)) visible.push("surname");
+      if (!(mergedProfile as any)?.gender) visible.push("gender");
+      if (!hasValue(mergedProfile?.instagram_handle)) visible.push("instagram_handle");
+      // NOTE: date_of_birth and whatsapp are NOT asked on first registration
+    } else if (mergedRegistrationCount === 1) {
+      // Second registration: only ask for instagram if missing
+      if (!hasValue(mergedProfile?.instagram_handle)) visible.push("instagram_handle");
+    } else if (mergedRegistrationCount >= 2) {
+      // Third+ registration: ask for whatsapp if missing (will be skippable)
+      if (!hasValue(mergedProfile?.whatsapp)) visible.push("whatsapp");
+    }
     
     return visible;
-  }, [existingProfile]);
+  }, [mergedProfile, mergedRegistrationCount]);
 
   // Determine which steps to show - email step + required profile steps
   const visibleSteps = useMemo(() => {
@@ -237,7 +293,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   // Update formData when existingProfile changes
   useEffect(() => {
-    if (existingProfile) {
+    if (mergedProfile) {
       // Helper to get a valid trimmed value or empty string
       const getValue = (existing: string | null | undefined, current: string): string => {
         // If current has a value, keep it
@@ -249,15 +305,54 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       setFormData(prev => ({
         ...prev,
-        name: getValue(existingProfile.name, prev.name),
-        surname: getValue(existingProfile.surname, prev.surname),
-        date_of_birth: getValue(existingProfile.date_of_birth, prev.date_of_birth),
-        gender: prev.gender || (existingProfile as any)?.gender || "male",
-        whatsapp: getValue(existingProfile.whatsapp, prev.whatsapp),
-        instagram_handle: getValue(existingProfile.instagram_handle, prev.instagram_handle),
+        name: getValue(mergedProfile.name, prev.name),
+        surname: getValue(mergedProfile.surname, prev.surname),
+        date_of_birth: getValue(mergedProfile.date_of_birth, prev.date_of_birth),
+        gender: prev.gender || (mergedProfile as any)?.gender || "male",
+        whatsapp: getValue(mergedProfile.whatsapp, prev.whatsapp),
+        instagram_handle: getValue(mergedProfile.instagram_handle, prev.instagram_handle),
       }));
     }
-  }, [existingProfile]);
+  }, [mergedProfile]);
+
+  // Auto-submit if all fields are already filled (no steps needed)
+  useEffect(() => {
+    if (emailVerified && visibleSteps.length === 0 && !isLoading && !autoSubmittedRef.current) {
+      // All required fields are already filled, auto-submit
+      autoSubmittedRef.current = true;
+      const autoSubmit = async () => {
+        try {
+          const supabase = createBrowserClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          const email = user?.email || formData.email;
+          
+          if (!email) {
+            autoSubmittedRef.current = false; // Reset if email missing
+            return;
+          }
+          
+          const mergedData: SignupData = {
+            email: email,
+            name: formData.name || mergedProfile?.name || "",
+            surname: formData.surname || mergedProfile?.surname || "",
+            date_of_birth: formData.date_of_birth || mergedProfile?.date_of_birth || "",
+            gender: formData.gender || (mergedProfile as any)?.gender || "male",
+            whatsapp: formData.whatsapp || mergedProfile?.whatsapp || "",
+            instagram_handle: formData.instagram_handle || mergedProfile?.instagram_handle || "",
+          };
+          
+          await onSubmit(mergedData);
+        } catch (error) {
+          console.error("[TypeformSignup] Auto-submit error:", error);
+          autoSubmittedRef.current = false; // Reset on error so it can retry
+          // If auto-submit fails, show error but don't break the UI
+        }
+      };
+      
+      autoSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailVerified, visibleSteps.length, isLoading]);
 
   // Reset current step when visible steps change (e.g., when email is verified)
   useEffect(() => {
@@ -273,9 +368,31 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   }, [emailVerified, visibleSteps.length]);
 
   const validateStep = (step: number): boolean => {
+    // Guard against empty visibleSteps or invalid step
+    if (visibleSteps.length === 0 || step >= visibleSteps.length) return false;
+    
     const stepKey = visibleSteps[step] as keyof SignupData;
     const value = formData[stepKey];
 
+    // Check for skippable WhatsApp first (before general empty check)
+    if (stepKey === "whatsapp" && mergedRegistrationCount >= 2) {
+      // WhatsApp is skippable on 3rd+ registration, so allow empty
+      if (!value || !value.trim()) {
+        // Empty is allowed when skippable - validation passes
+        return true;
+      }
+      // If value is provided, validate format
+      if (value && value.trim()) {
+        const whatsappRegex = /^\+?[1-9]\d{1,14}$/;
+        if (!whatsappRegex.test(value.replace(/\s/g, ""))) {
+          setErrors({ [stepKey]: "Please enter a valid WhatsApp number (e.g., +1234567890)" });
+          return false;
+        }
+      }
+      return true; // WhatsApp validation passed
+    }
+
+    // General empty check for all other fields
     if (!value || !value.trim()) {
       setErrors({ [stepKey]: "This field is required" });
       return false;
@@ -286,14 +403,6 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
         setErrors({ [stepKey]: "Please enter a valid email address" });
-        return false;
-      }
-    }
-
-    if (stepKey === "whatsapp") {
-      const whatsappRegex = /^\+?[1-9]\d{1,14}$/;
-      if (!whatsappRegex.test(value.replace(/\s/g, ""))) {
-        setErrors({ [stepKey]: "Please enter a valid WhatsApp number (e.g., +1234567890)" });
         return false;
       }
     }
@@ -619,7 +728,30 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     }
   };
 
+  const handleSkipWhatsapp = async () => {
+    if (visibleSteps.length === 0 || currentStep >= visibleSteps.length) return;
+    if (mergedRegistrationCount >= 2 && visibleSteps[currentStep] === "whatsapp") {
+      setSkippedWhatsapp(true);
+      setErrors({}); // Clear any errors first
+      // Clear whatsapp value - use functional update to ensure it's cleared
+      setFormData(prev => ({ ...prev, whatsapp: "" }));
+      
+      // Move to next step or submit
+      // Use setTimeout to ensure state updates are applied before validation
+      setTimeout(async () => {
+        if (currentStep < visibleSteps.length - 1) {
+          setCurrentStep(currentStep + 1);
+        } else {
+          await handleSubmit();
+        }
+      }, 0);
+    }
+  };
+
   const handleNext = async () => {
+    // Guard against empty visibleSteps
+    if (visibleSteps.length === 0 || currentStep >= visibleSteps.length) return;
+    
     // Special handling for email step
     if (visibleSteps[currentStep] === "email" && !emailVerified) {
       await handleSendMagicLink();
@@ -671,16 +803,38 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         instagram_handle: formData.instagram_handle || existingProfile?.instagram_handle || "",
       };
       
-      // Validate that all required fields are present before submitting
-      if (!mergedData.email || !mergedData.name || !mergedData.surname || !mergedData.date_of_birth || !mergedData.gender || !mergedData.whatsapp || !mergedData.instagram_handle) {
-        const missingFields = [];
-        if (!mergedData.email) missingFields.push("email");
+      // Progressive validation based on registration count
+      // First registration (0): email, name, surname, gender, instagram (NO date_of_birth, NO whatsapp)
+      // Second registration (1): instagram if missing
+      // Third+ registration (2+): whatsapp is optional (can be skipped)
+      const missingFields = [];
+      if (!mergedData.email) missingFields.push("email");
+      
+      if (mergedRegistrationCount === 0) {
+        // First registration requirements
         if (!mergedData.name) missingFields.push("name");
         if (!mergedData.surname) missingFields.push("surname");
-        if (!mergedData.date_of_birth) missingFields.push("date of birth");
         if (!mergedData.gender) missingFields.push("gender");
-        if (!mergedData.whatsapp) missingFields.push("whatsapp");
         if (!mergedData.instagram_handle) missingFields.push("instagram handle");
+        // NOTE: date_of_birth and whatsapp are NOT required on first registration
+      } else if (mergedRegistrationCount === 1) {
+        // Second registration: only instagram if missing (should already have name, surname, gender from first registration)
+        if (!mergedData.instagram_handle) missingFields.push("instagram handle");
+        // Validate basic fields exist (they should from first registration, but check for safety)
+        if (!mergedData.name) missingFields.push("name");
+        if (!mergedData.surname) missingFields.push("surname");
+        if (!mergedData.gender) missingFields.push("gender");
+      } else if (mergedRegistrationCount >= 2) {
+        // Third+ registration: whatsapp is optional (skippable)
+        // All other fields should be present from previous registrations
+        if (!mergedData.name) missingFields.push("name");
+        if (!mergedData.surname) missingFields.push("surname");
+        if (!mergedData.gender) missingFields.push("gender");
+        if (!mergedData.instagram_handle) missingFields.push("instagram handle");
+        // whatsapp is NOT required - can be empty when skipped
+      }
+      
+      if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
       }
       
@@ -705,6 +859,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
   };
 
   const getInputComponent = () => {
+    // Guard against empty visibleSteps
+    if (visibleSteps.length === 0 || currentStep >= visibleSteps.length) {
+      return null;
+    }
+    
     const stepKey = visibleSteps[currentStep] as keyof SignupData;
     const value = formData[stepKey];
     const error = errors[stepKey];
@@ -1060,6 +1219,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         );
 
       case "whatsapp":
+        const isWhatsappSkippable = mergedRegistrationCount >= 2;
         return (
           <div className="space-y-3 sm:space-y-4">
             <div className="relative">
@@ -1079,7 +1239,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 inputMode="tel"
               />
             </div>
-            <p className="text-xs sm:text-sm text-white/60 text-center px-4">We'll use this to send you event updates</p>
+            <p className="text-xs sm:text-sm text-white/60 text-center px-4">
+              {isWhatsappSkippable 
+                ? "We'll use this to send you event updates (optional)"
+                : "We'll use this to send you event updates"}
+            </p>
+            {isWhatsappSkippable && (
+              <button
+                type="button"
+                onClick={handleSkipWhatsapp}
+                className="text-sm text-white/60 hover:text-white/80 underline text-center w-full mt-2"
+              >
+                Skip for now
+              </button>
+            )}
           </div>
         );
 
@@ -1113,9 +1286,9 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
     }
   };
 
-  const stepProgress = emailVerified 
+  const stepProgress = visibleSteps.length > 0
     ? ((currentStep + 1) / visibleSteps.length) * 100 
-    : ((currentStep + 1) / visibleSteps.length) * 100;
+    : 100; // If no steps, show 100% (all done, auto-submitting)
 
   // Use mobile-optimized label on small screens
   const getLabel = () => {
@@ -1301,19 +1474,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         )}
 
         {/* Enhanced Progress Bar with Step Dots */}
-        <div className="mb-3 sm:mb-6 flex-shrink-0">
-          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
-            <motion.div
-              className="h-full bg-gradient-to-r from-primary to-primary/80"
-              initial={{ width: 0 }}
-              animate={{ width: `${stepProgress}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            />
-          </div>
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs sm:text-sm text-white/60 font-medium">
-              Step {currentStep + 1} of {visibleSteps.length}
-            </p>
+        {visibleSteps.length > 0 && (
+          <div className="mb-3 sm:mb-6 flex-shrink-0">
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+              <motion.div
+                className="h-full bg-gradient-to-r from-primary to-primary/80"
+                initial={{ width: 0 }}
+                animate={{ width: `${stepProgress}%` }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              />
+            </div>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs sm:text-sm text-white/60 font-medium">
+                Step {currentStep + 1} of {visibleSteps.length}
+              </p>
             {visibleSteps.length > 1 && (
               <p className="text-xs text-white/40">
                 ~{Math.max(1, Math.ceil((visibleSteps.length - currentStep - 1) * 0.5))} min left
@@ -1339,32 +1513,46 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               ))}
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Form Container */}
-        <motion.div
-          ref={formContainerRef}
-          key={currentStep}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
-          style={{ 
-            // Add scroll margin to ensure form stays visible above keyboard
-            scrollMarginBottom: "2rem",
-          }}
-        >
-          {/* Question */}
-          <motion.h2
-            key={`question-${currentStep}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8 text-center px-2"
+        {visibleSteps.length === 0 ? (
+          // Show loading state when auto-submitting (all fields already filled)
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
           >
-            {getLabel()}
-          </motion.h2>
+            <div className="flex flex-col items-center justify-center py-8">
+              <InlineSpinner size="lg" className="mb-4" />
+              <p className="text-white/80 text-center">Completing registration...</p>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            ref={formContainerRef}
+            key={currentStep}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
+            style={{ 
+              // Add scroll margin to ensure form stays visible above keyboard
+              scrollMarginBottom: "2rem",
+            }}
+          >
+            {/* Question */}
+            <motion.h2
+              key={`question-${currentStep}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8 text-center px-2"
+            >
+              {getLabel()}
+            </motion.h2>
 
           {/* Input */}
           <motion.div
@@ -1372,8 +1560,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            {getInputComponent()}
-            {errors[visibleSteps[currentStep] as keyof SignupData] && (
+            {visibleSteps.length > 0 && getInputComponent()}
+            {visibleSteps.length > 0 && currentStep < visibleSteps.length && errors[visibleSteps[currentStep] as keyof SignupData] && (
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1385,7 +1573,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           </motion.div>
 
           {/* Navigation */}
-          {(visibleSteps[currentStep] !== "email" || emailVerified) && !magicLinkSent && (
+          {visibleSteps.length > 0 && currentStep < visibleSteps.length && (visibleSteps[currentStep] !== "email" || emailVerified) && !magicLinkSent && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1429,7 +1617,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           )}
 
           {/* Send magic link button for email step */}
-          {visibleSteps[currentStep] === "email" && !emailVerified && !magicLinkSent && !showPasswordFallback && (
+          {visibleSteps.length > 0 && currentStep < visibleSteps.length && visibleSteps[currentStep] === "email" && !emailVerified && !magicLinkSent && !showPasswordFallback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1457,7 +1645,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           )}
 
           {/* Password signup button when rate limited */}
-          {visibleSteps[currentStep] === "email" && showPasswordFallback && (
+          {visibleSteps.length > 0 && currentStep < visibleSteps.length && visibleSteps[currentStep] === "email" && showPasswordFallback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1484,18 +1672,19 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             </motion.div>
           )}
 
-          {/* Email hint (subtle) */}
-          {emailVerified && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-xs text-white/30 text-center mt-4 sm:mt-6"
-            >
-              {formData.email}
-            </motion.p>
-          )}
-        </motion.div>
+            {/* Email hint (subtle) */}
+            {emailVerified && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-xs text-white/30 text-center mt-4 sm:mt-6"
+              >
+                {formData.email}
+              </motion.p>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );

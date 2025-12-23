@@ -38,6 +38,7 @@ export default function RegisterPage() {
     whatsapp?: string | null;
     instagram_handle?: string | null;
   } | null>(null);
+  const [registrationCount, setRegistrationCount] = useState<number>(0);
   const [eventDetails, setEventDetails] = useState<{
     name: string;
     venue?: { name: string } | null;
@@ -155,46 +156,11 @@ export default function RegisterPage() {
                 whatsapp: attendee.whatsapp,
                 instagram_handle: attendee.instagram_handle,
               });
-              
-              // Check if profile has all required fields
-              const hasRequiredFields = 
-                attendee.name && 
-                attendee.whatsapp && 
-                attendee.surname && 
-                attendee.date_of_birth && 
-                attendee.gender &&
-                attendee.instagram_handle;
-              
-              console.log("[Register] Has all required fields:", hasRequiredFields, {
-                name: !!attendee.name,
-                whatsapp: !!attendee.whatsapp,
-                surname: !!attendee.surname,
-                date_of_birth: !!attendee.date_of_birth,
-                instagram_handle: !!attendee.instagram_handle,
-              });
-              
-              if (hasRequiredFields) {
-                // Profile is complete - register them automatically
-                console.log("[Register] Auto-registering user with complete profile...");
-                try {
-                  await handleSignupSubmit({
-                    email: user.email,
-                    name: attendee.name,
-                    surname: attendee.surname,
-                    date_of_birth: attendee.date_of_birth,
-                    gender: attendee.gender || "male",
-                    whatsapp: attendee.whatsapp,
-                    instagram_handle: attendee.instagram_handle,
-                  });
-                  console.log("[Register] Auto-registration complete");
-                } catch (autoRegErr) {
-                  console.error("[Register] Auto-registration failed:", autoRegErr);
-                  // If auto-registration fails, show the signup form
-                  setShowSignup(true);
-                  setLoading(false);
-                }
-                return;
-              }
+            }
+            
+            // Store registration count for progressive signup logic
+            if (profileData.registrationCount !== undefined) {
+              setRegistrationCount(profileData.registrationCount);
             }
           }
         } catch (profileErr) {
@@ -443,6 +409,7 @@ export default function RegisterPage() {
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
         existingProfile={existingProfile}
+        registrationCount={registrationCount}
         eventName={eventDataForSignup?.name}
         eventDetails={eventDataForSignup ? {
           venueName: eventDataForSignup.venueName,
@@ -470,6 +437,7 @@ export default function RegisterPage() {
         redirectUrl={redirectUrl || undefined}
         onEmailVerified={checkRegistration}
         eventSlug={eventSlug}
+        registrationCount={registrationCount}
         forcePasswordFallback={shouldShowPasswordFallback}
         fallbackReason={fallbackReason}
         eventName={eventDataForSignup?.name}
