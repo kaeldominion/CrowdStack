@@ -432,7 +432,8 @@ export default function MePage() {
 
   return (
     <div className="relative min-h-screen bg-[#0B0D10]">
-      {/* Blurred Flyer Background */}
+      {/* Blurred Flyer Background - temporarily disabled for performance */}
+      {/* TODO: Re-enable after testing 
       {backgroundFlyer && (
         <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
           <div
@@ -446,6 +447,7 @@ export default function MePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D10]/50 via-[#0B0D10]/70 to-[#0B0D10]/90" />
         </div>
       )}
+      */}
 
       <div className="relative z-10 px-4 pt-24 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
