@@ -24,6 +24,7 @@ import {
   InlineSpinner,
   LoadingSpinner,
 } from "@crowdstack/ui";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import {
   ArrowLeft,
   Calendar,
@@ -2774,59 +2775,77 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               }
                             }
                             
-                            const formData = new FormData();
-                            formData.append("file", file);
-                            
+                            // Upload directly to Supabase Storage to bypass Vercel's 4.5MB limit
                             setUploadingVideo(true);
                             setVideoUploadProgress(0);
                             setVideoUploadSuccess(false);
                             
-                            // Use XMLHttpRequest for progress tracking
-                            const xhr = new XMLHttpRequest();
-                            
-                            xhr.upload.addEventListener("progress", (progressEvent) => {
-                              if (progressEvent.lengthComputable) {
-                                const percentComplete = Math.round((progressEvent.loaded / progressEvent.total) * 100);
-                                setVideoUploadProgress(percentComplete);
-                              }
-                            });
-                            
-                            xhr.addEventListener("load", async () => {
-                              if (xhr.status >= 200 && xhr.status < 300) {
-                                await loadEventData(false);
-                                setVideoUploadSuccess(true);
-                                setTimeout(() => setVideoUploadSuccess(false), 3000);
-                              } else {
+                            try {
+                              // Generate storage path
+                              const fileExt = file.name.split(".").pop() || "mp4";
+                              const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                              const storagePath = `events/${eventId}/video-flier/${fileName}`;
+                              
+                              console.log(`[VideoFlier Client] Starting direct upload to Supabase: ${storagePath}`);
+                              
+                              // Upload directly to Supabase Storage
+                              const supabase = createBrowserClient();
+                              const { data: uploadData, error: uploadError } = await supabase.storage
+                                .from("event-photos")
+                                .upload(storagePath, file, {
+                                  contentType: file.type,
+                                  upsert: true,
+                                  // Note: Supabase JS client doesn't support progress callbacks directly
+                                  // We'll show indeterminate progress
+                                });
+                              
+                              if (uploadError) {
+                                console.error(`[VideoFlier Client] Supabase upload failed:`, uploadError);
                                 let errorMessage = "Failed to upload video";
-                                try {
-                                  const errorData = JSON.parse(xhr.responseText);
-                                  errorMessage = errorData.error || errorMessage;
-                                } catch {
-                                  if (xhr.status === 504 || xhr.status === 408) {
-                                    errorMessage = "Upload timed out - the file may be too large. Try a smaller file or compress the video.";
-                                  } else if (xhr.status === 413) {
-                                    errorMessage = "File too large - please use a file under 50MB.";
-                                  }
+                                
+                                if (uploadError.message?.includes("exceeded the maximum allowed size") || 
+                                    uploadError.message?.includes("maximum allowed size")) {
+                                  errorMessage = "File size exceeds storage limit (50MB). Please compress your video or use a smaller file.";
+                                } else {
+                                  errorMessage = uploadError.message || errorMessage;
                                 }
+                                
                                 alert(errorMessage);
+                                setUploadingVideo(false);
+                                setVideoUploadProgress(0);
+                                return;
                               }
+                              
+                              // Get public URL
+                              const { data: urlData } = supabase.storage
+                                .from("event-photos")
+                                .getPublicUrl(uploadData.path);
+                              
+                              const publicUrl = urlData.publicUrl;
+                              console.log(`[VideoFlier Client] Upload successful: ${publicUrl}`);
+                              
+                              // Update event record via API (lightweight request, just the URL)
+                              const updateResponse = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ flier_video_url: publicUrl }),
+                              });
+                              
+                              if (!updateResponse.ok) {
+                                const errorData = await updateResponse.json().catch(() => ({}));
+                                throw new Error(errorData.error || "Failed to update event");
+                              }
+                              
+                              await loadEventData(false);
+                              setVideoUploadSuccess(true);
+                              setTimeout(() => setVideoUploadSuccess(false), 3000);
+                            } catch (error: any) {
+                              console.error(`[VideoFlier Client] Upload error:`, error);
+                              alert(error.message || "Failed to upload video. Please try again.");
+                            } finally {
                               setUploadingVideo(false);
                               setVideoUploadProgress(0);
-                            });
-                            
-                            xhr.addEventListener("error", () => {
-                              alert("Upload failed - please check your internet connection and try again.");
-                              setUploadingVideo(false);
-                              setVideoUploadProgress(0);
-                            });
-                            
-                            xhr.addEventListener("abort", () => {
-                              setUploadingVideo(false);
-                              setVideoUploadProgress(0);
-                            });
-                            
-                            xhr.open("POST", `/api/organizer/events/${eventId}/video-flier`);
-                            xhr.send(formData);
+                            }
                             
                             // Reset input
                             e.target.value = "";
