@@ -173,7 +173,8 @@ export default function MePage() {
           supabase
             .from("user_roles")
             .select("role")
-            .eq("user_id", currentUser.id),
+            .eq("user_id", currentUser.id)
+            .then((res) => res),
           5000,
           { data: null, error: { message: "Timeout" } }
         ),
@@ -183,7 +184,8 @@ export default function MePage() {
             .from("attendees")
             .select("id, name, email, phone, user_id")
             .eq("user_id", currentUser.id)
-            .single(),
+            .single()
+            .then((res) => res),
           5000,
           { data: null, error: { message: "Timeout" } }
         ),
@@ -271,7 +273,8 @@ export default function MePage() {
             checkins(checked_in_at)
           `)
           .eq("attendee_id", attendee?.id || "")
-          .order("registered_at", { ascending: false }),
+          .order("registered_at", { ascending: false })
+          .then((res) => res),
         5000,
         { data: null, error: { message: "Timeout" } }
       );
