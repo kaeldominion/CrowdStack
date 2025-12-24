@@ -131,7 +131,7 @@ export function AddToCalendar({
           />
           
           {/* Menu */}
-          <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-xl">
+          <div className="absolute bottom-full left-0 right-0 mb-2 z-50 bg-black/90 backdrop-blur-xl border border-white/30 rounded-xl overflow-hidden shadow-xl">
             <div className="p-2">
               <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-2">
                 <span className="text-sm font-semibold text-white">Select Calendar</span>
