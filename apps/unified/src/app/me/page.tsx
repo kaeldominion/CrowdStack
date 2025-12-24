@@ -865,8 +865,16 @@ export default function MePage() {
                   href={`/e/${reg.event?.slug}`}
                   className="flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all group"
                 >
-                  <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <Ticket className="h-6 w-6 text-white/30" />
+                  <div className="h-12 w-12 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {(reg.event?.flier_url || reg.event?.cover_image_url) ? (
+                      <img
+                        src={reg.event.flier_url || reg.event.cover_image_url || ""}
+                        alt={reg.event.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Ticket className="h-6 w-6 text-white/30" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-white/80 group-hover:text-white truncate transition-colors">
