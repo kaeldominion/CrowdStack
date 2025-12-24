@@ -293,12 +293,17 @@ export function ShareButton({
   }
 
   return (
-    <div className="relative" ref={buttonRef}>
+    <div 
+      className="relative" 
+      ref={buttonRef}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
       <Button 
         variant="secondary" 
         size="lg" 
-        onClick={(e) => {
-          e.stopPropagation();
+        onClick={() => {
           setShowMenu(!showMenu);
         }} 
         disabled={isLoading}
