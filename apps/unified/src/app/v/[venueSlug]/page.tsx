@@ -89,11 +89,20 @@ export async function generateMetadata({
 
 // Helper to get Google Maps URL
 function getGoogleMapsUrl(venue: Venue): string | null {
+  // Priority 1: Use stored Google Maps URL if available
   if (venue.google_maps_url) return venue.google_maps_url;
+  
+  // Priority 2: Use coordinates if available (most accurate)
+  if (venue.latitude && venue.longitude) {
+    return `https://www.google.com/maps/search/?api=1&query=${venue.latitude},${venue.longitude}`;
+  }
+  
+  // Priority 3: Build address string from parts (prioritize more specific info)
   const parts = [venue.address, venue.city, venue.state, venue.country].filter(Boolean);
   if (parts.length > 0) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
   }
+  
   return null;
 }
 

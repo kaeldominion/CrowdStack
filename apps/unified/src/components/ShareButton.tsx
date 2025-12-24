@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button, InlineSpinner } from "@crowdstack/ui";
 import { Share2, Link2, Image as ImageIcon, Video, Check, X } from "lucide-react";
 
@@ -287,7 +288,7 @@ export function ShareButton({
           )}
         {label}
       </button>
-        {showMenu && typeof window !== 'undefined' && menuContent}
+        {showMenu && typeof window !== 'undefined' && createPortal(menuContent, document.body)}
       </div>
     );
   }
@@ -315,7 +316,7 @@ export function ShareButton({
           <Share2 className="h-4 w-4" />
         )}
       </Button>
-      {showMenu && typeof window !== 'undefined' && menuContent}
+      {showMenu && typeof window !== 'undefined' && createPortal(menuContent, document.body)}
     </div>
   );
 }
