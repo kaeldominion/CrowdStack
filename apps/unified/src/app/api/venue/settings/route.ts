@@ -348,6 +348,11 @@ export async function PUT(request: NextRequest) {
         if (field in body.venue) {
           let value = body.venue[field];
           
+          // Convert empty strings to null for optional fields (except country which has a default)
+          if (value === "" && field !== "country") {
+            value = null;
+          }
+          
           // Normalize Instagram handle - extract just the username
           if (field === "instagram_url" && value) {
             value = normalizeInstagramHandle(value);
