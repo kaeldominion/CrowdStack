@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Section, Container, Button, Logo } from "@crowdstack/ui";
-import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, Camera } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, PartyPopper } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
@@ -35,11 +35,6 @@ export function RegistrationSuccess({
   showPhotoEmailNotice = false,
 }: RegistrationSuccessProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
-  
-  // Debug logging
-  useEffect(() => {
-    console.log("[RegistrationSuccess] showPhotoEmailNotice:", showPhotoEmailNotice);
-  }, [showPhotoEmailNotice]);
 
   // Get current user ID for referral tracking
   useEffect(() => {
@@ -104,7 +99,40 @@ export function RegistrationSuccess({
       <Section spacing="xl" className="relative z-10 pt-20 sm:pt-24 pb-8">
         <Container size="sm" className="flex items-center justify-center py-8">
           {/* Glassmorphism Card - more transparent */}
-          <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-2xl">
+          <div className="relative w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-2xl">
+            
+            {/* Polaroid Photo Notice - Top Right */}
+            {showPhotoEmailNotice && (
+              <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-32 sm:w-40 rotate-6 z-10">
+                <div className="relative bg-white p-2 sm:p-2.5 shadow-2xl border-2 border-white/90 rounded-sm overflow-visible">
+                  {/* Photo section */}
+                  <div className="relative w-full aspect-[4/5] bg-gray-200 rounded-sm overflow-visible mb-2">
+                    <div className="absolute inset-0 overflow-hidden rounded-sm">
+                      <Image
+                        src="/polaroid.jpg"
+                        alt="Event photos"
+                        fill
+                        className="object-cover"
+                        sizes="160px"
+                      />
+                    </div>
+                    {/* Colorful party icon - top right corner */}
+                    <div className="absolute -top-[8px] -right-[8px] bg-gradient-to-br from-yellow-400 via-pink-500 to-purple-600 p-1.5 sm:p-2 rounded-full shadow-lg animate-pulse z-20">
+                      <PartyPopper className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                    </div>
+                  </div>
+                  {/* Text section */}
+                  <div className="px-1 pb-1">
+                    <p className="text-[8px] sm:text-[10px] font-medium text-gray-800 text-center leading-tight">
+                      Photos coming soon!
+                    </p>
+                    <p className="text-[7px] sm:text-[9px] text-gray-600 text-center mt-0.5">
+                      Check your emails from CrowdStack in a few days
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Header with flier preview */}
             <div className="flex items-center gap-4 mb-6">
@@ -194,23 +222,6 @@ export function RegistrationSuccess({
               <p className="text-xs text-white/40 text-center">
                 Show your QR pass at the event entrance
               </p>
-
-              {/* Photo Email Notice */}
-              {showPhotoEmailNotice && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border-2 border-indigo-400/50 rounded-xl backdrop-blur-sm shadow-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 p-2 bg-indigo-500/30 rounded-lg border border-indigo-400/50">
-                      <Camera className="h-5 w-5 text-indigo-200" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-white mb-1">Event Photos Coming Soon!</p>
-                      <p className="text-xs text-white leading-relaxed">
-                        Event photos will be sent to your email in a few days!
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
               
               {/* Add to Calendar */}
               {startTime && (
