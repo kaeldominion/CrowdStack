@@ -58,21 +58,7 @@ export function RegistrationSuccess({
   };
 
   return (
-    <div 
-      className="fixed inset-0 overflow-hidden"
-      style={{ 
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-      }}
-    >
-      {/* Hide scrollbar for webkit */}
-      <style jsx>{`
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      
-      <div className="min-h-screen relative">
+    <div className="relative min-h-screen">
       {/* Blurred Flier Background - less blur to show more detail */}
       {flierUrl ? (
         <div className="fixed inset-0 z-0">
@@ -108,8 +94,8 @@ export function RegistrationSuccess({
       </nav>
 
       {/* Content */}
-      <Section spacing="xl" className="relative z-10 min-h-screen pt-20 sm:pt-24">
-        <Container size="sm" className="flex items-center justify-center min-h-screen py-8">
+      <Section spacing="xl" className="relative z-10 pt-20 sm:pt-24 pb-8">
+        <Container size="sm" className="flex items-center justify-center py-8">
           {/* Glassmorphism Card - more transparent */}
           <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-2xl">
             
@@ -247,7 +233,6 @@ export function RegistrationSuccess({
           </div>
         </Container>
       </Section>
-      </div>
     </div>
   );
 }

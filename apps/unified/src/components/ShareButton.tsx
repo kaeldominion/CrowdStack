@@ -63,14 +63,26 @@ export function ShareButton({
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setShowMenu(false);
       }
     };
     if (showMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
+      // Use a small delay to prevent immediate closing when button is clicked
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {};
   }, [showMenu]);
 
   const handleCopyLink = async () => {
@@ -160,7 +172,10 @@ export function ShareButton({
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-        onClick={() => setShowMenu(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+        }}
       />
       <div 
         ref={menuRef}
@@ -258,7 +273,10 @@ export function ShareButton({
     return (
       <div className="relative flex-1" ref={buttonRef}>
       <button
-          onClick={() => setShowMenu(!showMenu)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
           disabled={isLoading}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium disabled:opacity-50"
       >
@@ -279,7 +297,10 @@ export function ShareButton({
       <Button 
         variant="secondary" 
         size="lg" 
-        onClick={() => setShowMenu(!showMenu)} 
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(!showMenu);
+        }} 
         disabled={isLoading}
         aria-label={label || "Share"}
       >
