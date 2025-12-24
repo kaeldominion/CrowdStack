@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Section, Container, Button, Logo } from "@crowdstack/ui";
-import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, Camera } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
@@ -19,6 +19,7 @@ interface RegistrationSuccessProps {
   qrToken: string;
   flierUrl?: string | null;
   venueAddress?: string | null;
+  showPhotoEmailNotice?: boolean;
 }
 
 export function RegistrationSuccess({
@@ -31,8 +32,14 @@ export function RegistrationSuccess({
   qrToken,
   flierUrl,
   venueAddress,
+  showPhotoEmailNotice = false,
 }: RegistrationSuccessProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log("[RegistrationSuccess] showPhotoEmailNotice:", showPhotoEmailNotice);
+  }, [showPhotoEmailNotice]);
 
   // Get current user ID for referral tracking
   useEffect(() => {
@@ -187,6 +194,23 @@ export function RegistrationSuccess({
               <p className="text-xs text-white/40 text-center">
                 Show your QR pass at the event entrance
               </p>
+
+              {/* Photo Email Notice */}
+              {showPhotoEmailNotice && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-indigo-500/30 to-purple-500/30 border-2 border-indigo-400/50 rounded-xl backdrop-blur-sm shadow-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 p-2 bg-indigo-500/30 rounded-lg border border-indigo-400/50">
+                      <Camera className="h-5 w-5 text-indigo-200" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-white mb-1">Event Photos Coming Soon!</p>
+                      <p className="text-xs text-white leading-relaxed">
+                        Event photos will be sent to your email in a few days!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Add to Calendar */}
               {startTime && (

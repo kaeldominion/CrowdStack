@@ -498,6 +498,7 @@ export async function POST(
         flier_url: event.flier_url,
         venue: venue ? { id: venue.id, name: venue.name } : null,
         organizer: organizer ? { id: organizer.id, name: organizer.name } : null,
+        show_photo_email_notice: event.show_photo_email_notice || false,
       },
     });
   } catch (error: any) {

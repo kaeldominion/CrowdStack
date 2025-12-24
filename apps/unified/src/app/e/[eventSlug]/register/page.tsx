@@ -46,6 +46,7 @@ export default function RegisterPage() {
     end_time?: string | null;
     registration_count?: number;
     flier_url?: string | null;
+    show_photo_email_notice?: boolean;
   } | null>(null);
   const [eventDataForSignup, setEventDataForSignup] = useState<{
     name: string;
@@ -80,6 +81,7 @@ export default function RegisterPage() {
                 end_time: data.event.end_time || null,
                 registration_count: data.event.registration_count || 0,
                 flier_url: data.event.flier_url || null,
+                show_photo_email_notice: data.event.show_photo_email_notice || false,
               });
             }
           }
@@ -129,6 +131,7 @@ export default function RegisterPage() {
                 start_time: checkData.event.start_time,
                 end_time: checkData.event.end_time || null,
                 flier_url: checkData.event.flier_url,
+                show_photo_email_notice: checkData.event.show_photo_email_notice || false,
               });
               setLoading(false);
               return;
@@ -273,6 +276,7 @@ export default function RegisterPage() {
           start_time: data.event.start_time,
           end_time: data.event.end_time || null,
           flier_url: data.event.flier_url,
+          show_photo_email_notice: data.event.show_photo_email_notice || false,
         });
       } else {
         // If event details not in response, fetch them
@@ -286,6 +290,7 @@ export default function RegisterPage() {
               start_time: eventData.event?.start_time || eventData.start_time || null,
               end_time: eventData.event?.end_time || eventData.end_time || null,
               flier_url: eventData.event?.flier_url || eventData.flier_url || null,
+              show_photo_email_notice: eventData.event?.show_photo_email_notice || false,
             });
           }
         } catch (err) {
@@ -350,6 +355,7 @@ export default function RegisterPage() {
         qrToken={qrToken}
         flierUrl={flierUrl}
         venueAddress={eventDetails.venue?.address || null}
+        showPhotoEmailNotice={eventDetails.show_photo_email_notice || false}
       />
     );
   }

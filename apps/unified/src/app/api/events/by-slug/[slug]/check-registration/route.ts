@@ -66,7 +66,8 @@ export async function GET(
         start_time,
         end_time,
         venue_id,
-        flier_url
+        flier_url,
+        show_photo_email_notice
       `)
       .eq("id", event.id)
       .single();
@@ -100,6 +101,7 @@ export async function GET(
         flier_url: eventDetails.flier_url,
         venue: venue ? { id: venue.id, name: venue.name, slug: venue.slug } : null,
         end_time: eventDetails.end_time,
+        show_photo_email_notice: eventDetails.show_photo_email_notice || false,
       } : null,
     });
   } catch (error: any) {

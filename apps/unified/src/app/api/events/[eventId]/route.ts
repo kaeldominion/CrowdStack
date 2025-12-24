@@ -188,6 +188,7 @@ export async function PATCH(
     // Debug logging
     console.log("[EventUpdate] Updating event:", params.eventId);
     console.log("[EventUpdate] Update payload:", JSON.stringify(body, null, 2));
+    console.log("[EventUpdate] show_photo_email_notice in body:", body.show_photo_email_notice, typeof body.show_photo_email_notice);
 
     // Update event
     const { data: updatedEvent, error: updateError } = await serviceSupabase
@@ -196,6 +197,8 @@ export async function PATCH(
       .eq("id", params.eventId)
       .select()
       .single();
+    
+    console.log("[EventUpdate] Updated event show_photo_email_notice:", updatedEvent?.show_photo_email_notice);
 
     if (updateError) {
       console.error("[EventUpdate] Supabase error:", updateError);

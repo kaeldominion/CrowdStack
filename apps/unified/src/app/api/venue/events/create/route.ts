@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
         timezone: body.timezone || "America/New_York",
         status: "draft",
         promoter_access_type: "public", // Default for venue-created events
+        show_photo_email_notice: body.show_photo_email_notice || false,
       })
       .select()
       .single();
