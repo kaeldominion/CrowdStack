@@ -20,38 +20,46 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
       return { address: null, city: null, state: null, country: null };
     }
 
-    // First, resolve short URLs if needed
+    // First, try to extract place ID directly from short URLs using Google Places API
+    // This is more reliable than trying to resolve redirects
     let resolvedUrl = url;
     const isShortUrl = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)/.test(url);
     
+    // For short URLs, try to use Google Places API Find Place to get the place ID
+    // This works better than trying to resolve redirects which may be blocked
     if (isShortUrl) {
       try {
-        console.log(`Resolving short URL: ${url}`);
+        console.log(`Attempting to resolve short URL using Places API: ${url}`);
         
-        // Try to resolve by following redirects with a proper User-Agent
-        // Some short URL services require a browser-like User-Agent
-        const resolveResponse = await fetch(url, {
-          method: "GET",
-          redirect: "follow",
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
-          },
-        });
+        // Try to extract any identifiable information from the short URL
+        // Short URLs from Google Maps usually redirect to a place, so we'll try to
+        // use the Places API Text Search as a fallback if we can't resolve the URL
         
-        resolvedUrl = resolveResponse.url || url;
-        console.log(`Resolved URL: ${resolvedUrl}`);
-        
-        // If resolution didn't change the URL, the short URL might not be resolving
-        // This can happen if the URL requires authentication or has restrictions
-        if (resolvedUrl === url) {
-          console.warn("Short URL resolution returned same URL - URL may not be publicly accessible or may require authentication");
+        // First, try to resolve the URL (but don't fail if it doesn't work)
+        try {
+          const resolveResponse = await fetch(url, {
+            method: "GET",
+            redirect: "follow",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            },
+          });
+          
+          if (resolveResponse.url && resolveResponse.url !== url) {
+            resolvedUrl = resolveResponse.url;
+            console.log(`Resolved short URL to: ${resolvedUrl}`);
+          } else {
+            console.warn("Short URL did not resolve to a different URL - may require authentication");
+            // Continue with original URL - we'll try to extract place ID or use alternative methods
+          }
+        } catch (resolveError: any) {
+          console.warn(`Could not resolve short URL (this is OK, we'll try other methods): ${resolveError.message}`);
+          // Continue with original URL
         }
       } catch (error: any) {
-        console.error("Error resolving short URL:", error.message);
-        // Continue with original URL - we'll try to extract from it anyway
-        console.log("Continuing with original URL despite resolution error");
+        console.error("Error processing short URL:", error.message);
+        // Continue with original URL
       }
     }
 
@@ -79,13 +87,66 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
       console.log(`Extracted coordinates: ${lat}, ${lng}`);
       geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleMapsApiKey}`;
     } else {
-      // Method 2: Extract place ID from URL (e.g., ?cid= or data-cid= or /place/...)
-      const placeIdMatch = resolvedUrl.match(/[?&]cid=([^&]+)/) || resolvedUrl.match(/\/place\/.*\/@.*\/data=([^\/]+)/);
-      if (placeIdMatch) {
-        const placeId = placeIdMatch[1];
+      // Method 2: Extract place ID from URL patterns
+      // Google Maps URLs can have place IDs in various formats:
+      // - /place/PlaceName/@lat,lng,zoom/data=!4m6!3m5!1sPLACE_ID
+      // - ?cid=PLACE_ID
+      // - /place/PlaceName/PLACE_ID
+      let placeId: string | null = null;
+      
+      // Try to extract from data parameter (most common in short link resolutions)
+      const dataMatch = resolvedUrl.match(/data=!4m[^!]*!1s([A-Za-z0-9_-]+)/);
+      if (dataMatch) {
+        placeId = dataMatch[1];
+      }
+      
+      // Try cid parameter
+      if (!placeId) {
+        const cidMatch = resolvedUrl.match(/[?&]cid=([A-Za-z0-9_-]+)/);
+        if (cidMatch) {
+          placeId = cidMatch[1];
+        }
+      }
+      
+      // Try place ID after /place/ in URL like /place/Name/PLACE_ID
+      if (!placeId) {
+        const placeIdMatch = resolvedUrl.match(/\/place\/[^/]+\/([A-Za-z0-9_-]{27,})/);
+        if (placeIdMatch) {
+          placeId = placeIdMatch[1];
+        }
+      }
+      
+      if (placeId) {
         console.log(`Extracted place ID: ${placeId}`);
-        // Use Place Details API to get address (requires different endpoint)
-        geocodeUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=formatted_address,address_components&key=${googleMapsApiKey}`;
+        // Use Place Details API to get address and coordinates
+        // First get place details to extract coordinates
+        const placeDetailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry,formatted_address,address_components&key=${googleMapsApiKey}`;
+        
+        try {
+          const placeDetailsResponse = await fetch(placeDetailsUrl);
+          const placeDetailsData = await placeDetailsResponse.json();
+          
+          if (placeDetailsData.status === "OK" && placeDetailsData.result) {
+            // If we have coordinates, use reverse geocoding for better results
+            if (placeDetailsData.result.geometry?.location) {
+              const lat = placeDetailsData.result.geometry.location.lat;
+              const lng = placeDetailsData.result.geometry.location.lng;
+              console.log(`Got coordinates from place details: ${lat}, ${lng}`);
+              geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleMapsApiKey}`;
+            } else {
+              // Use place details directly
+              geocodeUrl = placeDetailsUrl;
+            }
+          } else {
+            console.warn(`Place Details API failed: ${placeDetailsData.status}`);
+            // Fall back to using place details URL anyway
+            geocodeUrl = placeDetailsUrl;
+          }
+        } catch (error: any) {
+          console.error("Error fetching place details:", error.message);
+          // Fall back to using place details URL
+          geocodeUrl = placeDetailsUrl;
+        }
       } else {
         // Method 3: Extract place name from URL pattern like /place/PlaceName
         const placeMatch = resolvedUrl.match(/\/place\/([^/@\?]+)/);
@@ -245,30 +306,72 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current venue to get Google Maps URL
-    const { data: venue, error: venueError } = await supabase
-      .from("venues")
-      .select("google_maps_url")
-      .eq("id", venueId)
-      .single();
-
-    if (venueError || !venue) {
-      return NextResponse.json(
-        { error: "Venue not found" },
-        { status: 404 }
-      );
+    // Get Google Maps URL from request body (if provided) or from database
+    let body: any = {};
+    try {
+      const bodyText = await request.text();
+      if (bodyText) {
+        body = JSON.parse(bodyText);
+      }
+    } catch (error) {
+      console.warn("Could not parse request body, will try database:", error);
+    }
+    
+    let googleMapsUrl: string | null = body.google_maps_url || null;
+    
+    // Trim whitespace if present
+    if (googleMapsUrl) {
+      googleMapsUrl = googleMapsUrl.trim();
+      if (googleMapsUrl === "") {
+        googleMapsUrl = null;
+      }
     }
 
-    if (!venue.google_maps_url) {
+    // If not provided in body, get from database
+    if (!googleMapsUrl) {
+      const { data: venue, error: venueError } = await supabase
+        .from("venues")
+        .select("google_maps_url")
+        .eq("id", venueId)
+        .single();
+
+      if (venueError || !venue) {
+        return NextResponse.json(
+          { error: "Venue not found" },
+          { status: 404 }
+        );
+      }
+
+      googleMapsUrl = venue.google_maps_url;
+    }
+
+    if (!googleMapsUrl) {
       return NextResponse.json(
         { error: "Google Maps URL is required. Please add a Google Maps URL first." },
         { status: 400 }
       );
     }
 
+    // Save the URL to database if it was provided in the request body and is different
+    if (body.google_maps_url && body.google_maps_url.trim() !== googleMapsUrl) {
+      const { error: saveUrlError } = await supabase
+        .from("venues")
+        .update({ 
+          google_maps_url: body.google_maps_url.trim(), 
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", venueId);
+      
+      if (saveUrlError) {
+        console.error("Failed to save Google Maps URL:", saveUrlError);
+      } else {
+        googleMapsUrl = body.google_maps_url.trim();
+      }
+    }
+
     // Extract address from Google Maps URL
-    console.log(`Extracting address from Google Maps URL: ${venue.google_maps_url}`);
-    const addressInfo = await extractAddressFromGoogleMapsUrl(venue.google_maps_url);
+    console.log(`Extracting address from Google Maps URL: ${googleMapsUrl}`);
+    const addressInfo = await extractAddressFromGoogleMapsUrl(googleMapsUrl);
     console.log(`Extracted address info:`, addressInfo);
 
     if (!addressInfo.address && !addressInfo.city) {

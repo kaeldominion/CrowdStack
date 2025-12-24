@@ -255,13 +255,13 @@ export default async function VenuePage({
                           </p>
                         )}
                         {/* Address */}
-                        {(venue.address || venue.city || venue.state) && (
-                          <div className="mt-2 flex items-start gap-2 text-sm text-white/80 drop-shadow-md">
-                            <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                            <div>
-                              {venue.address && <p>{venue.address}</p>}
+                        {(venue.address || venue.city || venue.state || venue.country) && (
+                          <div className="mt-2 flex items-start gap-1.5 text-xs sm:text-sm text-white/70 drop-shadow-md">
+                            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              {venue.address && <p className="leading-tight">{venue.address}</p>}
                               {(venue.city || venue.state || venue.country) && (
-                                <p>
+                                <p className="leading-tight">
                                   {[venue.city, venue.state].filter(Boolean).join(", ")}
                                   {venue.country && `, ${venue.country}`}
                                 </p>
@@ -324,13 +324,13 @@ export default async function VenuePage({
                         <p className="text-base sm:text-lg text-white/70 mt-2">{venue.tagline}</p>
                       )}
                       {/* Address */}
-                      {(venue.address || venue.city || venue.state) && (
-                        <div className="mt-3 flex items-start gap-2 text-sm text-white/70">
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                          <div>
-                            {venue.address && <p>{venue.address}</p>}
+                      {(venue.address || venue.city || venue.state || venue.country) && (
+                        <div className="mt-2 flex items-start gap-1.5 text-xs sm:text-sm text-white/60">
+                          <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            {venue.address && <p className="leading-tight">{venue.address}</p>}
                             {(venue.city || venue.state || venue.country) && (
-                              <p>
+                              <p className="leading-tight">
                                 {[venue.city, venue.state].filter(Boolean).join(", ")}
                                 {venue.country && `, ${venue.country}`}
                               </p>

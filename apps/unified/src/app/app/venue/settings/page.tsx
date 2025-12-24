@@ -90,6 +90,8 @@ export default function VenueSettingsPage() {
         throw new Error(error.error || "Failed to save");
       }
 
+      const result = await response.json();
+
       // Reload to get updated data
       await loadSettings();
       
@@ -442,62 +444,8 @@ export default function VenueSettingsPage() {
                 value={data.venue.google_maps_url || ""}
                 onChange={(e) => updateVenueField("google_maps_url", e.target.value)}
                 placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
-                helperText="Paste any Google Maps URL (including short links like maps.app.goo.gl). Click 'Update Address' below to extract the address."
+                helperText="Paste any Google Maps URL (including short links like maps.app.goo.gl). This will be used for the 'Open in Maps' button on your venue page."
               />
-
-              {/* Update Address Button */}
-              {data.venue.google_maps_url && (
-                <div>
-                  <Button
-                    variant="secondary"
-                    onClick={async () => {
-                      try {
-                        setSaving(true);
-                        const url = venueId 
-                          ? `/api/venue/settings/extract-address?venueId=${venueId}` 
-                          : "/api/venue/settings/extract-address";
-                        const response = await fetch(url, {
-                          method: "POST",
-                        });
-
-                        if (!response.ok) {
-                          const error = await response.json();
-                          throw new Error(error.error || "Failed to extract address");
-                        }
-
-                        const result = await response.json();
-                        
-                        // Reload settings to get updated data from server
-                        await loadSettings();
-
-                        // Show success message
-                        setSavedTab("location");
-                        setTimeout(() => setSavedTab(null), 3000);
-                      } catch (error: any) {
-                        setErrors({ extractAddress: error.message });
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Extracting...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Update Address from Google Maps
-                      </>
-                    )}
-                  </Button>
-                  {errors.extractAddress && (
-                    <p className="text-sm text-error mt-2">{errors.extractAddress}</p>
-                  )}
-                </div>
-              )}
 
               {/* Map Preview */}
               {data.venue.google_maps_url && (
@@ -508,7 +456,7 @@ export default function VenueSettingsPage() {
               <div className="border-t border-border pt-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">Address</h3>
                 <p className="text-sm text-foreground-muted mb-4">
-                  Click "Update Address from Google Maps" above to automatically extract the address, or manually edit the fields below.
+                  Enter the venue address manually below.
                 </p>
                 
                 <div className="space-y-4">
