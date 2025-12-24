@@ -172,7 +172,7 @@ export async function PATCH(
       'start_time', 'end_time', 'capacity', 'ticket_price',
       'flier_url', 'status', 'created_by', 'tags', 'address',
       'private_notes', 'default_commission_type', 'default_commission_config',
-      'timezone', 'mobile_style'
+      'timezone', 'mobile_style', 'show_photo_email_notice'
     ];
     
     // Filter body to only include allowed fields that have values

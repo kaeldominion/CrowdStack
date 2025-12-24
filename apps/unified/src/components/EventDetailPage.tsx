@@ -116,6 +116,7 @@ interface EventData {
   venue_approval_status?: string | null;
   venue_approval_at?: string | null;
   venue_rejection_reason?: string | null;
+  show_photo_email_notice?: boolean;
   created_at: string;
   organizer?: { id: string; name: string; email: string | null };
   venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
@@ -301,6 +302,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     mobile_style: "flip" as "flip" | "scroll",
     reason: "",
+    show_photo_email_notice: false,
   });
 
   useEffect(() => {
@@ -447,6 +449,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
             mobile_style: data.event.mobile_style || "flip",
             reason: "",
+            show_photo_email_notice: Boolean(data.event.show_photo_email_notice),
           });
         }
       } else if (response.status === 403 || response.status === 404) {
@@ -547,6 +550,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
       if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
       if (editForm.mobile_style !== (event.mobile_style || "flip")) updates.mobile_style = editForm.mobile_style;
+      
+      // Handle show_photo_email_notice - compare boolean values properly
+      const currentPhotoNotice = Boolean(event.show_photo_email_notice);
+      if (editForm.show_photo_email_notice !== currentPhotoNotice) {
+        updates.show_photo_email_notice = editForm.show_photo_email_notice;
+        console.log("[EventEdit] Photo email notice changed:", {
+          from: currentPhotoNotice,
+          to: editForm.show_photo_email_notice,
+          eventValue: event.show_photo_email_notice,
+        });
+      }
 
       if (Object.keys(updates).length === 0) {
         // No form changes - just close the modal (video/image uploads save separately)
@@ -2617,6 +2631,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 placeholder="Explain why you're making these changes..."
               />
             )}
+
+            {/* Photo Email Notice Setting */}
+            <div className="space-y-2 border-t border-border pt-6">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="show_photo_email_notice"
+                  checked={editForm.show_photo_email_notice}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, show_photo_email_notice: e.target.checked }))}
+                  className="rounded border-border"
+                />
+                <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+                  Show photo email notice on registration success
+                </label>
+              </div>
+              <p className="text-xs text-foreground-muted ml-6">
+                If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
+              </p>
+            </div>
 
             {/* Flier Upload */}
             <div className="border-t border-border pt-6">

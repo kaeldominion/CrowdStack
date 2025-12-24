@@ -236,6 +236,7 @@ export async function POST(request: NextRequest) {
         promoter_access_type: body.promoter_access_type || "public",
         venue_approval_status: venueApprovalStatus,
         venue_approval_at: autoApproved ? new Date().toISOString() : null,
+        show_photo_email_notice: body.show_photo_email_notice || false,
       })
       .select()
       .single();

@@ -245,6 +245,7 @@ export interface Event {
   flier_url: string | null;
   cover_image_url: string | null;
   timezone: string | null;
+  show_photo_email_notice?: boolean;
   created_at: string;
   updated_at: string;
   locked_at: string | null;
@@ -574,6 +575,7 @@ export interface CreateEventRequest {
   timezone?: string;
   promoter_access_type?: PromoterAccessType;
   self_promote?: boolean;
+  show_photo_email_notice?: boolean;
   promoters?: Array<{
     promoter_id: string;
     commission_type: CommissionType;

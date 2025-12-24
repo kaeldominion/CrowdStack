@@ -22,6 +22,7 @@ export default function VenueNewEventPage() {
     selected_promoters: [] as string[],
     create_new_organizer: false,
     new_organizer_name: "",
+    show_photo_email_notice: false,
   });
 
   useEffect(() => {
@@ -152,6 +153,7 @@ export default function VenueNewEventPage() {
         organizer_id: formData.organizer_id || undefined,
         create_new_organizer: formData.create_new_organizer,
         new_organizer_name: formData.new_organizer_name || undefined,
+        show_photo_email_notice: formData.show_photo_email_notice,
         promoters: formData.selected_promoters.map((promoterId) => ({
           promoter_id: promoterId,
           commission_type: "flat_per_head",
@@ -329,6 +331,25 @@ export default function VenueNewEventPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Photo Email Notice Setting */}
+          <div className="space-y-2 border-t border-border pt-6">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="show_photo_email_notice"
+                checked={formData.show_photo_email_notice}
+                onChange={(e) => setFormData({ ...formData, show_photo_email_notice: e.target.checked })}
+                className="rounded border-border"
+              />
+              <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+                Show photo email notice on registration success
+              </label>
+            </div>
+            <p className="text-xs text-foreground-muted ml-6">
+              If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">

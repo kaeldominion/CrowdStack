@@ -24,6 +24,7 @@ export default function NewEventPage() {
     promoter_access_type: "public" as "public" | "invite_only",
     self_promote: true,
     selected_promoters: [] as string[],
+    show_photo_email_notice: false,
   });
   const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
   const [flierVideoFile, setFlierVideoFile] = useState<File | null>(null);
@@ -158,6 +159,7 @@ export default function NewEventPage() {
         timezone: formData.timezone,
         promoter_access_type: formData.promoter_access_type,
         self_promote: formData.self_promote,
+        show_photo_email_notice: formData.show_photo_email_notice,
       };
 
       // Add promoters if selected
@@ -499,6 +501,25 @@ export default function NewEventPage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Photo Email Notice Setting */}
+          <div className="space-y-2 border-t border-border pt-6">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="show_photo_email_notice"
+                checked={formData.show_photo_email_notice}
+                onChange={(e) => setFormData({ ...formData, show_photo_email_notice: e.target.checked })}
+                className="rounded border-border"
+              />
+              <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+                Show photo email notice on registration success
+              </label>
+            </div>
+            <p className="text-xs text-foreground-muted ml-6">
+              If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">

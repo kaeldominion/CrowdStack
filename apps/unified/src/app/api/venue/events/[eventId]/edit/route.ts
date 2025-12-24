@@ -11,6 +11,7 @@ const VENUE_EDITABLE_FIELDS = [
   "end_time",
   "capacity",
   "status",
+  "show_photo_email_notice",
 ];
 
 export async function PUT(
