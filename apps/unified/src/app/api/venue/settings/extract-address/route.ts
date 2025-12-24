@@ -345,38 +345,41 @@ export async function POST(request: NextRequest) {
       googleMapsUrl = venue.google_maps_url;
     }
 
-    if (!googleMapsUrl) {
+    if (!googleMapsUrl || googleMapsUrl.trim() === "") {
       return NextResponse.json(
         { error: "Google Maps URL is required. Please add a Google Maps URL first." },
         { status: 400 }
       );
     }
 
+    // Trim the URL - at this point we know it's not null
+    const trimmedUrl = googleMapsUrl.trim();
+
     // Save the URL to database if it was provided in the request body and is different
-    if (body.google_maps_url && body.google_maps_url.trim() !== googleMapsUrl) {
+    if (body.google_maps_url && body.google_maps_url.trim() !== trimmedUrl) {
+      const trimmedBodyUrl = body.google_maps_url.trim();
       const { error: saveUrlError } = await supabase
         .from("venues")
         .update({ 
-          google_maps_url: body.google_maps_url.trim(), 
+          google_maps_url: trimmedBodyUrl, 
           updated_at: new Date().toISOString() 
         })
         .eq("id", venueId);
       
       if (saveUrlError) {
         console.error("Failed to save Google Maps URL:", saveUrlError);
-      } else {
-        googleMapsUrl = body.google_maps_url.trim();
       }
     }
 
     // Extract address from Google Maps URL
-    console.log(`Extracting address from Google Maps URL: ${googleMapsUrl}`);
-    const addressInfo = await extractAddressFromGoogleMapsUrl(googleMapsUrl);
+    // Use the trimmed URL which is guaranteed to be a non-empty string
+    console.log(`Extracting address from Google Maps URL: ${trimmedUrl}`);
+    const addressInfo = await extractAddressFromGoogleMapsUrl(trimmedUrl);
     console.log(`Extracted address info:`, addressInfo);
 
     if (!addressInfo.address && !addressInfo.city) {
       // Provide more helpful error message for short links
-      const isShortLink = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)/.test(venue.google_maps_url);
+      const isShortLink = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)/.test(trimmedUrl);
       const errorMessage = isShortLink
         ? `Could not extract address from short Google Maps URL. Short links from Google Maps profiles should work, but if the link is private or requires authentication, it may fail. Please check the server logs for details, or try using a full Google Maps URL instead.`
         : `Could not extract address from Google Maps URL. The URL format may not be supported, or the geocoding API may have failed. Please check the server logs for details.`;
@@ -384,7 +387,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: errorMessage,
-          url: venue.google_maps_url, // Include URL in response for debugging
+          url: trimmedUrl, // Include URL in response for debugging
         },
         { status: 400 }
       );
