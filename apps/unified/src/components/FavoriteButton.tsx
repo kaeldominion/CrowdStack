@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@crowdstack/ui";
-import { Star } from "lucide-react";
+import { Heart } from "lucide-react";
 
 interface FavoriteButtonProps {
   venueId: string;
@@ -77,10 +77,10 @@ export function FavoriteButton({ venueId, className = "" }: FavoriteButtonProps)
       className={className}
       aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
     >
-      <Star
+      <Heart
         className={`h-4 w-4 transition-all ${
           isFavorited
-            ? "fill-yellow-400 text-yellow-400"
+            ? "fill-red-500 text-red-500"
             : "text-white/60"
         }`}
       />
