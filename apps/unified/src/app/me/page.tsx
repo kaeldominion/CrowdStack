@@ -873,7 +873,7 @@ export default function MePage() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <Ticket className="h-6 w-6 text-white/30" />
+                    <Ticket className="h-6 w-6 text-white/30" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

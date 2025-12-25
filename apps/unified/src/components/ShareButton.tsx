@@ -76,7 +76,7 @@ export function ShareButton({
     if (showMenu) {
       // Use a small delay to prevent immediate closing when button is clicked
       const timeoutId = setTimeout(() => {
-        document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
       }, 100);
       return () => {
         clearTimeout(timeoutId);

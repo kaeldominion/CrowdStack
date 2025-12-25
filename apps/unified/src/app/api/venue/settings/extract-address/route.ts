@@ -37,15 +37,15 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
         
         // First, try to resolve the URL (but don't fail if it doesn't work)
         try {
-          const resolveResponse = await fetch(url, {
-            method: "GET",
-            redirect: "follow",
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            },
-          });
-          
+        const resolveResponse = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+        });
+        
           if (resolveResponse.url && resolveResponse.url !== url) {
             resolvedUrl = resolveResponse.url;
             console.log(`Resolved short URL to: ${resolvedUrl}`);
@@ -111,7 +111,7 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
       // Try place ID after /place/ in URL like /place/Name/PLACE_ID
       if (!placeId) {
         const placeIdMatch = resolvedUrl.match(/\/place\/[^/]+\/([A-Za-z0-9_-]{27,})/);
-        if (placeIdMatch) {
+      if (placeIdMatch) {
           placeId = placeIdMatch[1];
         }
       }
@@ -329,18 +329,18 @@ export async function POST(request: NextRequest) {
 
     // If not provided in body, get from database
     if (!googleMapsUrl) {
-      const { data: venue, error: venueError } = await supabase
-        .from("venues")
-        .select("google_maps_url")
-        .eq("id", venueId)
-        .single();
+    const { data: venue, error: venueError } = await supabase
+      .from("venues")
+      .select("google_maps_url")
+      .eq("id", venueId)
+      .single();
 
-      if (venueError || !venue) {
-        return NextResponse.json(
-          { error: "Venue not found" },
-          { status: 404 }
-        );
-      }
+    if (venueError || !venue) {
+      return NextResponse.json(
+        { error: "Venue not found" },
+        { status: 404 }
+      );
+    }
 
       googleMapsUrl = venue.google_maps_url;
     }
