@@ -59,14 +59,18 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
               </p>
               
               <!-- OTP Code Section (Primary - Most Prominent) -->
-              <div style="background: linear-gradient(135deg, #1A1D24 0%, #0F1115 100%); border-radius: 16px; padding: 36px 28px; margin: 0 0 32px; border: 2px solid #3B82F6; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);">
-                <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;">
-                  Verification Code
-                </p>
-                <p style="margin: 0; font-size: 48px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.5em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
-                  {{ .Token }}
-                </p>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px;">
+                <tr>
+                  <td style="background-color: #1A1D24; border-radius: 16px; padding: 36px 28px; border: 2px solid #3B82F6;">
+                    <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;">
+                      Verification Code
+                    </p>
+                    <p style="margin: 0; font-size: 48px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.5em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
+                      {{ .Token }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
               
               <!-- Magic Link (Secondary - Less Prominent) -->
               <div style="margin: 32px 0 0; padding-top: 24px; border-top: 1px solid #2A2F3A;">
