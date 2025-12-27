@@ -20,6 +20,10 @@ interface AttendeeEventCardProps {
       name: string;
       city?: string | null;
     } | null;
+    /** Event capacity */
+    capacity?: number | null;
+    /** Number of registrations */
+    registration_count?: number;
   };
   registration?: {
     id: string;
@@ -63,6 +67,9 @@ export function AttendeeEventCard({
   const heroImage = event.flier_url || event.cover_image_url;
   const hasCheckedIn = registration?.checkins && registration.checkins.length > 0;
   const isLive = variant === "live";
+  const registrationCount = event.registration_count || 0;
+  const capacity = event.capacity || 0;
+  const spotsLeft = capacity > 0 ? Math.max(capacity - registrationCount, 0) : null;
 
   // Format date
   const formatEventDate = (dateStr: string) => {
@@ -229,6 +236,23 @@ export function AttendeeEventCard({
               <p className="text-xs text-secondary">
                 @ {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}
               </p>
+            )}
+            
+            {/* Registration count & spots left */}
+            {capacity > 0 && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-secondary">
+                  {registrationCount} registered
+                </span>
+                <span className="text-muted">•</span>
+                <span className={`font-medium ${
+                  spotsLeft !== null && spotsLeft <= 10 
+                    ? "text-accent-warning" 
+                    : "text-accent-success"
+                }`}>
+                  {spotsLeft !== null && spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+                </span>
+              </div>
             )}
             
             {/* Capacity for live events */}

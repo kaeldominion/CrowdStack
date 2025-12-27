@@ -36,6 +36,7 @@ interface EventCardProps {
 export function EventCard({ event, isLive = false }: EventCardProps) {
   const startDate = new Date(event.start_time);
   const imageUrl = event.flier_url || event.cover_image_url;
+  const spotsLeft = event.capacity ? Math.max(event.capacity - event.registration_count, 0) : null;
   
   return (
     <Link href={`/e/${event.slug}`} className="group block">
@@ -99,10 +100,19 @@ export function EventCard({ event, isLive = false }: EventCardProps) {
                 </div>
               </div>
               
-              {event.registration_count > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-muted">
-                  <Users className="h-3.5 w-3.5" />
-                  <span>{event.registration_count} registered</span>
+              {(event.registration_count > 0 || event.capacity) && (
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-1.5 text-muted">
+                    <Users className="h-3.5 w-3.5" />
+                    <span>{event.registration_count} registered</span>
+                  </div>
+                  {spotsLeft !== null && (
+                    <span className={`font-medium ${
+                      spotsLeft <= 10 ? "text-accent-warning" : "text-accent-success"
+                    }`}>
+                      {spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

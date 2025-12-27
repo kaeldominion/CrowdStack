@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const genre = searchParams.get("genre"); // music tag value
     const venueId = searchParams.get("venue_id");
     const featured = searchParams.get("featured") === "true";
+    const live = searchParams.get("live") === "true";
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
@@ -105,9 +106,20 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq("status", "published")
-      .in("venue_approval_status", ["approved", "not_required"])
-      .gte("start_time", now.toISOString())
-      .order("start_time", { ascending: true });
+      .in("venue_approval_status", ["approved", "not_required"]);
+
+    // Apply live filter or future events filter
+    if (live) {
+      // Live events: started but not ended
+      query = query
+        .lte("start_time", now.toISOString())
+        .or(`end_time.is.null,end_time.gte.${now.toISOString()}`);
+    } else {
+      // Default: only show future events
+      query = query.gte("start_time", now.toISOString());
+    }
+
+    query = query.order("start_time", { ascending: true });
 
     console.log("[Browse Events] Query params:", {
       search,
@@ -267,8 +279,16 @@ export async function GET(request: NextRequest) {
       .from("events")
       .select("*", { count: "exact", head: true })
       .eq("status", "published")
-      .in("venue_approval_status", ["approved", "not_required"])
-      .gte("start_time", now.toISOString());
+      .in("venue_approval_status", ["approved", "not_required"]);
+
+    // Apply same live/future filter for count
+    if (live) {
+      totalCountQuery
+        .lte("start_time", now.toISOString())
+        .or(`end_time.is.null,end_time.gte.${now.toISOString()}`);
+    } else {
+      totalCountQuery.gte("start_time", now.toISOString());
+    }
 
     // Apply same filters for count
     if (venueId) {

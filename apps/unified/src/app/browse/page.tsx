@@ -43,6 +43,7 @@ export default function BrowsePage() {
   const [filters, setFilters] = useState<BrowseFiltersType>({});
   const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+  const [liveEvents, setLiveEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,21 @@ export default function BrowsePage() {
       }
     }
     fetchFeaturedEvents();
+  }, []);
+
+  // Fetch live events
+  useEffect(() => {
+    async function fetchLiveEvents() {
+      try {
+        const params = new URLSearchParams({ live: "true", limit: "10" });
+        const res = await fetch(`/api/browse/events?${params}`);
+        const data = await res.json();
+        setLiveEvents(data.events || []);
+      } catch (error) {
+        console.error("Error fetching live events:", error);
+      }
+    }
+    fetchLiveEvents();
   }, []);
 
   // Fetch all events
@@ -217,7 +233,7 @@ export default function BrowsePage() {
           {/* Mobile Filter Button */}
           <button
             onClick={() => setShowFiltersModal(true)}
-            className="lg:hidden flex items-center justify-center w-12 h-12 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/50 transition-all"
+            className="lg:hidden relative flex items-center justify-center w-12 h-12 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/50 transition-all"
             aria-label="Open filters"
           >
             <Filter className="h-5 w-5 text-primary" />
@@ -321,6 +337,26 @@ export default function BrowsePage() {
                   <section>
                     <h2 className="section-header mb-6">Featured</h2>
                     <FeaturedEventsCarousel events={featuredEvents} />
+                  </section>
+                )}
+
+                {/* Live Events Section */}
+                {liveEvents.length > 0 && (
+                  <section>
+                    <h2 className="section-header mb-6">Live Now</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {liveEvents.map((event) => (
+                        <div key={event.id} className="relative">
+                          {/* Glowing pulsing background */}
+                          <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                          <div className="relative">
+                            <EventCardCompact
+                              event={event}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </section>
                 )}
 

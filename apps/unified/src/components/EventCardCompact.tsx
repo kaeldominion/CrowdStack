@@ -18,6 +18,10 @@ interface EventCardCompactProps {
       name: string;
       city?: string | null;
     } | null;
+    /** Event capacity */
+    capacity?: number | null;
+    /** Number of registrations */
+    registration_count?: number;
   };
   registration?: {
     id: string;
@@ -48,6 +52,9 @@ export function EventCardCompact({
   const [loading, setLoading] = useState(false);
 
   const heroImage = event.flier_url || event.cover_image_url;
+  const registrationCount = event.registration_count || 0;
+  const capacity = event.capacity || 0;
+  const spotsLeft = capacity > 0 ? Math.max(capacity - registrationCount, 0) : null;
 
   // Format date
   const formatEventDate = (dateStr: string) => {
@@ -147,6 +154,22 @@ export function EventCardCompact({
             <div className="flex items-center gap-1.5 text-secondary">
               <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="text-sm truncate">{event.venue.name}</span>
+            </div>
+          )}
+          
+          {/* Registration count & spots left */}
+          {capacity > 0 && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-secondary font-medium">
+                {registrationCount}/{capacity}
+              </span>
+              <span className={`font-bold ${
+                spotsLeft !== null && spotsLeft <= 10 
+                  ? "text-accent-warning" 
+                  : "text-accent-success"
+              }`}>
+                {spotsLeft !== null && spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+              </span>
             </div>
           )}
           
