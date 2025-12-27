@@ -162,7 +162,11 @@ export default function AdminVenuesPage() {
                           </Link>
                         </TableCell>
                         <TableCell>
-                          {venue.city && venue.state ? `${venue.city}, ${venue.state}` : "—"}
+                          {venue.city || venue.state || venue.country || venue.address ? (
+                            <span>
+                              {[venue.city, venue.state || venue.country].filter(Boolean).join(", ") || venue.address}
+                            </span>
+                          ) : "—"}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
