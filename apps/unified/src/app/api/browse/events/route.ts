@@ -229,8 +229,11 @@ export async function GET(request: NextRequest) {
     if (featured) {
       console.log("[Browse Events] No featured events found, falling back to regular events");
       
+      // Include both future events AND currently live events (started in last 12 hours)
+      const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+      
       // Build fallback query - same as base query but without is_featured filter
-      const fallbackQuery = supabase
+      const { data: fallbackEvents, error: fallbackError } = await supabase
         .from("events")
         .select(`
           id,
@@ -252,11 +255,9 @@ export async function GET(request: NextRequest) {
         `)
         .eq("status", "published")
         .in("venue_approval_status", ["approved", "not_required"])
-        .gte("start_time", now.toISOString())
+        .gte("start_time", twelveHoursAgo.toISOString())
         .order("start_time", { ascending: true })
         .limit(limit);
-      
-      const { data: fallbackEvents, error: fallbackError } = await fallbackQuery;
 
       if (!fallbackError && fallbackEvents && fallbackEvents.length > 0) {
         // Get registration counts for fallback events

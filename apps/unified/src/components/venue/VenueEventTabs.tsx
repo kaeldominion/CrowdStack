@@ -3,13 +3,13 @@
 /**
  * VENUE EVENT TABS
  * 
- * Tab component for venue pages showing Upcoming/Past events.
+ * Tab component for venue pages showing Live/Upcoming/Past events.
  * Uses master EventCardRow component for consistent styling.
  */
 
 import { useState } from "react";
-import { Calendar } from "lucide-react";
-import { Card } from "@crowdstack/ui";
+import { Calendar, Radio } from "lucide-react";
+import { Card, Badge } from "@crowdstack/ui";
 import { EventCardRow } from "@/components/EventCardRow";
 
 interface Event {
@@ -27,15 +27,18 @@ interface Event {
 }
 
 interface VenueEventTabsProps {
+  liveEvents?: Event[];
   upcomingEvents: Event[];
   pastEvents: Event[];
   venueName: string;
   venueSlug: string;
 }
 
-export function VenueEventTabs({ upcomingEvents, pastEvents, venueName, venueSlug }: VenueEventTabsProps) {
+export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, venueName, venueSlug }: VenueEventTabsProps) {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [showAllPast, setShowAllPast] = useState(false);
+  
+  const hasLiveEvents = liveEvents.length > 0;
 
   // For past events: show 20 max, with "See More" for full list
   const displayedPastEvents = showAllPast ? pastEvents : pastEvents.slice(0, 20);
@@ -43,6 +46,29 @@ export function VenueEventTabs({ upcomingEvents, pastEvents, venueName, venueSlu
 
   return (
     <>
+      {/* Live Events Banner - Always visible when there are live events */}
+      {hasLiveEvents && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-2.5 w-2.5 bg-accent-error rounded-full animate-pulse" />
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-error">
+              Happening Now
+            </span>
+          </div>
+          <div className="space-y-3">
+            {liveEvents.map((event) => (
+              <div key={event.id} className="relative">
+                <div className="absolute -left-3 top-0 bottom-0 w-1 bg-accent-error rounded-full" />
+                <EventCardRow 
+                  event={event}
+                  isLive
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <nav className="flex gap-6 border-b border-border-subtle mb-6">
         <button

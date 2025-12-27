@@ -124,6 +124,7 @@ export default async function VenuePage({
   const venue: Venue = venueData;
   const gallery: VenueGalleryType[] = venueData.gallery || [];
   const tags: VenueTag[] = venueData.tags || [];
+  const liveEvents: VenueEvent[] = venueData.live_events || [];
   const upcomingEvents: VenueEvent[] = venueData.upcoming_events || [];
   const pastEvents: VenueEvent[] = venueData.past_events || [];
   const followerCount: number = venueData.follower_count || 0;
@@ -330,6 +331,7 @@ export default async function VenuePage({
             {/* Main Content */}
             <main className="flex-1 min-w-0">
               <VenueEventTabs
+                liveEvents={liveEvents}
                 upcomingEvents={upcomingEvents}
                 pastEvents={pastEvents}
                 venueName={venue.name}

@@ -118,6 +118,7 @@ interface EventData {
   venue_approval_at?: string | null;
   venue_rejection_reason?: string | null;
   show_photo_email_notice?: boolean;
+  is_featured?: boolean;
   created_at: string;
   organizer?: { id: string; name: string; email: string | null };
   venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
@@ -265,6 +266,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [rejectionReason, setRejectionReason] = useState("");
   const [approving, setApproving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [togglingFeatured, setTogglingFeatured] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [album, setAlbum] = useState<Album | null>(null);
   const [inviteCodes, setInviteCodes] = useState<InviteQRCode[]>([]);
@@ -667,6 +669,30 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       alert(error.message || "An error occurred");
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleFeaturedToggle = async () => {
+    if (!event) return;
+
+    setTogglingFeatured(true);
+    try {
+      const response = await fetch(config.eventApiEndpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_featured: !event.is_featured }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update featured status");
+      }
+
+      await loadEventData();
+    } catch (error: any) {
+      alert(error.message || "An error occurred");
+    } finally {
+      setTogglingFeatured(false);
     }
   };
 
@@ -1165,6 +1191,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Button>
             );
           })()}
+          {/* Featured toggle - admin only */}
+          {config.role === "admin" && event && (
+            <Button
+              variant={event.is_featured ? "primary" : "secondary"}
+              onClick={handleFeaturedToggle}
+              disabled={togglingFeatured}
+              loading={togglingFeatured}
+              className={event.is_featured ? "!bg-amber-500 hover:!bg-amber-600" : ""}
+            >
+              <Star className={`h-4 w-4 mr-2 ${event.is_featured ? "fill-current" : ""}`} />
+              {event.is_featured ? "Featured" : "Feature"}
+            </Button>
+          )}
           {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
             <>
               <Button variant="secondary" onClick={copyReferralLink}>
