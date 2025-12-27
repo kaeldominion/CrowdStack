@@ -262,14 +262,14 @@ export default function MePage() {
   }
 
   return (
-    <div className="min-h-screen bg-void">
+    <div className="min-h-screen bg-void overscroll-none">
       {/* Mobile Layout */}
       <div className="lg:hidden relative">
-        {/* Gradient Background - extends behind nav (pt-16 = 4rem, hero = 10rem = 14rem total) */}
-        <div className="absolute inset-x-0 top-0 h-[14rem] bg-gradient-to-br from-accent-primary/40 via-accent-secondary/30 to-accent-primary/20" />
+        {/* Gradient Background - extends behind nav (pt-20 = 5rem, hero = 10rem = 15rem total) */}
+        <div className="absolute inset-x-0 top-0 h-[15rem] bg-gradient-to-br from-accent-primary/40 via-accent-secondary/30 to-accent-primary/20" />
         
         {/* Hero Section - starts after nav clearance */}
-        <div className="relative pt-16">
+        <div className="relative pt-20">
           <div className="relative h-40">
             {/* Avatar */}
             <div className="absolute left-1/2 -translate-x-1/2 -bottom-16 z-10">
