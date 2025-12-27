@@ -144,13 +144,13 @@ export function EventCardRow({
     <Link href={`/e/${event.slug}`} className={`block group ${className}`}>
       <Card padding="none" hover className="flex gap-2.5 p-2.5">
         {/* Flier Image - 1:1 square aspect ratio */}
-        <div className="relative w-14 sm:w-16 aspect-square rounded-lg overflow-hidden bg-glass flex-shrink-0">
+        <div className="relative w-16 sm:w-20 aspect-square rounded-lg overflow-hidden bg-glass flex-shrink-0">
           {heroImage ? (
             <Image
               src={heroImage}
               alt={event.name}
               fill
-              sizes="56px"
+              sizes="(max-width: 640px) 64px, 80px"
               className={`object-cover transition-transform duration-500 group-hover:scale-105 ${
                 isPast ? "opacity-60 grayscale-[40%]" : ""
               }`}

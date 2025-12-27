@@ -9,6 +9,7 @@ import { EventCardCompact } from "@/components/EventCardCompact";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
 import { FeaturedEventsCarousel } from "@/components/browse/FeaturedEventsCarousel";
+import { LocationSelector } from "@/components/browse/LocationSelector";
 
 interface Event {
   id: string;
@@ -54,8 +55,36 @@ export default function BrowsePage() {
   const [totalEventsCount, setTotalEventsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
   const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
 
   const EVENTS_PER_PAGE = 12;
+
+  // Fetch available cities on mount
+  useEffect(() => {
+    async function fetchCities() {
+      try {
+        const res = await fetch("/api/browse/venues?limit=1000");
+        const data = await res.json();
+        
+        const uniqueCities = Array.from(
+          new Set(
+            data.venues?.map((v: any) => v.city).filter(Boolean) || []
+          )
+        ).sort() as string[];
+
+        setAvailableCities(
+          uniqueCities.map((city) => ({ value: city, label: city }))
+        );
+      } catch (error) {
+        console.error("Error fetching cities:", error);
+      } finally {
+        setCitiesLoading(false);
+      }
+    }
+    fetchCities();
+  }, []);
 
   // Fetch featured events
   useEffect(() => {
@@ -102,8 +131,8 @@ export default function BrowsePage() {
       if (filters.date) {
         params.append("date", filters.date);
       }
-      if (filters.city) {
-        params.append("city", filters.city);
+      if (selectedLocation) {
+        params.append("city", selectedLocation);
       }
       if (filters.genre) {
         params.append("genre", filters.genre);
@@ -153,8 +182,8 @@ export default function BrowsePage() {
       if (searchQuery) {
         params.append("search", searchQuery);
       }
-      if (filters.city) {
-        params.append("city", filters.city);
+      if (selectedLocation) {
+        params.append("city", selectedLocation);
       }
 
       const res = await fetch(`/api/browse/venues?${params}`);
@@ -168,19 +197,19 @@ export default function BrowsePage() {
     }
   };
 
-  // Fetch events when search or filters change
+  // Fetch events when search, filters, or location changes
   useEffect(() => {
     if (activeTab === "events") {
       fetchEvents(true);
     }
-  }, [searchQuery, filters, activeTab]);
+  }, [searchQuery, filters, selectedLocation, activeTab]);
 
-  // Fetch venues when search or city filter changes
+  // Fetch venues when search or location changes
   useEffect(() => {
     if (activeTab === "djs-venues") {
       fetchVenues();
     }
-  }, [searchQuery, filters.city, activeTab]);
+  }, [searchQuery, selectedLocation, activeTab]);
 
   const handleLoadMore = () => {
     fetchEvents(false);
@@ -213,9 +242,19 @@ export default function BrowsePage() {
             <Compass className="w-8 h-8 text-white" />
           </div>
           <h1 className="page-title mb-2">Browse Events</h1>
-          <p className="text-secondary text-sm md:text-base max-w-md mx-auto">
+          <p className="text-secondary text-sm md:text-base max-w-md mx-auto mb-4">
             Discover upcoming events, parties, and experiences near you
           </p>
+          
+          {/* Prominent Location Selector */}
+          <div className="flex justify-center">
+            <LocationSelector
+              value={selectedLocation}
+              onChange={setSelectedLocation}
+              cities={availableCities}
+              loading={citiesLoading}
+            />
+          </div>
         </div>
 
         {/* Search Bar with Mobile Filter Button */}
@@ -348,7 +387,7 @@ export default function BrowsePage() {
                       {liveEvents.map((event) => (
                         <div key={event.id} className="relative">
                           {/* Glowing pulsing background */}
-                          <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                          <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
                           <div className="relative">
                             <EventCardCompact
                               event={event}

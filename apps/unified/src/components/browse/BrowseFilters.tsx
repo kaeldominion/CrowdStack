@@ -8,7 +8,6 @@ import { Badge } from "@crowdstack/ui";
 export interface BrowseFilters {
   search?: string;
   date?: string;
-  city?: string;
   genre?: string;
   venue_id?: string;
 }
@@ -19,7 +18,6 @@ interface BrowseFiltersProps {
 }
 
 export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
-  const [cities, setCities] = useState<{ value: string; label: string }[]>([]);
   const [genres, setGenres] = useState<{ value: string; label: string }[]>([]);
   const [venues, setVenues] = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,22 +26,9 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
   useEffect(() => {
     async function fetchFilterOptions() {
       try {
-        // Fetch cities from venues
+        // Fetch venues
         const venuesRes = await fetch("/api/browse/venues?limit=1000");
         const venuesData = await venuesRes.json();
-        
-        // Extract unique cities
-        const uniqueCities = Array.from(
-          new Set(
-            venuesData.venues
-              ?.map((v: any) => v.city)
-              .filter(Boolean) || []
-          )
-        ).sort() as string[];
-
-        setCities(
-          uniqueCities.map((city) => ({ value: city, label: city }))
-        );
 
         // Extract unique genres from venue tags
         const allTags = venuesData.venues?.flatMap((v: any) => 
@@ -116,17 +101,6 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
         />
 
         <Select
-          label="City"
-          value={filters.city || ""}
-          onChange={(e) => handleFilterChange("city", e.target.value)}
-          options={[
-            { value: "", label: "All Cities" },
-            ...cities,
-          ]}
-          disabled={loading}
-        />
-
-        <Select
           label="Genre"
           value={filters.genre || ""}
           onChange={(e) => handleFilterChange("genre", e.target.value)}
@@ -164,19 +138,6 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
                 className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
               >
                 Date: {dateOptions.find((o) => o.value === filters.date)?.label || filters.date}
-                <X className="h-3 w-3" />
-              </Badge>
-            </button>
-          )}
-
-          {filters.city && (
-            <button onClick={() => clearFilter("city")} className="inline-flex">
-              <Badge
-                color="blue"
-                variant="outline"
-                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
-              >
-                City: {filters.city}
                 <X className="h-3 w-3" />
               </Badge>
             </button>

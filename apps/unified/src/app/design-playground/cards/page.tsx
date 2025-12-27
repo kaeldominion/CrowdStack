@@ -317,9 +317,24 @@ export default function DesignCardsPage() {
           <div className="mb-8">
             <CardLabel>Full Card - Live State</CardLabel>
             <CardGrid columns={3}>
-              <AttendeeEventCard event={MOCK_EVENT_TODAY} variant="live" capacityPercent={75} />
-              <AttendeeEventCard event={MOCK_EVENT_TODAY} variant="live" capacityPercent={95} />
-              <AttendeeEventCard event={MOCK_EVENT_NO_IMAGE} variant="live" capacityPercent={50} />
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
+                <div className="relative">
+                  <AttendeeEventCard event={MOCK_EVENT_TODAY} variant="live" capacityPercent={75} />
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
+                <div className="relative">
+                  <AttendeeEventCard event={MOCK_EVENT_TODAY} variant="live" capacityPercent={95} />
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
+                <div className="relative">
+                  <AttendeeEventCard event={MOCK_EVENT_NO_IMAGE} variant="live" capacityPercent={50} />
+                </div>
+              </div>
             </CardGrid>
           </div>
 
@@ -329,7 +344,12 @@ export default function DesignCardsPage() {
             <div className="space-y-3 max-w-3xl">
               <EventCardRow event={MOCK_EVENT} />
               <EventCardRow event={MOCK_EVENT} registration={MOCK_REGISTRATION} />
-              <EventCardRow event={MOCK_EVENT_TODAY} isLive />
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
+                <div className="relative">
+                  <EventCardRow event={MOCK_EVENT_TODAY} isLive />
+                </div>
+              </div>
               <EventCardRow event={MOCK_EVENT_NO_IMAGE} />
             </div>
           </div>
@@ -368,7 +388,7 @@ export default function DesignCardsPage() {
             <CardLabel>Compact - Live (with Glowing Pulsing Background)</CardLabel>
             <CardGrid columns={3}>
               <div className="relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
                 <div className="relative">
                   <EventCardCompact 
                     event={MOCK_EVENT_TODAY} 
@@ -377,7 +397,7 @@ export default function DesignCardsPage() {
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
                 <div className="relative">
                   <EventCardCompact 
                     event={MOCK_EVENT_TODAY} 
@@ -387,7 +407,7 @@ export default function DesignCardsPage() {
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
                 <div className="relative">
                   <EventCardCompact 
                     event={MOCK_EVENT_TODAY}
