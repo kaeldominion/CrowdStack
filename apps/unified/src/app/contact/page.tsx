@@ -55,8 +55,9 @@ export default function ContactPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="text-center p-12">
-              <motion.div
+            <Card className="text-center" padding="none">
+              <div className="p-6">
+                <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
@@ -116,7 +117,7 @@ export default function ContactPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Card className="p-8">
+          <Card>
             <form onSubmit={handleSubmit} className="space-y-6">
             <Select
               label="I am a..."
@@ -196,7 +197,7 @@ export default function ContactPage() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <Card className="p-6 text-center border-border-subtle">
+            <Card className="text-center border-border-subtle">
               <div className="w-12 h-12 rounded-xl bg-accent-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Mail className="h-6 w-6 text-accent-primary" />
               </div>
@@ -206,7 +207,7 @@ export default function ContactPage() {
               </p>
             </Card>
 
-            <Card className="p-6 text-center border-border-subtle">
+            <Card className="text-center border-border-subtle">
               <div className="w-12 h-12 rounded-xl bg-accent-secondary/10 flex items-center justify-center mx-auto mb-4">
                 <Building2 className="h-6 w-6 text-accent-secondary" />
               </div>
@@ -216,7 +217,7 @@ export default function ContactPage() {
               </p>
             </Card>
 
-            <Card className="p-6 text-center border-border-subtle">
+            <Card className="text-center border-border-subtle">
               <div className="w-12 h-12 rounded-xl bg-accent-success/10 flex items-center justify-center mx-auto mb-4">
                 <Users className="h-6 w-6 text-accent-success" />
               </div>

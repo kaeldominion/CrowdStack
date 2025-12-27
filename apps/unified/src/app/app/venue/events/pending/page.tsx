@@ -177,7 +177,7 @@ export default function VenuePendingEventsPage() {
       ) : (
         <div className="space-y-4">
           {events.map((event) => (
-            <Card key={event.id} className="p-6">
+            <Card key={event.id}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">

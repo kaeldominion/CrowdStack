@@ -409,12 +409,14 @@ export default function DoorScannerPage() {
   if (requiresLogin) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center p-8">
-          <User className="h-16 w-16 text-muted mx-auto mb-4" />
-          <h1 className="page-title mb-4">Sign In Required</h1>
-          <p className="text-secondary mb-6">
-            Please sign in to access the door scanner for this event.
-          </p>
+        <Card className="max-w-md w-full text-center" padding="none">
+          <div className="p-6">
+            <User className="h-16 w-16 text-muted mx-auto mb-4" />
+            <h1 className="page-title mb-4">Sign In Required</h1>
+            <p className="text-secondary mb-6">
+              Please sign in to access the door scanner for this event.
+            </p>
+          </div>
           <Button
             variant="primary"
             size="lg"
@@ -431,9 +433,10 @@ export default function DoorScannerPage() {
   if (accessDenied) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center p-8">
-          <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
-          <h1 className="page-title mb-4">Access Denied</h1>
+        <Card className="max-w-md w-full text-center" padding="none">
+          <div className="p-6">
+            <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
+            <h1 className="page-title mb-4">Access Denied</h1>
           <p className="text-secondary mb-2">
             {error || "You don't have permission to access the door scanner for this event."}
           </p>
@@ -466,9 +469,10 @@ export default function DoorScannerPage() {
   if (error && !eventInfo) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center p-8">
-          <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
-          <h1 className="page-title mb-4">Unable to Load Event</h1>
+        <Card className="max-w-md w-full text-center" padding="none">
+          <div className="p-6">
+            <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
+            <h1 className="page-title mb-4">Unable to Load Event</h1>
           <p className="text-secondary mb-6">{error}</p>
           <Button
             variant="secondary"
@@ -584,7 +588,7 @@ export default function DoorScannerPage() {
       </AnimatePresence>
 
       {/* Scanner Section */}
-      <Card className="p-6">
+      <Card>
         <h2 className="section-header mb-4">QR Code Scanner</h2>
         
         {/* QR Reader container */}
@@ -620,7 +624,7 @@ export default function DoorScannerPage() {
         )}
 
         {cameraError && (
-          <Card className="mt-4 p-4 bg-accent-error/10 border-accent-error/20">
+          <Card className="mt-4 bg-accent-error/10 border-accent-error/20">
             <p className="text-sm text-accent-error">{cameraError}</p>
             <p className="text-xs text-muted mt-1">
               Make sure camera permissions are granted and you're using HTTPS.
@@ -630,7 +634,7 @@ export default function DoorScannerPage() {
       </Card>
 
       {/* Search Section */}
-      <Card className="p-6">
+      <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="section-header">Search Attendees</h2>
           {!searchQuery.trim() && (
@@ -752,7 +756,7 @@ export default function DoorScannerPage() {
 
       {/* Recent Scans */}
       {recentScans.length > 0 && (
-        <Card className="p-6">
+        <Card>
           <h2 className="section-header mb-4">Recent Check-ins ({recentScans.length})</h2>
           <div className="overflow-x-auto">
             <Table>
@@ -983,7 +987,7 @@ export default function DoorScannerPage() {
 
             {/* Registration Info */}
             {selectedAttendee.registered_at && (
-              <Card className="p-4">
+              <Card padding="compact">
                 <p className="text-sm text-secondary mb-1">Registered</p>
                 <p className="text-primary">
                   {new Date(selectedAttendee.registered_at).toLocaleDateString(undefined, {

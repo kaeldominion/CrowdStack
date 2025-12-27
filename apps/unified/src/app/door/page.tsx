@@ -75,7 +75,7 @@ export default function DoorLandingPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeEvents.map((event) => (
-              <Card key={event.id} className="p-6 hover:border-accent-primary/50 transition-colors">
+              <Card key={event.id} hover className="hover:border-accent-primary/50 transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-bold text-primary mb-1 truncate">{event.name}</h3>
@@ -122,7 +122,7 @@ export default function DoorLandingPage() {
           <h2 className="section-header mb-4">Upcoming Events</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {upcomingEvents.map((event) => (
-              <Card key={event.id} className="p-6 hover:border-accent-primary/50 transition-colors">
+              <Card key={event.id} hover className="hover:border-accent-primary/50 transition-colors">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-bold text-primary mb-1 truncate">{event.name}</h3>
@@ -158,7 +158,7 @@ export default function DoorLandingPage() {
       )}
 
       {events.length === 0 && (
-        <Card className="p-12 text-center">
+        <Card className="!p-8 text-center">
           <QrCode className="h-12 w-12 text-muted mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-primary mb-2">No Events Available</h3>
           <p className="text-secondary">
