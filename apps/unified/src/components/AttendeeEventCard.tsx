@@ -171,7 +171,7 @@ export function AttendeeEventCard({
     >
       <Link href={`/e/${event.slug}`} className="block">
         {/* Full-bleed background image */}
-        <div className="relative aspect-[3/4] min-h-[380px]">
+        <div className="relative aspect-[3/4] min-h-[320px]">
           {heroImage ? (
             <img
               src={heroImage}
@@ -227,7 +227,7 @@ export function AttendeeEventCard({
             </p>
             
             {/* Event Name */}
-            <h3 className="font-sans text-2xl font-black text-primary uppercase tracking-tight leading-tight">
+            <h3 className="font-sans text-xl font-black text-primary uppercase tracking-tight leading-tight line-clamp-2">
               {event.name}
             </h3>
             

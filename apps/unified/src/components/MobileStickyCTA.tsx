@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video, QrCode, Ticket } from "lucide-react";
 import { InlineSpinner } from "@crowdstack/ui";
 import { useFlierToggle } from "./MobileFlierExperience";
+import { createBrowserClient } from "@crowdstack/shared";
 
 interface MobileStickyCTAProps {
   href: string;
@@ -44,13 +45,40 @@ export function MobileStickyCTA({
   shareText,
   shareImageUrl,
   shareVideoUrl,
-  userId,
+  userId: userIdProp,
   isRegistered = false,
 }: MobileStickyCTAProps) {
+  // Automatically fetch userId if not provided
+  const [currentUserId, setCurrentUserId] = useState<string | null>(userIdProp || null);
+  
+  useEffect(() => {
+    // If userId prop is provided, use it
+    if (userIdProp) {
+      setCurrentUserId(userIdProp);
+      return;
+    }
+    
+    // Otherwise, fetch the current user's ID
+    const fetchUserId = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+      } catch (error) {
+        console.error("[MobileStickyCTA] Error fetching user ID:", error);
+      }
+    };
+    
+    fetchUserId();
+  }, [userIdProp]);
+  
   const getShareUrl = () => {
-    if (!shareUrl || !userId) return shareUrl || "";
+    if (!shareUrl) return "";
+    if (!currentUserId) return shareUrl;
     const urlObj = new URL(shareUrl, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-    urlObj.searchParams.set("ref", userId);
+    urlObj.searchParams.set("ref", currentUserId);
     return urlObj.toString();
   };
 

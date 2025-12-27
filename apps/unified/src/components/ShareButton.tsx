@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Button, InlineSpinner } from "@crowdstack/ui";
 import { Share2, Link2, Image as ImageIcon, Video, Check, X } from "lucide-react";
+import { createBrowserClient } from "@crowdstack/shared";
 
 interface ShareButtonProps {
   title: string;
@@ -42,13 +43,39 @@ export function ShareButton({
   label = "Share", 
   compact = false,
   iconOnly = false,
-  userId,
+  userId: userIdProp,
 }: ShareButtonProps) {
-  // Append userId as ref parameter if provided
+  // Automatically fetch userId if not provided
+  const [currentUserId, setCurrentUserId] = useState<string | null>(userIdProp || null);
+  
+  useEffect(() => {
+    // If userId prop is provided, use it
+    if (userIdProp) {
+      setCurrentUserId(userIdProp);
+      return;
+    }
+    
+    // Otherwise, fetch the current user's ID
+    const fetchUserId = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+      } catch (error) {
+        console.error("[ShareButton] Error fetching user ID:", error);
+      }
+    };
+    
+    fetchUserId();
+  }, [userIdProp]);
+  
+  // Append userId as ref parameter if available
   const getShareUrl = () => {
-    if (!userId) return url;
+    if (!currentUserId) return url;
     const urlObj = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-    urlObj.searchParams.set("ref", userId);
+    urlObj.searchParams.set("ref", currentUserId);
     return urlObj.toString();
   };
 

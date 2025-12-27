@@ -404,9 +404,12 @@ export default function MePage() {
           {mobileEventsTab === "upcoming" && (
             <>
               {allUpcoming.length > 0 ? (
-                <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
-                  {allUpcoming.slice(0, 5).map((reg) => (
-                    <div key={reg.id} className="flex-shrink-0 w-[280px] snap-start">
+                <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+                  {allUpcoming.slice(0, 5).map((reg, index) => (
+                    <div 
+                      key={reg.id} 
+                      className={`flex-shrink-0 w-[260px] snap-start ${index === allUpcoming.slice(0, 5).length - 1 ? 'mr-4' : ''}`}
+                    >
                       <AttendeeEventCard
                         event={{
                           id: reg.event?.id || reg.event_id,

@@ -532,6 +532,11 @@ export default function HomePage() {
     async function fetchFeaturedEvents() {
       try {
         const res = await fetch("/api/browse/events?featured=true&limit=6");
+        if (!res.ok) {
+          console.error("Failed to fetch featured events:", res.status, res.statusText);
+          setLoadingEvents(false);
+          return;
+        }
         const data = await res.json();
         
         if (data.events && data.events.length > 0) {

@@ -134,12 +134,10 @@ export async function GET(request: NextRequest) {
       now: now.toISOString(),
     });
 
-    // Apply featured filter (if is_featured column exists)
-    // Note: This will be enabled after migration 068 is run
-    if (featured) {
-      // For now, just return regular events until migration is applied
-      // query = query.eq("is_featured", true);
-    }
+    // Apply featured filter - skip for now since column may not exist
+    // When featured=true, we'll use the fallback logic below to return regular events
+    // This ensures the landing page always shows events
+    // TODO: Once migration 068 is applied and is_featured column exists, enable: query = query.eq("is_featured", true);
 
     // Apply date filters
     if (startDate) {
@@ -181,14 +179,27 @@ export async function GET(request: NextRequest) {
 
     // Execute query - get more results if we need to filter by search
     const fetchLimit = search ? limit * 3 : limit; // Get more if we need to filter
-    let { data: events, error: eventsError } = await query
-      .limit(fetchLimit)
-      .range(offset, offset + fetchLimit - 1);
+    
+    // If featured=true, skip the main query and go straight to fallback logic
+    // This avoids issues if is_featured column doesn't exist yet
+    let events: any[] | null = null;
+    let eventsError: any = null;
+    
+    if (!featured) {
+      // Regular query for non-featured requests
+      const result = await query
+        .limit(fetchLimit)
+        .range(offset, offset + fetchLimit - 1);
+      events = result.data;
+      eventsError = result.error;
+    }
+    // For featured=true, we skip the main query and go straight to fallback below
 
     console.log("[Browse Events] Query result:", {
       eventsCount: events?.length || 0,
       error: eventsError?.message,
       hasError: !!eventsError,
+      featured,
     });
 
     if (eventsError) {
@@ -212,9 +223,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // If featured filter and no results, fall back to random events
-    if (featured && (!events || events.length === 0)) {
-      const { data: randomEvents, error: randomError } = await supabase
+    // If featured filter, always use fallback to regular upcoming events (for now)
+    // This ensures the landing page always shows events, even if is_featured column doesn't exist
+    // TODO: Once migration 068 is applied, check for featured events first, then fall back if none exist
+    if (featured) {
+      console.log("[Browse Events] No featured events found, falling back to regular events");
+      
+      // Build fallback query - same as base query but without is_featured filter
+      const fallbackQuery = supabase
         .from("events")
         .select(`
           id,
@@ -239,19 +255,21 @@ export async function GET(request: NextRequest) {
         .gte("start_time", now.toISOString())
         .order("start_time", { ascending: true })
         .limit(limit);
+      
+      const { data: fallbackEvents, error: fallbackError } = await fallbackQuery;
 
-      if (!randomError && randomEvents) {
-        // Get registration counts for random events
-        const randomEventIds = randomEvents.map((e: any) => e.id);
-        let randomRegistrationCounts: Record<string, number> = {};
+      if (!fallbackError && fallbackEvents && fallbackEvents.length > 0) {
+        // Get registration counts for fallback events
+        const fallbackEventIds = fallbackEvents.map((e: any) => e.id);
+        let fallbackRegistrationCounts: Record<string, number> = {};
 
-        if (randomEventIds.length > 0) {
-          const { data: randomRegistrations } = await supabase
+        if (fallbackEventIds.length > 0) {
+          const { data: fallbackRegistrations } = await supabase
             .from("registrations")
             .select("event_id")
-            .in("event_id", randomEventIds);
+            .in("event_id", fallbackEventIds);
 
-          randomRegistrationCounts = (randomRegistrations || []).reduce(
+          fallbackRegistrationCounts = (fallbackRegistrations || []).reduce(
             (acc, reg) => {
               acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
               return acc;
@@ -260,12 +278,19 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Shuffle and take limit, then add registration counts
-        const shuffled = randomEvents.sort(() => Math.random() - 0.5);
+        // Shuffle for variety, then add registration counts
+        const shuffled = [...fallbackEvents].sort(() => Math.random() - 0.5);
         events = shuffled.slice(0, limit).map((event: any) => ({
           ...event,
-          registration_count: randomRegistrationCounts[event.id] || 0,
+          registration_count: fallbackRegistrationCounts[event.id] || 0,
         }));
+        
+        console.log("[Browse Events] Fallback returned", events.length, "events");
+      } else {
+        console.log("[Browse Events] Fallback also returned no events:", {
+          fallbackError: fallbackError?.message,
+          fallbackEventsCount: fallbackEvents?.length || 0,
+        });
       }
     }
 
