@@ -702,7 +702,7 @@ export default function OrganizerLiveMissionControlPage() {
 
             {/* Previous Events */}
             {attendeeDetails.previous_events && attendeeDetails.previous_events.length > 0 && (
-              <div className="border-t border-border pt-4">
+              <div className="border-t border-border-subtle pt-4">
                 <h4 className="text-sm font-semibold text-primary mb-3">Previous Events</h4>
                 <div className="space-y-2">
                   {attendeeDetails.previous_events.map((event: any) => (
