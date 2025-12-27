@@ -29,9 +29,6 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
 
   const currentPathname = mounted ? (nextPathname || (typeof window !== "undefined" ? window.location.pathname : "")) : "";
 
-  // Check if this is a live mission control page (hide navigation)
-  const isLivePage = currentPathname.includes("/live/");
-
   // Update user roles if they change
   useEffect(() => {
     setUserRoles(roles);
@@ -60,21 +57,14 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       <div className="atmosphere-noise" aria-hidden="true" />
       
       {/* Page content - top padding for DockNav clearance */}
-      <main className={cn(
-        "min-h-screen relative z-10",
-        !isLivePage && "pt-24 pb-8 px-4 lg:px-8"
-      )}>
-        {!isLivePage ? (
-          <div className="mx-auto max-w-7xl">
-            {children}
-          </div>
-        ) : (
-          children
-        )}
+      <main className="min-h-screen relative z-10 pt-24 pb-8 px-4 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          {children}
+        </div>
       </main>
 
       {/* DockNav - floating pill navigation (primary nav for /app routes) */}
-      {!isLivePage && <DockNav />}
+      <DockNav />
     </div>
   );
 }
