@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Input, Modal, Card, Logo, InlineSpinner, LoadingSpinner } from "@crowdstack/ui";
+import { Button, Input, Modal, Card, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, LoadingSpinner, InlineSpinner } from "@crowdstack/ui";
 import { 
   QrCode, 
   Search, 
@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Camera,
   CameraOff,
-  Download,
   Users,
   Phone,
   Mail,
@@ -22,8 +21,11 @@ import {
   User,
   X,
   ExternalLink,
+  TrendingUp,
+  UserCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface CheckInResult {
   id: string;
@@ -41,6 +43,8 @@ interface EventInfo {
   slug: string;
   venue?: { id?: string; name: string };
   flier_url?: string;
+  start_time?: string;
+  end_time?: string | null;
 }
 
 interface SearchResult {
@@ -124,14 +128,12 @@ export default function DoorScannerPage() {
       const data = await response.json();
       
       if (response.status === 401) {
-        // User not logged in
         setRequiresLogin(true);
         setError("Please sign in to access the door scanner");
         return;
       }
       
       if (response.status === 403) {
-        // User doesn't have access
         setAccessDenied(true);
         setError(data.error || "You don't have access to this event's door scanner");
         return;
@@ -148,6 +150,8 @@ export default function DoorScannerPage() {
         slug: data.event.slug,
         venue: data.event.venue,
         flier_url: data.event.flier_url,
+        start_time: data.event.start_time,
+        end_time: data.event.end_time,
       });
     } catch (err) {
       console.error("Error loading event info:", err);
@@ -203,8 +207,6 @@ export default function DoorScannerPage() {
 
   // Check-in functionality
   const handleCheckIn = async (registrationId?: string, qrToken?: string) => {
-    console.log("[Door Scanner] Attempting check-in:", { registrationId, qrToken: qrToken ? "provided" : "none" });
-    
     try {
       const response = await fetch(`/api/events/${eventId}/checkin`, {
         method: "POST",
@@ -216,7 +218,6 @@ export default function DoorScannerPage() {
       });
 
       const data = await response.json();
-      console.log("[Door Scanner] Check-in response:", data);
 
       if (response.ok && data.success) {
         const result: CheckInResult = {
@@ -235,8 +236,6 @@ export default function DoorScannerPage() {
           setTimeout(() => setFlashColor(null), 500);
         }
         loadStats();
-        
-        // Clear search after successful check-in
         setSearchQuery("");
         setSearchResults([]);
       } else {
@@ -254,7 +253,7 @@ export default function DoorScannerPage() {
         setTimeout(() => setFlashColor(null), 500);
       }
     } catch (err: any) {
-      console.error("[Door Scanner] Check-in error:", err);
+      console.error("Check-in error:", err);
       const result: CheckInResult = {
         id: "",
         name: "Unknown",
@@ -271,21 +270,14 @@ export default function DoorScannerPage() {
   // QR Scanner using html5-qrcode
   const startScanning = async () => {
     setCameraError(null);
-    
-    // Set scanning to true FIRST so the container is visible
     setScanning(true);
-    
-    // Wait for DOM to update
     await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
-      
       const scanner = new Html5Qrcode("qr-reader");
       scannerRef.current = scanner;
 
-      console.log("[Door Scanner] Starting camera...");
-      
       await scanner.start(
         { facingMode: "environment" },
         {
@@ -293,15 +285,8 @@ export default function DoorScannerPage() {
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          console.log("[Door Scanner] QR code scanned:", decodedText);
-          
-          // Stop scanning briefly to prevent multiple scans
           scanner.pause(true);
-          
-          // Process the QR code
           handleCheckIn(undefined, decodedText);
-          
-          // Resume scanning after 2 seconds
           setTimeout(() => {
             if (scannerRef.current) {
               try {
@@ -312,14 +297,10 @@ export default function DoorScannerPage() {
             }
           }, 2000);
         },
-        (errorMessage) => {
-          // Ignore scanning errors (no QR found in frame)
-        }
+        () => {}
       );
-
-      console.log("[Door Scanner] Camera started successfully");
     } catch (err: any) {
-      console.error("[Door Scanner] Camera error:", err);
+      console.error("Camera error:", err);
       setCameraError(err.message || "Failed to access camera");
       setScanning(false);
     }
@@ -351,8 +332,6 @@ export default function DoorScannerPage() {
           checked_in: data.checkin !== null,
           checked_in_at: data.checkin?.checked_in_at,
         });
-      } else {
-        console.error("Failed to load attendee profile");
       }
     } catch (err) {
       console.error("Error loading attendee profile:", err);
@@ -363,12 +342,7 @@ export default function DoorScannerPage() {
 
   // Quick add functionality
   const handleQuickAdd = async () => {
-    if (!quickAddForm.name.trim()) {
-      alert("Name is required");
-      return;
-    }
-    if (!quickAddForm.phone.trim()) {
-      alert("Phone is required");
+    if (!quickAddForm.name.trim() || !quickAddForm.phone.trim()) {
       return;
     }
 
@@ -387,7 +361,6 @@ export default function DoorScannerPage() {
       const data = await response.json();
 
       if (response.ok && data.checkin) {
-        // Quick-add API already creates registration and check-in
         const result: CheckInResult = {
           id: data.checkin.id,
           name: data.attendee.name,
@@ -402,8 +375,6 @@ export default function DoorScannerPage() {
         setShowQuickAdd(false);
         setQuickAddForm({ name: "", email: "", phone: "" });
         loadStats();
-        setShowQuickAdd(false);
-        setQuickAddForm({ name: "", email: "", phone: "" });
       } else {
         alert(data.error || "Failed to add attendee");
       }
@@ -414,132 +385,112 @@ export default function DoorScannerPage() {
     }
   };
 
-  const getStatusIcon = (status: CheckInResult["status"]) => {
+  const getStatusBadge = (status: CheckInResult["status"]) => {
     switch (status) {
       case "success":
-        return <CheckCircle2 className="h-8 w-8 text-green-500" />;
+        return <Badge variant="success" className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />Success</Badge>;
       case "duplicate":
-        return <CheckCircle2 className="h-8 w-8 text-yellow-500" />;
+        return <Badge variant="warning" className="flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Duplicate</Badge>;
       case "banned":
-        return <AlertTriangle className="h-8 w-8 text-red-500" />;
+        return <Badge variant="danger" className="flex items-center gap-1"><XCircle className="h-3 w-3" />Banned</Badge>;
       default:
-        return <XCircle className="h-8 w-8 text-red-500" />;
+        return <Badge variant="danger" className="flex items-center gap-1"><XCircle className="h-3 w-3" />Error</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[80vh]">
         <LoadingSpinner text="Loading event..." size="lg" />
       </div>
     );
   }
 
-  // Auth required screen
   if (requiresLogin) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-white/20">
-            <User className="h-16 w-16 text-white/40 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Sign In Required</h1>
-            <p className="text-white/60 mb-6">
-              Please sign in to access the door scanner for this event.
-            </p>
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full"
-              onClick={() => router.push(`/login?redirect=/door/${eventId}`)}
-            >
-              Sign In
-            </Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[80vh] p-4">
+        <Card className="max-w-md w-full text-center p-8">
+          <User className="h-16 w-16 text-muted mx-auto mb-4" />
+          <h1 className="page-title mb-4">Sign In Required</h1>
+          <p className="text-secondary mb-6">
+            Please sign in to access the door scanner for this event.
+          </p>
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            onClick={() => router.push(`/login?redirect=/door/${eventId}`)}
+          >
+            Sign In
+          </Button>
+        </Card>
       </div>
     );
   }
 
-  // Access denied screen
   if (accessDenied) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-red-500/30">
-            <XCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-white/60 mb-6">
-              {error || "You don't have permission to access the door scanner for this event."}
-            </p>
-            <p className="text-sm text-white/40 mb-6">
-              Only event organizers, venue admins, and assigned door staff can access this scanner.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                onClick={() => router.push("/door")}
-              >
-                Back to Events
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                onClick={() => router.push("/me")}
-              >
-                My Dashboard
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Event not found or other error
-  if (error && !eventInfo) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="p-6 rounded-2xl backdrop-blur-md bg-black/40 border border-yellow-500/30">
-            <AlertTriangle className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Unable to Load Event</h1>
-            <p className="text-white/60 mb-6">{error}</p>
+      <div className="flex items-center justify-center min-h-[80vh] p-4">
+        <Card className="max-w-md w-full text-center p-8">
+          <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
+          <h1 className="page-title mb-4">Access Denied</h1>
+          <p className="text-secondary mb-2">
+            {error || "You don't have permission to access the door scanner for this event."}
+          </p>
+          <p className="text-sm text-muted mb-6">
+            Only event organizers, venue admins, and assigned door staff can access this scanner.
+          </p>
+          <div className="flex gap-3">
             <Button
               variant="secondary"
               size="lg"
-              className="w-full"
+              className="flex-1"
               onClick={() => router.push("/door")}
             >
               Back to Events
             </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="flex-1"
+              onClick={() => router.push("/me")}
+            >
+              My Dashboard
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
+  if (error && !eventInfo) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh] p-4">
+        <Card className="max-w-md w-full text-center p-8">
+          <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
+          <h1 className="page-title mb-4">Unable to Load Event</h1>
+          <p className="text-secondary mb-6">{error}</p>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            onClick={() => router.push("/door")}
+          >
+            Back to Events
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const isEventLive = eventInfo?.start_time && eventInfo?.end_time 
+    ? new Date() >= new Date(eventInfo.start_time) && new Date() <= new Date(eventInfo.end_time)
+    : eventInfo?.start_time 
+    ? new Date() >= new Date(eventInfo.start_time)
+    : false;
+
   return (
-    <div className="min-h-[80vh] relative">
-      {/* Blurred flier background */}
-      {eventInfo?.flier_url && (
-        <div className="fixed inset-0 z-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: `url(${eventInfo.flier_url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: "blur(30px)",
-              transform: "scale(1.1)",
-              opacity: 0.4,
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D10]/60 via-[#0B0D10]/70 to-[#0B0D10]/90" />
-        </div>
-      )}
+    <div className="space-y-6">
       {/* Flash overlay */}
       <AnimatePresence>
         {flashColor && (
@@ -548,268 +499,290 @@ export default function DoorScannerPage() {
             animate={{ opacity: 0.3 }}
             exit={{ opacity: 0 }}
             className={`fixed inset-0 z-50 pointer-events-none ${
-              flashColor === "green" ? "bg-green-500" : "bg-red-500"
+              flashColor === "green" ? "bg-accent-success" : "bg-accent-error"
             }`}
           />
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 mx-auto max-w-md px-4 pb-6">
-        {/* Header with Event Info */}
-        <div className="mb-6 text-center">
-          {eventInfo && (
-            <div className="space-y-3">
-            <div className="space-y-1">
-              <h1 className="text-xl font-bold text-white">{eventInfo.name}</h1>
-              {eventInfo.venue && (
-                <p className="text-sm text-white/60">{eventInfo.venue.name}</p>
-              )}
-              </div>
-              <a
-                href={`/e/${eventInfo.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/20 rounded-full transition-all duration-200 backdrop-blur-md"
-              >
-                <span>View Public Page</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* Stats - Glass Cards */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
-            <p className="text-2xl font-bold text-green-400 font-mono">{stats.checkedIn}</p>
-            <p className="text-xs text-white/60">Checked In</p>
-          </div>
-          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
-            <p className="text-2xl font-bold text-white font-mono">{stats.registered}</p>
-            <p className="text-xs text-white/60">Registered</p>
-          </div>
-          <div className="p-3 rounded-xl backdrop-blur-md bg-black/30 border border-white/15 text-center">
-            <p className="text-2xl font-bold text-yellow-400 font-mono">{stats.remaining}</p>
-            <p className="text-xs text-white/60">Remaining</p>
-          </div>
-        </div>
-
-        {/* Last check-in status */}
-        <AnimatePresence>
-          {lastCheckIn && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className={`mb-6 p-4 rounded-xl backdrop-blur-md border-2 ${
-                lastCheckIn.status === "success"
-                  ? "border-green-500/50 bg-green-500/20"
-                  : lastCheckIn.status === "duplicate"
-                  ? "border-yellow-500/50 bg-yellow-500/20"
-                  : "border-red-500/50 bg-red-500/20"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {getStatusIcon(lastCheckIn.status)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xl font-bold text-white truncate">{lastCheckIn.name}</p>
-                  <p className={`text-sm ${
-                    lastCheckIn.status === "success" ? "text-green-400" 
-                    : lastCheckIn.status === "duplicate" ? "text-yellow-400"
-                    : "text-red-400"
-                  }`}>
-                    {lastCheckIn.message}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* QR Scanner */}
-        <div className="mb-6">
-          {/* QR Reader container - always rendered but visibility controlled */}
-          <div 
-            id="qr-reader" 
-            className="rounded-xl overflow-hidden bg-black/50 backdrop-blur-sm border border-white/10"
-            style={{ 
-              minHeight: scanning ? "300px" : "0",
-              display: scanning ? "block" : "none",
-            }}
-          />
-          
-          {!scanning ? (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={startScanning}
-              className="w-full h-16 text-xl font-bold"
-            >
-              <Camera className="h-6 w-6 mr-3" />
-              Start Camera Scan
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={stopScanning}
-              className="w-full h-12 mt-2 backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40"
-            >
-              <CameraOff className="h-5 w-5 mr-2" />
-              Stop Scanning
-            </Button>
-          )}
-
-          {cameraError && (
-            <div className="mt-2 p-3 rounded-xl backdrop-blur-md bg-red-500/20 border border-red-500/30">
-              <p className="text-sm text-red-400">{cameraError}</p>
-              <p className="text-xs text-white/60 mt-1">
-                Make sure camera permissions are granted and you're using HTTPS.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="flex gap-2 mb-2">
-            <div className="relative flex-1">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, email, or phone..."
-                className="backdrop-blur-md bg-black/30 border-white/20 text-white pr-10 rounded-xl"
-              />
-              {searching && (
-                <InlineSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60" />
-              )}
-            </div>
-            {!searchQuery.trim() && (
-              <Button
-                variant="secondary"
-                onClick={() => handleSearch(true)}
-                disabled={searching}
-                className="backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
-                title="View all registered attendees"
-              >
-                <Users className="h-4 w-4 mr-1" />
-                All
-              </Button>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title">{eventInfo?.name || "Door Scanner"}</h1>
+          <p className="mt-2 text-sm text-secondary">
+            {eventInfo?.venue?.name && `${eventInfo.venue.name} • `}
+            {isEventLive ? (
+              <Badge variant="success" className="inline-flex items-center gap-1">
+                <div className="h-1.5 w-1.5 bg-accent-success rounded-full animate-pulse" />
+                Live Now
+              </Badge>
+            ) : (
+              "Event Scanner"
             )}
-          </div>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
-              {searchResults.map((result) => (
-                <div
-                  key={result.registration_id}
-                  className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-colors backdrop-blur-md ${
-                    result.checked_in
-                      ? "bg-green-500/20 border-green-500/30 hover:bg-green-500/30"
-                      : "bg-black/30 border-white/15 hover:bg-black/40"
-                  }`}
-                  onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-white truncate">{result.attendee_name}</p>
-                    <p className="text-xs text-white/60 truncate">
-                      {result.attendee_email || result.attendee_phone || "No contact info"}
-                    </p>
-                  </div>
-                  {result.checked_in ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 ml-2" />
-                  ) : (
-                    <div 
-                      className="flex-shrink-0 ml-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleCheckIn(result.registration_id)}
-                      >
-                        Check In
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          </p>
         </div>
+        {eventInfo && (
+          <Link href={`/e/${eventInfo.slug}`} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary" size="sm">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Event
+            </Button>
+          </Link>
+        )}
+      </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3 mb-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="text-sm text-secondary mb-1">Checked In</div>
+          <div className="text-3xl font-bold text-accent-success">{stats.checkedIn}</div>
+          <div className="text-xs text-muted mt-1">Current attendance</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-secondary mb-1">Registered</div>
+          <div className="text-3xl font-bold text-primary">{stats.registered}</div>
+          <div className="text-xs text-muted mt-1">Total registrations</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm text-secondary mb-1">Remaining</div>
+          <div className="text-3xl font-bold text-accent-warning">{stats.remaining}</div>
+          <div className="text-xs text-muted mt-1">Available spots</div>
+        </Card>
+      </div>
+
+      {/* Last Check-in Status */}
+      <AnimatePresence>
+        {lastCheckIn && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+          >
+            <Card className={`p-4 border-2 ${
+              lastCheckIn.status === "success"
+                ? "border-accent-success/50 bg-accent-success/5"
+                : lastCheckIn.status === "duplicate"
+                ? "border-accent-warning/50 bg-accent-warning/5"
+                : "border-accent-error/50 bg-accent-error/5"
+            }`}>
+              <div className="flex items-center gap-3">
+                {getStatusBadge(lastCheckIn.status)}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-primary truncate">{lastCheckIn.name}</p>
+                  <p className="text-sm text-secondary">{lastCheckIn.message}</p>
+                </div>
+                <button
+                  onClick={() => setLastCheckIn(null)}
+                  className="p-1 text-muted hover:text-primary rounded"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Scanner Section */}
+      <Card className="p-6">
+        <h2 className="section-header mb-4">QR Code Scanner</h2>
+        
+        {/* QR Reader container */}
+        <div 
+          id="qr-reader" 
+          className="rounded-xl overflow-hidden bg-raised border border-border-subtle mb-4"
+          style={{ 
+            minHeight: scanning ? "300px" : "0",
+            display: scanning ? "block" : "none",
+          }}
+        />
+        
+        {!scanning ? (
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={startScanning}
+            className="w-full"
+          >
+            <Camera className="h-5 w-5 mr-2" />
+            Start Camera Scan
+          </Button>
+        ) : (
           <Button
             variant="secondary"
             size="lg"
-            onClick={() => setShowQuickAdd(true)}
-            className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
+            onClick={stopScanning}
+            className="w-full"
           >
-            <UserPlus className="h-5 w-5 mr-2" />
-            Quick Add & Check In
+            <CameraOff className="h-5 w-5 mr-2" />
+            Stop Scanning
           </Button>
-          
-          {eventInfo && (
-            <>
+        )}
+
+        {cameraError && (
+          <Card className="mt-4 p-4 bg-accent-error/10 border-accent-error/20">
+            <p className="text-sm text-accent-error">{cameraError}</p>
+            <p className="text-xs text-muted mt-1">
+              Make sure camera permissions are granted and you're using HTTPS.
+            </p>
+          </Card>
+        )}
+      </Card>
+
+      {/* Search Section */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="section-header">Search Attendees</h2>
+          {!searchQuery.trim() && (
             <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setShowQRCode(true)}
-              className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
+              variant="ghost"
+              size="sm"
+              onClick={() => handleSearch(true)}
+              disabled={searching}
             >
-              <QrCode className="h-5 w-5 mr-2" />
-              Show Event QR Code
+              <Users className="h-4 w-4 mr-1" />
+              View All
             </Button>
-              
-              <a
-                href={`/e/${eventInfo.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full"
-              >
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-full h-14 text-lg font-semibold backdrop-blur-md bg-black/30 border-white/20 text-white hover:bg-black/40 rounded-xl"
-                >
-                  <ExternalLink className="h-5 w-5 mr-2" />
-                  View Public Page
-                </Button>
-              </a>
-            </>
+          )}
+        </div>
+        
+        <div className="relative mb-4">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, email, or phone..."
+            className="pr-10"
+          />
+          {searching && (
+            <InlineSpinner size="sm" className="absolute right-3 top-1/2 -translate-y-1/2" />
           )}
         </div>
 
-        {/* Recent Scans */}
-        {recentScans.length > 0 && (
-          <div className="backdrop-blur-md bg-black/20 border border-white/10 rounded-xl p-4">
-            <p className="text-sm font-medium text-white/60 mb-3">Recent Check-ins ({recentScans.length})</p>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {recentScans.map((scan, index) => (
-                <motion.div
-                  key={`${scan.id}-${scan.timestamp}`}
-                  initial={{ opacity: 1 }}
-                  animate={{ opacity: 1 - index * 0.08 }}
-                  className={`flex items-center gap-2 p-2 rounded-lg bg-white/5 ${
-                    scan.attendee_id ? "cursor-pointer hover:bg-white/10" : ""
-                  }`}
-                  onClick={() => scan.attendee_id && loadAttendeeProfile(scan.attendee_id, scan.registration_id)}
-                >
-                  {getStatusIcon(scan.status)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{scan.name}</p>
-                  </div>
-                  <p className="text-xs text-white/40">
-                    {new Date(scan.timestamp).toLocaleTimeString()}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
+        {/* Search Results Table */}
+        {searchResults.length > 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {searchResults.map((result) => (
+                  <TableRow 
+                    key={result.registration_id}
+                    hover
+                    className="cursor-pointer"
+                    onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
+                  >
+                    <TableCell className="font-medium">{result.attendee_name}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {result.attendee_email && (
+                          <div className="text-sm text-secondary">{result.attendee_email}</div>
+                        )}
+                        {result.attendee_phone && (
+                          <div className="text-sm text-secondary">{result.attendee_phone}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {result.checked_in ? (
+                        <Badge variant="success" className="flex items-center gap-1 w-fit">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Checked In
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Not Checked In</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {!result.checked_in ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCheckIn(result.registration_id);
+                          }}
+                        >
+                          Check In
+                        </Button>
+                      ) : (
+                        <span className="text-sm text-muted">
+                          {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Button
+          variant="secondary"
+          size="lg"
+          onClick={() => setShowQuickAdd(true)}
+          className="w-full"
+        >
+          <UserPlus className="h-5 w-5 mr-2" />
+          Quick Add & Check In
+        </Button>
+        
+        {eventInfo && (
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => setShowQRCode(true)}
+            className="w-full"
+          >
+            <QrCode className="h-5 w-5 mr-2" />
+            Show Event QR Code
+          </Button>
+        )}
       </div>
+
+      {/* Recent Scans */}
+      {recentScans.length > 0 && (
+        <Card className="p-6">
+          <h2 className="section-header mb-4">Recent Check-ins ({recentScans.length})</h2>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentScans.map((scan, index) => (
+                  <TableRow
+                    key={`${scan.id}-${scan.timestamp}`}
+                    hover={!!scan.attendee_id}
+                    className={scan.attendee_id ? "cursor-pointer" : ""}
+                    onClick={() => scan.attendee_id && loadAttendeeProfile(scan.attendee_id, scan.registration_id)}
+                  >
+                    <TableCell className="font-medium">{scan.name}</TableCell>
+                    <TableCell>{getStatusBadge(scan.status)}</TableCell>
+                    <TableCell className="text-sm text-secondary">
+                      {new Date(scan.timestamp).toLocaleTimeString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
 
       {/* QR Code Modal */}
       {eventInfo && (
@@ -824,14 +797,13 @@ export default function DoorScannerPage() {
               Scan this QR code to register for the event. Registrations will be attributed to the venue.
             </p>
             
-            <div className="flex flex-col items-center justify-center p-6 bg-white rounded-lg">
+            <div className="flex flex-col items-center justify-center p-6 bg-raised rounded-lg">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
                   (() => {
                     const baseUrl = typeof window !== "undefined" 
                       ? `${window.location.origin}/e/${eventInfo.slug}/register`
                       : `/e/${eventInfo.slug}/register`;
-                    // Add venue referral if available (venue-owned QR code)
                     if (eventInfo.venue?.id) {
                       return `${baseUrl}?ref=venue_${eventInfo.venue.id}`;
                     }
@@ -920,153 +892,130 @@ export default function DoorScannerPage() {
       </Modal>
 
       {/* Attendee Profile Modal */}
-      <AnimatePresence>
-        {(selectedAttendee || loadingProfile) && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => !loadingProfile && setSelectedAttendee(null)}
-          >
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-md bg-gray-900 rounded-t-3xl max-h-[85vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {loadingProfile ? (
-                <div className="p-8 flex items-center justify-center">
-                  <LoadingSpinner text="Loading profile..." size="md" />
+      <Modal
+        isOpen={!!selectedAttendee || loadingProfile}
+        onClose={() => !loadingProfile && setSelectedAttendee(null)}
+        title={selectedAttendee ? `${selectedAttendee.name}${selectedAttendee.surname ? ` ${selectedAttendee.surname}` : ""}` : "Loading Profile"}
+        size="lg"
+      >
+        {loadingProfile ? (
+          <div className="p-8 flex items-center justify-center">
+            <LoadingSpinner text="Loading profile..." size="md" />
+          </div>
+        ) : selectedAttendee ? (
+          <div className="space-y-6">
+            {/* Profile Header */}
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center overflow-hidden">
+                {selectedAttendee.avatar_url ? (
+                  <img 
+                    src={selectedAttendee.avatar_url} 
+                    alt={selectedAttendee.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-white">
+                    {selectedAttendee.name?.charAt(0)?.toUpperCase() || "?"}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-primary">
+                  {selectedAttendee.name} {selectedAttendee.surname || ""}
+                </h3>
+                {selectedAttendee.checked_in ? (
+                  <Badge variant="success" className="mt-1">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Checked in {selectedAttendee.checked_in_at && (
+                      <>at {new Date(selectedAttendee.checked_in_at).toLocaleTimeString()}</>
+                    )}
+                  </Badge>
+                ) : (
+                  <Badge variant="warning" className="mt-1">Not checked in</Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Contact Info */}
+            <div className="space-y-2">
+              {selectedAttendee.email && (
+                <a 
+                  href={`mailto:${selectedAttendee.email}`}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                >
+                  <Mail className="h-5 w-5 text-muted" />
+                  <span className="text-primary">{selectedAttendee.email}</span>
+                </a>
+              )}
+              {(selectedAttendee.phone || selectedAttendee.whatsapp) && (
+                <a 
+                  href={`tel:${selectedAttendee.whatsapp || selectedAttendee.phone}`}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                >
+                  <Phone className="h-5 w-5 text-muted" />
+                  <span className="text-primary">{selectedAttendee.whatsapp || selectedAttendee.phone}</span>
+                </a>
+              )}
+              {selectedAttendee.instagram_handle && (
+                <a 
+                  href={`https://instagram.com/${selectedAttendee.instagram_handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                >
+                  <Instagram className="h-5 w-5 text-muted" />
+                  <span className="text-primary">@{selectedAttendee.instagram_handle}</span>
+                </a>
+              )}
+              {selectedAttendee.date_of_birth && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-raised">
+                  <Calendar className="h-5 w-5 text-muted" />
+                  <span className="text-primary">
+                    {new Date(selectedAttendee.date_of_birth).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
                 </div>
-              ) : selectedAttendee ? (
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      {/* Avatar */}
-                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center overflow-hidden">
-                        {selectedAttendee.avatar_url ? (
-                          <img 
-                            src={selectedAttendee.avatar_url} 
-                            alt={selectedAttendee.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-2xl font-bold text-white">
-                            {selectedAttendee.name?.charAt(0)?.toUpperCase() || "?"}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          {selectedAttendee.name} {selectedAttendee.surname || ""}
-                        </h3>
-                        {selectedAttendee.checked_in ? (
-                          <span className="inline-flex items-center gap-1 text-sm text-green-400">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Checked in {selectedAttendee.checked_in_at && (
-                              <>at {new Date(selectedAttendee.checked_in_at).toLocaleTimeString()}</>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-yellow-400">Not checked in</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setSelectedAttendee(null)}
-                      className="p-2 text-white/60 hover:text-white rounded-full hover:bg-white/10"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
+              )}
+            </div>
 
-                  {/* Contact Info */}
-                  <div className="space-y-3 mb-6">
-                    {selectedAttendee.email && (
-                      <a 
-                        href={`mailto:${selectedAttendee.email}`}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        <Mail className="h-5 w-5 text-white/60" />
-                        <span className="text-white">{selectedAttendee.email}</span>
-                      </a>
-                    )}
-                    {(selectedAttendee.phone || selectedAttendee.whatsapp) && (
-                      <a 
-                        href={`tel:${selectedAttendee.whatsapp || selectedAttendee.phone}`}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        <Phone className="h-5 w-5 text-white/60" />
-                        <span className="text-white">{selectedAttendee.whatsapp || selectedAttendee.phone}</span>
-                      </a>
-                    )}
-                    {selectedAttendee.instagram_handle && (
-                      <a 
-                        href={`https://instagram.com/${selectedAttendee.instagram_handle}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        <Instagram className="h-5 w-5 text-white/60" />
-                        <span className="text-white">@{selectedAttendee.instagram_handle}</span>
-                      </a>
-                    )}
-                    {selectedAttendee.date_of_birth && (
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
-                        <Calendar className="h-5 w-5 text-white/60" />
-                        <span className="text-white">
-                          {new Date(selectedAttendee.date_of_birth).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+            {/* Registration Info */}
+            {selectedAttendee.registered_at && (
+              <Card className="p-4">
+                <p className="text-sm text-secondary mb-1">Registered</p>
+                <p className="text-primary">
+                  {new Date(selectedAttendee.registered_at).toLocaleDateString(undefined, {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </Card>
+            )}
 
-                  {/* Registration Info */}
-                  {selectedAttendee.registered_at && (
-                    <div className="mb-6 p-3 rounded-lg bg-white/5">
-                      <p className="text-sm text-white/60 mb-1">Registered</p>
-                      <p className="text-white">
-                        {new Date(selectedAttendee.registered_at).toLocaleDateString(undefined, {
-                          weekday: "short",
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Check In Button (if not checked in) */}
-                  {!selectedAttendee.checked_in && selectedAttendee.registration_id && (
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      className="w-full"
-                      onClick={() => {
-                        handleCheckIn(selectedAttendee.registration_id);
-                        setSelectedAttendee(null);
-                      }}
-                    >
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
-                      Check In Now
-                    </Button>
-                  )}
-                </div>
-              ) : null}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Check In Button (if not checked in) */}
+            {!selectedAttendee.checked_in && selectedAttendee.registration_id && (
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  handleCheckIn(selectedAttendee.registration_id);
+                  setSelectedAttendee(null);
+                }}
+              >
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Check In Now
+              </Button>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

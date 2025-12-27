@@ -80,41 +80,41 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
   );
 
   return (
-    <div className="min-h-screen bg-[#0B0D10]">
+    <div className="min-h-screen bg-void">
       {/* Navigation Bar */}
-      <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
+      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto">
+        <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-border-strong backdrop-blur-xl bg-glass shadow-2xl shadow-void/50">
           {/* Logo */}
-          <Link href="/door" className="flex items-center transition-all duration-300 hover:scale-105 pr-1 sm:pr-2">
+          <Link href="/door" className="flex items-center transition-all duration-300 hover:scale-105 pr-2">
             <Logo variant="tricolor" size="sm" />
           </Link>
 
-          <div className="h-4 w-px bg-white/20" />
+          <div className="h-4 w-px bg-border-strong" />
 
-          {/* Profile Dropdown - Avatar only */}
+          {/* Profile Dropdown */}
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-1 p-1 rounded-full transition-all duration-300 hover:bg-white/10"
+              className="flex items-center gap-1.5 p-1 rounded-full transition-all duration-300 hover:bg-active"
             >
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   getUserInitial()
                 )}
               </div>
-              <ChevronDown className={`h-3 w-3 text-white/60 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-3 w-3 text-secondary transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isProfileOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden">
+              <div className="absolute top-full right-0 mt-3 w-56 rounded-2xl border border-border-strong backdrop-blur-xl bg-glass shadow-2xl shadow-void/50 overflow-hidden">
                 {/* User Info */}
-                <div className="px-4 py-3 border-b border-white/10">
-                  <p className="text-sm font-medium text-white truncate">
+                <div className="px-4 py-3 border-b border-border-subtle">
+                  <p className="text-sm font-bold text-primary truncate">
                     {userName || "Guest"}
                   </p>
-                  <p className="text-xs text-white/50 truncate">{userEmail}</p>
+                  <p className="text-[10px] text-muted font-mono truncate">{userEmail}</p>
                 </div>
 
                 {/* Links */}
@@ -122,7 +122,7 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                   <Link
                     href="/me"
                     onClick={() => setIsProfileOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                   >
                     <Calendar className="h-4 w-4" />
                     Me
@@ -131,7 +131,7 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                     <Link
                       href="/app"
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                     >
                       <Home className="h-4 w-4" />
                       Dashboard
@@ -140,7 +140,7 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                   <Link
                     href="/me/profile"
                     onClick={() => setIsProfileOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                   >
                     <User className="h-4 w-4" />
                     Profile
@@ -148,7 +148,7 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                   <Link
                     href="/me/settings"
                     onClick={() => setIsProfileOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                   >
                     <Settings className="h-4 w-4" />
                     Settings
@@ -156,10 +156,10 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
                 </div>
 
                 {/* Sign Out */}
-                <div className="border-t border-white/10 py-1">
+                <div className="border-t border-border-subtle py-1">
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:bg-accent-error/10 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
                     Sign Out
@@ -172,8 +172,10 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
       </nav>
 
       {/* Main Content */}
-      <main className="pt-20">
-        {children}
+      <main className="pt-24 pb-8 px-4 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          {children}
+        </div>
       </main>
     </div>
   );
