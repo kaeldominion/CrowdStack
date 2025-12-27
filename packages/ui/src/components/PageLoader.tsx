@@ -9,7 +9,7 @@ interface PageLoaderProps {
 
 /**
  * Full-page loading component with CrowdStack branding
- * Uses the tricolor chevron logo with white top bar
+ * Uses the tricolor logo with 3D panel + chevrons
  */
 export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
   return (
@@ -46,7 +46,7 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="relative z-10 flex flex-col items-center gap-5"
       >
-        {/* Animated tricolor chevron logo with white top bar */}
+        {/* Animated tricolor logo with 3D panel + chevrons */}
         <div className="relative" style={{ width: 64, height: 64 }}>
           <svg
             viewBox="0 0 32 32"
@@ -65,14 +65,13 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
               </linearGradient>
             </defs>
             
-            {/* White top bar */}
-            <motion.rect
-              x="8"
-              y="2"
-              width="16"
-              height="3"
-              rx="1.5"
+            {/* White 3D panel/parallelogram (like stack layer) */}
+            <motion.path
+              d="M6 6L16 2L26 6L16 10Z"
               fill="white"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
               animate={{
                 opacity: [0.6, 1, 0.6],
               }}
@@ -85,7 +84,7 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
             
             {/* Top chevron (purple) - pulsing */}
             <motion.path
-              d="M4 12L16 22L28 12"
+              d="M4 13L16 21L28 13"
               stroke="url(#pageLoaderPurple)"
               strokeWidth="3.5"
               strokeLinecap="round"
@@ -104,7 +103,7 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
             
             {/* Bottom chevron (blue) - pulsing with delay */}
             <motion.path
-              d="M4 20L16 30L28 20"
+              d="M4 21L16 29L28 21"
               stroke="url(#pageLoaderBlue)"
               strokeWidth="3.5"
               strokeLinecap="round"

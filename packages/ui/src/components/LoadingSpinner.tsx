@@ -13,7 +13,7 @@ interface LoadingSpinnerProps {
 
 /**
  * CrowdStack branded loading spinner
- * Uses the tricolor chevron logo with pulsing animation
+ * Uses the tricolor logo with 3D panel + chevrons
  */
 export function LoadingSpinner({
   size = "md",
@@ -57,11 +57,17 @@ export function LoadingSpinner({
             strokeOpacity="0.2"
             fill="none"
           />
+          <defs>
+            <linearGradient id="minimalSpinnerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#A855F7"/>
+              <stop offset="100%" stopColor="#3B82F6"/>
+            </linearGradient>
+          </defs>
           <circle
             cx="8"
             cy="8"
             r="6"
-            stroke="#A855F7"
+            stroke="url(#minimalSpinnerGrad)"
             strokeWidth="2"
             strokeLinecap="round"
             fill="none"
@@ -72,7 +78,7 @@ export function LoadingSpinner({
     );
   }
 
-  // Full branded spinner with tricolor chevrons + white top bar
+  // Full branded spinner with 3D panel + chevrons (matching PNG logo)
   const spinner = (
     <motion.div
       className={`flex flex-col items-center justify-center gap-3 ${className}`}
@@ -80,7 +86,7 @@ export function LoadingSpinner({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Animated tricolor chevron logo */}
+      {/* Animated tricolor logo */}
       <div className="relative" style={{ width: iconSize, height: iconSize }}>
         <svg
           viewBox="0 0 32 32"
@@ -99,14 +105,13 @@ export function LoadingSpinner({
             </linearGradient>
           </defs>
           
-          {/* White top bar */}
-          <motion.rect
-            x="8"
-            y="2"
-            width="16"
-            height="3"
-            rx="1.5"
+          {/* White 3D panel/parallelogram (like stack layer) */}
+          <motion.path
+            d="M6 6L16 2L26 6L16 10Z"
             fill="white"
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
             animate={{
               opacity: [0.6, 1, 0.6],
             }}
@@ -119,7 +124,7 @@ export function LoadingSpinner({
           
           {/* Top chevron (purple) - pulsing */}
           <motion.path
-            d="M4 12L16 22L28 12"
+            d="M4 13L16 21L28 13"
             stroke="url(#loadingPurpleGradient)"
             strokeWidth="3.5"
             strokeLinecap="round"
@@ -138,7 +143,7 @@ export function LoadingSpinner({
           
           {/* Bottom chevron (blue) - pulsing with delay */}
           <motion.path
-            d="M4 20L16 30L28 20"
+            d="M4 21L16 29L28 21"
             stroke="url(#loadingBlueGradient)"
             strokeWidth="3.5"
             strokeLinecap="round"

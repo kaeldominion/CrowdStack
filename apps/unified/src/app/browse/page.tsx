@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
 import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users } from "lucide-react";
-import { AttendeeEventCard } from "@/components/AttendeeEventCard";
+import { EventCardCompact } from "@/components/EventCardCompact";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
 import { FeaturedEventsCarousel } from "@/components/browse/FeaturedEventsCarousel";
@@ -50,6 +50,7 @@ export default function BrowsePage() {
   const [eventsOffset, setEventsOffset] = useState(0);
   const [totalEventsCount, setTotalEventsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
+  const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
 
   const EVENTS_PER_PAGE = 12;
 
@@ -108,6 +109,7 @@ export default function BrowsePage() {
         setAllEvents(data.events || []);
         setEventsOffset(EVENTS_PER_PAGE);
         setTotalEventsCount(data.count || data.events?.length || 0);
+        setAllEventsTotalCount(data.totalCount || data.count || 0);
       } else {
         setAllEvents((prev) => [...prev, ...(data.events || [])]);
         setEventsOffset((prev) => prev + EVENTS_PER_PAGE);
@@ -166,7 +168,7 @@ export default function BrowsePage() {
     fetchEvents(false);
   };
 
-  // Calculate stats
+  // Calculate stats from loaded events (approximate)
   const upcomingEventsThisWeek = allEvents.filter((event) => {
     const eventDate = new Date(event.start_time);
     const now = new Date();
@@ -180,6 +182,9 @@ export default function BrowsePage() {
       .map((e) => e.venue?.city)
       .filter(Boolean) as string[]
   ).size;
+
+  // Use total count from API for accurate total
+  const displayTotalCount = allEventsTotalCount || totalEventsCount;
 
   return (
     <div className="min-h-screen bg-void">
@@ -233,7 +238,7 @@ export default function BrowsePage() {
                         <Calendar className="h-4 w-4 text-accent-secondary" />
                         <span className="text-sm text-secondary">Total Events</span>
                       </div>
-                      <span className="text-lg font-bold text-primary">{totalEventsCount}</span>
+                      <span className="text-lg font-bold text-primary">{displayTotalCount}</span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
@@ -308,17 +313,23 @@ export default function BrowsePage() {
                 <section>
                   <h2 className="section-header mb-6">All Events</h2>
                   
-                  {eventsLoading && allEvents.length === 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
-                        >
-                          <div className="aspect-[3/4] min-h-[380px] bg-raised" />
-                        </div>
-                      ))}
-                    </div>
+          {eventsLoading && allEvents.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex gap-4 p-4 rounded-2xl bg-glass border border-border-subtle animate-pulse"
+                >
+                  <div className="w-20 sm:w-24 aspect-[9/16] rounded-xl bg-raised" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-raised rounded" />
+                    <div className="h-6 w-3/4 bg-raised rounded" />
+                    <div className="h-4 w-1/2 bg-raised rounded" />
+                    <div className="h-10 w-36 bg-raised rounded-lg mt-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
                   ) : allEvents.length === 0 ? (
                     <Card className="!border-dashed !p-12 text-center">
                       <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
@@ -331,12 +342,11 @@ export default function BrowsePage() {
                     </Card>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {allEvents.map((event) => (
-                          <AttendeeEventCard
+                          <EventCardCompact
                             key={event.id}
                             event={event}
-                            variant="default"
                           />
                         ))}
                       </div>

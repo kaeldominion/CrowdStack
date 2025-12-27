@@ -211,6 +211,7 @@ export async function GET(request: NextRequest) {
           cover_image_url,
           start_time,
           end_time,
+          venue_approval_status,
           venue:venues(
             id,
             name,
@@ -260,18 +261,45 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get total count before pagination (for stats)
+    // We need to count all matching events, not just the paginated ones
+    const totalCountQuery = supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "published")
+      .in("venue_approval_status", ["approved", "not_required"])
+      .gte("start_time", now.toISOString());
+
+    // Apply same filters for count
+    if (venueId) {
+      totalCountQuery.eq("venue_id", venueId);
+    }
+    if (cityVenueIds) {
+      totalCountQuery.in("venue_id", cityVenueIds);
+    }
+    if (startDate) {
+      totalCountQuery.gte("start_time", startDate.toISOString());
+    }
+    if (endDate) {
+      totalCountQuery.lte("start_time", endDate.toISOString());
+    }
+
+    const { count: totalCount } = await totalCountQuery;
+
     // Apply pagination after filtering
     const paginatedEvents = (events || []).slice(0, limit);
-    const totalCount = events?.length || 0;
+    const filteredCount = events?.length || 0;
 
     console.log("[Browse Events] Final result:", {
       paginatedCount: paginatedEvents.length,
+      filteredCount,
       totalCount,
     });
 
     return NextResponse.json({
       events: paginatedEvents,
-      count: totalCount,
+      count: filteredCount, // Count of events after all filters (before pagination)
+      totalCount: totalCount || 0, // Total count of all matching events
     });
   } catch (error: any) {
     console.error("[Browse Events] Error:", error);

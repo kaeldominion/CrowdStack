@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" fill="none">
   <!-- Background -->
   <rect width="180" height="180" rx="40" fill="#0B0D10"/>
-  <!-- CrowdStack Icon - White bar + tricolor chevrons -->
+  <!-- CrowdStack Icon - Matches tricolor PNG logo -->
   <defs>
     <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" style="stop-color:#A855F7"/>
@@ -12,10 +12,10 @@
       <stop offset="100%" style="stop-color:#60A5FA"/>
     </linearGradient>
   </defs>
-  <!-- White top bar -->
-  <rect x="55" y="25" width="70" height="14" rx="7" fill="white"/>
+  <!-- White 3D panel/parallelogram at top (like stack layer) -->
+  <path d="M40 45L90 22L140 45L90 68Z" fill="white" stroke="white" stroke-width="6" stroke-linejoin="round"/>
   <!-- Top chevron (purple) -->
-  <path d="M25 65L90 120L155 65" stroke="url(#purpleGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M30 82L90 130L150 82" stroke="url(#purpleGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   <!-- Bottom chevron (blue) -->
-  <path d="M25 110L90 165L155 110" stroke="url(#blueGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M30 122L90 170L150 122" stroke="url(#blueGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>
