@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Badge, ConfirmModal } from "@crowdstack/ui";
+import { Badge, ConfirmModal, InlineSpinner } from "@crowdstack/ui";
 import { QrCode, Check, X, Ticket } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { useReferralUserId } from "@/components/ReferralTracker";
@@ -302,19 +302,8 @@ export function AttendeeEventCard({
           </div>
         </div>
 
-        {/* QR Modal */}
-        {showQrModal && registration && (
-          <QRPassModal
-            isOpen={showQrModal}
-            onClose={() => setShowQrModal(false)}
-            registrationId={registration.id}
-            eventName={event.name}
-            eventSlug={event.slug}
-          />
-        )}
-
-        {/* Cancel Confirmation Modal */}
-        <ConfirmationModal
+        {/* Cancel Registration Confirmation Modal */}
+        <ConfirmModal
           isOpen={showCancelModal}
           onClose={() => setShowCancelModal(false)}
           onConfirm={handleConfirmCancel}
