@@ -52,7 +52,7 @@ export function ConfirmModal({
 
   const { icon: Icon, bgClass, iconClass } = iconConfig[variant];
 
-  const buttonVariant = variant === "danger" ? "danger" : variant === "warning" ? "secondary" : "primary";
+  const buttonVariant = variant === "danger" ? "destructive" : variant === "warning" ? "secondary" : "primary";
 
   return (
     <Modal
