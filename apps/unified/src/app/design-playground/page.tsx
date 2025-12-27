@@ -30,6 +30,20 @@ const DESIGN_PAGES = [
     status: "ready",
   },
   {
+    title: "Dashboard Cards",
+    description: "Event cards for organizer/venue/promoter dashboards with stats",
+    href: "/design-playground/dashboard-cards",
+    icon: LayoutGrid,
+    status: "ready",
+  },
+  {
+    title: "Dashboard Components",
+    description: "Stat cards, navigation, leaderboards, charts, and metrics",
+    href: "/design-playground/dashboard-components",
+    icon: LayoutGrid,
+    status: "ready",
+  },
+  {
     title: "Typography",
     description: "Type scale, meta labels, headings, body text",
     href: "/design-playground/typography",

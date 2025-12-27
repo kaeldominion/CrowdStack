@@ -19,6 +19,7 @@ export { Switch, type SwitchProps } from "./components/Switch";
 
 // Data display
 export { Badge, type BadgeProps } from "./components/Badge";
+export { VipBadge, VipStatus, type VipBadgeProps, type VipStatusProps, type VipLevel, type VipVariant } from "./components/VipBadge";
 export {
   Table,
   TableHeader,

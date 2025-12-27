@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Badge, LoadingSpinner, Button } from "@crowdstack/ui";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2 } from "lucide-react";
+import { Modal, Badge, LoadingSpinner, Button, VipStatus } from "@crowdstack/ui";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown } from "lucide-react";
 
 interface AttendeeDetailModalProps {
   isOpen: boolean;
@@ -36,6 +36,8 @@ interface AttendeeDetails {
     phone: string;
     created_at: string;
     user_id?: string | null;
+    is_global_vip?: boolean;
+    global_vip_reason?: string | null;
   } | null;
   events?: EventRegistration[];
   referral_events?: EventRegistration[];
@@ -43,6 +45,13 @@ interface AttendeeDetails {
   flags?: {
     reason: string;
     expires_at: string | null;
+  } | null;
+  vip?: {
+    isGlobalVip: boolean;
+    isVenueVip: boolean;
+    isOrganizerVip: boolean;
+    venueName?: string;
+    organizerName?: string;
   } | null;
 }
 
@@ -154,14 +163,34 @@ export function AttendeeDetailModal({
           {/* Attendee Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-accent-secondary/20 flex items-center justify-center">
-                <User className="h-8 w-8 text-primary" />
+              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${
+                details.attendee.is_global_vip 
+                  ? "bg-gradient-to-br from-amber-400/30 to-yellow-500/30 ring-2 ring-amber-400/50" 
+                  : "bg-accent-secondary/20"
+              }`}>
+                {details.attendee.is_global_vip ? (
+                  <Crown className="h-8 w-8 text-amber-400" />
+                ) : (
+                  <User className="h-8 w-8 text-primary" />
+                )}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-primary">{details.attendee.name}</h2>
-                {details.attendee.user_id && (
-                  <Badge variant="success" className="mt-1">Linked Account</Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-primary">{details.attendee.name}</h2>
+                  <VipStatus 
+                    isGlobalVip={details.vip?.isGlobalVip || details.attendee.is_global_vip}
+                    isVenueVip={details.vip?.isVenueVip}
+                    isOrganizerVip={details.vip?.isOrganizerVip}
+                    venueName={details.vip?.venueName}
+                    organizerName={details.vip?.organizerName}
+                    size="md"
+                  />
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  {details.attendee.user_id && (
+                    <Badge variant="success">Linked Account</Badge>
+                  )}
+                </div>
               </div>
             </div>
 
