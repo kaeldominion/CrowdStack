@@ -245,6 +245,14 @@ export default function MePage() {
   const allUpcoming = [...happeningNowEvents, ...todayEvents, ...upcomingEvents];
   const totalEvents = pastEvents.filter(r => r.checkins && r.checkins.length > 0).length;
 
+  // Handle registration cancellation - refresh data
+  const handleCancelRegistration = (registrationId: string) => {
+    // Remove from all event lists
+    setHappeningNowEvents(prev => prev.filter(r => r.id !== registrationId));
+    setTodayEvents(prev => prev.filter(r => r.id !== registrationId));
+    setUpcomingEvents(prev => prev.filter(r => r.id !== registrationId));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -257,12 +265,12 @@ export default function MePage() {
     <div className="min-h-screen bg-void">
       {/* Mobile Layout */}
       <div className="lg:hidden relative">
-        {/* Gradient Background - extends behind nav (pt-20 = 5rem, hero = 12rem = 17rem total) */}
-        <div className="absolute inset-x-0 top-0 h-[17rem] bg-gradient-to-br from-accent-primary/40 via-accent-secondary/30 to-accent-primary/20" />
+        {/* Gradient Background - extends behind nav (pt-16 = 4rem, hero = 10rem = 14rem total) */}
+        <div className="absolute inset-x-0 top-0 h-[14rem] bg-gradient-to-br from-accent-primary/40 via-accent-secondary/30 to-accent-primary/20" />
         
         {/* Hero Section - starts after nav clearance */}
-        <div className="relative pt-20">
-          <div className="relative h-48">
+        <div className="relative pt-16">
+          <div className="relative h-40">
             {/* Avatar */}
             <div className="absolute left-1/2 -translate-x-1/2 -bottom-16 z-10">
               <div className="relative">
@@ -411,6 +419,7 @@ export default function MePage() {
                         }}
                         registration={{ id: reg.id }}
                         isAttending
+                        onCancelRegistration={handleCancelRegistration}
                       />
                     </div>
                   ))}
@@ -642,6 +651,7 @@ export default function MePage() {
                           variant={happeningNowEvents.includes(reg) ? "live" : "attending"}
                           isAttending
                           capacityPercent={happeningNowEvents.includes(reg) ? 84 : undefined}
+                          onCancelRegistration={handleCancelRegistration}
                         />
                       ))}
                     </div>

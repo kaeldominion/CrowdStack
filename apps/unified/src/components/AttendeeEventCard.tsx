@@ -37,6 +37,8 @@ interface AttendeeEventCardProps {
   showVip?: boolean;
   /** Show capacity percentage for live events */
   capacityPercent?: number;
+  /** Callback when registration is cancelled */
+  onCancelRegistration?: (registrationId: string) => void;
   className?: string;
 }
 
@@ -49,10 +51,12 @@ export function AttendeeEventCard({
   isAttending = false,
   showVip = false,
   capacityPercent,
+  onCancelRegistration,
   className = "",
 }: AttendeeEventCardProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const userId = useReferralUserId();
 
   const heroImage = event.flier_url || event.cover_image_url;
@@ -97,6 +101,35 @@ export function AttendeeEventCard({
       console.error("Error fetching QR token:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle cancel registration
+  const handleCancelRegistration = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!registration?.id) return;
+    
+    // Confirm before cancelling
+    if (!confirm(`Cancel your registration for ${event.name}?`)) return;
+    
+    setCancelling(true);
+    try {
+      const response = await fetch(`/api/registrations/${registration.id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        // Notify parent component to refresh
+        onCancelRegistration?.(registration.id);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to cancel registration");
+      }
+    } catch (error) {
+      console.error("Error cancelling registration:", error);
+      alert("Failed to cancel registration");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -231,8 +264,10 @@ export function AttendeeEventCard({
                     View Entry
                   </button>
                   <button
-                    className="w-8 h-8 flex items-center justify-center rounded-md bg-accent-error/20 border border-accent-error/40 hover:bg-accent-error/30 transition-colors"
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-md bg-accent-error/20 border border-accent-error/40 hover:bg-accent-error/30 transition-colors disabled:opacity-50"
+                    onClick={handleCancelRegistration}
+                    disabled={cancelling}
+                    title="Cancel registration"
                   >
                     <X className="h-3.5 w-3.5 text-accent-error" />
                   </button>
