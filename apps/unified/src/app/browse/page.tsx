@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
 import { Modal } from "@crowdstack/ui";
-import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users, Filter, X } from "lucide-react";
+import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Filter } from "lucide-react";
 import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
@@ -54,7 +55,6 @@ export default function BrowsePage() {
   const [eventsLoading, setEventsLoading] = useState(false);
   const [pastEventsLoading, setPastEventsLoading] = useState(false);
   const [venuesLoading, setVenuesLoading] = useState(false);
-  const [hasMoreEvents, setHasMoreEvents] = useState(true);
   const [hasMorePastEvents, setHasMorePastEvents] = useState(true);
   const [eventsOffset, setEventsOffset] = useState(0);
   const [pastEventsOffset, setPastEventsOffset] = useState(0);
@@ -62,7 +62,6 @@ export default function BrowsePage() {
   const [totalPastEventsCount, setTotalPastEventsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
   const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
@@ -170,14 +169,7 @@ export default function BrowsePage() {
         setEventsOffset(limitUsed);
         setTotalEventsCount(data.count || data.events?.length || 0);
         setAllEventsTotalCount(data.totalCount || data.count || 0);
-      } else {
-        setAllEvents((prev) => [...prev, ...(data.events || [])]);
-        const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
-        setEventsOffset((prev) => prev + limitUsed);
       }
-      
-      const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
-      setHasMoreEvents((data.events || []).length === limitUsed);
     } catch (error) {
       console.error("Error fetching events:", error);
     } finally {
@@ -257,7 +249,6 @@ export default function BrowsePage() {
   // Fetch events when search, filters, or location changes
   useEffect(() => {
     if (activeTab === "events") {
-      setShowAllEvents(false);
       fetchEvents(true, true); // Use initial limit
     }
   }, [searchQuery, filters, selectedLocation, activeTab]);
@@ -275,10 +266,6 @@ export default function BrowsePage() {
       fetchPastEvents(true);
     }
   }, [searchQuery, selectedLocation, activeTab]);
-
-  const handleLoadMore = () => {
-    fetchEvents(false);
-  };
 
   const handleLoadMorePastEvents = () => {
     fetchPastEvents(false);
@@ -509,7 +496,7 @@ export default function BrowsePage() {
                   ) : (
                     <>
                       <div className="space-y-3">
-                        {(showAllEvents ? allEvents : allEvents.slice(0, INITIAL_EVENTS_LIMIT)).map((event) => (
+                        {allEvents.slice(0, INITIAL_EVENTS_LIMIT).map((event) => (
                           <EventCardRow
                             key={event.id}
                             event={event}
@@ -517,32 +504,14 @@ export default function BrowsePage() {
                         ))}
                       </div>
 
-                      {!showAllEvents && allEvents.length > INITIAL_EVENTS_LIMIT && (
+                      {allEventsTotalCount > INITIAL_EVENTS_LIMIT && (
                         <div className="mt-8 text-center">
-                          <button
-                            onClick={() => {
-                              setShowAllEvents(true);
-                              // If we only have initial limit loaded, fetch more
-                              if (allEvents.length <= INITIAL_EVENTS_LIMIT) {
-                                fetchEvents(false, false);
-                              }
-                            }}
-                            className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all"
+                          <Link
+                            href={`/browse/events${selectedLocation ? `?city=${encodeURIComponent(selectedLocation)}` : ""}${searchQuery ? `${selectedLocation ? "&" : "?"}search=${encodeURIComponent(searchQuery)}` : ""}`}
+                            className="inline-block px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all"
                           >
                             See All Events ({allEventsTotalCount} total)
-                          </button>
-                        </div>
-                      )}
-
-                      {showAllEvents && hasMoreEvents && (
-                        <div className="mt-8 text-center">
-                          <button
-                            onClick={handleLoadMore}
-                            disabled={eventsLoading}
-                            className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {eventsLoading ? "Loading..." : "Load More Events"}
-                          </button>
+                          </Link>
                         </div>
                       )}
                     </>
