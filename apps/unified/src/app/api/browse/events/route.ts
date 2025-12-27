@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const venueId = searchParams.get("venue_id");
     const featured = searchParams.get("featured") === "true";
     const live = searchParams.get("live") === "true";
+    const past = searchParams.get("past") === "true"; // Get past events instead of future
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
@@ -110,18 +111,23 @@ export async function GET(request: NextRequest) {
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"]);
 
-    // Apply live filter or future events filter
+    // Apply live filter, past filter, or future events filter
     if (live) {
       // Live events: started but not ended
       query = query
         .lte("start_time", now.toISOString())
         .or(`end_time.is.null,end_time.gte.${now.toISOString()}`);
+      query = query.order("start_time", { ascending: true });
+    } else if (past) {
+      // Past events: ended or started more than 12 hours ago with no end time
+      const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+      query = query.lt("start_time", twelveHoursAgo.toISOString());
+      query = query.order("start_time", { ascending: false }); // Most recent first
     } else {
       // Default: only show future events
       query = query.gte("start_time", now.toISOString());
+      query = query.order("start_time", { ascending: true });
     }
-
-    query = query.order("start_time", { ascending: true });
 
     console.log("[Browse Events] Query params:", {
       search,
@@ -130,6 +136,8 @@ export async function GET(request: NextRequest) {
       genre,
       venueId,
       featured,
+      live,
+      past,
       limit,
       offset,
       now: now.toISOString(),

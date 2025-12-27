@@ -48,13 +48,18 @@ export default function BrowsePage() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [liveEvents, setLiveEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [pastEventsLoading, setPastEventsLoading] = useState(false);
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [hasMoreEvents, setHasMoreEvents] = useState(true);
+  const [hasMorePastEvents, setHasMorePastEvents] = useState(true);
   const [eventsOffset, setEventsOffset] = useState(0);
+  const [pastEventsOffset, setPastEventsOffset] = useState(0);
   const [totalEventsCount, setTotalEventsCount] = useState(0);
+  const [totalPastEventsCount, setTotalPastEventsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
   const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
   const [showAllEvents, setShowAllEvents] = useState(false);
@@ -181,6 +186,48 @@ export default function BrowsePage() {
     }
   };
 
+  // Fetch past events (history)
+  const fetchPastEvents = async (reset = false) => {
+    setPastEventsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        past: "true",
+        limit: String(EVENTS_PER_PAGE),
+        offset: String(reset ? 0 : pastEventsOffset),
+      });
+
+      if (searchQuery) {
+        params.append("search", searchQuery);
+      }
+      if (selectedLocation) {
+        params.append("city", selectedLocation);
+      }
+
+      const res = await fetch(`/api/browse/events?${params}`);
+      
+      if (!res.ok) {
+        throw new Error("Failed to fetch past events");
+      }
+      
+      const data = await res.json();
+      
+      if (reset) {
+        setPastEvents(data.events || []);
+        setPastEventsOffset(EVENTS_PER_PAGE);
+        setTotalPastEventsCount(data.totalCount || data.count || 0);
+      } else {
+        setPastEvents((prev) => [...prev, ...(data.events || [])]);
+        setPastEventsOffset((prev) => prev + EVENTS_PER_PAGE);
+      }
+      
+      setHasMorePastEvents((data.events || []).length === EVENTS_PER_PAGE);
+    } catch (error) {
+      console.error("Error fetching past events:", error);
+    } finally {
+      setPastEventsLoading(false);
+    }
+  };
+
   // Fetch venues
   const fetchVenues = async () => {
     setVenuesLoading(true);
@@ -222,8 +269,19 @@ export default function BrowsePage() {
     }
   }, [searchQuery, selectedLocation, activeTab]);
 
+  // Fetch past events when history tab is active
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchPastEvents(true);
+    }
+  }, [searchQuery, selectedLocation, activeTab]);
+
   const handleLoadMore = () => {
     fetchEvents(false);
+  };
+
+  const handleLoadMorePastEvents = () => {
+    fetchPastEvents(false);
   };
 
   // Calculate stats from loaded events (approximate)
@@ -372,6 +430,12 @@ export default function BrowsePage() {
                 Events
               </button>
               <button
+                onClick={() => setActiveTab("history")}
+                className={`tab-label ${activeTab === "history" ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                History
+              </button>
+              <button
                 onClick={() => setActiveTab("djs-venues")}
                 className={`tab-label ${activeTab === "djs-venues" ? "tab-label-active" : "tab-label-inactive"}`}
               >
@@ -484,6 +548,72 @@ export default function BrowsePage() {
                     </>
                   )}
                 </section>
+              </div>
+            )}
+
+            {/* HISTORY TAB */}
+            {activeTab === "history" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="section-header">Past Events</h2>
+                  {totalPastEventsCount > 0 && (
+                    <span className="text-sm text-secondary">
+                      {pastEvents.length} of {totalPastEventsCount} events
+                    </span>
+                  )}
+                </div>
+                
+                {pastEventsLoading && pastEvents.length === 0 ? (
+                  <div className="space-y-3">
+                    {[...Array(6)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse"
+                      >
+                        <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
+                        <div className="flex-1 space-y-2 py-1">
+                          <div className="h-3 w-24 bg-raised rounded" />
+                          <div className="h-5 w-3/4 bg-raised rounded" />
+                          <div className="h-3 w-1/2 bg-raised rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : pastEvents.length === 0 ? (
+                  <Card className="!border-dashed !p-12 text-center">
+                    <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-primary mb-2">
+                      No past events found
+                    </h3>
+                    <p className="text-sm text-secondary">
+                      Past events will appear here once they&apos;ve ended.
+                    </p>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {pastEvents.map((event) => (
+                        <EventCardRow
+                          key={event.id}
+                          event={event}
+                          isPast
+                        />
+                      ))}
+                    </div>
+
+                    {hasMorePastEvents && (
+                      <div className="mt-8 text-center">
+                        <button
+                          onClick={handleLoadMorePastEvents}
+                          disabled={pastEventsLoading}
+                          className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {pastEventsLoading ? "Loading..." : "Load More"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
