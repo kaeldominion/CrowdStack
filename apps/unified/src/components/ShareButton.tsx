@@ -13,6 +13,7 @@ interface ShareButtonProps {
   videoUrl?: string; // Optional video URL for sharing video fliers
   label?: string;
   compact?: boolean; // Smaller size for inline layout
+  iconOnly?: boolean; // Minimal circular icon button
   userId?: string; // Optional user ID to append as ?ref= parameter for referral tracking
 }
 
@@ -40,6 +41,7 @@ export function ShareButton({
   videoUrl,
   label = "Share", 
   compact = false,
+  iconOnly = false,
   userId,
 }: ShareButtonProps) {
   // Append userId as ref parameter if provided
@@ -172,7 +174,7 @@ export function ShareButton({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] bg-void/80 backdrop-blur-sm"
         onClick={(e) => {
           e.stopPropagation();
           setShowMenu(false);
@@ -180,95 +182,132 @@ export function ShareButton({
       />
       <div 
         ref={menuRef}
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 rounded-xl border border-white/20 backdrop-blur-xl bg-black/95 shadow-2xl shadow-black/50 overflow-hidden z-[110]"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 rounded-2xl border border-border-strong backdrop-blur-xl bg-glass/95 shadow-soft overflow-hidden z-[110]"
       >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
-        <span className="text-sm font-medium text-white">Share</span>
-        <button 
-          onClick={() => setShowMenu(false)}
-          className="p-1 rounded-full hover:bg-white/10 transition-colors"
-        >
-          <X className="h-4 w-4 text-white/60" />
-        </button>
-      </div>
-
-      {/* Options */}
-      <div className="py-1">
-        {/* Copy Link */}
-        <button
-          onClick={handleCopyLink}
-          className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
-        >
-          {copied ? (
-            <Check className="h-5 w-5 text-green-400" />
-          ) : (
-            <Link2 className="h-5 w-5 text-blue-400" />
-          )}
-          <div className="text-left">
-            <p className="font-medium">{copied ? "Copied!" : "Copy Link"}</p>
-            <p className="text-xs text-white/50">Paste anywhere</p>
-          </div>
-        </button>
-
-        {/* Share Link */}
-        <button
-          onClick={handleShareLink}
-          disabled={loadingAction === "link"}
-          className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
-        >
-          {loadingAction === "link" ? (
-            <InlineSpinner size="md" className="text-purple-400" />
-          ) : (
-            <Share2 className="h-5 w-5 text-purple-400" />
-          )}
-          <div className="text-left">
-            <p className="font-medium">Share Link</p>
-            <p className="text-xs text-white/50">WhatsApp, Messages, Email</p>
-          </div>
-        </button>
-
-        {/* Share Image - Only show if imageUrl exists */}
-        {imageUrl && (
-          <button
-            onClick={handleShareImage}
-            disabled={loadingAction === "image"}
-            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
+          <span className="font-sans text-sm font-bold uppercase tracking-wider text-primary">Share</span>
+          <button 
+            onClick={() => setShowMenu(false)}
+            className="p-1.5 rounded-lg hover:bg-active transition-colors"
           >
-            {loadingAction === "image" ? (
-              <InlineSpinner size="md" className="text-pink-400" />
-            ) : (
-              <ImageIcon className="h-5 w-5 text-pink-400" />
-            )}
+            <X className="h-4 w-4 text-muted" />
+          </button>
+        </div>
+
+        {/* Options */}
+        <div className="p-2 space-y-1">
+          {/* Copy Link */}
+          <button
+            onClick={handleCopyLink}
+            className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
+          >
+            <div className="w-9 h-9 rounded-lg bg-accent-secondary/20 flex items-center justify-center">
+              {copied ? (
+                <Check className="h-4 w-4 text-accent-success" />
+              ) : (
+                <Link2 className="h-4 w-4 text-accent-secondary" />
+              )}
+            </div>
             <div className="text-left">
-              <p className="font-medium">Share Image</p>
-              <p className="text-xs text-white/50">Instagram Stories, Snapchat</p>
+              <p className="font-semibold text-primary">{copied ? "Copied!" : "Copy Link"}</p>
+              <p className="text-xs text-muted">Paste anywhere</p>
             </div>
           </button>
-        )}
 
-        {/* Share Video - Only show if videoUrl exists */}
-        {videoUrl && (
+          {/* Share Link */}
           <button
-            onClick={handleShareVideo}
-            disabled={loadingAction === "video"}
-            className="flex items-center gap-3 w-full px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+            onClick={handleShareLink}
+            disabled={loadingAction === "link"}
+            className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-secondary hover:text-primary hover:bg-active transition-colors disabled:opacity-50"
           >
-            {loadingAction === "video" ? (
-              <InlineSpinner size="md" className="text-cyan-400" />
-            ) : (
-              <Video className="h-5 w-5 text-cyan-400" />
-            )}
+            <div className="w-9 h-9 rounded-lg bg-accent-primary/20 flex items-center justify-center">
+              {loadingAction === "link" ? (
+                <InlineSpinner size="sm" className="text-accent-primary" />
+              ) : (
+                <Share2 className="h-4 w-4 text-accent-primary" />
+              )}
+            </div>
             <div className="text-left">
-              <p className="font-medium">Share Video</p>
-              <p className="text-xs text-white/50">Instagram Stories, TikTok</p>
+              <p className="font-semibold text-primary">Share Link</p>
+              <p className="text-xs text-muted">WhatsApp, Messages, Email</p>
             </div>
           </button>
-        )}
+
+          {/* Share Image - Only show if imageUrl exists */}
+          {imageUrl && (
+            <button
+              onClick={handleShareImage}
+              disabled={loadingAction === "image"}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-secondary hover:text-primary hover:bg-active transition-colors disabled:opacity-50"
+            >
+              <div className="w-9 h-9 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                {loadingAction === "image" ? (
+                  <InlineSpinner size="sm" className="text-pink-400" />
+                ) : (
+                  <ImageIcon className="h-4 w-4 text-pink-400" />
+                )}
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-primary">Share Image</p>
+                <p className="text-xs text-muted">Instagram Stories, Snapchat</p>
+              </div>
+            </button>
+          )}
+
+          {/* Share Video - Only show if videoUrl exists */}
+          {videoUrl && (
+            <button
+              onClick={handleShareVideo}
+              disabled={loadingAction === "video"}
+              className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-secondary hover:text-primary hover:bg-active transition-colors disabled:opacity-50"
+            >
+              <div className="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                {loadingAction === "video" ? (
+                  <InlineSpinner size="sm" className="text-cyan-400" />
+                ) : (
+                  <Video className="h-4 w-4 text-cyan-400" />
+                )}
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-primary">Share Video</p>
+                <p className="text-xs text-muted">Instagram Stories, TikTok</p>
+              </div>
+            </button>
+          )}
+        </div>
       </div>
-    </div>
     </>
   ) : null;
+
+  // Icon-only mode - minimal circular button
+  if (iconOnly) {
+    return (
+      <div 
+        className="relative" 
+        ref={buttonRef}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      >
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+          disabled={isLoading}
+          className="w-8 h-8 rounded-full bg-glass/80 backdrop-blur-sm border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:border-border-strong transition-colors disabled:opacity-50"
+        >
+          {isLoading ? (
+            <InlineSpinner size="sm" />
+          ) : (
+            <Share2 className="h-3.5 w-3.5" />
+          )}
+        </button>
+        {showMenu && typeof window !== 'undefined' && createPortal(menuContent, document.body)}
+      </div>
+    );
+  }
 
   if (compact) {
     return (
@@ -279,7 +318,7 @@ export function ShareButton({
             setShowMenu(!showMenu);
           }}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-glass border border-border text-secondary hover:text-primary hover:border-primary/50 transition-all text-sm font-medium disabled:opacity-50"
       >
           {isLoading ? (
             <InlineSpinner size="sm" />

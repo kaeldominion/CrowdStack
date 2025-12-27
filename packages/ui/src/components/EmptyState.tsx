@@ -30,15 +30,15 @@ export function EmptyState({
       className
     )}>
       {icon && (
-        <div className="mb-4 text-foreground-muted">
+        <div className="mb-4 text-secondary">
           {icon}
         </div>
       )}
-      <h3 className="text-lg font-semibold text-foreground mb-2">
+      <h3 className="text-lg font-semibold text-primary mb-2">
         {title}
       </h3>
       {description && (
-        <p className="text-sm text-foreground-muted max-w-sm mb-6">
+        <p className="text-sm text-secondary max-w-sm mb-6">
           {description}
         </p>
       )}

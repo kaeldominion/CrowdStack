@@ -86,13 +86,13 @@ export default function AdminAttendeesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Attendee Database</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Attendee Database</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Comprehensive view of all attendees across all venues and events
               </p>
             </div>
@@ -123,7 +123,7 @@ export default function AdminAttendeesPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredAttendees.length} of {attendees.length} attendees
           </div>
 
@@ -145,7 +145,7 @@ export default function AdminAttendeesPage() {
                 <TableBody>
                   {filteredAttendees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={9} className="text-center py-8 text-secondary">
                         No attendees found
                       </TableCell>
                     </TableRow>
@@ -183,9 +183,9 @@ export default function AdminAttendeesPage() {
                         <TableCell>
                           <div className="space-y-1">
                             {attendee.email && (
-                              <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                              <div className="text-sm text-secondary">{attendee.email}</div>
                             )}
-                            <div className="text-sm text-foreground-muted">{attendee.phone || attendee.whatsapp}</div>
+                            <div className="text-sm text-secondary">{attendee.phone || attendee.whatsapp}</div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -201,11 +201,11 @@ export default function AdminAttendeesPage() {
                         <TableCell className="text-center">{attendee.events_count || 0}</TableCell>
                         <TableCell className="text-center">{attendee.checkins_count || 0}</TableCell>
                         <TableCell className="text-center">{attendee.venues_count || 0}</TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(attendee.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          <ChevronRight className="h-4 w-4 text-secondary" />
                         </TableCell>
                       </TableRow>
                     ))
@@ -240,7 +240,7 @@ export default function AdminAttendeesPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-bold text-foreground">
+                    <h3 className="text-2xl font-bold text-primary">
                       {selectedAttendee.name} {selectedAttendee.surname || ""}
                     </h3>
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -260,14 +260,14 @@ export default function AdminAttendeesPage() {
 
                 {/* Contact Info */}
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Contact Information</p>
+                  <p className="text-sm font-medium text-primary mb-3">Contact Information</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {selectedAttendee.email && (
                       <a 
                         href={`mailto:${selectedAttendee.email}`}
                         className="flex items-center gap-2 text-sm p-2 rounded bg-white/5 hover:bg-white/10 transition-colors"
                       >
-                        <Mail className="h-4 w-4 text-foreground-muted" />
+                        <Mail className="h-4 w-4 text-secondary" />
                         <span>{selectedAttendee.email}</span>
                       </a>
                     )}
@@ -276,7 +276,7 @@ export default function AdminAttendeesPage() {
                         href={`tel:${selectedAttendee.whatsapp || selectedAttendee.phone}`}
                         className="flex items-center gap-2 text-sm p-2 rounded bg-white/5 hover:bg-white/10 transition-colors"
                       >
-                        <Phone className="h-4 w-4 text-foreground-muted" />
+                        <Phone className="h-4 w-4 text-secondary" />
                         <span>{selectedAttendee.whatsapp || selectedAttendee.phone}</span>
                       </a>
                     )}
@@ -293,13 +293,13 @@ export default function AdminAttendeesPage() {
                     )}
                     {selectedAttendee.tiktok_handle && (
                       <div className="flex items-center gap-2 text-sm p-2 rounded bg-white/5">
-                        <span className="text-foreground-muted">TikTok:</span>
+                        <span className="text-secondary">TikTok:</span>
                         <span>@{selectedAttendee.tiktok_handle}</span>
                       </div>
                     )}
                     {selectedAttendee.date_of_birth && (
                       <div className="flex items-center gap-2 text-sm p-2 rounded bg-white/5">
-                        <Calendar className="h-4 w-4 text-foreground-muted" />
+                        <Calendar className="h-4 w-4 text-secondary" />
                         <span>
                           {new Date(selectedAttendee.date_of_birth).toLocaleDateString(undefined, {
                             year: "numeric",
@@ -311,20 +311,20 @@ export default function AdminAttendeesPage() {
                     )}
                   </div>
                   {selectedAttendee.bio && (
-                    <p className="mt-3 text-sm text-foreground-muted p-2 rounded bg-white/5">{selectedAttendee.bio}</p>
+                    <p className="mt-3 text-sm text-secondary p-2 rounded bg-white/5">{selectedAttendee.bio}</p>
                   )}
                 </div>
 
                 {/* Linked Account Info */}
                 {selectedAttendee.user_id && (
                   <div className="border-t border-border pt-4">
-                    <p className="text-sm font-medium text-foreground mb-3">Linked User Account</p>
+                    <p className="text-sm font-medium text-primary mb-3">Linked User Account</p>
                     <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                       <div className="flex items-center gap-2">
                         <User className="h-5 w-5 text-green-500" />
                         <div>
-                          <p className="text-sm font-medium text-foreground">Account ID</p>
-                          <p className="text-xs font-mono text-foreground-muted">{selectedAttendee.user_id}</p>
+                          <p className="text-sm font-medium text-primary">Account ID</p>
+                          <p className="text-xs font-mono text-secondary">{selectedAttendee.user_id}</p>
                         </div>
                       </div>
                     </div>
@@ -333,9 +333,9 @@ export default function AdminAttendeesPage() {
 
                 {/* Event History */}
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Event History</p>
+                  <p className="text-sm font-medium text-primary mb-3">Event History</p>
                   {loadingEvents ? (
-                    <p className="text-sm text-foreground-muted">Loading events...</p>
+                    <p className="text-sm text-secondary">Loading events...</p>
                   ) : attendeeEvents.length > 0 ? (
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {attendeeEvents.map((event: any) => (
@@ -344,8 +344,8 @@ export default function AdminAttendeesPage() {
                           className="flex items-center justify-between p-3 rounded-lg bg-white/5"
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">{event.event_name}</p>
-                            <p className="text-xs text-foreground-muted">
+                            <p className="font-medium text-primary truncate">{event.event_name}</p>
+                            <p className="text-xs text-secondary">
                               {event.venue_name} • {new Date(event.event_date).toLocaleDateString()}
                             </p>
                           </div>
@@ -361,36 +361,36 @@ export default function AdminAttendeesPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-foreground-muted">No events found</p>
+                    <p className="text-sm text-secondary">No events found</p>
                   )}
                 </div>
 
                 {/* Account Details */}
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Record Details</p>
+                  <p className="text-sm font-medium text-primary mb-3">Record Details</p>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
-                      <p className="text-foreground">
+                      <p className="text-xs font-medium text-secondary uppercase tracking-wider">Created</p>
+                      <p className="text-primary">
                         {new Date(selectedAttendee.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Last Updated</p>
-                      <p className="text-foreground">
+                      <p className="text-xs font-medium text-secondary uppercase tracking-wider">Last Updated</p>
+                      <p className="text-primary">
                         {selectedAttendee.updated_at 
                           ? new Date(selectedAttendee.updated_at).toLocaleDateString()
                           : "Never"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Attendee ID</p>
-                      <p className="text-foreground font-mono text-xs">{selectedAttendee.id}</p>
+                      <p className="text-xs font-medium text-secondary uppercase tracking-wider">Attendee ID</p>
+                      <p className="text-primary font-mono text-xs">{selectedAttendee.id}</p>
                     </div>
                     {selectedAttendee.import_source && (
                       <div>
-                        <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Import Source</p>
-                        <p className="text-foreground">{selectedAttendee.import_source}</p>
+                        <p className="text-xs font-medium text-secondary uppercase tracking-wider">Import Source</p>
+                        <p className="text-primary">{selectedAttendee.import_source}</p>
                       </div>
                     )}
                   </div>

@@ -876,56 +876,56 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         return (
           <div className="space-y-4">
             {passwordFallbackFromMagicLink ? (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
-                <p className="text-blue-400 text-sm text-center mb-2">
+              <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-xl p-4 mb-4">
+                <p className="text-accent-secondary text-sm text-center mb-2">
                   Magic link not working? Use a password instead.
                 </p>
-                <p className="text-blue-300/70 text-xs text-center">
+                <p className="text-secondary text-xs text-center">
                   If you already have an account, use your existing password to sign in.
                 </p>
               </div>
             ) : fallbackReason === "pkce" ? (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
-                <p className="text-blue-400 text-sm text-center mb-2">
+              <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-xl p-4 mb-4">
+                <p className="text-accent-secondary text-sm text-center mb-2">
                   📱 Magic link opened in a different browser
                 </p>
-                <p className="text-blue-300/70 text-xs text-center mb-2">
+                <p className="text-secondary text-xs text-center mb-2">
                   This often happens on iOS when email apps open links in their own browser.
                 </p>
-                <p className="text-blue-300/70 text-xs text-center">
+                <p className="text-secondary text-xs text-center">
                   Create a password below to continue, or go back and enter the 6-digit code from the email.
                 </p>
               </div>
             ) : fallbackReason === "expired" ? (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
-                <p className="text-amber-400 text-sm text-center mb-2">
+              <div className="bg-accent-warning/10 border border-accent-warning/20 rounded-xl p-4 mb-4">
+                <p className="text-accent-warning text-sm text-center mb-2">
                   This magic link has expired or was already used.
                 </p>
-                <p className="text-amber-300/70 text-xs text-center">
+                <p className="text-secondary text-xs text-center">
                   Create a password below to continue, or request a new magic link.
                 </p>
               </div>
             ) : fallbackReason === "rate_limit" ? (
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
-                <p className="text-yellow-400 text-sm text-center mb-2">
+              <div className="bg-accent-warning/10 border border-accent-warning/20 rounded-xl p-4 mb-4">
+                <p className="text-accent-warning text-sm text-center mb-2">
                   Email rate limit reached. Please set a password to continue.
                 </p>
-                <p className="text-yellow-300/70 text-xs text-center">
+                <p className="text-secondary text-xs text-center">
                   If you already have an account, use your existing password to sign in.
                 </p>
               </div>
             ) : (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-4">
-                <p className="text-blue-400 text-sm text-center mb-2">
+              <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-xl p-4 mb-4">
+                <p className="text-accent-secondary text-sm text-center mb-2">
                   Let's set up your account with a password.
                 </p>
-                <p className="text-blue-300/70 text-xs text-center">
+                <p className="text-secondary text-xs text-center">
                   If you already have an account, use your existing password to sign in.
                 </p>
               </div>
             )}
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-muted" />
               <Input
                 type="email"
                 value={formData.email}
@@ -934,7 +934,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
                 placeholder="your@email.com"
-                className="text-xl sm:text-2xl py-4 sm:py-6 pl-14 text-center border-2 focus:border-primary w-full"
+                className="text-xl sm:text-2xl py-4 sm:py-6 pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoComplete="email"
                 inputMode="email"
               />
@@ -953,7 +953,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }
               }}
               placeholder="Password (min 6 characters)"
-              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-primary w-full"
+              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="new-password"
               minLength={6}
@@ -972,11 +972,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }
               }}
               placeholder="Confirm password"
-              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-primary w-full"
+              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
               autoComplete="new-password"
               minLength={6}
             />
-            <p className="text-xs text-white/60 text-center px-4">
+            <p className="text-xs text-secondary text-center px-4">
               Your account will be created and you can continue registration
             </p>
           </div>
@@ -988,22 +988,22 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         return (
           <div className="space-y-6">
             <div className="text-center space-y-4 py-4">
-              <div className="mx-auto w-14 h-14 bg-primary/20 rounded-full flex items-center justify-center">
-                <Mail className="h-7 w-7 text-primary" />
+              <div className="mx-auto w-14 h-14 bg-accent-secondary/20 rounded-full flex items-center justify-center">
+                <Mail className="h-7 w-7 text-accent-secondary" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white mb-2">Enter verification code</h3>
-                    <p className="text-white/70 text-sm">
-                  We sent a 6-digit code to <span className="font-medium">{formData.email}</span>
+                <h3 className="font-sans text-lg font-bold text-primary mb-2">Enter verification code</h3>
+                    <p className="text-secondary text-sm">
+                  We sent a 6-digit code to <span className="font-medium text-primary">{formData.email}</span>
                     </p>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-muted text-xs mt-1">
                   Check your email and enter the code below
                     </p>
               </div>
               
               {magicLinkError && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                  <p className="text-yellow-400 text-xs text-center">
+                <div className="bg-accent-warning/10 border border-accent-warning/20 rounded-xl p-3">
+                  <p className="text-accent-warning text-xs text-center">
                     {magicLinkError.includes("rate limit") || magicLinkError.includes("too many")
                       ? "Email rate limit reached. Please wait a moment before trying again."
                       : "There was an issue. Please try again or use password."}
@@ -1029,7 +1029,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     }
                   }}
                   placeholder="Enter code"
-                  className="text-2xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-primary w-full"
+                  className="text-2xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-accent-primary w-full"
                   autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -1037,7 +1037,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 />
                 
                 {otpError && (
-                  <p className="text-red-400 text-sm text-center">{otpError}</p>
+                  <p className="text-accent-error text-sm text-center">{otpError}</p>
                 )}
                 
                 <Button
@@ -1060,7 +1060,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     handleSendMagicLink();
                   }}
                   disabled={sendingMagicLink}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  className="text-sm text-muted hover:text-secondary transition-colors"
                 >
                   {sendingMagicLink ? "Sending..." : "Didn't receive it? Send new code"}
                 </button>
@@ -1077,7 +1077,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     setShowOtpInput(false);
                     setMagicLinkError(null);
                   }}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  className="text-sm text-muted hover:text-secondary transition-colors"
                 >
                   Use password instead
                 </button>
@@ -1090,7 +1090,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       return (
         <div className="space-y-4">
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/40" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-muted" />
             <Input
               type="email"
               value={value}
@@ -1107,13 +1107,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               }}
               onFocus={scrollFormIntoView}
               placeholder="your@email.com"
-              className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-primary w-full"
+              className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="email"
               inputMode="email"
             />
           </div>
-          <p className="text-sm text-white/60 text-center px-4">
+          <p className="text-sm text-secondary text-center px-4">
             We'll send you a magic link to verify your email
           </p>
         </div>
@@ -1133,7 +1133,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               onKeyDown={handleKeyDown}
               onFocus={scrollFormIntoView}
               placeholder="First name"
-              className="text-2xl sm:text-3xl py-6 sm:py-8 text-center border-2 focus:border-primary w-full"
+              className="text-2xl sm:text-3xl py-6 sm:py-8 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="given-name"
             />
@@ -1152,7 +1152,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               onKeyDown={handleKeyDown}
               onFocus={scrollFormIntoView}
               placeholder="Last name"
-              className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-primary w-full"
+              className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="family-name"
             />
@@ -1163,7 +1163,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         return (
           <div className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <Calendar className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40 pointer-events-none" />
+              <Calendar className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-muted pointer-events-none" />
               <Input
                 type="date"
                 value={value}
@@ -1172,12 +1172,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   if (error) setErrors({ ...errors, date_of_birth: undefined });
                 }}
                 onKeyDown={handleKeyDown}
-                className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 pr-4 border-2 focus:border-primary w-full [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                className="text-base sm:text-lg md:text-xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 pr-4 border-2 focus:border-accent-primary w-full [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 max={new Date().toISOString().split("T")[0]}
                 min="1900-01-01"
               />
             </div>
-            <p className="text-xs sm:text-sm text-white/60 text-center px-4">
+            <p className="text-xs sm:text-sm text-secondary text-center px-4">
               You must be at least 13 years old
             </p>
           </div>
@@ -1195,8 +1195,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }}
                 className={`flex-1 py-6 sm:py-8 rounded-xl border-2 transition-all ${
                   formData.gender === "male"
-                    ? "bg-primary/20 border-primary text-white"
-                    : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                    ? "bg-accent-secondary/20 border-accent-secondary text-primary"
+                    : "bg-active border-border-subtle text-secondary hover:border-border-strong"
                 }`}
               >
                 <span className="text-xl sm:text-2xl font-semibold">Male</span>
@@ -1209,8 +1209,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }}
                 className={`flex-1 py-6 sm:py-8 rounded-xl border-2 transition-all ${
                   formData.gender === "female"
-                    ? "bg-primary/20 border-primary text-white"
-                    : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
+                    ? "bg-accent-secondary/20 border-accent-secondary text-primary"
+                    : "bg-active border-border-subtle text-secondary hover:border-border-strong"
                 }`}
               >
                 <span className="text-xl sm:text-2xl font-semibold">Female</span>
@@ -1224,7 +1224,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         return (
           <div className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <MessageCircle className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40" />
+              <MessageCircle className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-muted" />
               <Input
                 value={value}
                 onChange={(e) => {
@@ -1234,13 +1234,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 onKeyDown={handleKeyDown}
                 onFocus={scrollFormIntoView}
                 placeholder="+1234567890"
-                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
+                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoFocus
                 autoComplete="tel"
                 inputMode="tel"
               />
             </div>
-            <p className="text-xs sm:text-sm text-white/60 text-center px-4">
+            <p className="text-xs sm:text-sm text-secondary text-center px-4">
               {isWhatsappSkippable 
                 ? "We'll use this to send you event updates (optional)"
                 : "We'll use this to send you event updates"}
@@ -1249,7 +1249,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               <button
                 type="button"
                 onClick={handleSkipWhatsapp}
-                className="text-sm text-white/60 hover:text-white/80 underline text-center w-full mt-2"
+                className="text-sm text-secondary hover:text-primary underline text-center w-full mt-2"
               >
                 Skip for now
               </button>
@@ -1261,7 +1261,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         return (
           <div className="space-y-3 sm:space-y-4">
             <div className="relative">
-              <Instagram className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-white/40" />
+              <Instagram className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 text-muted" />
               <Input
                 value={value}
                 onChange={(e) => {
@@ -1273,12 +1273,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 onKeyDown={handleKeyDown}
                 onFocus={scrollFormIntoView}
                 placeholder="username"
-                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-primary w-full"
+                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoFocus
                 autoComplete="username"
               />
             </div>
-            <p className="text-xs sm:text-sm text-white/60 text-center px-4">We'll tag you in event photos</p>
+            <p className="text-xs sm:text-sm text-secondary text-center px-4">We'll tag you in event photos</p>
           </div>
         );
 
@@ -1304,7 +1304,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   return (
     <div 
-      className="fixed inset-0 flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden"
+      className="fixed inset-0 flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 overflow-y-auto overflow-x-hidden bg-void"
       style={{ 
         paddingBottom: "max(2rem, env(safe-area-inset-bottom, 2rem))",
         // Use 100dvh on mobile to account for dynamic viewport changes (keyboard)
@@ -1326,87 +1326,134 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             }}
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-void/40 via-void/50 to-void/70" />
         </div>
       ) : (
-        <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+        <div className="fixed inset-0 z-0 bg-gradient-to-br from-void via-raised to-void" />
       )}
 
-      {/* Navigation Bar */}
+      {/* Navigation Bar - Matches global DockNav pattern */}
       <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
-          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 pr-2">
-            <Logo variant="full" size="sm" animated={false} className="text-white" />
+        <div className="flex h-12 sm:h-14 items-center gap-1 px-3 sm:px-4 rounded-full border border-border-subtle backdrop-blur-xl bg-void/90 shadow-soft">
+          {/* Logo */}
+          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 px-2">
+            <Logo variant="tricolor" size="sm" iconOnly animated={false} />
           </Link>
           
-          <div className="h-4 w-px bg-white/20" />
+          <div className="h-5 w-px bg-border-subtle mx-1" />
           
-          {/* Auth-aware navigation */}
+          {/* Nav Items */}
           {navLoading ? (
-            <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-2">
-              Log in
-            </Link>
-          ) : navUser ? (
-            <div className="relative" ref={profileRef}>
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
+            <>
+              {/* Browse link for all users */}
+              <Link 
+                href="/browse" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
               >
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
-                  {getNavUserInitial()}
-                </div>
-                <span className="hidden sm:inline max-w-20 truncate text-xs">{getNavDisplayName()}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {/* Profile Dropdown */}
-              {isProfileOpen && (
-                <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden">
-                  {/* User Info */}
-                  <div className="px-4 py-3 border-b border-white/10">
-                    <p className="text-sm font-medium text-white truncate">
-                      {navUser.name || "Guest"}
-                    </p>
-                    <p className="text-xs text-white/50 truncate">{navUser.email}</p>
+                Browse
+              </Link>
+              <div className="h-5 w-px bg-border-subtle mx-1" />
+              {/* Login button */}
+              <Link 
+                href="/login" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 transition-opacity px-4 py-1.5 rounded-full"
+              >
+                Login
+              </Link>
+            </>
+          ) : navUser ? (
+            <>
+              {/* ME link */}
+              <Link 
+                href="/me" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
+              >
+                Me
+              </Link>
+              <div className="h-5 w-px bg-border-subtle mx-1" />
+              {/* Browse link */}
+              <Link 
+                href="/browse" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
+              >
+                Browse
+              </Link>
+              <div className="h-5 w-px bg-border-subtle mx-1" />
+              {/* Avatar Dropdown */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all duration-300 hover:bg-active"
+                >
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary flex items-center justify-center text-void text-xs font-bold">
+                    {getNavUserInitial()}
                   </div>
+                  <ChevronDown className={`h-3 w-3 text-secondary transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                </button>
 
-                  {/* Profile Links */}
-                  <div className="py-1">
-                    <Link
-                      href="/me"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      <User className="h-4 w-4" />
-                      Me
-                    </Link>
-                    <Link
-                      href="/me/profile"
-                      onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Profile
-                    </Link>
-                  </div>
+                {/* Profile Dropdown */}
+                {isProfileOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-56 rounded-xl border border-border-subtle backdrop-blur-xl bg-glass shadow-soft overflow-hidden">
+                    {/* User Info */}
+                    <div className="px-4 py-3 border-b border-border-subtle">
+                      <p className="text-sm font-bold text-primary truncate">
+                        {navUser.name || "Guest"}
+                      </p>
+                      <p className="font-mono text-[10px] text-muted truncate">{navUser.email}</p>
+                    </div>
 
-                  {/* Sign Out */}
-                  <div className="border-t border-white/10 py-1">
-                    <button
-                      onClick={handleNavLogout}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </button>
+                    {/* Profile Links */}
+                    <div className="py-1">
+                      <Link
+                        href="/me"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
+                      >
+                        <User className="h-4 w-4" />
+                        Me
+                      </Link>
+                      <Link
+                        href="/me/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </Link>
+                    </div>
+
+                    {/* Sign Out */}
+                    <div className="border-t border-border-subtle py-1">
+                      <button
+                        onClick={handleNavLogout}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:bg-active transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </>
           ) : (
-            <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-2">
-              Log in
-            </Link>
+            <>
+              {/* Browse link for all users */}
+              <Link 
+                href="/browse" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
+              >
+                Browse
+              </Link>
+              <div className="h-5 w-px bg-border-subtle mx-1" />
+              {/* Login button with gradient */}
+              <Link 
+                href="/login" 
+                className="font-mono text-[11px] font-bold uppercase tracking-widest text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 transition-opacity px-4 py-1.5 rounded-full"
+              >
+                Login
+              </Link>
+            </>
           )}
         </div>
       </nav>
@@ -1423,13 +1470,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             transition={{ duration: 0.3 }}
             className="mb-4 sm:mb-6 flex-shrink-0"
           >
-            <div className="bg-black/20 backdrop-blur-md rounded-xl border border-white/15 p-4 sm:p-5 shadow-xl">
+            <div className="bg-glass backdrop-blur-md rounded-2xl border border-border-subtle p-4 sm:p-5 shadow-soft">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div className="flex gap-3 sm:gap-4 flex-1 min-w-0">
                   {/* Flier Image */}
                   {eventDetails?.flierUrl && (
                     <div className="flex-shrink-0">
-                      <div className="relative w-16 h-24 sm:w-20 sm:h-28 rounded-lg overflow-hidden border border-white/20 bg-black/30">
+                      <div className="relative w-16 h-24 sm:w-20 sm:h-28 rounded-xl overflow-hidden border border-border-subtle bg-raised">
                         <Image
                           src={eventDetails.flierUrl}
                           alt={`${eventName} flier`}
@@ -1443,19 +1490,19 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   
                   {/* Event Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm text-white/50 mb-2">Registering for</p>
-                    <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white break-words leading-tight">{eventName}</h3>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Registering for</p>
+                    <h3 className="font-sans text-xl sm:text-2xl md:text-3xl font-black text-primary uppercase tracking-tight break-words leading-tight">{eventName}</h3>
                     {(eventDetails?.venueName || eventDetails?.startTime) && (
-                      <div className="flex items-center gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-white/60 flex-wrap">
+                      <div className="flex items-center gap-2 sm:gap-3 mt-3 text-xs sm:text-sm text-secondary flex-wrap">
                         {eventDetails.venueName && (
                           <div className="flex items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-accent-secondary" />
                             <span className="truncate max-w-[200px] sm:max-w-none">{eventDetails.venueName}</span>
                           </div>
                         )}
                         {eventDetails.startTime && (
                           <div className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-accent-secondary" />
                             <span>{new Date(eventDetails.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                           </div>
                         )}
@@ -1464,8 +1511,8 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   </div>
                 </div>
                 {eventDetails?.registrationCount !== undefined && eventDetails.registrationCount > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60 bg-white/5 px-3 py-2 rounded-lg border border-white/10 self-start sm:self-auto">
-                    <Users className="h-4 w-4 flex-shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-secondary bg-active px-3 py-2 rounded-lg border border-border-subtle self-start sm:self-auto">
+                    <Users className="h-4 w-4 flex-shrink-0 text-accent-primary" />
                     <span className="whitespace-nowrap">{eventDetails.registrationCount} {eventDetails.registrationCount === 1 ? 'person' : 'people'} registered</span>
                   </div>
                 )}
@@ -1477,20 +1524,20 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
         {/* Enhanced Progress Bar with Step Dots */}
         {visibleSteps.length > 0 && (
           <div className="mb-3 sm:mb-6 flex-shrink-0">
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-2">
+            <div className="h-1.5 bg-border-subtle rounded-full overflow-hidden mb-2">
               <motion.div
-                className="h-full bg-gradient-to-r from-primary to-primary/80"
+                className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary"
                 initial={{ width: 0 }}
                 animate={{ width: `${stepProgress}%` }}
                 transition={{ duration: 0.3, ease: "easeOut" }}
               />
             </div>
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs sm:text-sm text-white/60 font-medium">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
                 Step {currentStep + 1} of {visibleSteps.length}
               </p>
             {visibleSteps.length > 1 && (
-              <p className="text-xs text-white/40">
+              <p className="font-mono text-[10px] text-muted">
                 ~{Math.max(1, Math.ceil((visibleSteps.length - currentStep - 1) * 0.5))} min left
               </p>
             )}
@@ -1502,7 +1549,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 <motion.div
                   key={index}
                   className={`h-1.5 w-1.5 rounded-full transition-all ${
-                    index <= currentStep ? "bg-primary" : "bg-white/20"
+                    index <= currentStep ? "bg-accent-secondary" : "bg-border-subtle"
                   }`}
                   initial={{ scale: 0.8 }}
                   animate={{ 
@@ -1523,11 +1570,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
+            className="bg-glass backdrop-blur-md rounded-2xl border border-border-subtle p-4 sm:p-6 md:p-8 lg:p-12 shadow-soft flex-shrink-0 min-w-0"
           >
             <div className="flex flex-col items-center justify-center py-8">
               <InlineSpinner size="lg" className="mb-4" />
-              <p className="text-white/80 text-center">Completing registration...</p>
+              <p className="text-secondary text-center">Completing registration...</p>
             </div>
           </motion.div>
         ) : (
@@ -1538,7 +1585,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="bg-black/20 backdrop-blur-md rounded-2xl border border-white/15 p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl flex-shrink-0 min-w-0"
+            className="bg-glass backdrop-blur-md rounded-2xl border border-border-subtle p-4 sm:p-6 md:p-8 lg:p-12 shadow-soft flex-shrink-0 min-w-0"
             style={{ 
               // Add scroll margin to ensure form stays visible above keyboard
               scrollMarginBottom: "2rem",
@@ -1550,7 +1597,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8 text-center px-2"
+              className="font-sans text-2xl sm:text-3xl md:text-4xl font-black text-primary mb-6 sm:mb-8 text-center px-2"
             >
               {getLabel()}
             </motion.h2>
@@ -1566,7 +1613,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-red-400 text-sm mt-2 text-center"
+                className="text-accent-error text-sm mt-2 text-center"
               >
                 {errors[visibleSteps[currentStep] as keyof SignupData]}
               </motion.p>
@@ -1679,7 +1726,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-xs text-white/30 text-center mt-4 sm:mt-6"
+                className="font-mono text-xs text-muted text-center mt-4 sm:mt-6"
               >
                 {formData.email}
               </motion.p>

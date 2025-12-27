@@ -105,20 +105,20 @@ export default function VenueOrganizersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading organizers...</div>
+          <div className="text-secondary">Loading organizers...</div>
         </div>
       </Container>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Organizers</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Organizers</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Organizers who have created events at your venue
               </p>
             </div>
@@ -147,14 +147,14 @@ export default function VenueOrganizersPage() {
                   onChange={(e) => setShowPreapprovedOnly(e.target.checked)}
                   className="rounded border-border"
                 />
-                <label htmlFor="preapproved-filter" className="text-sm text-foreground cursor-pointer">
+                <label htmlFor="preapproved-filter" className="text-sm text-primary cursor-pointer">
                   Show pre-approved only
                 </label>
               </div>
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredOrganizers.length} of {organizers.length} organizers
           </div>
 
@@ -177,7 +177,7 @@ export default function VenueOrganizersPage() {
                     <TableRow>
                       <TableCell
                         colSpan={7}
-                        className="text-center py-8 text-foreground-muted"
+                        className="text-center py-8 text-secondary"
                       >
                         {organizers.length === 0
                           ? "No organizers have created events at your venue yet"
@@ -195,11 +195,11 @@ export default function VenueOrganizersPage() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-foreground-muted" />
+                              <Building2 className="h-4 w-4 text-secondary" />
                               {organizer.name}
                             </div>
                             {organizer.company_name && (
-                              <div className="text-sm text-foreground-muted">
+                              <div className="text-sm text-secondary">
                                 {organizer.company_name}
                               </div>
                             )}
@@ -208,13 +208,13 @@ export default function VenueOrganizersPage() {
                         <TableCell>
                           <div className="space-y-1">
                             {organizer.email && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
                                 {organizer.email}
                               </div>
                             )}
                             {organizer.phone && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
                                 {organizer.phone}
                               </div>
@@ -229,13 +229,13 @@ export default function VenueOrganizersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-foreground-muted" />
+                            <Users className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{organizer.total_registrations}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Ticket className="h-4 w-4 text-foreground-muted" />
+                            <Ticket className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{organizer.total_checkins}</span>
                           </div>
                         </TableCell>
@@ -276,7 +276,7 @@ export default function VenueOrganizersPage() {
                                     }
                                   })();
                                 }}
-                                className="text-foreground-muted hover:text-foreground"
+                                className="text-secondary hover:text-primary"
                               >
                                 <StarOff className="h-4 w-4 mr-1" />
                                 Remove Pre-approval

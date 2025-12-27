@@ -141,8 +141,8 @@ export function PromoterRequestButton({ eventId, eventSlug }: PromoterRequestBut
   // No request yet - show request button
   return (
     <>
-      <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
-        <p className="text-xs text-foreground-muted mb-2">
+      <div className="mt-4 p-3 rounded-lg bg-accent-secondary/5 border border-accent-secondary/20">
+        <p className="text-xs text-secondary mb-2">
           Want to earn money promoting this event?
         </p>
         <Button

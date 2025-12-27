@@ -6,6 +6,7 @@ import { Footer, Logo } from "@crowdstack/ui";
 import Link from "next/link";
 import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutGrid } from "lucide-react";
 import { AttendeeNavigation } from "@/components/AttendeeNavigation";
+import { DockNav } from "@/components/navigation/DockNav";
 import { createBrowserClient } from "@crowdstack/shared";
 
 // Routes that should show public navigation and footer (marketing pages)
@@ -94,25 +95,36 @@ export function ConditionalLayout({
   // They should not have any padding from the conditional layout
   const isEventPage = pathname.startsWith("/e/") && !pathname.includes("/register") && !pathname.includes("/pass");
   const isPhotoPage = pathname.startsWith("/p/");
-  const handlesOwnLayout = isEventPage || isPhotoPage;
+  const isMePage = pathname === "/me"; // ME page has hero gradient that needs to extend behind nav
+  const handlesOwnLayout = isEventPage || isPhotoPage || isMePage;
   
   // Pages that handle own layout: no padding (they manage nav clearance themselves)
-  // Other pages with nav: add pt-20 padding for nav bar clearance
-  const mainPaddingClass = handlesOwnLayout 
-    ? "flex-1" // No padding - page handles its own layout
-    : (showMarketingNav || showSimpleNav || showAttendeeNav) 
-      ? "flex-1 pt-20" 
-      : "flex-1";
+  // Routes that have their own nested layouts with DockNav (don't render DockNav here)
+  const hasNestedLayoutNav = shouldHideNav(pathname); // /app, /admin, /door, /scanner have their own layouts
+  
+  // Add top padding for DockNav clearance (nav is now at top)
+  const shouldAddTopPadding = !isStandaloneRoute(pathname) && !hasNestedLayoutNav && !handlesOwnLayout;
+  const topPadding = shouldAddTopPadding ? "pt-20" : "";
+  
+  // DockNav is now at top, so we need top padding instead of bottom
+  const mainPaddingClass = `flex-1 ${topPadding}`;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {showMarketingNav && <PublicNavigation variant="marketing" />}
-      {showSimpleNav && <PublicNavigation variant="simple" />}
-      {showAttendeeNav && <AttendeeNavigation />}
-      <main className={mainPaddingClass}>
+    <div className="flex min-h-screen flex-col font-sans">
+      {/* AI Studio atmosphere layers */}
+      <div className="atmosphere-gradient" aria-hidden="true" />
+      <div className="atmosphere-noise" aria-hidden="true" />
+      
+      {/* Legacy top navigation disabled - DockNav is now the primary navigation */}
+      {/* {showMarketingNav && <PublicNavigation variant="marketing" />} */}
+      {/* {showSimpleNav && <PublicNavigation variant="simple" />} */}
+      {/* {showAttendeeNav && <AttendeeNavigation />} */}
+      <main className={`${mainPaddingClass} relative z-10`}>
         {children}
       </main>
       {showFooter && <PublicFooter />}
+      {/* Only show DockNav for routes that don't have nested layouts (public routes) */}
+      {!hasNestedLayoutNav && <DockNav />}
     </div>
   );
 }

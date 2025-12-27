@@ -71,6 +71,7 @@ import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { EventImageUpload } from "@/components/EventImageUpload";
+import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
@@ -984,8 +985,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (!event) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-foreground mb-2">Event Not Found</h2>
-        <p className="text-foreground-muted mb-4">This event doesn't exist or you don't have access.</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">Event Not Found</h2>
+        <p className="text-secondary mb-4">This event doesn't exist or you don't have access.</p>
         <Link href={config.backUrl}>
           <Button variant="secondary">Back to Events</Button>
         </Link>
@@ -1048,7 +1049,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {/* Event Title with Status Badges on the right */}
           <div className="flex items-center justify-between gap-4">
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary">
               {event.name}
             </h1>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -1142,7 +1143,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <Globe className="h-4 w-4 mr-2" />
                     Publish Event
                   </Button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-background-secondary border border-border rounded-lg shadow-lg text-xs text-foreground-muted whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-raised border border-border rounded-lg shadow-lg text-xs text-secondary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
                     <div className="flex items-center gap-2">
                       <ShieldAlert className="h-3 w-3 text-warning" />
                       <span>Requires venue approval before publishing</span>
@@ -1218,12 +1219,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     : "⏳ Awaiting Venue Approval"}
                 </h3>
               </div>
-              <div className="flex items-center gap-2 text-foreground-muted mb-2">
+              <div className="flex items-center gap-2 text-secondary mb-2">
                 <Building2 className="h-4 w-4" />
                 <span>{event.venue?.name || "Venue"}</span>
               </div>
               {event.venue_approval_status === "approved" && event.venue_approval_at && (
-                <p className="text-sm text-foreground-muted">
+                <p className="text-sm text-secondary">
                   Approved on {formatApprovalDate(event.venue_approval_at)}
                 </p>
               )}
@@ -1232,13 +1233,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <p className="text-sm text-error font-medium">
                     {event.venue_rejection_reason || "No reason provided"}
                   </p>
-                  <p className="text-xs text-foreground-muted mt-1">
+                  <p className="text-xs text-secondary mt-1">
                     You can edit the event and try a different venue.
                   </p>
                 </div>
               )}
               {event.venue_approval_status === "pending" && (
-                <p className="text-sm text-foreground-muted">
+                <p className="text-sm text-secondary">
                   The venue has been notified and will review your event soon. 
                   You'll receive a notification when they respond.
                 </p>
@@ -1250,7 +1251,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
       {/* Stats Cards */}
       {config.canViewStats && !stats && (
-        <div className="text-center py-4 text-foreground-muted text-sm">
+        <div className="text-center py-4 text-secondary text-sm">
           <InlineSpinner size="sm" /> Loading stats...
         </div>
       )}
@@ -1266,8 +1267,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-foreground-muted uppercase tracking-wide">My Referrals</p>
-                    <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
+                    <p className="text-xs text-secondary uppercase tracking-wide">My Referrals</p>
+                    <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       {stats.referrals || 0}
                     </p>
                     {stats.event_total_registrations && stats.event_total_registrations > 0 && (
@@ -1276,7 +1277,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       </p>
                     )}
                   </div>
-                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-primary/20">
+                  <div className="h-12 w-12 flex items-center justify-center rounded-full bg-accent-secondary/20">
                     <Users className="h-6 w-6 text-primary" />
                   </div>
                 </div>
@@ -1284,8 +1285,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-foreground-muted uppercase tracking-wide">My Check-ins</p>
-                    <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
+                    <p className="text-xs text-secondary uppercase tracking-wide">My Check-ins</p>
+                    <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       {stats.checkins || 0}
                     </p>
                     <p className="text-xs text-success mt-1">
@@ -1302,8 +1303,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-foreground-muted uppercase tracking-wide">Leaderboard</p>
-                    <p className="text-3xl font-bold tracking-tighter text-foreground mt-1">
+                    <p className="text-xs text-secondary uppercase tracking-wide">Leaderboard</p>
+                    <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       #{stats.leaderboard_position || "-"}
                     </p>
                     {stats.total_promoters && (
@@ -1319,17 +1320,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
 
               {/* Overall Event Stats */}
-              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
                 <div className="space-y-2">
-                  <p className="text-xs text-foreground-muted uppercase tracking-wide">Event Overall</p>
+                  <p className="text-xs text-secondary uppercase tracking-wide">Event Overall</p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
-                      <p className="text-lg font-bold text-foreground">{stats.event_total_registrations || 0}</p>
-                      <p className="text-xs text-foreground-muted">Total Registered</p>
+                      <p className="text-lg font-bold text-primary">{stats.event_total_registrations || 0}</p>
+                      <p className="text-xs text-secondary">Total Registered</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-foreground">{stats.event_total_checkins || 0}</p>
-                      <p className="text-xs text-foreground-muted">Total Check-ins</p>
+                      <p className="text-lg font-bold text-primary">{stats.event_total_checkins || 0}</p>
+                      <p className="text-xs text-secondary">Total Check-ins</p>
                     </div>
                   </div>
                 </div>
@@ -1339,12 +1340,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <>
               <Card>
                 <div className="space-y-2">
-                  <div className="text-sm text-foreground-muted">Registrations</div>
-                  <div className="text-3xl font-bold text-foreground">
+                  <div className="text-sm text-secondary">Registrations</div>
+                  <div className="text-3xl font-bold text-primary">
                     {stats.total_registrations || 0}
                   </div>
                   {stats.recent_registrations_24h !== undefined && (
-                    <div className="text-xs text-foreground-muted flex items-center gap-1">
+                    <div className="text-xs text-secondary flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
                       +{stats.recent_registrations_24h} in last 24h
                     </div>
@@ -1353,12 +1354,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
               <Card>
                 <div className="space-y-2">
-                  <div className="text-sm text-foreground-muted">Check-ins</div>
-                  <div className="text-3xl font-bold text-foreground">
+                  <div className="text-sm text-secondary">Check-ins</div>
+                  <div className="text-3xl font-bold text-primary">
                     {stats.total_check_ins || 0}
                   </div>
                   {stats.total_registrations && stats.total_registrations > 0 && (
-                    <div className="text-xs text-foreground-muted flex items-center gap-1">
+                    <div className="text-xs text-secondary flex items-center gap-1">
                       <UserCheck className="h-3 w-3" />
                       {Math.round(((stats.total_check_ins || 0) / stats.total_registrations) * 100)}% conversion
                     </div>
@@ -1368,12 +1369,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {stats.capacity !== undefined && (
                 <Card>
                   <div className="space-y-2">
-                    <div className="text-sm text-foreground-muted">Capacity</div>
-                    <div className="text-3xl font-bold text-foreground">
+                    <div className="text-sm text-secondary">Capacity</div>
+                    <div className="text-3xl font-bold text-primary">
                       {stats.capacity ? `${stats.capacity_remaining}/${stats.capacity}` : "Unlimited"}
                     </div>
                     {stats.capacity && (
-                      <div className="text-xs text-foreground-muted">
+                      <div className="text-xs text-secondary">
                         {stats.capacity_percentage}% full
                       </div>
                     )}
@@ -1383,11 +1384,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {event.event_promoters && (
                 <Card>
                   <div className="space-y-2">
-                    <div className="text-sm text-foreground-muted">Promoters</div>
-                    <div className="text-3xl font-bold text-foreground">
+                    <div className="text-sm text-secondary">Promoters</div>
+                    <div className="text-3xl font-bold text-primary">
                       {event.event_promoters.length}
                     </div>
-                    <div className="text-xs text-foreground-muted">
+                    <div className="text-xs text-secondary">
                       Active promotions
                     </div>
                   </div>
@@ -1414,7 +1415,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           <TabsContent value="overview" className="space-y-6">
             {/* Event Details */}
-            <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+            <Card className="bg-void/60 backdrop-blur-sm border-border/50">
               <div className="flex flex-col sm:flex-row gap-6">
                 {/* Flyer - Larger */}
                 {event.flier_url && (
@@ -1432,7 +1433,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 
                 {/* Details Grid - Compact */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-foreground mb-3">Event Details</h2>
+                  <h2 className="text-lg font-semibold text-primary mb-3">Event Details</h2>
                   
                   {/* Compact Info Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm">
@@ -1440,9 +1441,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                       <div className="min-w-0">
-                        <div className="text-foreground-muted text-xs">Start</div>
-                        <div className="text-foreground truncate">{new Date(event.start_time).toLocaleDateString()}</div>
-                        <div className="text-foreground-muted text-xs">{new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-secondary text-xs">Start</div>
+                        <div className="text-primary truncate">{new Date(event.start_time).toLocaleDateString()}</div>
+                        <div className="text-secondary text-xs">{new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </div>
                     
@@ -1451,9 +1452,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-foreground-muted text-xs">End</div>
-                          <div className="text-foreground truncate">{new Date(event.end_time).toLocaleDateString()}</div>
-                          <div className="text-foreground-muted text-xs">{new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          <div className="text-secondary text-xs">End</div>
+                          <div className="text-primary truncate">{new Date(event.end_time).toLocaleDateString()}</div>
+                          <div className="text-secondary text-xs">{new Date(event.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </div>
                       </div>
                     )}
@@ -1463,8 +1464,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-foreground-muted text-xs">Timezone</div>
-                          <div className="text-foreground truncate">{event.timezone}</div>
+                          <div className="text-secondary text-xs">Timezone</div>
+                          <div className="text-primary truncate">{event.timezone}</div>
                         </div>
                       </div>
                     )}
@@ -1474,7 +1475,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-foreground-muted text-xs">Venue</div>
+                          <div className="text-secondary text-xs">Venue</div>
                           {event.venue.slug && event.venue.slug.trim() !== "" ? (
                             <Link 
                               href={`/venues/${event.venue.slug}`}
@@ -1484,10 +1485,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               {event.venue.name}
                             </Link>
                           ) : (
-                            <div className="text-foreground font-medium truncate">{event.venue.name}</div>
+                            <div className="text-primary font-medium truncate">{event.venue.name}</div>
                           )}
                           {event.venue.address && (
-                            <div className="text-foreground-muted text-xs truncate">{event.venue.address}</div>
+                            <div className="text-secondary text-xs truncate">{event.venue.address}</div>
                           )}
                         </div>
                       </div>
@@ -1498,8 +1499,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
                         <div className="min-w-0">
-                          <div className="text-foreground-muted text-xs">Organizer</div>
-                          <div className="text-foreground truncate">{event.organizer.name}</div>
+                          <div className="text-secondary text-xs">Organizer</div>
+                          <div className="text-primary truncate">{event.organizer.name}</div>
                         </div>
                       </div>
                     )}
@@ -1508,7 +1509,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   {/* Description - Below the grid */}
                   {event.description && (
                     <div className="mt-4 pt-3 border-t border-border/50">
-                      <p className="text-sm text-foreground-muted line-clamp-3">{event.description}</p>
+                      <p className="text-sm text-secondary line-clamp-3">{event.description}</p>
                     </div>
                   )}
                 </div>
@@ -1522,24 +1523,24 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Share className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-foreground">Share Event</h2>
+                    <h2 className="text-lg font-semibold text-primary">Share Event</h2>
                   </div>
 
                   {/* Your Tracking Link (for promoters and organizers) */}
                   {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
-                    <div className="space-y-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                    <div className="space-y-3 p-3 bg-accent-secondary/5 rounded-lg border border-accent-secondary/20">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium text-foreground">
+                        <div className="text-sm font-medium text-primary">
                           {config.role === "promoter" ? "Your Referral Link" : "Your Tracking Link"}
                         </div>
-                        <Badge variant="secondary" className="bg-primary/20 text-primary text-xs">
+                        <Badge variant="secondary" className="bg-accent-secondary/20 text-primary text-xs">
                           {config.role === "promoter" ? "Earn commissions" : "Track referrals"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-background rounded border border-primary/30 overflow-hidden">
+                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-primary/30 overflow-hidden">
                           <LinkIcon className="h-3 w-3 text-primary flex-shrink-0" />
-                          <code className="text-xs text-foreground truncate">{getReferralLink()}</code>
+                          <code className="text-xs text-primary truncate">{getReferralLink()}</code>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -1588,7 +1589,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       
                       {/* Compact Referral Explainer */}
                       <div className="pt-2 border-t border-primary/10">
-                        <p className="text-xs text-foreground-muted">
+                        <p className="text-xs text-secondary">
                           {config.role === "promoter" 
                             ? "Share to earn commissions when referrals attend" 
                             : "Track registrations from your personal shares"}
@@ -1600,13 +1601,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   {/* Public Event URL */}
                   {eventUrl && (
                     <div className="space-y-2">
-                      <div className="text-xs text-foreground-muted">
+                      <div className="text-xs text-secondary">
                         {(config.role === "promoter" || config.role === "organizer") ? "Direct Link (no tracking)" : "Public Event Page"}
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-background rounded border border-border overflow-hidden">
-                          <LinkIcon className="h-3 w-3 text-foreground-muted flex-shrink-0" />
-                          <code className="text-xs text-foreground truncate">{eventUrl}</code>
+                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-border overflow-hidden">
+                          <LinkIcon className="h-3 w-3 text-secondary flex-shrink-0" />
+                          <code className="text-xs text-primary truncate">{eventUrl}</code>
                         </div>
                         <Button
                           variant="secondary"
@@ -1629,8 +1630,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
 
               {/* Activity Chart - For all roles */}
-              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
+              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+                <h3 className="text-lg font-semibold text-primary mb-4">
                   {config.role === "promoter" ? "Your Referral Activity" : "Event Activity"}
                 </h3>
                 {chartData.length > 0 ? (
@@ -1651,7 +1652,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[200px] text-foreground-muted">
+                  <div className="flex items-center justify-center h-[200px] text-secondary">
                     <div className="text-center">
                       <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p className="text-sm">No activity data yet</p>
@@ -1663,8 +1664,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
             {/* Promoter Performance Chart (for organizer/venue only) */}
             {config.role !== "promoter" && config.canViewStats && stats?.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
-              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
+              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+                <h3 className="text-lg font-semibold text-primary mb-4">
                   Promoter Performance
                 </h3>
                 <ResponsiveContainer width="100%" height={200}>
@@ -1693,7 +1694,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {config.role === "organizer" && inviteCodes.length > 0 && (
                 <Card>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-foreground">Invite QR Codes</h2>
+                    <h2 className="text-xl font-semibold text-primary">Invite QR Codes</h2>
                     <Link href={`/app/organizer/events/${eventId}/invites`}>
                       <Button variant="secondary" size="sm">
                         <QrCode className="h-4 w-4 mr-2" />
@@ -1718,7 +1719,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             )}
                           </Button>
                         </div>
-                        <div className="text-xs text-foreground-muted space-y-1">
+                        <div className="text-xs text-secondary space-y-1">
                           {invite.max_uses ? (
                             <p>Uses: {invite.used_count} / {invite.max_uses}</p>
                           ) : (
@@ -1747,36 +1748,36 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {attendeeStats && !isPromoterView && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                   <Card className="p-4">
-                    <div className="text-2xl font-bold text-foreground">{attendeeStats.total}</div>
-                    <div className="text-sm text-foreground-muted">Total Registered</div>
+                    <div className="text-2xl font-bold text-primary">{attendeeStats.total}</div>
+                    <div className="text-sm text-secondary">Total Registered</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-success">{attendeeStats.checked_in}</div>
-                    <div className="text-sm text-foreground-muted">Checked In</div>
+                    <div className="text-sm text-secondary">Checked In</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-warning">{attendeeStats.not_checked_in}</div>
-                    <div className="text-sm text-foreground-muted">Not Checked In</div>
+                    <div className="text-sm text-secondary">Not Checked In</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-info">{attendeeStats.by_source.direct}</div>
-                    <div className="text-sm text-foreground-muted">Direct</div>
+                    <div className="text-sm text-secondary">Direct</div>
                   </Card>
                   <Card className="p-4">
                     <div className="text-2xl font-bold text-primary">{attendeeStats.by_source.promoter}</div>
-                    <div className="text-sm text-foreground-muted">Via Promoters</div>
+                    <div className="text-sm text-secondary">Via Promoters</div>
                   </Card>
                 </div>
               )}
 
               {/* Promoter View Header */}
               {isPromoterView && (
-                <Card className="mb-4 p-4 bg-primary/10 border-primary/20">
+                <Card className="mb-4 p-4 bg-accent-secondary/10 border-accent-secondary/20">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
                     <div>
-                      <h3 className="font-semibold text-foreground">Your Referrals</h3>
-                      <p className="text-sm text-foreground-muted">
+                      <h3 className="font-semibold text-primary">Your Referrals</h3>
+                      <p className="text-sm text-secondary">
                         Showing only guests you brought to this event
                       </p>
                     </div>
@@ -1784,18 +1785,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   {attendeeStats && (
                     <div className="flex gap-6 mt-4">
                       <div>
-                        <span className="text-2xl font-bold text-foreground">{attendeeStats.total}</span>
-                        <span className="text-sm text-foreground-muted ml-2">registered</span>
+                        <span className="text-2xl font-bold text-primary">{attendeeStats.total}</span>
+                        <span className="text-sm text-secondary ml-2">registered</span>
                       </div>
                       <div>
                         <span className="text-2xl font-bold text-success">{attendeeStats.checked_in}</span>
-                        <span className="text-sm text-foreground-muted ml-2">checked in</span>
+                        <span className="text-sm text-secondary ml-2">checked in</span>
                       </div>
                       <div>
-                        <span className="text-2xl font-bold text-foreground">
+                        <span className="text-2xl font-bold text-primary">
                           {attendeeStats.total > 0 ? Math.round((attendeeStats.checked_in / attendeeStats.total) * 100) : 0}%
                         </span>
-                        <span className="text-sm text-foreground-muted ml-2">conversion</span>
+                        <span className="text-sm text-secondary ml-2">conversion</span>
                       </div>
                     </div>
                   )}
@@ -1805,7 +1806,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 {/* Header with title and search */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">
+                  <h2 className="text-xl font-semibold text-primary">
                     {isPromoterView ? "Your Guests" : "Attendees"} ({filteredAttendees.length})
                   </h2>
                   <Input
@@ -1875,7 +1876,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 {/* Privacy Notice */}
                 {config.role !== "admin" && (
                   <div className="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
-                    <p className="text-sm text-foreground-muted">
+                    <p className="text-sm text-secondary">
                       <AlertCircle className="h-4 w-4 inline mr-1" />
                       Contact details are masked for privacy. Only admins can see full information.
                     </p>
@@ -1897,7 +1898,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <TableBody>
                     {filteredAttendees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isPromoterView ? 5 : 6} className="text-center text-foreground-muted py-8">
+                        <TableCell colSpan={isPromoterView ? 5 : 6} className="text-center text-secondary py-8">
                           {isPromoterView ? "You haven't referred any guests to this event yet" : "No attendees found"}
                         </TableCell>
                       </TableRow>
@@ -1936,7 +1937,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                   {attendee.referred_by_user_name}
                                 </Badge>
                               ) : (
-                                <span className="text-foreground-muted text-sm">Direct</span>
+                                <span className="text-secondary text-sm">Direct</span>
                               )}
                             </TableCell>
                           )}
@@ -1954,7 +1955,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Pending Promoter Requests */}
               {/* Debug: Show request count */}
               {config.canManagePromoters && (
-                <div className="text-xs text-foreground-muted mb-2">
+                <div className="text-xs text-secondary mb-2">
                   Total requests loaded: {promoterRequests.length} | Pending: {promoterRequests.filter(r => r.status === "pending").length}
                 </div>
               )}
@@ -1963,7 +1964,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <Card className="border-warning/30 bg-warning/5 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertCircle className="h-4 w-4 text-warning" />
-                    <h2 className="text-base font-semibold text-foreground">
+                    <h2 className="text-base font-semibold text-primary">
                       Pending Requests ({promoterRequests.filter(r => r.status === "pending").length})
                     </h2>
                   </div>
@@ -1973,26 +1974,26 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       .map((request) => (
                         <div
                           key={request.id}
-                          className="flex items-center gap-3 p-2 bg-background rounded-lg border border-border"
+                          className="flex items-center gap-3 p-2 bg-void rounded-lg border border-border"
                         >
                           {/* Promoter Info - Compact */}
                           <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 text-sm">
                             <div>
-                              <span className="font-medium text-foreground">
+                              <span className="font-medium text-primary">
                                 {request.promoter?.name || "Unknown"}
                               </span>
-                              <span className="text-foreground-muted text-xs ml-2">
+                              <span className="text-secondary text-xs ml-2">
                                 {new Date(request.created_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <div className="text-foreground-muted truncate">
+                            <div className="text-secondary truncate">
                               {request.promoter?.email && (
                                 <a href={`mailto:${request.promoter.email}`} className="hover:text-primary">
                                   {request.promoter.email}
                                 </a>
                               )}
                             </div>
-                            <div className="text-foreground-muted">
+                            <div className="text-secondary">
                               {request.promoter?.phone && (
                                 <a href={`tel:${request.promoter.phone}`} className="hover:text-primary">
                                   {request.promoter.phone}
@@ -2001,7 +2002,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             </div>
                           </div>
                           {request.message && (
-                            <div className="hidden lg:block text-xs text-foreground-muted italic max-w-[200px] truncate" title={request.message}>
+                            <div className="hidden lg:block text-xs text-secondary italic max-w-[200px] truncate" title={request.message}>
                               &quot;{request.message}&quot;
                             </div>
                           )}
@@ -2037,7 +2038,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Assigned Promoters */}
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Assigned Promoters</h2>
+                  <h2 className="text-xl font-semibold text-primary">Assigned Promoters</h2>
                   <div className="flex gap-2">
                     {config.canManagePromoters && (
                       <Button variant="primary" onClick={() => setShowPromoterModal(true)}>
@@ -2111,7 +2112,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="text-center text-foreground-muted py-8">
+                  <div className="text-center text-secondary py-8">
                     No promoters assigned to this event yet.
                     {config.canManagePromoters && (
                       <p className="text-sm mt-2">
@@ -2127,16 +2128,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {/* Media Tab */}
           {config.canViewPhotos && (
             <TabsContent value="media" className="space-y-6">
-              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-foreground">Event Media</h2>
+                  <h2 className="text-xl font-semibold text-primary">Event Media</h2>
                   
                   {/* Flyer Section */}
                   {event.flier_url ? (
                     <div className="space-y-3">
-                      <h3 className="text-sm font-medium text-foreground-muted">Event Flyer</h3>
+                      <h3 className="text-sm font-medium text-secondary">Event Flyer</h3>
                       <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="relative w-full sm:w-64 aspect-[3/4] rounded-lg overflow-hidden border border-border bg-background">
+                        <div className="relative w-full sm:w-64 aspect-[3/4] rounded-lg overflow-hidden border border-border bg-void">
                           <img
                             src={event.flier_url}
                             alt={`${event.name} flyer`}
@@ -2168,7 +2169,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-foreground-muted">
+                    <div className="text-center py-8 text-secondary">
                       <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>No flyer uploaded for this event</p>
                     </div>
@@ -2177,7 +2178,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   {/* Video Section */}
                   {event.flier_video_url && (
                     <div className="space-y-3 pt-4 border-t border-border">
-                      <h3 className="text-sm font-medium text-foreground-muted">Promo Video</h3>
+                      <h3 className="text-sm font-medium text-secondary">Promo Video</h3>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="relative w-full sm:w-64 aspect-video rounded-lg overflow-hidden border border-border bg-black">
                           <video
@@ -2214,7 +2215,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
                   
                   {!event.flier_url && !event.flier_video_url && (
-                    <div className="text-center py-8 text-foreground-muted">
+                    <div className="text-center py-8 text-secondary">
                       <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>No media uploaded for this event</p>
                       {config.canEdit && (
@@ -2233,7 +2234,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-foreground">Photo Album</h2>
+                    <h2 className="text-xl font-semibold text-primary">Photo Album</h2>
                     {(config.role === "organizer" || config.role === "admin") && album && album.status !== "published" && photos.length > 0 && (
                       <Button 
                         variant="primary" 
@@ -2259,7 +2260,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             {album.status === "published" ? "Published" : "Draft"}
                           </Badge>
                           {album.published_at && (
-                            <span className="text-sm text-foreground-muted">
+                            <span className="text-sm text-secondary">
                               Published {new Date(album.published_at).toLocaleDateString()}
                             </span>
                           )}
@@ -2272,7 +2273,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {photos.map((photo, index) => (
                         <div key={photo.id} className="relative group">
-                          <div className="aspect-square rounded-lg overflow-hidden bg-background-secondary">
+                          <div className="aspect-square rounded-lg overflow-hidden bg-raised">
                             <img
                               src={photo.thumbnail_url || photo.url}
                               alt={photo.caption || `Photo ${index + 1}`}
@@ -2314,7 +2315,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-foreground-muted">
+                    <div className="text-center py-8 text-secondary">
                       {(config.role === "organizer" || config.role === "admin")
                         ? "No photos yet. Upload photos to create your event album."
                         : "No photos available yet."}
@@ -2323,7 +2324,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
                   {event.slug && (
                     <div className="pt-4 border-t border-border">
-                      <p className="text-sm text-foreground-muted mb-2">Public Photo Gallery:</p>
+                      <p className="text-sm text-secondary mb-2">Public Photo Gallery:</p>
                       <Link 
                         href={`/p/${event.slug}`}
                         target="_blank"
@@ -2341,9 +2342,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard" className="space-y-4">
-              <Card className="bg-background/60 backdrop-blur-sm border-border/50">
+              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-warning" />
                     Promoter Leaderboard
                   </h2>
@@ -2354,7 +2355,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <LoadingSpinner />
                   </div>
                 ) : leaderboard.length === 0 ? (
-                  <div className="text-center py-8 text-foreground-muted">
+                  <div className="text-center py-8 text-secondary">
                     <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>No promoters assigned to this event yet.</p>
                   </div>
@@ -2363,11 +2364,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-border">
-                          <th className="text-left py-3 px-2 text-sm font-medium text-foreground-muted">Rank</th>
-                          <th className="text-left py-3 px-2 text-sm font-medium text-foreground-muted">Promoter</th>
-                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Referrals</th>
-                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Check-ins</th>
-                          <th className="text-center py-3 px-2 text-sm font-medium text-foreground-muted">Conversion</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-secondary">Rank</th>
+                          <th className="text-left py-3 px-2 text-sm font-medium text-secondary">Promoter</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-secondary">Referrals</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-secondary">Check-ins</th>
+                          <th className="text-center py-3 px-2 text-sm font-medium text-secondary">Conversion</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2376,32 +2377,32 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                           return (
                             <tr 
                               key={entry.promoter_id} 
-                              className={`border-b border-border/50 ${isCurrentPromoter ? "bg-primary/10" : ""}`}
+                              className={`border-b border-border/50 ${isCurrentPromoter ? "bg-accent-secondary/10" : ""}`}
                             >
                               <td className="py-3 px-2">
                                 <div className="flex items-center gap-2">
                                   {entry.rank === 1 && <span className="text-xl">🥇</span>}
                                   {entry.rank === 2 && <span className="text-xl">🥈</span>}
                                   {entry.rank === 3 && <span className="text-xl">🥉</span>}
-                                  {entry.rank > 3 && <span className="text-foreground-muted font-medium">#{entry.rank}</span>}
+                                  {entry.rank > 3 && <span className="text-secondary font-medium">#{entry.rank}</span>}
                                 </div>
                               </td>
                               <td className="py-3 px-2">
                                 <div className="flex items-center gap-2">
-                                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium text-primary">
+                                  <div className="h-8 w-8 rounded-full bg-accent-secondary/20 flex items-center justify-center text-sm font-medium text-primary">
                                     {entry.name?.charAt(0)?.toUpperCase() || "?"}
                                   </div>
                                   <div>
-                                    <p className={`font-medium ${isCurrentPromoter ? "text-primary" : "text-foreground"}`}>
+                                    <p className={`font-medium ${isCurrentPromoter ? "text-primary" : "text-primary"}`}>
                                       {entry.name}
                                       {isCurrentPromoter && <span className="ml-2 text-xs text-primary">(You)</span>}
                                     </p>
-                                    <p className="text-xs text-foreground-muted">{entry.email}</p>
+                                    <p className="text-xs text-secondary">{entry.email}</p>
                                   </div>
                                 </div>
                               </td>
                               <td className="py-3 px-2 text-center">
-                                <span className="font-semibold text-foreground">{entry.referrals}</span>
+                                <span className="font-semibold text-primary">{entry.referrals}</span>
                               </td>
                               <td className="py-3 px-2 text-center">
                                 <span className="font-semibold text-success">{entry.checkins}</span>
@@ -2424,11 +2425,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {config.canViewSettings && (
             <TabsContent value="settings" className="space-y-4">
               <Card>
-                <h2 className="text-xl font-semibold text-foreground mb-4">Event Settings</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">Event Settings</h2>
                 <div className="space-y-4">
                   {event.promoter_access_type && (
                     <div>
-                      <div className="text-sm text-foreground-muted mb-2">Promoter Access</div>
+                      <div className="text-sm text-secondary mb-2">Promoter Access</div>
                       <Badge variant="default">{event.promoter_access_type}</Badge>
                     </div>
                   )}
@@ -2451,15 +2452,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         // No tabs - show simple layout (for promoter or minimal views)
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Event Details</h3>
+            <h3 className="text-lg font-semibold text-primary mb-4">Event Details</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <Calendar className="h-5 w-5 text-primary mt-0.5" />
                 <div>
-                  <p className="font-medium text-foreground">Date & Time</p>
-                  <p className="text-sm text-foreground-muted">{formatDate(event.start_time)}</p>
+                  <p className="font-medium text-primary">Date & Time</p>
+                  <p className="text-sm text-secondary">{formatDate(event.start_time)}</p>
                   {event.end_time && (
-                    <p className="text-sm text-foreground-muted">Until {formatDate(event.end_time)}</p>
+                    <p className="text-sm text-secondary">Until {formatDate(event.end_time)}</p>
                   )}
                 </div>
               </div>
@@ -2467,10 +2468,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-foreground">Venue</p>
-                    <p className="text-sm text-foreground-muted">{event.venue.name}</p>
+                    <p className="font-medium text-primary">Venue</p>
+                    <p className="text-sm text-secondary">{event.venue.name}</p>
                     {event.venue.address && (
-                      <p className="text-sm text-foreground-muted">{event.venue.address}</p>
+                      <p className="text-sm text-secondary">{event.venue.address}</p>
                     )}
                   </div>
                 </div>
@@ -2479,16 +2480,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="flex items-start gap-3">
                   <Users className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-foreground">Capacity</p>
-                    <p className="text-sm text-foreground-muted">{event.capacity} attendees</p>
+                    <p className="font-medium text-primary">Capacity</p>
+                    <p className="text-sm text-secondary">{event.capacity} attendees</p>
                   </div>
                 </div>
               )}
             </div>
           </Card>
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Description</h3>
-            <p className="text-foreground-muted whitespace-pre-wrap">
+            <h3 className="text-lg font-semibold text-primary mb-4">Description</h3>
+            <p className="text-secondary whitespace-pre-wrap">
               {event.description || "No description provided."}
             </p>
           </Card>
@@ -2542,7 +2543,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   Generate
                 </Button>
               </div>
-              <p className="text-xs text-foreground-muted mt-1">
+              <p className="text-xs text-secondary mt-1">
                 Used in the event URL (e.g., /e/{editForm.slug || "event-slug"})
               </p>
             </div>
@@ -2642,11 +2643,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   onChange={(e) => setEditForm((prev) => ({ ...prev, show_photo_email_notice: e.target.checked }))}
                   className="rounded border-border"
                 />
-                <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+                <label htmlFor="show_photo_email_notice" className="text-sm text-primary">
                   Show photo email notice on registration success
                 </label>
               </div>
-              <p className="text-xs text-foreground-muted ml-6">
+              <p className="text-xs text-secondary ml-6">
                 If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
               </p>
             </div>
@@ -2692,12 +2693,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Video className="h-5 w-5 text-pink-400" />
-                  <label className="text-sm font-medium text-foreground">
+                  <label className="text-sm font-medium text-primary">
                     Video Flier (Optional)
                   </label>
                   <Badge variant="secondary" className="text-xs">Premium</Badge>
                 </div>
-                <p className="text-xs text-foreground-muted">
+                <p className="text-xs text-secondary">
                   Upload a video flier (9:16 format, max 30 seconds, 50MB). Shown instead of static image on mobile.
                 </p>
                 
@@ -2731,14 +2732,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 ) : (
                   <div className="flex items-center gap-2">
                     {uploadingVideo ? (
-                      <div className="flex-1 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <div className="flex-1 px-4 py-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-primary font-medium">Uploading video...</span>
                           <span className="text-sm text-primary font-mono">{videoUploadProgress}%</span>
                         </div>
-                        <div className="w-full bg-primary/20 rounded-full h-2 overflow-hidden">
+                        <div className="w-full bg-accent-secondary/20 rounded-full h-2 overflow-hidden">
                           <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
+                            className="bg-accent-secondary h-2 rounded-full transition-all duration-300 ease-out"
                             style={{ width: `${videoUploadProgress}%` }}
                           />
                         </div>
@@ -2856,10 +2857,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                         />
                         <label
                           htmlFor="video-flier-upload"
-                          className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                          className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-accent-secondary/50 hover:bg-accent-secondary/5 transition-colors"
                         >
-                          <Upload className="h-4 w-4 text-foreground-muted" />
-                          <span className="text-sm text-foreground-muted">Upload Video (MP4, WebM, MOV)</span>
+                          <Upload className="h-4 w-4 text-secondary" />
+                          <span className="text-sm text-secondary">Upload Video (MP4, WebM, MOV)</span>
                         </label>
                       </>
                     )}
@@ -2890,7 +2891,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         >
           <div className="space-y-4">
             {editHistory.length === 0 ? (
-              <div className="text-center py-8 text-foreground-muted">
+              <div className="text-center py-8 text-secondary">
                 No edit history available
               </div>
             ) : (
@@ -2899,22 +2900,22 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <Card key={record.id} className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-medium text-foreground">{record.editor_email}</p>
-                        <p className="text-xs text-foreground-muted">{record.editor_role}</p>
+                        <p className="font-medium text-primary">{record.editor_email}</p>
+                        <p className="text-xs text-secondary">{record.editor_role}</p>
                       </div>
-                      <div className="text-xs text-foreground-muted">
+                      <div className="text-xs text-secondary">
                         {new Date(record.created_at).toLocaleString()}
                       </div>
                     </div>
                     {record.reason && (
-                      <p className="text-sm text-foreground-muted mb-2">Reason: {record.reason}</p>
+                      <p className="text-sm text-secondary mb-2">Reason: {record.reason}</p>
                     )}
                     <div className="space-y-1">
                       {Object.entries(record.changes).map(([key, change]) => (
                         <div key={key} className="text-sm">
                           <span className="font-medium">{key}:</span>{" "}
-                          <span className="text-foreground-muted line-through">{String(change.old)}</span>{" "}
-                          → <span className="text-foreground">{String(change.new)}</span>
+                          <span className="text-secondary line-through">{String(change.old)}</span>{" "}
+                          → <span className="text-primary">{String(change.new)}</span>
                         </div>
                       ))}
                     </div>
@@ -2966,8 +2967,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-success/10 border border-success/20">
                 <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
                 <div>
-                  <p className="font-medium text-foreground">Approve this event?</p>
-                  <p className="text-sm text-foreground-muted mt-1">
+                  <p className="font-medium text-primary">Approve this event?</p>
+                  <p className="text-sm text-secondary mt-1">
                     Both the venue admins and the event organizer will be notified of this approval.
                   </p>
                 </div>
@@ -2977,8 +2978,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/20">
                   <AlertCircle className="h-5 w-5 text-danger mt-0.5" />
                   <div>
-                    <p className="font-medium text-foreground">Reject this event?</p>
-                    <p className="text-sm text-foreground-muted mt-1">
+                    <p className="font-medium text-primary">Reject this event?</p>
+                    <p className="text-sm text-secondary mt-1">
                       Both the venue admins and the event organizer will be notified of this rejection.
                     </p>
                   </div>
@@ -3046,20 +3047,20 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       {/* Promoter QR Code Modal */}
       {showQRModal && config.role === "promoter" && event && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-background border border-border rounded-xl max-w-md w-full p-6 space-y-4">
+          <Surface variant="void" className="max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-foreground">
+              <h3 className="text-xl font-semibold text-primary">
                 Your Referral QR Code
               </h3>
               <button
                 onClick={() => setShowQRModal(false)}
-                className="text-foreground-muted hover:text-foreground"
+                className="text-secondary hover:text-primary"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-sm text-foreground-muted">
+            <p className="text-sm text-secondary">
               {event.name}
             </p>
 
@@ -3073,21 +3074,21 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   />
                 </div>
               ) : (
-                <div className="text-foreground-muted">Loading QR code...</div>
+                <div className="text-secondary">Loading QR code...</div>
               )}
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-foreground-muted text-center">
+              <p className="text-xs text-secondary text-center">
                 Anyone who scans this QR code and registers will be attributed to you
               </p>
               
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border">
+              <Surface variant="glass" className="flex items-center gap-2 p-3">
                 <input
                   type="text"
                   value={getReferralLink() || "Loading..."}
                   readOnly
-                  className="flex-1 bg-transparent text-foreground text-xs font-mono truncate"
+                  className="flex-1 bg-transparent text-primary text-xs font-mono truncate"
                 />
                 <Button
                   variant="ghost"
@@ -3101,7 +3102,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <Copy className="h-4 w-4" />
                   )}
                 </Button>
-              </div>
+              </Surface>
 
               <div className="flex gap-3">
                 <Button
@@ -3128,7 +3129,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 </Button>
               </div>
             </div>
-          </div>
+          </Surface>
         </div>
       )}
       </div>

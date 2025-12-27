@@ -37,7 +37,7 @@ export function VenueGallery({ gallery, venueId }: VenueGalleryProps) {
   return (
     <>
       <Card>
-        <h2 className="text-2xl font-semibold text-foreground mb-6">Gallery</h2>
+        <h2 className="text-2xl font-semibold text-primary mb-6">Gallery</h2>
 
         {/* Hero Image */}
         {heroImage && (
@@ -54,7 +54,7 @@ export function VenueGallery({ gallery, venueId }: VenueGalleryProps) {
               />
             </div>
             {heroImage.caption && (
-              <p className="text-sm text-foreground-muted mt-2">{heroImage.caption}</p>
+              <p className="text-sm text-secondary mt-2">{heroImage.caption}</p>
             )}
           </div>
         )}

@@ -146,14 +146,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="min-h-screen bg-void flex items-center justify-center">
         <LoadingSpinner text="Loading profile..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-void px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
@@ -289,7 +289,7 @@ export default function ProfilePage() {
                   onClick={() => setFormData({ ...formData, gender: "male" })}
                   className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
                     formData.gender === "male"
-                      ? "bg-primary/20 border-primary text-white"
+                      ? "bg-accent-secondary/20 border-accent-secondary text-white"
                       : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
                   }`}
                 >
@@ -300,7 +300,7 @@ export default function ProfilePage() {
                   onClick={() => setFormData({ ...formData, gender: "female" })}
                   className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
                     formData.gender === "female"
-                      ? "bg-primary/20 border-primary text-white"
+                      ? "bg-accent-secondary/20 border-accent-secondary text-white"
                       : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
                   }`}
                 >

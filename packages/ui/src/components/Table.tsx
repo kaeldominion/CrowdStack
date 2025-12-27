@@ -10,7 +10,7 @@ export interface TableProps {
 
 export function Table({ children, className }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
+    <div className="overflow-x-auto rounded-xl border border-border-subtle">
       <table className={cn("w-full", className)}>
         {children}
       </table>
@@ -25,7 +25,7 @@ export interface TableHeaderProps {
 
 export function TableHeader({ children, className }: TableHeaderProps) {
   return (
-    <thead className={cn("bg-surface border-b border-border", className)}>
+    <thead className={cn("bg-glass border-b border-border-subtle", className)}>
       {children}
     </thead>
   );
@@ -38,7 +38,7 @@ export interface TableBodyProps {
 
 export function TableBody({ children, className }: TableBodyProps) {
   return (
-    <tbody className={cn("divide-y divide-border", className)}>
+    <tbody className={cn("divide-y divide-border-subtle", className)}>
       {children}
     </tbody>
   );
@@ -55,9 +55,9 @@ export function TableRow({ children, className, hover, onClick }: TableRowProps)
   return (
     <tr
       className={cn(
-        "border-b border-border transition-colors",
-        hover && "hover:bg-surface/50 cursor-pointer",
-        onClick && "hover:bg-surface/50 cursor-pointer",
+        "border-b border-border-subtle transition-all",
+        hover && "hover:bg-active hover:border-accent-primary/30 cursor-pointer",
+        onClick && "hover:bg-active hover:border-accent-primary/30 cursor-pointer",
         className
       )}
       onClick={onClick}
@@ -76,7 +76,7 @@ export function TableHead({ children, className }: TableHeadProps) {
   return (
     <th
       className={cn(
-        "px-6 py-3 text-left text-xs font-medium text-foreground-muted uppercase tracking-wider",
+        "px-6 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-secondary",
         className
       )}
     >
@@ -96,7 +96,7 @@ export function TableCell({ children, className, colSpan }: TableCellProps) {
     <td
       colSpan={colSpan}
       className={cn(
-        "px-6 py-4 text-sm text-foreground whitespace-nowrap",
+        "px-6 py-4 text-sm text-primary whitespace-nowrap",
         className
       )}
     >

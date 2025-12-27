@@ -211,14 +211,14 @@ export function CrispChat() {
         // If user is a venue admin, try to get their venue info
         if (roles.includes("venue_admin")) {
           try {
-            const { data: venueUser } = await supabase
+            const { data: venueUser, error: venueError } = await supabase
               .from("venue_users")
               .select("venue:venues(name, city, country)")
               .eq("user_id", user.id)
               .limit(1)
-              .single();
+              .maybeSingle();
 
-            if (venueUser?.venue) {
+            if (!venueError && venueUser?.venue) {
               const venue = Array.isArray(venueUser.venue) 
                 ? venueUser.venue[0] 
                 : venueUser.venue;
@@ -233,7 +233,7 @@ export function CrispChat() {
               }
             }
           } catch {
-            // Venue fetch failed, continue
+            // Venue fetch failed, continue silently
           }
         }
 

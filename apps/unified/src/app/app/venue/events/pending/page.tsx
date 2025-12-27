@@ -133,7 +133,7 @@ export default function VenuePendingEventsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading pending events...</div>
+        <div className="text-secondary">Loading pending events...</div>
       </div>
     );
   }
@@ -142,10 +142,10 @@ export default function VenuePendingEventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-foreground">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">
             Pending Event Approvals
           </h1>
-          <p className="mt-2 text-sm text-foreground-muted">
+          <p className="mt-2 text-sm text-secondary">
             Review and approve events that organizers want to host at your venue
           </p>
         </div>
@@ -160,11 +160,11 @@ export default function VenuePendingEventsPage() {
       {events.length === 0 ? (
         <Card>
           <div className="p-12 text-center">
-            <Clock className="h-12 w-12 mx-auto text-foreground-muted mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <Clock className="h-12 w-12 mx-auto text-secondary mb-4" />
+            <h3 className="text-lg font-semibold text-primary mb-2">
               No Pending Approvals
             </h3>
-            <p className="text-foreground-muted">
+            <p className="text-secondary">
               There are no events waiting for your approval right now.
             </p>
             <Link href="/app/venue/events">
@@ -182,13 +182,13 @@ export default function VenuePendingEventsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <Calendar className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold text-foreground">
+                    <h3 className="text-lg font-semibold text-primary">
                       {event.name}
                     </h3>
                     <Badge variant="warning">Pending Approval</Badge>
                   </div>
 
-                  <div className="space-y-2 text-sm text-foreground-muted">
+                  <div className="space-y-2 text-sm text-secondary">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       <span>
@@ -204,7 +204,7 @@ export default function VenuePendingEventsPage() {
                       )}
                     </div>
                     {event.description && (
-                      <p className="mt-2 text-foreground-muted line-clamp-2">
+                      <p className="mt-2 text-secondary line-clamp-2">
                         {event.description}
                       </p>
                     )}
@@ -249,12 +249,12 @@ export default function VenuePendingEventsPage() {
         title="Approve Event"
       >
         <div className="space-y-4">
-          <p className="text-foreground-muted">
+          <p className="text-secondary">
             You're about to approve <strong>{approveModal?.eventName}</strong> by{" "}
             <strong>{approveModal?.organizerName}</strong>.
           </p>
 
-          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+          <div className="p-4 bg-accent-secondary/5 border border-accent-secondary/20 rounded-lg">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -263,11 +263,11 @@ export default function VenuePendingEventsPage() {
                 className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
               />
               <div>
-                <span className="font-medium text-foreground flex items-center gap-2">
+                <span className="font-medium text-primary flex items-center gap-2">
                   <Star className="h-4 w-4 text-warning" />
                   Add to Pre-approved Organizers
                 </span>
-                <p className="text-sm text-foreground-muted mt-1">
+                <p className="text-sm text-secondary mt-1">
                   Future events from <strong>{approveModal?.organizerName}</strong> will be 
                   automatically approved. You'll still be notified when they create events.
                 </p>
@@ -307,7 +307,7 @@ export default function VenuePendingEventsPage() {
         title="Reject Event"
       >
         <div className="space-y-4">
-          <p className="text-foreground-muted">
+          <p className="text-secondary">
             Are you sure you want to reject <strong>{rejectModal?.eventName}</strong>?
             The organizer will be notified.
           </p>

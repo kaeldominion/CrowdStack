@@ -195,10 +195,10 @@ export default function VenueEventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-foreground">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">
             Events at Your Venue
           </h1>
-          <p className="mt-2 text-sm text-foreground-muted">
+          <p className="mt-2 text-sm text-secondary">
             Manage and track all events hosted at your venue
           </p>
         </div>
@@ -215,30 +215,30 @@ export default function VenueEventsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="text-sm text-foreground-muted">Total Events</div>
-          <div className="text-3xl font-bold text-foreground mt-1">{events.length}</div>
+          <div className="text-sm text-secondary">Total Events</div>
+          <div className="text-3xl font-bold text-primary mt-1">{events.length}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-foreground-muted">Pending Approval</div>
-          <div className="text-3xl font-bold text-warning mt-1">{pendingCount}</div>
+          <div className="text-sm text-secondary">Pending Approval</div>
+          <div className="text-3xl font-bold text-accent-warning mt-1">{pendingCount}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-foreground-muted">Approved</div>
-          <div className="text-3xl font-bold text-success mt-1">{approvedCount}</div>
+          <div className="text-sm text-secondary">Approved</div>
+          <div className="text-3xl font-bold text-accent-success mt-1">{approvedCount}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-foreground-muted">Upcoming</div>
+          <div className="text-sm text-secondary">Upcoming</div>
           <div className="text-3xl font-bold text-primary mt-1">{upcomingCount}</div>
         </Card>
       </div>
 
       {/* Organizer Filter Badge */}
       {filteredOrganizer && (
-        <Card className="p-4 bg-primary/5 border-primary/20">
+        <Card className="p-4 bg-accent-secondary/5 border-accent-secondary/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
-              <span className="text-sm text-foreground">
+              <span className="text-sm text-primary">
                 Showing events from <strong>{filteredOrganizer.name}</strong>
               </span>
             </div>
@@ -246,7 +246,7 @@ export default function VenueEventsPage() {
               variant="ghost"
               size="sm"
               onClick={clearOrganizerFilter}
-              className="text-foreground-muted hover:text-foreground"
+              className="text-secondary hover:text-primary"
             >
               <X className="h-4 w-4 mr-1" />
               Clear Filter
@@ -282,11 +282,11 @@ export default function VenueEventsPage() {
         {filteredEvents.length === 0 ? (
           <Card>
             <div className="p-12 text-center">
-              <Calendar className="h-12 w-12 mx-auto text-foreground-muted mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <Calendar className="h-12 w-12 mx-auto text-secondary mb-4" />
+              <h3 className="text-lg font-semibold text-primary mb-2">
                 No Events Found
               </h3>
-              <p className="text-foreground-muted">
+              <p className="text-secondary">
                 {filteredOrganizer
                   ? `No events found for ${filteredOrganizer.name}.`
                   : activeTab === "pending" 
@@ -320,33 +320,33 @@ export default function VenueEventsPage() {
                     onClick={() => router.push(`/app/venue/events/${event.id}`)}
                   >
                     <TableCell>
-                      <div className="font-medium text-foreground">{event.name}</div>
-                      <div className="text-xs text-foreground-muted">{event.slug}</div>
+                      <div className="font-sans font-semibold text-primary">{event.name}</div>
+                      <div className="text-xs text-secondary mt-0.5">{event.slug}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-foreground">{event.organizer.name}</div>
+                      <div className="text-sm text-primary">{event.organizer.name}</div>
                       {event.organizer.email && (
-                        <div className="text-xs text-foreground-muted">{event.organizer.email}</div>
+                        <div className="text-xs text-secondary mt-0.5">{event.organizer.email}</div>
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-foreground-muted">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-sm">{formatDate(event.start_time)}</span>
+                      <div className="flex items-center gap-1 text-sm text-secondary">
+                        <Clock className="h-3 w-3 text-muted" />
+                        <span>{formatDate(event.start_time)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-foreground-muted" />
+                      <div className="flex items-center gap-1 text-sm text-primary">
+                        <Users className="h-4 w-4 text-muted" />
                         <span>{event.registrations}</span>
                         {event.capacity && (
-                          <span className="text-foreground-muted">/ {event.capacity}</span>
+                          <span className="text-secondary">/ {event.capacity}</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <UserCheck className="h-4 w-4 text-success" />
+                      <div className="flex items-center gap-1 text-sm text-primary">
+                        <UserCheck className="h-4 w-4 text-accent-success" />
                         <span>{event.checkins}</span>
                       </div>
                     </TableCell>

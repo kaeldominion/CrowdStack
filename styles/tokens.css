@@ -1,0 +1,51 @@
+/* =========================================================
+   CrowdStack Design Tokens
+   Source: Google AI Studio (index.tsx)
+   ========================================================= */
+
+/* ---------- BASE COLORS ---------- */
+:root {
+    /* --- BACKGROUND SURFACES --- */
+    --bg-void: #050505;        /* App background (The Void) */
+    --bg-glass: #0A0A0A;       /* Cards / Panels */
+    --bg-raised: #111111;      /* Dropdowns / Modals */
+    --bg-active: #1A1A1A;      /* Hover / Active states */
+  
+    /* --- ACCENTS --- */
+    --accent-primary: #A855F7;     /* Neural Purple */
+    --accent-secondary: #3B82F6;   /* Digital Blue */
+    --accent-success: #10B981;     /* Signal Green */
+    --accent-warning: #F59E0B;     /* Alert Amber */
+    --accent-error: #EF4444;       /* Critical Red */
+  
+    /* --- TEXT --- */
+    --text-primary: #E2E8F0;   /* Slate 200 */
+    --text-secondary: #94A3B8; /* Slate 400 */
+    --text-muted: #475569;     /* Slate 600 */
+    --text-inverse: #000000;   /* On light surfaces */
+  
+    /* --- BORDERS --- */
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --border-strong: rgba(255, 255, 255, 0.1);
+    --border-highlight: rgba(168, 85, 247, 0.3);
+  
+    /* --- RADIUS --- */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+    --radius-pill: 9999px;
+  
+    /* --- SHADOWS (VERY SUBTLE, HUD STYLE) --- */
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.6);
+    --shadow-glass: inset 0 0 0 1px var(--border-subtle);
+  
+    /* --- GLASS EFFECT --- */
+    --glass-blur: 18px;
+    --glass-noise-opacity: 0.04;
+  
+    /* --- MOTION --- */
+    --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+  }

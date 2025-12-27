@@ -126,7 +126,7 @@ export function AddPromoterModal({
       size="lg"
     >
       <div className="space-y-4">
-        <div className="text-sm text-foreground-muted">
+        <div className="text-sm text-secondary">
           {context === "venue" 
             ? "Search for promoters who have worked at your venue. You can only see promoters who have already worked on events at your venue."
             : "Search for promoters who have worked on your events. You can only see promoters who have already worked on your events."}
@@ -134,7 +134,7 @@ export function AddPromoterModal({
 
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary" />
           <Input
             placeholder="Search by name, email, or phone..."
             value={searchQuery}
@@ -153,7 +153,7 @@ export function AddPromoterModal({
         {searchQuery.length >= 2 && (
           <div className="border border-border rounded-lg max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="text-center py-8 text-foreground-muted">
+              <div className="text-center py-8 text-secondary">
                 Searching...
               </div>
             ) : availablePromoters.length > 0 ? (
@@ -161,13 +161,13 @@ export function AddPromoterModal({
                 {availablePromoters.map((promoter) => (
                   <div
                     key={promoter.id}
-                    className="flex items-center justify-between p-4 hover:bg-background-secondary"
+                    className="flex items-center justify-between p-4 hover:bg-raised"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-foreground">
+                      <div className="font-medium text-primary">
                         {promoter.name}
                       </div>
-                      <div className="text-sm text-foreground-muted mt-1 flex items-center gap-4">
+                      <div className="text-sm text-secondary mt-1 flex items-center gap-4">
                         {promoter.email && (
                           <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3" />
@@ -200,7 +200,7 @@ export function AddPromoterModal({
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-foreground-muted">
+              <div className="text-center py-8 text-secondary">
                 {searchQuery.length >= 2
                   ? "No promoters found matching your search"
                   : "Start typing to search for promoters"}
@@ -210,10 +210,10 @@ export function AddPromoterModal({
         )}
 
         {!eventId && (
-          <div className="p-3 bg-background-secondary border border-border rounded-lg flex items-start gap-2">
-            <Info className="h-4 w-4 text-foreground-muted mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-foreground-muted">
-              <p className="font-medium text-foreground mb-1">Note</p>
+          <div className="p-3 bg-raised border border-border rounded-lg flex items-start gap-2">
+            <Info className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-secondary">
+              <p className="font-medium text-primary mb-1">Note</p>
               <p>
                 To add a promoter to a specific event, go to that event's page and use the "Manage Promoters" button.
                 This view shows all promoters who have worked with you.

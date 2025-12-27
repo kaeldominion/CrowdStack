@@ -96,13 +96,13 @@ export default function AdminVenuesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Venue Management</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Venue Management</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Manage all venues in the system
               </p>
             </div>
@@ -123,7 +123,7 @@ export default function AdminVenuesPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredVenues.length} of {venues.length} venues
           </div>
 
@@ -143,7 +143,7 @@ export default function AdminVenuesPage() {
                 <TableBody>
                   {filteredVenues.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={6} className="text-center py-8 text-secondary">
                         No venues found
                       </TableCell>
                     </TableRow>
@@ -167,15 +167,15 @@ export default function AdminVenuesPage() {
                         <TableCell>
                           <div className="space-y-1">
                             {venue.email && (
-                              <div className="text-sm text-foreground-muted">{venue.email}</div>
+                              <div className="text-sm text-secondary">{venue.email}</div>
                             )}
                             {venue.phone && (
-                              <div className="text-sm text-foreground-muted">{venue.phone}</div>
+                              <div className="text-sm text-secondary">{venue.phone}</div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>{venue.events_count || 0}</TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(venue.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
@@ -193,7 +193,7 @@ export default function AdminVenuesPage() {
                             )}
                             <Link
                               href={`/app/venue/settings?venueId=${venue.id}`}
-                              className="text-foreground-muted hover:text-foreground"
+                              className="text-secondary hover:text-primary"
                             >
                               <ChevronRight className="h-4 w-4" />
                             </Link>

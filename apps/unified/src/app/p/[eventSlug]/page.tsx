@@ -118,7 +118,7 @@ export default function PhotosPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="min-h-screen bg-void flex items-center justify-center">
         <LoadingSpinner text="Loading photos..." size="lg" />
       </div>
     );
@@ -126,7 +126,7 @@ export default function PhotosPage() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="text-center">
           <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
           <h1 className="text-2xl font-bold text-white mb-2">Event Not Found</h1>
@@ -140,7 +140,7 @@ export default function PhotosPage() {
 
   if (!album) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="text-center">
           <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
           <h1 className="text-2xl font-bold text-white mb-2">No Photo Album</h1>
@@ -154,7 +154,7 @@ export default function PhotosPage() {
 
   if (album.status !== "published") {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="text-center">
           <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
           <h1 className="text-2xl font-bold text-white mb-2">Photos Not Available</h1>
@@ -171,7 +171,7 @@ export default function PhotosPage() {
 
   if (photos.length === 0) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="text-center">
           <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
           <h1 className="text-2xl font-bold text-white mb-2">No Photos Yet</h1>
@@ -193,9 +193,9 @@ export default function PhotosPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] pt-20">
+    <div className="min-h-screen bg-void pt-20">
       {/* Header - positioned below the global floating nav */}
-      <div className="sticky top-20 z-10 bg-[#0B0D10]/80 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-20 z-10 bg-void/80 backdrop-blur-md border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

@@ -290,13 +290,13 @@ export default function NewEventPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Timezone
             </label>
             <select
               value={formData.timezone}
               onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-              className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+              className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
             >
               <option value="America/New_York">Eastern Time (ET)</option>
               <option value="America/Chicago">Central Time (CT)</option>
@@ -313,18 +313,18 @@ export default function NewEventPage() {
               <option value="Asia/Shanghai">Shanghai (CST)</option>
               <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
             </select>
-            <p className="mt-1 text-xs text-foreground-muted">
+            <p className="mt-1 text-xs text-secondary">
               Timezone for event times
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Venue (Optional)</label>
+              <label className="block text-sm font-medium text-primary mb-2">Venue (Optional)</label>
               <select
                 value={formData.venue_id}
                 onChange={(e) => setFormData({ ...formData, venue_id: e.target.value })}
-                className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+                className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
               >
                 <option value="">Select a venue</option>
                 {venues.map((venue) => (
@@ -363,7 +363,7 @@ export default function NewEventPage() {
 
             {/* Video Flier Upload */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-primary mb-2">
                 Video Flier (Optional)
               </label>
               <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
@@ -412,16 +412,16 @@ export default function NewEventPage() {
                     </div>
                   ) : (
                     <div className="py-6">
-                      <svg className="mx-auto h-12 w-12 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="mx-auto h-12 w-12 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      <p className="mt-2 text-sm text-foreground">Click to upload video</p>
-                      <p className="mt-1 text-xs text-foreground-muted">MP4, WebM, MOV · Max 50MB · 9:16 format recommended</p>
+                      <p className="mt-2 text-sm text-primary">Click to upload video</p>
+                      <p className="mt-1 text-xs text-secondary">MP4, WebM, MOV · Max 50MB · 9:16 format recommended</p>
                     </div>
                   )}
                 </label>
               </div>
-              <p className="mt-1 text-xs text-foreground-muted">
+              <p className="mt-1 text-xs text-secondary">
                 Short video flier for enhanced promotion (max 30 seconds recommended)
               </p>
             </div>
@@ -432,7 +432,7 @@ export default function NewEventPage() {
             <h3 className="text-lg font-semibold text-white">Promoter Settings</h3>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Promoter Access</label>
+              <label className="block text-sm font-medium text-primary mb-2">Promoter Access</label>
               <select
                 value={formData.promoter_access_type}
                 onChange={(e) =>
@@ -441,7 +441,7 @@ export default function NewEventPage() {
                     promoter_access_type: e.target.value as "public" | "invite_only",
                   })
                 }
-                className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+                className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
               >
                 <option value="public">Public - All promoters can request to promote</option>
                 <option value="invite_only">Invite Only - Only invited promoters can promote</option>
@@ -456,14 +456,14 @@ export default function NewEventPage() {
                 onChange={(e) => setFormData({ ...formData, self_promote: e.target.checked })}
                 className="rounded border-border"
               />
-              <label htmlFor="self_promote" className="text-sm text-foreground">
+              <label htmlFor="self_promote" className="text-sm text-primary">
                 Promote as yourself (add yourself as a promoter)
               </label>
             </div>
 
             {formData.promoter_access_type === "invite_only" && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Invite Promoters
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
@@ -492,7 +492,7 @@ export default function NewEventPage() {
                       />
                       <label
                         htmlFor={`promoter-${promoter.id}`}
-                        className="text-sm text-foreground"
+                        className="text-sm text-primary"
                       >
                         {promoter.name}
                       </label>
@@ -513,11 +513,11 @@ export default function NewEventPage() {
                 onChange={(e) => setFormData({ ...formData, show_photo_email_notice: e.target.checked })}
                 className="rounded border-border"
               />
-              <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+              <label htmlFor="show_photo_email_notice" className="text-sm text-primary">
                 Show photo email notice on registration success
               </label>
             </div>
-            <p className="text-xs text-foreground-muted ml-6">
+            <p className="text-xs text-secondary ml-6">
               If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
             </p>
           </div>

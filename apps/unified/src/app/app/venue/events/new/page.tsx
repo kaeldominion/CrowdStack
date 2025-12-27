@@ -191,8 +191,8 @@ export default function VenueNewEventPage() {
       </Link>
 
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <h1 className="text-3xl font-bold tracking-tighter text-primary">Create New Event</h1>
+        <p className="mt-2 text-sm text-secondary">
           Create an event at your venue
         </p>
       </div>
@@ -250,7 +250,7 @@ export default function VenueNewEventPage() {
 
           {/* Organizer Selection */}
           <div className="space-y-4 border-t border-border pt-6">
-            <h3 className="text-lg font-semibold text-white">Organizer</h3>
+            <h3 className="text-lg font-semibold text-primary">Organizer</h3>
 
             <div className="flex items-center gap-2 mb-4">
               <input
@@ -262,7 +262,7 @@ export default function VenueNewEventPage() {
                 }
                 className="rounded border-border"
               />
-              <label htmlFor="create_new_organizer" className="text-sm text-foreground">
+              <label htmlFor="create_new_organizer" className="text-sm text-primary">
                 Create new organizer
               </label>
             </div>
@@ -279,13 +279,13 @@ export default function VenueNewEventPage() {
               />
             ) : (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Select Organizer
                 </label>
                 <select
                   value={formData.organizer_id}
                   onChange={(e) => setFormData({ ...formData, organizer_id: e.target.value })}
-                  className="w-full rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground"
+                  className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
                 >
                   <option value="">Select an organizer</option>
                   {organizers.map((organizer) => (
@@ -300,7 +300,7 @@ export default function VenueNewEventPage() {
 
           {/* Direct Promoter Assignment */}
           <div className="space-y-4 border-t border-border pt-6">
-            <h3 className="text-lg font-semibold text-white">Assign Promoters (Optional)</h3>
+            <h3 className="text-lg font-semibold text-primary">Assign Promoters (Optional)</h3>
             <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
               {promoters.map((promoter) => (
                 <div key={promoter.id} className="flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function VenueNewEventPage() {
                     }}
                     className="rounded border-border"
                   />
-                  <label htmlFor={`promoter-${promoter.id}`} className="text-sm text-foreground">
+                  <label htmlFor={`promoter-${promoter.id}`} className="text-sm text-primary">
                     {promoter.name}
                   </label>
                 </div>
@@ -343,11 +343,11 @@ export default function VenueNewEventPage() {
                 onChange={(e) => setFormData({ ...formData, show_photo_email_notice: e.target.checked })}
                 className="rounded border-border"
               />
-              <label htmlFor="show_photo_email_notice" className="text-sm text-foreground">
+              <label htmlFor="show_photo_email_notice" className="text-sm text-primary">
                 Show photo email notice on registration success
               </label>
             </div>
-            <p className="text-xs text-foreground-muted ml-6">
+            <p className="text-xs text-secondary ml-6">
               If enabled, attendees will see a message on the registration success page that event photos will be sent to their email in a few days.
             </p>
           </div>

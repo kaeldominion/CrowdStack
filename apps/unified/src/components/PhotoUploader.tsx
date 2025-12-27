@@ -157,8 +157,8 @@ export function PhotoUploader({
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           isDragging
-            ? "border-primary bg-primary/10"
-            : "border-border hover:border-primary/50"
+            ? "border-accent-secondary bg-accent-secondary/10"
+            : "border-border hover:border-accent-secondary/50"
         }`}
       >
         <input
@@ -170,11 +170,11 @@ export function PhotoUploader({
           className="hidden"
         />
 
-        <ImageIcon className="h-12 w-12 mx-auto mb-4 text-foreground-muted" />
-        <p className="text-lg font-medium text-foreground mb-2">
+        <ImageIcon className="h-12 w-12 mx-auto mb-4 text-secondary" />
+        <p className="text-lg font-medium text-primary mb-2">
           Drop photos here or click to browse
         </p>
-        <p className="text-sm text-foreground-muted mb-4">
+        <p className="text-sm text-secondary mb-4">
           JPEG, PNG, or WebP up to 10MB each
         </p>
         <Button
@@ -191,7 +191,7 @@ export function PhotoUploader({
       {files.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-foreground-muted">
+            <span className="text-secondary">
               {successCount} uploaded
               {pendingCount > 0 && `, ${pendingCount} uploading`}
               {errorCount > 0 && `, ${errorCount} failed`}
@@ -216,7 +216,7 @@ export function PhotoUploader({
             {files.map((fileProgress, index) => (
               <div
                 key={index}
-                className="relative aspect-square rounded-lg overflow-hidden bg-surface border border-border"
+                className="relative aspect-square rounded-lg overflow-hidden bg-glass border border-border"
               >
                 {fileProgress.status === "uploading" && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
@@ -247,7 +247,7 @@ export function PhotoUploader({
                 {fileProgress.status === "uploading" && (
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
                     <div
-                      className="h-full bg-primary transition-all"
+                      className="h-full bg-accent-secondary transition-all"
                       style={{ width: `${fileProgress.progress}%` }}
                     />
                   </div>

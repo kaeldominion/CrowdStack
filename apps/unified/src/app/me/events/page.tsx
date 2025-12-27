@@ -286,21 +286,21 @@ export default function MyEventsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner text="Loading events..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
             My Events
           </h1>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-secondary">
             {upcomingEvents.length + pastEvents.length} event{upcomingEvents.length + pastEvents.length !== 1 ? "s" : ""} total
           </p>
         </div>
@@ -309,9 +309,9 @@ export default function MyEventsPage() {
         {upcomingEvents.length > 0 && (
           <section className="mb-12 space-y-4">
             <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-indigo-400" />
-              <h2 className="text-xl font-semibold text-white">Upcoming Events</h2>
-              <span className="text-sm text-white/60">({upcomingEvents.length})</span>
+              <Clock className="h-5 w-5 text-accent-secondary" />
+              <h2 className="text-xl font-semibold text-primary">Upcoming Events</h2>
+              <span className="text-sm text-secondary">({upcomingEvents.length})</span>
             </div>
 
             <div className="space-y-3">
@@ -320,15 +320,15 @@ export default function MyEventsPage() {
                 return (
                   <div
                     key={reg.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden"
+                    className="bg-glass border border-border-subtle rounded-2xl overflow-hidden hover:border-accent-primary/30 hover:shadow-soft transition-all"
                   >
                     <Link
                       href={`/e/${reg.event.slug}`}
-                      className="block hover:bg-white/5 transition-all duration-300 group"
+                      className="block group"
                     >
                       <div className="flex items-center gap-4 p-4">
                         {/* Event Image or Placeholder */}
-                        <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-accent-secondary/30 via-accent-primary/30 to-accent-secondary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {(reg.event.flier_url || reg.event.cover_image_url) ? (
                             <img
                               src={reg.event.flier_url || reg.event.cover_image_url || ""}
@@ -336,28 +336,28 @@ export default function MyEventsPage() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <Ticket className="h-8 w-8 text-white/40" />
+                            <Ticket className="h-8 w-8 text-muted" />
                           )}
                         </div>
 
                         {/* Event Details */}
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-white group-hover:text-indigo-400 transition-colors truncate">
+                          <h3 className="font-sans font-semibold text-primary group-hover:text-accent-primary transition-colors truncate">
                             {reg.event.name}
                           </h3>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-white/50">
+                          <div className="flex items-center gap-4 mt-1 text-sm text-secondary">
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-3.5 w-3.5" />
+                              <Calendar className="h-3.5 w-3.5 text-muted" />
                               {formatEventDate(reg.event.start_time)}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5" />
+                              <Clock className="h-3.5 w-3.5 text-muted" />
                               {formatEventTime(reg.event.start_time)}
                             </span>
                           </div>
                           {reg.event.venue && (
-                            <div className="flex items-center gap-1 mt-1 text-sm text-white/40">
-                              <MapPin className="h-3.5 w-3.5" />
+                            <div className="flex items-center gap-1 mt-1 text-sm text-secondary">
+                              <MapPin className="h-3.5 w-3.5 text-muted" />
                               {reg.event.venue.name}
                               {reg.event.venue.city && `, ${reg.event.venue.city}`}
                             </div>
@@ -370,7 +370,7 @@ export default function MyEventsPage() {
                     <div className="px-4 pb-4 flex gap-2">
                       <Link
                         href={`/e/${reg.event.slug}`}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium hover:from-indigo-600 hover:to-purple-600 transition-all text-sm"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-secondary to-accent-primary text-white rounded-xl font-medium hover:from-accent-secondary/90 hover:to-accent-primary/90 transition-all text-sm"
                       >
                         <QrCode className="h-4 w-4" />
                         View Ticket
@@ -381,7 +381,7 @@ export default function MyEventsPage() {
                           e.stopPropagation();
                           handleShare(reg.event!.slug, reg.event!.name);
                         }}
-                        className="px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors"
+                        className="px-4 py-2 bg-active text-primary rounded-xl hover:bg-active/80 transition-colors"
                         title="Share event"
                       >
                         {copiedEventId === reg.event.slug ? (
@@ -397,11 +397,11 @@ export default function MyEventsPage() {
                           handleDeregister(reg.event!.slug, reg.id);
                         }}
                         disabled={deregisteringId === reg.id}
-                        className="px-4 py-2 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center justify-center"
+                        className="px-4 py-2 bg-accent-error/20 text-accent-error rounded-xl hover:bg-accent-error/30 transition-colors disabled:opacity-50 flex items-center justify-center"
                         title="Deregister from event"
                       >
                         {deregisteringId === reg.id ? (
-                          <div className="h-4 w-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                          <div className="h-4 w-4 border-2 border-accent-error border-t-transparent rounded-full animate-spin" />
                         ) : (
                           <X className="h-4 w-4" />
                         )}
@@ -418,17 +418,17 @@ export default function MyEventsPage() {
         {pastEvents.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center gap-3">
-              <History className="h-5 w-5 text-white/60" />
-              <h2 className="text-xl font-semibold text-white">Event History</h2>
-              <span className="text-sm text-white/60">({pastEvents.length})</span>
+              <History className="h-5 w-5 text-secondary" />
+              <h2 className="text-xl font-semibold text-primary">Event History</h2>
+              <span className="text-sm text-secondary">({pastEvents.length})</span>
             </div>
 
             {years.length > 0 ? (
               <div className="space-y-8">
                 {years.map((year) => (
                   <div key={year}>
-                    <h3 className="text-lg font-semibold text-white/80 mb-4 flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-indigo-400" />
+                    <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-accent-secondary" />
                       {year}
                     </h3>
                     <div className="space-y-2">
@@ -437,51 +437,52 @@ export default function MyEventsPage() {
                         return (
                           <div
                             key={reg.id}
-                            className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/5 transition-colors"
+                            className="bg-glass border border-border-subtle rounded-2xl p-4 hover:border-accent-primary/30 hover:shadow-soft transition-all"
                           >
-                            {/* Event Image */}
-                            <div className="h-14 w-14 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              {reg.event.cover_image_url || reg.event.flier_url ? (
-                                <img
-                                  src={reg.event.cover_image_url || reg.event.flier_url || ""}
-                                  alt={reg.event.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <Ticket className="h-6 w-6 text-white/30" />
-                              )}
-                            </div>
+                            <div className="flex items-center gap-4">
+                              {/* Event Image */}
+                              <div className="h-14 w-14 rounded-xl bg-glass flex items-center justify-center flex-shrink-0 overflow-hidden border border-border-subtle">
+                                {reg.event.cover_image_url || reg.event.flier_url ? (
+                                  <img
+                                    src={reg.event.cover_image_url || reg.event.flier_url || ""}
+                                    alt={reg.event.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <Ticket className="h-6 w-6 text-muted" />
+                                )}
+                              </div>
 
-                            {/* Event Details */}
-                            <div className="flex-1 min-w-0">
-                              <Link
-                                href={`/e/${reg.event.slug}`}
-                                className="block group"
-                              >
-                                <h3 className="font-medium text-white truncate group-hover:text-indigo-400 transition-colors">
-                                  {reg.event.name}
-                                </h3>
-                                <div className="flex items-center gap-2 text-sm text-white/50 mt-1">
-                                  <span>{formatEventDate(reg.event.start_time)}</span>
-                                  {reg.event.venue && (
-                                    <>
-                                      <span>•</span>
-                                      <span>{reg.event.venue.name}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </Link>
-                            </div>
+                              {/* Event Details */}
+                              <div className="flex-1 min-w-0">
+                                <Link
+                                  href={`/e/${reg.event.slug}`}
+                                  className="block group"
+                                >
+                                  <h3 className="font-sans font-semibold text-primary truncate group-hover:text-accent-primary transition-colors">
+                                    {reg.event.name}
+                                  </h3>
+                                  <div className="flex items-center gap-2 text-sm text-secondary mt-1">
+                                    <span>{formatEventDate(reg.event.start_time)}</span>
+                                    {reg.event.venue && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{reg.event.venue.name}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </Link>
+                              </div>
 
                             {/* Check-in Status */}
                             <div className="flex items-center gap-2 flex-shrink-0">
                               {reg.checkins && reg.checkins.length > 0 ? (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-sm">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-success/20 text-accent-success text-sm">
                                   <CheckCircle2 className="h-4 w-4" />
                                   <span>Attended</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 text-white/50 text-sm">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-active text-secondary text-sm">
                                   <XCircle className="h-4 w-4" />
                                   <span>Missed</span>
                                 </div>
@@ -495,10 +496,10 @@ export default function MyEventsPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-12 text-center">
-                <Ticket className="h-16 w-16 text-white/20 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-white mb-2">No event history</h3>
-                <p className="text-white/50">
+              <div className="rounded-2xl border border-dashed border-border-strong bg-glass p-12 text-center">
+                <Ticket className="h-16 w-16 text-muted mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-primary mb-2">No event history</h3>
+                <p className="text-secondary">
                   Your past events will appear here
                 </p>
               </div>
@@ -508,15 +509,15 @@ export default function MyEventsPage() {
 
         {/* Empty State */}
         {upcomingEvents.length === 0 && pastEvents.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 p-12 text-center">
-            <Ticket className="h-16 w-16 text-white/20 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-white mb-2">No events yet</h3>
-            <p className="text-white/50 mb-6">
+          <div className="rounded-2xl border border-dashed border-border-strong bg-glass p-12 text-center">
+            <Ticket className="h-16 w-16 text-muted mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-primary mb-2">No events yet</h3>
+            <p className="text-secondary mb-6">
               Discover events and get your tickets!
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full font-medium hover:scale-105 transition-transform"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-accent-secondary to-accent-primary text-white rounded-full font-medium hover:scale-105 transition-transform"
             >
               Browse Events
             </Link>

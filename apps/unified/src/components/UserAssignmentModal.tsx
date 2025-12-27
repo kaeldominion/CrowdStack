@@ -138,7 +138,7 @@ export function UserAssignmentModal({
     >
       <div className="space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary" />
           <Input
             type="text"
             placeholder={`Search ${type === "venue" ? "venues" : "organizers"}...`}
@@ -158,7 +158,7 @@ export function UserAssignmentModal({
             <p className="text-sm mt-1">{loadError}</p>
           </div>
         ) : filteredEntities.length === 0 ? (
-          <div className="text-center py-8 text-foreground-muted">
+          <div className="text-center py-8 text-secondary">
             No {type === "venue" ? "venues" : "organizers"} found
           </div>
         ) : (
@@ -172,13 +172,13 @@ export function UserAssignmentModal({
                   disabled={saving}
                   className={`w-full text-left p-3 rounded-md border transition-colors ${
                     isAssigned
-                      ? "bg-primary/10 border-primary"
-                      : "border-border hover:bg-background"
+                      ? "bg-accent-secondary/10 border-accent-secondary"
+                      : "border-border hover:bg-void"
                   } ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="font-medium text-foreground flex items-center gap-2">
+                      <div className="font-medium text-primary flex items-center gap-2">
                         {type === "venue" ? (
                           <Building2 className="h-4 w-4" />
                         ) : (
@@ -187,7 +187,7 @@ export function UserAssignmentModal({
                         {entity.name}
                       </div>
                       {entity.email && (
-                        <div className="text-sm text-foreground-muted mt-1">{entity.email}</div>
+                        <div className="text-sm text-secondary mt-1">{entity.email}</div>
                       )}
                     </div>
                     <div className="ml-4">

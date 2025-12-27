@@ -138,7 +138,7 @@ export default function PreapprovedOrganizersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading pre-approved organizers...</div>
+        <div className="text-secondary">Loading pre-approved organizers...</div>
       </div>
     );
   }
@@ -147,11 +147,11 @@ export default function PreapprovedOrganizersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-foreground flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary flex items-center gap-3">
             <Star className="h-8 w-8 text-warning" />
             Pre-approved Organizers
           </h1>
-          <p className="mt-2 text-sm text-foreground-muted">
+          <p className="mt-2 text-sm text-secondary">
             Manage organizers whose events are automatically approved at your venue
           </p>
         </div>
@@ -162,11 +162,11 @@ export default function PreapprovedOrganizersPage() {
       </div>
 
       {/* Info card */}
-      <Card className="p-4 bg-primary/5 border-primary/20">
+      <Card className="p-4 bg-accent-secondary/5 border-accent-secondary/20">
         <div className="flex gap-3">
           <Star className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-foreground">
+            <p className="text-sm text-primary">
               <strong>How it works:</strong> Events from pre-approved organizers are 
               automatically approved when created. You'll still receive a notification 
               when they create new events so you can stay informed.
@@ -178,11 +178,11 @@ export default function PreapprovedOrganizersPage() {
       {partnerships.length === 0 ? (
         <Card>
           <div className="p-12 text-center">
-            <Building2 className="h-12 w-12 mx-auto text-foreground-muted mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <Building2 className="h-12 w-12 mx-auto text-secondary mb-4" />
+            <h3 className="text-lg font-semibold text-primary mb-2">
               No Pre-approved Organizers
             </h3>
-            <p className="text-foreground-muted mb-4">
+            <p className="text-secondary mb-4">
               Add organizers you trust to skip the approval step for their events.
             </p>
             <Button variant="primary" onClick={handleOpenAddModal}>
@@ -211,7 +211,7 @@ export default function PreapprovedOrganizersPage() {
                     <span className="font-medium">{partnership.organizer.name}</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-foreground-muted">
+                <TableCell className="text-secondary">
                   {partnership.organizer.email || "—"}
                 </TableCell>
                 <TableCell>
@@ -220,7 +220,7 @@ export default function PreapprovedOrganizersPage() {
                     {partnership.events_count} events
                   </Badge>
                 </TableCell>
-                <TableCell className="text-foreground-muted">
+                <TableCell className="text-secondary">
                   {formatDate(partnership.created_at)}
                 </TableCell>
                 <TableCell>
@@ -259,7 +259,7 @@ export default function PreapprovedOrganizersPage() {
 
           <div className="max-h-80 overflow-y-auto space-y-2">
             {filteredOrganizers.length === 0 ? (
-              <div className="p-8 text-center text-foreground-muted">
+              <div className="p-8 text-center text-secondary">
                 {organizers.length === 0
                   ? "Loading organizers..."
                   : "No organizers found matching your search"}
@@ -268,12 +268,12 @@ export default function PreapprovedOrganizersPage() {
               filteredOrganizers.map((organizer) => (
                 <div
                   key={organizer.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface transition-colors"
+                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-glass transition-colors"
                 >
                   <div>
-                    <p className="font-medium text-foreground">{organizer.name}</p>
+                    <p className="font-medium text-primary">{organizer.name}</p>
                     {organizer.email && (
-                      <p className="text-sm text-foreground-muted">{organizer.email}</p>
+                      <p className="text-sm text-secondary">{organizer.email}</p>
                     )}
                   </div>
                   <Button

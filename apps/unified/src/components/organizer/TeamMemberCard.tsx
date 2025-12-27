@@ -28,7 +28,7 @@ export function TeamMemberCard({
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {member.avatar_url ? (
-        <div className={`relative ${sizeClasses[size]} flex-shrink-0 border-2 border-border`}>
+        <div className={`relative ${sizeClasses[size]} flex-shrink-0 border-2 border-border-subtle rounded-full overflow-hidden`}>
           <Image
             src={member.avatar_url}
             alt={member.name}
@@ -38,15 +38,15 @@ export function TeamMemberCard({
         </div>
       ) : (
         <div
-          className={`${sizeClasses[size]} rounded-none bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold border-2 border-border flex-shrink-0`}
+          className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary flex items-center justify-center text-white font-semibold border-2 border-border-subtle flex-shrink-0`}
         >
           {getUserInitial()}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground truncate">{member.name}</p>
+        <p className="font-medium text-primary truncate">{member.name}</p>
         {member.role && (
-          <p className="text-sm text-foreground-muted truncate">{member.role}</p>
+          <p className="text-sm text-secondary truncate">{member.role}</p>
         )}
       </div>
     </div>

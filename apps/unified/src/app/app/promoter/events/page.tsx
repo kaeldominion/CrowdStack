@@ -244,30 +244,30 @@ export default function PromoterEventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Events</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <h1 className="text-3xl font-bold tracking-tighter text-primary">Events</h1>
+        <p className="mt-2 text-sm text-secondary">
           Manage your promotions and discover new events
         </p>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/5 border border-white/10">
-          <TabsTrigger value="my-events" className="data-[state=active]:bg-white/10">
+        <TabsList className="bg-glass border border-border-subtle">
+          <TabsTrigger value="my-events" className="data-[state=active]:bg-active">
             My Events
             {totalMyEvents > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-white/10 text-white text-xs">
+              <Badge variant="secondary" className="ml-2 bg-active text-primary text-xs">
                 {totalMyEvents}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="find-events" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="find-events" className="data-[state=active]:bg-active">
             Find Events
           </TabsTrigger>
-          <TabsTrigger value="requests" className="data-[state=active]:bg-white/10">
+          <TabsTrigger value="requests" className="data-[state=active]:bg-active">
             Requests
             {pendingRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-yellow-500/20 text-yellow-400 text-xs">
+              <Badge variant="secondary" className="ml-2 bg-accent-warning/20 text-accent-warning text-xs">
                 {pendingRequests.length}
               </Badge>
             )}
@@ -277,11 +277,11 @@ export default function PromoterEventsPage() {
         {/* MY EVENTS TAB */}
         <TabsContent value="my-events" className="mt-6 space-y-6">
           {totalMyEvents === 0 ? (
-            <Card className="bg-white/5 border-white/10">
+            <Card className="bg-glass border-border-subtle">
               <div className="p-8 text-center">
-                <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-white mb-2">No events yet</h3>
-                <p className="text-gray-400 mb-4">
+                <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-primary mb-2">No events yet</h3>
+                <p className="text-secondary mb-4">
                   Start by finding events to promote
                 </p>
                 <Button onClick={() => setActiveTab("find-events")}>
@@ -296,37 +296,37 @@ export default function PromoterEventsPage() {
               {myEvents.liveEvents.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                    <h3 className="text-lg font-semibold text-white">Live Now</h3>
+                    <div className="h-3 w-3 bg-accent-error rounded-full animate-pulse" />
+                    <h3 className="text-lg font-semibold text-primary">Live Now</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {myEvents.liveEvents.map((event) => (
                       <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                        <Card className="bg-white/5 border-l-4 border-l-red-500 border-white/10 hover:bg-white/10 transition-colors cursor-pointer h-full">
+                        <Card className="bg-glass border-l-4 border-l-accent-error border-border-subtle hover:bg-active transition-colors cursor-pointer h-full">
                           <div className="p-4 space-y-3">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-white truncate">{event.name}</h4>
+                                <h4 className="font-semibold text-primary truncate">{event.name}</h4>
                                 {event.venue_name && (
-                                  <p className="text-xs text-white/50 mt-1 flex items-center gap-1">
+                                  <p className="text-xs text-muted mt-1 flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
                                     {event.venue_name}
                                   </p>
                                 )}
                               </div>
-                              <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
+                              <Radio className="h-4 w-4 text-accent-error animate-pulse flex-shrink-0" />
                             </div>
                             <div className="flex items-center gap-4 text-xs">
-                              <span className="text-white/60">{event.registrations} reg</span>
-                              <span className="text-green-400 font-medium">{event.checkins} in</span>
-                              <span className="text-white/60">{event.conversionRate}%</span>
+                              <span className="text-secondary">{event.registrations} reg</span>
+                              <span className="text-accent-success font-medium">{event.checkins} in</span>
+                              <span className="text-secondary">{event.conversionRate}%</span>
                             </div>
-                            <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2 p-2 rounded bg-glass border border-border-subtle">
                               <input
                                 type="text"
                                 value={event.referral_link}
                                 readOnly
-                                className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
+                                className="flex-1 bg-transparent text-secondary text-xs font-mono truncate"
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <Button
@@ -336,7 +336,7 @@ export default function PromoterEventsPage() {
                                 className="shrink-0 h-6 w-6 p-0"
                               >
                                 {copiedEventId === event.id ? (
-                                  <Check className="h-3 w-3 text-green-400" />
+                                  <Check className="h-3 w-3 text-accent-success" />
                                 ) : (
                                   <Copy className="h-3 w-3" />
                                 )}
@@ -353,17 +353,17 @@ export default function PromoterEventsPage() {
               {/* Upcoming Events - List View */}
               {myEvents.upcomingEvents.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-indigo-400" />
+                  <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-accent-secondary" />
                     Upcoming Events
                   </h3>
                   <div className="space-y-2">
                     {myEvents.upcomingEvents.map((event) => (
                       <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-glass border border-border-subtle hover:bg-active transition-colors cursor-pointer group">
                           <div className="flex items-center gap-4 min-w-0 flex-1">
                             {/* Flier thumbnail */}
-                            <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-white/5">
+                            <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-glass">
                               {event.flier_url ? (
                                 <Image
                                   src={event.flier_url}
@@ -374,13 +374,13 @@ export default function PromoterEventsPage() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Calendar className="h-5 w-5 text-white/20" />
+                                  <Calendar className="h-5 w-5 text-muted" />
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="font-medium text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
-                              <div className="flex items-center gap-2 text-xs text-white/50 mt-1">
+                              <p className="font-medium text-primary truncate group-hover:text-accent-secondary transition-colors">{event.name}</p>
+                              <div className="flex items-center gap-2 text-xs text-secondary mt-1">
                                 <Clock className="h-3 w-3" />
                                 <span>{formatShortDate(event.start_time)}</span>
                                 {event.venue_name && (
@@ -395,12 +395,12 @@ export default function PromoterEventsPage() {
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right hidden sm:block">
-                              <p className="text-sm font-medium text-white">{event.registrations}</p>
-                              <p className="text-xs text-white/40">referrals</p>
+                              <p className="text-sm font-medium text-primary">{event.registrations}</p>
+                              <p className="text-xs text-muted">referrals</p>
                             </div>
                             <div className="text-right hidden sm:block">
-                              <p className="text-sm font-medium text-green-400">{event.checkins}</p>
-                              <p className="text-xs text-white/40">check-ins</p>
+                              <p className="text-sm font-medium text-accent-success">{event.checkins}</p>
+                              <p className="text-xs text-muted">check-ins</p>
                             </div>
                             <Button
                               variant="ghost"
@@ -410,12 +410,12 @@ export default function PromoterEventsPage() {
                               title="Copy referral link"
                             >
                               {copiedEventId === event.id ? (
-                                <Check className="h-4 w-4 text-green-400" />
+                                <Check className="h-4 w-4 text-accent-success" />
                               ) : (
-                                <Copy className="h-4 w-4 text-white/60" />
+                                <Copy className="h-4 w-4 text-secondary" />
                               )}
                             </Button>
-                            <ExternalLink className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
+                            <ExternalLink className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
                           </div>
                         </div>
                       </Link>
@@ -427,13 +427,13 @@ export default function PromoterEventsPage() {
               {/* Past Events */}
               {myEvents.pastEvents.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white/60">Past Events</h3>
+                  <h3 className="text-lg font-semibold text-secondary">Past Events</h3>
                   <div className="space-y-2">
                     {myEvents.pastEvents.slice(0, 5).map((event) => (
                       <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group opacity-75">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-glass border border-border-subtle hover:bg-active transition-colors cursor-pointer group opacity-75">
                           <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-white/5">
+                            <div className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-glass">
                               {event.flier_url ? (
                                 <Image
                                   src={event.flier_url}
@@ -444,19 +444,19 @@ export default function PromoterEventsPage() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Calendar className="h-4 w-4 text-white/20" />
+                                  <Calendar className="h-4 w-4 text-muted" />
                                 </div>
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
-                              <p className="text-xs text-white/40">{formatShortDate(event.start_time)}</p>
+                              <p className="text-sm text-primary truncate group-hover:text-accent-secondary transition-colors">{event.name}</p>
+                              <p className="text-xs text-muted">{formatShortDate(event.start_time)}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4 text-xs">
                             <div className="text-right">
-                              <p className="text-white/60">{event.checkins}/{event.registrations}</p>
-                              <p className="text-white/40">{event.conversionRate}% conv</p>
+                              <p className="text-secondary">{event.checkins}/{event.registrations}</p>
+                              <p className="text-muted">{event.conversionRate}% conv</p>
                             </div>
                           </div>
                         </div>
@@ -473,36 +473,36 @@ export default function PromoterEventsPage() {
         <TabsContent value="find-events" className="mt-6 space-y-6">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
             <Input
               type="text"
               placeholder="Search events by name or venue..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10"
+              className="pl-10"
             />
           </div>
 
           {/* Events Grid */}
           {browseLoading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <LoadingSpinner size="md" />
             </div>
           ) : browseEvents.length === 0 ? (
             <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400">No upcoming events found</p>
+              <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+              <p className="text-secondary">No upcoming events found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {browseEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all group"
+                  className="bg-glass border border-border-subtle rounded-xl overflow-hidden hover:border-accent-primary/30 transition-all group"
                 >
                   {/* Clickable Event Image */}
                   <Link href={`/e/${event.slug}`} target="_blank" className="block">
-                    <div className="relative aspect-[4/3] bg-gray-900 group-hover:opacity-90 transition-opacity">
+                    <div className="relative aspect-[4/3] bg-void group-hover:opacity-90 transition-opacity">
                       {event.flier_url || event.cover_image_url ? (
                         <Image
                           src={event.flier_url || event.cover_image_url || ""}
@@ -512,7 +512,7 @@ export default function PromoterEventsPage() {
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <Calendar className="h-12 w-12 text-gray-600" />
+                          <Calendar className="h-12 w-12 text-muted" />
                         </div>
                       )}
                       
@@ -549,11 +549,11 @@ export default function PromoterEventsPage() {
 
                   {/* Event Details */}
                   <div className="p-4 space-y-3">
-                    <h3 className="font-semibold text-white text-lg line-clamp-1">
+                    <h3 className="font-semibold text-primary text-lg line-clamp-1">
                       {event.name}
                     </h3>
 
-                    <div className="space-y-1.5 text-sm text-gray-400">
+                    <div className="space-y-1.5 text-sm text-secondary">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 flex-shrink-0" />
                         <span>{formatDate(event.start_time)}</span>
@@ -568,7 +568,7 @@ export default function PromoterEventsPage() {
                         </div>
                       )}
                       {event.organizer && (
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <div className="flex items-center gap-2 text-xs text-muted">
                           by {event.organizer.name}
                         </div>
                       )}
@@ -598,13 +598,13 @@ export default function PromoterEventsPage() {
                         </Link>
                       )}
                       {event.promoter_status === "pending" && (
-                        <div className="text-center text-sm text-yellow-400 py-2">
+                        <div className="text-center text-sm text-accent-warning py-2">
                           <Clock className="h-4 w-4 inline mr-1" />
                           Awaiting Response
                         </div>
                       )}
                       {event.promoter_status === "declined" && (
-                        <div className="text-center text-sm text-red-400 py-2">
+                        <div className="text-center text-sm text-accent-error py-2">
                           Request Declined
                         </div>
                       )}
@@ -619,11 +619,11 @@ export default function PromoterEventsPage() {
         {/* REQUESTS TAB */}
         <TabsContent value="requests" className="mt-6 space-y-6">
           {requests.length === 0 ? (
-            <Card className="bg-white/5 border-white/10">
+            <Card className="bg-glass border-border-subtle">
               <div className="p-8 text-center">
-                <Send className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-white mb-2">No requests yet</h3>
-                <p className="text-gray-400 mb-4">
+                <Send className="h-12 w-12 text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-primary mb-2">No requests yet</h3>
+                <p className="text-secondary mb-4">
                   Find events and submit requests to promote them
                 </p>
                 <Button onClick={() => setActiveTab("find-events")}>
@@ -635,7 +635,7 @@ export default function PromoterEventsPage() {
           ) : (
             <div className="space-y-4">
               {requests.map((request) => (
-                <Card key={request.id} className="bg-white/5 border-white/10">
+                <Card key={request.id} className="bg-glass border-border-subtle">
                   <div className="p-4">
                     <div className="flex items-start gap-4">
                       {request.event?.flier_url && (
@@ -650,11 +650,11 @@ export default function PromoterEventsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h4 className="font-semibold text-white">{request.event?.name}</h4>
+                            <h4 className="font-semibold text-primary">{request.event?.name}</h4>
                             {request.event?.venue && (
-                              <p className="text-sm text-gray-400 mt-0.5">{request.event.venue.name}</p>
+                              <p className="text-sm text-secondary mt-0.5">{request.event.venue.name}</p>
                             )}
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted mt-1">
                               {formatShortDate(request.event?.start_time || "")}
                             </p>
                           </div>
@@ -668,10 +668,10 @@ export default function PromoterEventsPage() {
                             }
                             className={
                               request.status === "pending"
-                                ? "bg-yellow-500/20 text-yellow-400"
+                                ? "bg-accent-warning/20 text-accent-warning"
                                 : request.status === "approved"
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-red-500/20 text-red-400"
+                                ? "bg-accent-success/20 text-accent-success"
+                                : "bg-accent-error/20 text-accent-error"
                             }
                           >
                             {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -679,32 +679,32 @@ export default function PromoterEventsPage() {
                         </div>
                         
                         {request.message && (
-                          <p className="text-sm text-gray-300 mt-2 line-clamp-2">
+                          <p className="text-sm text-primary mt-2 line-clamp-2">
                             &ldquo;{request.message}&rdquo;
                           </p>
                         )}
                         
                         {request.response_message && (
-                          <div className="mt-2 p-2 bg-white/5 rounded text-sm text-gray-400">
-                            <span className="text-xs text-gray-500">Response: </span>
+                          <div className="mt-2 p-2 bg-glass rounded text-sm text-secondary">
+                            <span className="text-xs text-muted">Response: </span>
                             {request.response_message}
                           </div>
                         )}
                         
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-xs text-muted mt-2">
                           Requested {new Date(request.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     
                     {request.status === "pending" && (
-                      <div className="mt-4 pt-4 border-t border-white/10 flex justify-end">
+                      <div className="mt-4 pt-4 border-t border-border-subtle flex justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => withdrawRequest(request.id)}
                           disabled={withdrawingId === request.id}
-                          className="text-gray-400 hover:text-red-400"
+                          className="text-secondary hover:text-accent-error"
                         >
                           {withdrawingId === request.id ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -735,13 +735,13 @@ export default function PromoterEventsPage() {
 
       {/* Request Modal */}
       {showRequestModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-white/10 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-xl font-semibold text-white">
+        <div className="fixed inset-0 bg-void/60 backdrop-blur-glass flex items-center justify-center z-50 p-4">
+          <div className="bg-raised border border-border-strong rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-xl font-semibold text-primary">
               Request to Promote
             </h3>
             
-            <div className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+            <div className="flex items-center gap-3 bg-glass rounded-lg p-3">
               {selectedEvent.flier_url && (
                 <Image
                   src={selectedEvent.flier_url}
@@ -752,26 +752,26 @@ export default function PromoterEventsPage() {
                 />
               )}
               <div>
-                <p className="text-white font-medium">{selectedEvent.name}</p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-primary font-medium">{selectedEvent.name}</p>
+                <p className="text-secondary text-sm">
                   {formatDate(selectedEvent.start_time)}
                 </p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
+              <label className="block text-sm text-secondary mb-2">
                 Message to organizer (optional)
               </label>
               <textarea
                 value={requestMessage}
                 onChange={(e) => setRequestMessage(e.target.value)}
                 placeholder="Introduce yourself, share your experience, or explain why you'd be a great promoter for this event..."
-                className="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-32 bg-raised border border-border-subtle rounded-lg p-3 text-primary placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-primary)]"
               />
             </div>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               The event organizer will review your request and may contact you to discuss terms.
             </p>
 

@@ -48,37 +48,6 @@ interface PromoterEvent {
 }
 
 export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
-  const [impersonation, setImpersonation] = useState<{ role: UserRole | "all" | null; entityId: string | null }>({ role: null, entityId: null });
-  
-  // Read impersonation from cookies (client-side only)
-  useEffect(() => {
-    const roleCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("cs-impersonate-role="));
-    
-    const entityCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("cs-impersonate-entity-id="));
-
-    let role: UserRole | "all" | null = null;
-    if (roleCookie) {
-      const roleValue = roleCookie.split("=")[1];
-      if (roleValue === "all" || ["venue_admin", "event_organizer", "promoter", "attendee"].includes(roleValue)) {
-        role = roleValue as UserRole | "all";
-      }
-    }
-    if (!role) role = "all";
-
-    const entityId = entityCookie ? entityCookie.split("=")[1] : null;
-
-    setImpersonation({ role, entityId });
-  }, []);
-
-  // Use impersonated role if set, otherwise use actual user roles
-  const effectiveRoles = impersonation.role && impersonation.role !== "all" 
-    ? [impersonation.role] 
-    : userRoles;
-  
   const [venueStats, setVenueStats] = useState({
     totalEvents: 0,
     thisMonth: 0,
@@ -142,10 +111,10 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [pendingPromoterRequests, setPendingPromoterRequests] = useState(0);
 
-  const isVenue = effectiveRoles.includes("venue_admin");
-  const isOrganizer = effectiveRoles.includes("event_organizer");
-  const isPromoter = effectiveRoles.includes("promoter");
-  const isSuperadmin = userRoles.includes("superadmin") && (!impersonation.role || impersonation.role === "all");
+  const isVenue = userRoles.includes("venue_admin");
+  const isOrganizer = userRoles.includes("event_organizer");
+  const isPromoter = userRoles.includes("promoter");
+  const isSuperadmin = userRoles.includes("superadmin");
 
   useEffect(() => {
     loadAllStats();
@@ -274,7 +243,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-foreground-muted">Loading dashboard...</div>
+        <div className="text-secondary">Loading dashboard...</div>
       </div>
     );
   }
@@ -285,11 +254,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
         <div>
           <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
           <p className="mt-2 text-sm text-white/60">
-            {impersonation.role && impersonation.role !== "all" 
-              ? `Viewing as: ${impersonation.role.replace(/_/g, " ")}${impersonation.entityId ? ` (Entity ID: ${impersonation.entityId.substring(0, 8)}...)` : ""}`
-              : effectiveRoles.length > 1 
-                ? "Overview across all your roles" 
-                : "Overview of your performance"}
+            {userRoles.length > 1 
+              ? "Overview across all your roles" 
+              : "Overview of your performance"}
           </p>
         </div>
         <div className="flex gap-2">

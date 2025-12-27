@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
 import type { UserRole } from "@crowdstack/shared";
-import { WorkspaceNavigation } from "./WorkspaceNavigation";
+// Legacy navigation removed - DockNav is now the primary navigation
+// import { WorkspaceNavigation } from "./WorkspaceNavigation";
+import { DockNav } from "./navigation/DockNav";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -52,19 +54,14 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
   }, [roles, supabase]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Floating Navigation - hidden on live pages */}
-      {!isLivePage && (
-        <WorkspaceNavigation 
-          roles={userRoles as UserRole[]} 
-          userEmail={userEmail} 
-          userId={userId} 
-        />
-      )}
-
-      {/* Page content */}
+    <div className="min-h-screen bg-void font-sans">
+      {/* AI Studio atmosphere layers */}
+      <div className="atmosphere-gradient" aria-hidden="true" />
+      <div className="atmosphere-noise" aria-hidden="true" />
+      
+      {/* Page content - top padding for DockNav clearance */}
       <main className={cn(
-        "min-h-screen",
+        "min-h-screen relative z-10",
         !isLivePage && "pt-24 pb-8 px-4 lg:px-8"
       )}>
         {!isLivePage ? (
@@ -75,6 +72,9 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
           children
         )}
       </main>
+
+      {/* DockNav - floating pill navigation (primary nav for /app routes) */}
+      {!isLivePage && <DockNav />}
     </div>
   );
 }

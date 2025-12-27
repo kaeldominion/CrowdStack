@@ -20,17 +20,17 @@ export default function SecurityPage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          <h1 className="text-4xl font-bold tracking-tight text-primary">
             Security
           </h1>
-          <p className="mt-2 text-foreground-muted">
+          <p className="mt-2 text-secondary">
             Manage your account security and privacy
           </p>
         </div>
 
         <Card>
           <div className="p-8 text-center">
-            <p className="text-foreground-muted">
+            <p className="text-secondary">
               Security page coming soon
             </p>
           </div>

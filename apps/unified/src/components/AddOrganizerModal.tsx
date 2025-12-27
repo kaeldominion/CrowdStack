@@ -80,17 +80,17 @@ export function AddOrganizerModal({
       size="md"
     >
       <div className="space-y-4">
-        <div className="text-sm text-foreground-muted">
+        <div className="text-sm text-secondary">
           Search for an organizer by their user email address. If they have an organizer account, 
           they'll be able to create events at your venue.
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-foreground">
+          <label className="block text-sm font-medium text-primary">
             Organizer Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary" />
             <Input
               type="email"
               placeholder="organizer@example.com"

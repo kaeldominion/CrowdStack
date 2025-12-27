@@ -124,7 +124,7 @@ function ResetPasswordContent() {
 
   if (isValidToken === null) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner text="Verifying reset link..." size="md" />
@@ -136,7 +136,7 @@ function ResetPasswordContent() {
 
   if (isValidToken === false) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white">Invalid Reset Link</h1>
@@ -173,7 +173,7 @@ function ResetPasswordContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="text-center space-y-6">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#10B981]/10">
@@ -192,7 +192,7 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-void flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <Link
           href="/login"
@@ -220,7 +220,7 @@ function ResetPasswordContent() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+              className="w-full rounded-md bg-void border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
               placeholder="At least 6 characters"
               minLength={6}
             />
@@ -236,7 +236,7 @@ function ResetPasswordContent() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+              className="w-full rounded-md bg-void border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
               placeholder="Confirm your password"
               minLength={6}
             />
@@ -266,7 +266,7 @@ function ResetPasswordContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-void flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner text="Loading..." size="md" />

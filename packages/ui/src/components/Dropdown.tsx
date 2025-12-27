@@ -58,7 +58,7 @@ export function Dropdown({ trigger, items, align = "right", className, triggerCl
           />
           <div
             className={cn(
-              "absolute z-[70] mt-2 w-56 rounded-md bg-surface border border-border shadow-card py-1",
+              "absolute z-[70] mt-2 w-56 rounded-2xl bg-raised border border-border-strong shadow-soft py-2",
               align === "right" ? "right-0" : "left-0"
             )}
           >
@@ -71,12 +71,12 @@ export function Dropdown({ trigger, items, align = "right", className, triggerCl
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-background transition-colors",
-                  item.destructive && "text-error hover:bg-error/10",
-                  item.active && "bg-primary/10 text-primary"
+                  "w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-active/60 rounded-lg transition-colors",
+                  item.destructive && "text-accent-error hover:bg-accent-error/10",
+                  item.active && "bg-accent-primary/10 text-primary"
                 )}
               >
-                {item.icon && <span className="h-4 w-4">{item.icon}</span>}
+                {item.icon && <span className="h-3 w-3">{item.icon}</span>}
                 {item.label}
               </button>
             ))}

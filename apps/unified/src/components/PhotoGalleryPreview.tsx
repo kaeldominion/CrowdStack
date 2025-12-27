@@ -72,12 +72,12 @@ export function PhotoGalleryPreview({
       <div className="space-y-3 lg:space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 lg:gap-3">
-            <div className="p-1.5 lg:p-2 rounded-lg bg-primary/10">
+            <div className="p-1.5 lg:p-2 rounded-lg bg-accent-secondary/10">
               <ImageIcon className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg lg:text-xl font-semibold text-foreground">Event Photos</h2>
-              <p className="text-xs lg:text-sm text-foreground-muted mt-0.5">
+              <h2 className="text-lg lg:text-xl font-semibold text-primary">Event Photos</h2>
+              <p className="text-xs lg:text-sm text-secondary mt-0.5">
                 {photos.length} {photos.length === 1 ? "photo" : "photos"} available
               </p>
             </div>
@@ -96,7 +96,7 @@ export function PhotoGalleryPreview({
             <Link
               key={photo.id}
               href={`/p/${eventSlug}`}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-surface"
+              className="group relative aspect-square overflow-hidden rounded-lg bg-glass"
             >
               <Image
                 src={photo.thumbnail_url}

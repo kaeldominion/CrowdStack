@@ -59,7 +59,7 @@ function MagicLinkContent() {
 
   // Show loading state while redirecting
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+    <div className="min-h-screen bg-void flex items-center justify-center">
       <LoadingSpinner text="Verifying magic link..." size="lg" />
     </div>
   );

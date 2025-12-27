@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Section, Container, Button, Logo } from "@crowdstack/ui";
+import { Section, Container, Button } from "@crowdstack/ui";
 import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, PartyPopper } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { ShareButton } from "./ShareButton";
 import { AddToCalendar } from "./AddToCalendar";
+import { DockNav } from "./navigation/DockNav";
 
 interface RegistrationSuccessProps {
   eventName: string;
@@ -82,18 +83,8 @@ export function RegistrationSuccess({
         <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
       )}
 
-      {/* Navigation Bar */}
-      <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
-          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 pr-1 sm:pr-2">
-            <Logo variant="full" size="sm" animated={false} className="text-white" />
-          </Link>
-          <div className="h-4 w-px bg-white/20 hidden sm:block" />
-          <Link href="/me" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap px-1 sm:px-2">
-            Me
-          </Link>
-        </div>
-      </nav>
+      {/* Navigation Bar - Use DockNav for proper logged-in navigation */}
+      <DockNav />
 
       {/* Content */}
       <Section spacing="xl" className="relative z-10 pt-20 sm:pt-24 pb-8">

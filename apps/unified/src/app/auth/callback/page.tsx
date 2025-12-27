@@ -206,7 +206,7 @@ function AuthCallbackContent() {
   // Don't show error if we've already succeeded
   if (hasSucceeded) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="min-h-screen bg-void flex items-center justify-center">
         <LoadingSpinner text="Redirecting..." size="lg" />
       </div>
     );
@@ -217,7 +217,7 @@ function AuthCallbackContent() {
     const isPKCEError = error.includes("PKCE") || error.includes("browser") || error.includes("verifier");
     
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="rounded-lg border border-[#EF4444]/20 bg-[#EF4444]/10 p-6">
             <h2 className="text-xl font-semibold text-[#EF4444] mb-2">Authentication Failed</h2>
@@ -248,7 +248,7 @@ function AuthCallbackContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+    <div className="min-h-screen bg-void flex items-center justify-center">
       <LoadingSpinner text={status} size="lg" />
     </div>
   );

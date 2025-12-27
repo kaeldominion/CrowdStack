@@ -59,7 +59,7 @@ export function PromoterProfileModal({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
               <Users className="h-6 w-6" />
               {promoter.name}
             </h2>
@@ -80,16 +80,16 @@ export function PromoterProfileModal({
 
         {/* Contact Information */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Contact Information
           </h3>
           <div className="space-y-2">
             {promoter.email && (
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-foreground-muted" />
+                <Mail className="h-4 w-4 text-secondary" />
                 <a
                   href={`mailto:${promoter.email}`}
-                  className="text-foreground hover:text-primary"
+                  className="text-primary hover:text-primary"
                 >
                   {promoter.email}
                 </a>
@@ -97,10 +97,10 @@ export function PromoterProfileModal({
             )}
             {promoter.phone && (
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-foreground-muted" />
+                <Phone className="h-4 w-4 text-secondary" />
                 <a
                   href={`tel:${promoter.phone}`}
-                  className="text-foreground hover:text-primary"
+                  className="text-primary hover:text-primary"
                 >
                   {promoter.phone}
                 </a>
@@ -111,41 +111,41 @@ export function PromoterProfileModal({
 
         {/* Statistics */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Performance Statistics
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Events</span>
+                <Calendar className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Events</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{promoter.events_count}</p>
+              <p className="text-2xl font-bold text-primary">{promoter.events_count}</p>
             </div>
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Referrals</span>
+                <Users className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Referrals</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-primary">
                 {promoter.referrals_count.toLocaleString()}
               </p>
             </div>
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Ticket className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Check-ins</span>
+                <Ticket className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Check-ins</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-primary">
                 {promoter.checkins_count.toLocaleString()}
               </p>
             </div>
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Conversion</span>
+                <TrendingUp className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Conversion</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-primary">
                 {promoter.conversion_rate}%
               </p>
             </div>
@@ -154,11 +154,11 @@ export function PromoterProfileModal({
 
         {/* Assignment Information */}
         {(promoter.has_direct_assignment || promoter.has_indirect_assignment) && (
-          <div className="p-4 bg-background-secondary rounded-lg border border-border">
+          <div className="p-4 bg-raised rounded-lg border border-border">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-foreground-muted">
-                <p className="font-medium text-foreground mb-1">Assignment Information</p>
+              <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-secondary">
+                <p className="font-medium text-primary mb-1">Assignment Information</p>
                 <p>
                   {promoter.has_direct_assignment && (
                     <>This promoter was assigned <strong>directly</strong> by you. </>
@@ -179,10 +179,10 @@ export function PromoterProfileModal({
 
         {/* Additional Info */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Additional Information
           </h3>
-          <div className="text-sm text-foreground-muted">
+          <div className="text-sm text-secondary">
             <p>Member since: {formatDate(promoter.created_at)}</p>
           </div>
         </div>

@@ -64,12 +64,12 @@ export function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-semibold text-foreground mb-2">
+        <h3 className="text-xl font-semibold text-primary mb-2">
           {title}
         </h3>
 
         {/* Message */}
-        <p className="text-foreground-muted text-sm mb-6 max-w-sm">
+        <p className="text-secondary text-sm mb-6 max-w-sm">
           {message}
         </p>
 

@@ -6,10 +6,19 @@ import { Heart } from "lucide-react";
 
 interface FavoriteButtonProps {
   venueId: string;
+  /** Display variant: icon (default) or button with label */
+  variant?: "icon" | "button";
+  /** Label text when variant is "button" */
+  label?: string;
   className?: string;
 }
 
-export function FavoriteButton({ venueId, className = "" }: FavoriteButtonProps) {
+export function FavoriteButton({ 
+  venueId, 
+  variant = "icon",
+  label = "FOLLOW",
+  className = "" 
+}: FavoriteButtonProps) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
@@ -68,6 +77,25 @@ export function FavoriteButton({ venueId, className = "" }: FavoriteButtonProps)
     return null; // Don't show button while loading
   }
 
+  // Button variant - larger with label
+  if (variant === "button") {
+    return (
+      <button
+        onClick={handleToggle}
+        disabled={isToggling}
+        className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all ${
+          isFavorited
+            ? "bg-accent-primary text-white"
+            : "bg-primary text-void hover:bg-primary/90"
+        } ${className}`}
+        aria-label={isFavorited ? "Following" : label}
+      >
+        {isFavorited ? "Following" : label}
+      </button>
+    );
+  }
+
+  // Icon variant (default)
   return (
     <Button
       variant="secondary"

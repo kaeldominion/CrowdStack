@@ -2,17 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { ChevronUp } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { LoadingLogo } from "./LoadingLogo";
 
 interface MobileScrollExperienceProps {
   flierUrl: string;
-  videoUrl?: string; // Optional video flier URL
+  videoUrl?: string;
   eventName: string;
-  children: React.ReactNode; // The event page content
+  venueName?: string;
+  venueCity?: string;
+  startDate?: Date;
+  children: React.ReactNode;
 }
 
-// Global state for cross-component communication (shared with flip version)
+// Global state for cross-component communication
 let globalFlierState: {
   showFlier: boolean;
   onToggle: (() => void) | null;
@@ -24,11 +27,10 @@ function notifyListeners() {
   listeners.forEach(listener => listener());
 }
 
-// Detect problematic in-app browsers that have issues with video
+// Detect problematic in-app browsers
 function isProblematicBrowser(): boolean {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || navigator.vendor || "";
-  // Instagram, Facebook, TikTok, Snapchat, Twitter in-app browsers
   return /Instagram|FBAN|FBAV|FB_IAB|TikTok|Snapchat|Twitter/i.test(ua);
 }
 
@@ -36,32 +38,27 @@ export function MobileScrollExperience({
   flierUrl,
   videoUrl,
   eventName,
+  venueName,
+  venueCity,
+  startDate,
   children,
 }: MobileScrollExperienceProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [cardAnimations, setCardAnimations] = useState<number[]>([]);
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const cardsContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Check for problematic browsers on mount
   useEffect(() => {
     setIsInAppBrowser(isProblematicBrowser());
   }, []);
   
-  // Determine if we should show video or image
-  // Fall back to image if video failed or we're in a problematic browser
   const hasVideo = !!videoUrl && !videoFailed && !isInAppBrowser;
 
-  // Fallback timeout - if media doesn't load in 3 seconds, show anyway
-  // For video, if it hasn't loaded in 2 seconds, fall back to image
+  // Fallback timeouts
   useEffect(() => {
-    // Shorter timeout for video - fall back to image faster
     if (hasVideo && videoUrl && !videoFailed) {
       const videoTimeout = setTimeout(() => {
         if (!mediaLoaded) {
@@ -72,28 +69,24 @@ export function MobileScrollExperience({
       return () => clearTimeout(videoTimeout);
     }
     
-    // General timeout for image loading
     const timeout = setTimeout(() => {
       if (!mediaLoaded) {
-        console.warn("Media load timeout - showing content anyway");
         setMediaLoaded(true);
       }
     }, 3000);
     return () => clearTimeout(timeout);
   }, [mediaLoaded, hasVideo, videoUrl, videoFailed]);
 
-  // iOS Safari fix: explicitly play video when loaded
-  // Safari sometimes doesn't autoplay even with muted + playsInline
+  // iOS Safari video autoplay fix
   useEffect(() => {
     if (hasVideo && mediaLoaded && videoRef.current) {
       const playVideo = async () => {
         try {
-          // Ensure video attributes are set (iOS sometimes needs this)
           videoRef.current!.muted = true;
           videoRef.current!.playsInline = true;
           await videoRef.current!.play();
         } catch (err) {
-          console.warn("Video autoplay failed, falling back to image:", err);
+          console.warn("Video autoplay failed:", err);
           setVideoFailed(true);
         }
       };
@@ -101,99 +94,33 @@ export function MobileScrollExperience({
     }
   }, [hasVideo, mediaLoaded]);
 
-  // Show hint after 2 second delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!hasScrolled) {
-        setShowHint(true);
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [hasScrolled]);
+  // Calculate blur and opacity based on scroll
+  const blurAmount = Math.min(scrollProgress * 20, 15);
+  const flierOpacity = Math.max(1 - scrollProgress * 0.5, 0.5);
+  const textOpacity = Math.max(1 - scrollProgress * 2, 0);
 
-  // Calculate blur based on scroll - more gradual
-  const blurAmount = Math.min(scrollProgress * 15, 12); // Max 12px blur
-  const flierOpacity = Math.max(1 - scrollProgress * 0.4, 0.6); // Fade to 60% opacity - keep visible
-
-  // Scroll handler with staggered card animations
+  // Scroll handler - just tracks progress for flier blur/fade
   const handleScroll = useCallback(() => {
-    if (!containerRef.current || !cardsContainerRef.current) return;
+    if (!containerRef.current) return;
     
     const scrollTop = containerRef.current.scrollTop;
     const viewportHeight = window.innerHeight;
     
-    // Progress from 0 to 1 over the first viewport height of scroll
-    const progress = Math.min(scrollTop / (viewportHeight * 0.8), 1);
+    const progress = Math.min(scrollTop / (viewportHeight * 0.7), 1);
     setScrollProgress(progress);
     
     if (scrollTop > 50 && !hasScrolled) {
       setHasScrolled(true);
     }
 
-    // Update global state for the sticky CTA button
     const showingFlier = progress < 0.2;
     if (globalFlierState.showFlier !== showingFlier) {
       globalFlierState.showFlier = showingFlier;
       notifyListeners();
     }
-
-    // Calculate individual card animations based on scroll position
-    const cards = cardsContainerRef.current.querySelectorAll('[data-scroll-card]');
-    const newAnimations: number[] = [];
-    const totalCards = cards.length;
-    
-    cards.forEach((card, index) => {
-      const cardElement = card as HTMLElement;
-      const cardRect = cardElement.getBoundingClientRect();
-      const containerRect = containerRef.current!.getBoundingClientRect();
-      
-      // Calculate how far into the viewport the card is
-      const cardTop = cardRect.top - containerRect.top;
-      const triggerPoint = viewportHeight * 0.9; // Start animating when card is 90% down the viewport
-      
-      // Apply stagger delay: each card starts animating slightly later, but completes at same rate
-      // Reduce stagger effect for later cards so they can complete
-      const staggerDelay = index * 40; // 40px stagger per card
-      const adjustedCardTop = cardTop + staggerDelay;
-      
-      // Faster completion for later cards (they have less scroll distance available)
-      const completionSpeed = 1 + (index / totalCards) * 0.5; // Later cards complete faster
-      
-      const cardProgress = Math.min(
-        Math.max((triggerPoint - adjustedCardTop) / (viewportHeight * 0.35 / completionSpeed), 0),
-        1
-      );
-      
-      // Apply easing for smooth acceleration
-      const easedProgress = cardProgress < 0.5
-        ? 2 * cardProgress * cardProgress
-        : 1 - Math.pow(-2 * cardProgress + 2, 2) / 2;
-      
-      newAnimations[index] = easedProgress;
-    });
-    
-    setCardAnimations(newAnimations);
   }, [hasScrolled]);
 
-  // Mark cards for animation on mount and when content changes
-  useEffect(() => {
-    if (!cardsContainerRef.current) return;
-    
-    // Find all card-like elements (those with rounded corners and glassmorphism styles)
-    const cards = cardsContainerRef.current.querySelectorAll(
-      '.bg-black\\/40, .bg-emerald-500\\/20, [class*="backdrop-blur"]'
-    );
-    
-    cards.forEach((card, index) => {
-      (card as HTMLElement).setAttribute('data-scroll-card', '');
-      (card as HTMLElement).setAttribute('data-card-index', index.toString());
-    });
-    
-    // Trigger initial scroll calculation
-    handleScroll();
-  }, [children, handleScroll]);
-
-  // Register scroll listener
+  // Scroll listener
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -202,37 +129,15 @@ export function MobileScrollExperience({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
-  // Apply animations to cards
-  useEffect(() => {
-    if (!cardsContainerRef.current) return;
-    
-    const cards = cardsContainerRef.current.querySelectorAll('[data-scroll-card]');
-    cards.forEach((card, index) => {
-      const cardElement = card as HTMLElement;
-      const progress = cardAnimations[index] ?? 0;
-      
-      // Animate from below with scale
-      const translateY = (1 - progress) * 80; // Start 80px below
-      const scale = 0.92 + progress * 0.08; // Scale from 0.92 to 1
-      const opacity = progress;
-      
-      cardElement.style.transform = `translateY(${translateY}px) scale(${scale})`;
-      cardElement.style.opacity = opacity.toString();
-      cardElement.style.transition = 'transform 0.1s ease-out, opacity 0.1s ease-out';
-    });
-  }, [cardAnimations]);
-
-  // Scroll to content function for the toggle button
   const scrollToContent = useCallback(() => {
     if (!containerRef.current) return;
     const viewportHeight = window.innerHeight;
     containerRef.current.scrollTo({
-      top: viewportHeight * 0.85,
+      top: viewportHeight * 0.82,
       behavior: "smooth"
     });
   }, []);
 
-  // Scroll to top (flier) function
   const scrollToFlier = useCallback(() => {
     if (!containerRef.current) return;
     containerRef.current.scrollTo({
@@ -241,7 +146,6 @@ export function MobileScrollExperience({
     });
   }, []);
 
-  // Register the toggle function globally on mount
   useEffect(() => {
     const toggleFn = () => {
       if (scrollProgress < 0.2) {
@@ -262,14 +166,12 @@ export function MobileScrollExperience({
   return (
     <div 
       ref={containerRef}
-      className="lg:hidden fixed inset-0 z-10 overflow-y-auto overflow-x-hidden"
+      className="lg:hidden fixed inset-0 z-10 overflow-y-auto overflow-x-hidden bg-void"
       style={{ 
-        top: 0,
         scrollbarWidth: "none",
         msOverflowStyle: "none",
       }}
     >
-      {/* Hide scrollbar for webkit */}
       <style jsx>{`
         div::-webkit-scrollbar {
           display: none;
@@ -278,18 +180,18 @@ export function MobileScrollExperience({
 
       {/* Loading state */}
       {!mediaLoaded && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-void">
           <LoadingLogo message="Loading event..." size="lg" />
         </div>
       )}
 
-      {/* Fixed Flier Background - dims and blurs on scroll but stays visible */}
+      {/* Fixed Flier Background */}
       <div 
         className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${mediaLoaded ? "opacity-100" : "opacity-0"}`}
         style={{
           filter: `blur(${blurAmount}px)`,
           opacity: mediaLoaded ? flierOpacity : 0,
-          transform: `scale(${1 + scrollProgress * 0.15})`, // Parallax zoom on scroll
+          transform: `scale(${1 + scrollProgress * 0.1})`,
           transition: "filter 0.15s ease-out, opacity 0.15s ease-out, transform 0.15s ease-out"
         }}
       >
@@ -304,17 +206,10 @@ export function MobileScrollExperience({
             playsInline
             onLoadedData={() => setMediaLoaded(true)}
             onCanPlay={() => setMediaLoaded(true)}
-            onError={() => {
-              console.error("Video failed to load, falling back to image");
-              setVideoFailed(true); // Fall back to image
-            }}
+            onError={() => setVideoFailed(true)}
             onStalled={() => {
-              // Video stalled - fall back to image after a delay
               setTimeout(() => {
-                if (!mediaLoaded) {
-                  console.warn("Video stalled - falling back to image");
-                  setVideoFailed(true);
-                }
+                if (!mediaLoaded) setVideoFailed(true);
               }, 1000);
             }}
           />
@@ -327,121 +222,65 @@ export function MobileScrollExperience({
             priority
             sizes="100vw"
             onLoad={() => setMediaLoaded(true)}
-            onError={() => {
-              console.error("Image failed to load");
-              setMediaLoaded(true); // Show content anyway
-            }}
+            onError={() => setMediaLoaded(true)}
           />
         )}
-        {/* Subtle gradient overlay */}
+        {/* Gradient overlay - darkens as you scroll */}
         <div 
-          className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60"
+          className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black"
           style={{
-            opacity: 0.5 + scrollProgress * 0.3
+            opacity: 0.6 + scrollProgress * 0.4
           }}
         />
       </div>
 
-      {/* Scroll Content Container */}
+      {/* Scroll Content */}
       <div className="relative z-10">
-        {/* Spacer for initial flier view - slightly less than full height so cards peek */}
-        <div className="h-[75vh] flex flex-col items-center justify-end pb-12">
-          {/* Scroll hint - minimal animated chevrons, appears after delay */}
-          {!hasScrolled && showHint && (
-            <div 
-              className="flex flex-col items-center animate-fade-in"
-              style={{
-                animation: "fadeIn 0.5s ease-out"
-              }}
-            >
-              {/* Animated chevrons floating upward */}
-              <div className="relative flex flex-col items-center">
-                {/* Glow effect behind */}
-                <div className="absolute inset-0 bg-white/10 blur-2xl rounded-full scale-[3]" />
-                
-                {/* Stacked chevrons with staggered animation */}
-                <div className="relative flex flex-col items-center -space-y-3">
-                  <ChevronUp 
-                    className="h-6 w-6 text-white/40 animate-pulse" 
-                    style={{ animationDelay: "0.4s", animationDuration: "1.5s" }}
-                  />
-                  <ChevronUp 
-                    className="h-7 w-7 text-white/60 animate-pulse" 
-                    style={{ animationDelay: "0.2s", animationDuration: "1.5s" }}
-                  />
-                  <ChevronUp 
-                    className="h-8 w-8 text-white/90 animate-pulse drop-shadow-lg" 
-                    style={{ animationDelay: "0s", animationDuration: "1.5s" }}
-                  />
-                </div>
-              </div>
-              
-              {/* Small line indicator */}
-              <div className="mt-6 w-8 h-0.5 bg-white/30 rounded-full" />
-            </div>
-          )}
-        </div>
-
-        {/* Floating Cards Container with staggered reveal */}
-        <div 
-          ref={cardsContainerRef}
-          className="relative px-4 pb-48"
-        >
+        {/* Spacer with Event Info Overlay - taller to hide more content initially */}
+        <div className="h-[85vh] flex flex-col justify-end pb-6 px-4">
+          {/* Event Name Overlay - fades out on scroll */}
           <div 
-            className="scroll-cards-wrapper space-y-4"
-            style={{ background: "transparent" }}
+            style={{
+              opacity: textOpacity,
+              transform: `translateY(${scrollProgress * -30}px)`,
+              transition: "opacity 0.15s ease-out, transform 0.15s ease-out"
+            }}
           >
-            {children}
+            {/* Date Badge */}
+            {startDate && (
+              <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-accent-primary backdrop-blur-sm mb-4">
+                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-void">
+                  {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+                </span>
+              </div>
+            )}
+            
+            {/* Event Name - right padding forces wrap to two lines, feels left-aligned */}
+            <h1 className="font-sans font-black uppercase tracking-tighter leading-[0.9] text-5xl sm:text-6xl text-primary drop-shadow-lg mb-3 pr-16 sm:pr-24">
+              {eventName}
+            </h1>
+            
+            {/* Venue */}
+            {(venueName || venueCity) && (
+              <div className="flex items-center gap-2 text-secondary">
+                <MapPin className="h-4 w-4" />
+                <span className="font-mono text-xs tracking-wide">
+                  {venueName}{venueCity && `, ${venueCity}`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Global styles for transparent backgrounds and animations */}
-      <style jsx global>{`
-        /* Fade in animation for hint */
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        /* Floating animation for chevrons */
-        @keyframes floatUp {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-8px);
-          }
-        }
-        
-        .animate-float-up {
-          animation: floatUp 2s ease-in-out infinite;
-        }
-        
-        /* Make Section component transparent in scroll mode */
-        .scroll-cards-wrapper section {
-          background: transparent !important;
-        }
-        
-        /* Target the container divs to be transparent */
-        .scroll-cards-wrapper > * {
-          background: transparent !important;
-        }
-        
-        /* Initial state for cards before JS takes over */
-        .scroll-cards-wrapper [data-scroll-card] {
-          will-change: transform, opacity;
-        }
-      `}</style>
+        {/* Content Container */}
+        <div className="relative">
+          {children}
+          {/* Bottom spacer - allows scrolling content completely off screen */}
+          <div className="h-[100vh]" />
+        </div>
+      </div>
     </div>
   );
 }
 
-// Re-export the hook from MobileFlierExperience for consistency
 export { useFlierToggle } from "./MobileFlierExperience";

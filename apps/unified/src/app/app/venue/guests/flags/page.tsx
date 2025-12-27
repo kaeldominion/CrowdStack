@@ -64,7 +64,7 @@ export default function VenueGuestFlagsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading flags...</div>
+        <div className="text-secondary">Loading flags...</div>
       </div>
     );
   }
@@ -73,8 +73,8 @@ export default function VenueGuestFlagsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Guest Flags & Bans</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Guest Flags & Bans</h1>
+          <p className="mt-2 text-sm text-secondary">
             Manage flagged attendees and track strikes
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function VenueGuestFlagsPage() {
         </div>
       </Card>
 
-      <div className="text-sm text-white/60">
+      <div className="text-sm text-secondary">
         Showing {filteredFlags.length} flagged attendees
       </div>
 
@@ -115,7 +115,7 @@ export default function VenueGuestFlagsPage() {
             <TableBody>
               {filteredFlags.length === 0 ? (
                 <TableRow>
-                  <TableCell className="text-center py-8 text-foreground-muted">
+                  <TableCell className="text-center py-8 text-secondary">
                     No flagged attendees
                   </TableCell>
                 </TableRow>
@@ -125,7 +125,7 @@ export default function VenueGuestFlagsPage() {
                     <TableCell className="font-medium">
                       {flag.attendee?.name || "Unknown"}
                       {flag.attendee?.email && (
-                        <div className="text-sm text-foreground-muted">{flag.attendee.email}</div>
+                        <div className="text-sm text-secondary">{flag.attendee.email}</div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -137,11 +137,11 @@ export default function VenueGuestFlagsPage() {
                       </div>
                     </TableCell>
                     <TableCell>{getStrikeBadge(flag.strike_count, flag.permanent_ban)}</TableCell>
-                    <TableCell className="text-sm text-foreground-muted">{flag.reason}</TableCell>
-                    <TableCell className="text-sm text-foreground-muted">
+                    <TableCell className="text-sm text-secondary">{flag.reason}</TableCell>
+                    <TableCell className="text-sm text-secondary">
                       {new Date(flag.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-sm text-foreground-muted">
+                    <TableCell className="text-sm text-secondary">
                       {flag.expires_at ? new Date(flag.expires_at).toLocaleDateString() : "Never"}
                     </TableCell>
                   </TableRow>

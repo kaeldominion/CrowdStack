@@ -21,44 +21,44 @@ export function VenuePolicies({ venue }: VenuePoliciesProps) {
 
   return (
     <Card>
-      <h2 className="text-2xl font-semibold text-foreground mb-6">Policies</h2>
+      <h2 className="text-2xl font-semibold text-primary mb-6">Policies</h2>
       <div className="space-y-6">
         {venue.dress_code && (
           <div className="flex gap-4">
-            <Shirt className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+            <Shirt className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground-muted mb-1">Dress Code</div>
-              <div className="text-foreground">{venue.dress_code}</div>
+              <div className="text-sm font-medium text-secondary mb-1">Dress Code</div>
+              <div className="text-primary">{venue.dress_code}</div>
             </div>
           </div>
         )}
 
         {venue.age_restriction && (
           <div className="flex gap-4">
-            <Users className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+            <Users className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground-muted mb-1">Age Restriction</div>
-              <div className="text-foreground">{venue.age_restriction}</div>
+              <div className="text-sm font-medium text-secondary mb-1">Age Restriction</div>
+              <div className="text-primary">{venue.age_restriction}</div>
             </div>
           </div>
         )}
 
         {venue.entry_notes && (
           <div className="flex gap-4">
-            <FileText className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+            <FileText className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground-muted mb-1">Entry Notes</div>
-              <div className="text-foreground whitespace-pre-line">{venue.entry_notes}</div>
+              <div className="text-sm font-medium text-secondary mb-1">Entry Notes</div>
+              <div className="text-primary whitespace-pre-line">{venue.entry_notes}</div>
             </div>
           </div>
         )}
 
         {venue.table_min_spend_notes && (
           <div className="flex gap-4">
-            <CreditCard className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
+            <CreditCard className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <div className="text-sm font-medium text-foreground-muted mb-1">Table & VIP</div>
-              <div className="text-foreground whitespace-pre-line">{venue.table_min_spend_notes}</div>
+              <div className="text-sm font-medium text-secondary mb-1">Table & VIP</div>
+              <div className="text-primary whitespace-pre-line">{venue.table_min_spend_notes}</div>
             </div>
           </div>
         )}

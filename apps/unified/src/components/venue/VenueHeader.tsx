@@ -43,18 +43,18 @@ export function VenueHeader({ venue }: VenueHeaderProps) {
           <div className="flex-1 space-y-3">
             <div>
               <h1
-                className="text-4xl font-bold tracking-tight text-foreground"
+                className="text-4xl font-bold tracking-tight text-primary"
                 style={venue.accent_color ? { color: venue.accent_color } : undefined}
               >
                 {venue.name}
               </h1>
               {venue.tagline && (
-                <p className="text-xl text-foreground-muted mt-2">{venue.tagline}</p>
+                <p className="text-xl text-secondary mt-2">{venue.tagline}</p>
               )}
             </div>
 
             {venue.description && (
-              <p className="text-foreground-muted leading-relaxed">{venue.description}</p>
+              <p className="text-secondary leading-relaxed">{venue.description}</p>
             )}
 
             {/* Contact Info */}
@@ -80,12 +80,12 @@ export function VenueHeader({ venue }: VenueHeaderProps) {
                 </a>
               )}
               {venue.phone && (
-                <a href={`tel:${venue.phone}`} className="text-foreground-muted hover:text-foreground">
+                <a href={`tel:${venue.phone}`} className="text-secondary hover:text-primary">
                   {venue.phone}
                 </a>
               )}
               {venue.email && (
-                <a href={`mailto:${venue.email}`} className="text-foreground-muted hover:text-foreground">
+                <a href={`mailto:${venue.email}`} className="text-secondary hover:text-primary">
                   {venue.email}
                 </a>
               )}

@@ -75,21 +75,21 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner text="Loading settings..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
             Settings
           </h1>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-secondary">
             Manage your account preferences
           </p>
         </div>
@@ -97,27 +97,27 @@ export default function SettingsPage() {
         {/* Settings Sections */}
         <div className="space-y-6">
           {/* Security */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10">
+          <div className="rounded-2xl border border-border-subtle bg-glass/5 backdrop-blur-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-indigo-400" />
+                <div className="h-10 w-10 rounded-full bg-accent-secondary/20 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-accent-secondary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Security</h2>
-                  <p className="text-sm text-white/50">Password and authentication</p>
+                  <h2 className="text-lg font-semibold text-primary">Security</h2>
+                  <p className="text-sm text-muted">Password and authentication</p>
                 </div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Password */}
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Key className="h-5 w-5 text-white/40" />
+                  <Key className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-white font-medium">Password</p>
-                    <p className="text-sm text-white/50">
+                    <p className="text-primary font-medium">Password</p>
+                    <p className="text-sm text-muted">
                       {user?.app_metadata?.provider === "email" 
                         ? "Set via email login" 
                         : "Logged in via magic link"}
@@ -128,12 +128,12 @@ export default function SettingsPage() {
                   <button
                     onClick={handlePasswordReset}
                     disabled={sendingReset}
-                    className="px-4 py-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-accent-secondary hover:text-accent-secondary/80 transition-colors disabled:opacity-50"
                   >
                     {sendingReset ? "Sending..." : "Reset Password"}
                   </button>
                 ) : (
-                  <span className="flex items-center gap-2 text-sm text-green-400">
+                  <span className="flex items-center gap-2 text-sm text-accent-success">
                     <Check className="h-4 w-4" />
                     Email sent!
                   </span>
@@ -141,15 +141,15 @@ export default function SettingsPage() {
               </div>
 
               {/* Email */}
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-white/40" />
+                  <Mail className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-white font-medium">Email Address</p>
-                    <p className="text-sm text-white/50">{user?.email}</p>
+                    <p className="text-primary font-medium">Email Address</p>
+                    <p className="text-sm text-muted">{user?.email}</p>
                   </div>
                 </div>
-                <span className="flex items-center gap-1 text-sm text-green-400">
+                <span className="flex items-center gap-1 text-sm text-accent-success">
                   <Check className="h-4 w-4" />
                   Verified
                 </span>
@@ -158,71 +158,71 @@ export default function SettingsPage() {
           </div>
 
           {/* Notifications */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10">
+          <div className="rounded-2xl border border-border-subtle bg-glass/5 backdrop-blur-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <Bell className="h-5 w-5 text-purple-400" />
+                <div className="h-10 w-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-accent-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">Notifications</h2>
-                  <p className="text-sm text-white/50">How you receive updates</p>
+                  <h2 className="text-lg font-semibold text-primary">Notifications</h2>
+                  <p className="text-sm text-muted">How you receive updates</p>
                 </div>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Email Notifications */}
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-white/40" />
+                  <Mail className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-white font-medium">Email Notifications</p>
-                    <p className="text-sm text-white/50">Event updates and reminders</p>
+                    <p className="text-primary font-medium">Email Notifications</p>
+                    <p className="text-sm text-muted">Event updates and reminders</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" defaultChecked className="sr-only peer" />
-                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                  <div className="w-11 h-6 bg-active peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-secondary"></div>
                 </label>
               </div>
 
               {/* SMS Notifications */}
-              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
                 <div className="flex items-center gap-3">
-                  <Smartphone className="h-5 w-5 text-white/40" />
+                  <Smartphone className="h-5 w-5 text-muted" />
                   <div>
-                    <p className="text-white font-medium">SMS Notifications</p>
-                    <p className="text-sm text-white/50">Text reminders before events</p>
+                    <p className="text-primary font-medium">SMS Notifications</p>
+                    <p className="text-sm text-muted">Text reminders before events</p>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                  <div className="w-11 h-6 bg-active peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-secondary"></div>
                 </label>
               </div>
             </div>
           </div>
 
           {/* Sign Out */}
-          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 overflow-hidden">
+          <div className="rounded-2xl border border-accent-error/20 bg-accent-error/5 overflow-hidden">
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="w-full flex items-center justify-between p-6 text-left hover:bg-red-500/10 transition-colors"
+              className="w-full flex items-center justify-between p-6 text-left hover:bg-accent-error/10 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                  <LogOut className="h-5 w-5 text-red-400" />
+                <div className="h-10 w-10 rounded-full bg-accent-error/20 flex items-center justify-center">
+                  <LogOut className="h-5 w-5 text-accent-error" />
                 </div>
                 <div>
-                  <p className="text-lg font-medium text-red-400">Sign Out</p>
-                  <p className="text-sm text-white/50">
+                  <p className="text-lg font-medium text-accent-error">Sign Out</p>
+                  <p className="text-sm text-muted">
                     {loggingOut ? "Signing out..." : "Sign out of your account"}
                   </p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-red-400/50" />
+              <ChevronRight className="h-5 w-5 text-accent-error/50" />
             </button>
           </div>
         </div>

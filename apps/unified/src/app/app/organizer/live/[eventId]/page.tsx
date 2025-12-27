@@ -267,33 +267,33 @@ export default function OrganizerLiveMissionControlPage() {
 
   if (loading || !metrics) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white/60">Loading live metrics...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-secondary">Loading live metrics...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black w-full">
+    <div className="min-h-screen w-full">
       <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-24 sm:pb-6">
         {/* Header with Branding */}
         <div className="mb-6 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
-            <Logo variant="full" size="md" className="text-white" animated={false} />
+            <Logo variant="full" size="md" className="text-primary" animated={false} />
           </div>
           <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
         <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tighter text-white">Live Mission Control</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tighter text-primary">Live Mission Control</h1>
               <div className="mt-1 sm:mt-2 space-y-0.5">
-                <p className="text-sm font-medium text-white">{metrics.event_name}</p>
+                <p className="text-sm font-medium text-primary">{metrics.event_name}</p>
                 {metrics.venue_name && (
-                  <p className="text-sm text-white/60">{metrics.venue_name}</p>
+                  <p className="text-sm text-secondary">{metrics.venue_name}</p>
                 )}
               </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm text-white/60">Live</span>
+          <div className="h-2 w-2 bg-accent-success rounded-full animate-pulse" />
+          <span className="text-sm text-secondary">Live</span>
             </div>
         </div>
       </div>
@@ -303,33 +303,33 @@ export default function OrganizerLiveMissionControlPage() {
       <BentoCard span={4}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">
               Live Attendance
             </p>
             <div className="flex items-baseline gap-4">
-              <p className="text-6xl font-mono font-bold tracking-tighter text-white">
+              <p className="text-6xl font-mono font-bold tracking-tighter text-primary">
                 {metrics.current_attendance}
               </p>
               {metrics.capacity && (
                 <>
-                  <span className="text-2xl text-white/40">/</span>
-                  <p className="text-4xl font-mono font-bold tracking-tighter text-white/60">
+                  <span className="text-2xl text-muted">/</span>
+                  <p className="text-4xl font-mono font-bold tracking-tighter text-secondary">
                     {metrics.capacity}
                   </p>
                 </>
               )}
             </div>
             {metrics.capacity && (
-              <div className="mt-4 h-2 bg-white/5 rounded-full overflow-hidden max-w-md">
+              <div className="mt-4 h-2 bg-glass rounded-full overflow-hidden max-w-md">
                 <div
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-accent-success/80 via-accent-success/40 to-accent-success/80 transition-all duration-500"
                   style={{ width: `${metrics.capacity_percentage}%` }}
                 />
               </div>
             )}
           </div>
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20 border border-green-500/50">
-            <Activity className="h-8 w-8 text-green-400 animate-pulse" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/20 border border-accent-success/50">
+            <Activity className="h-8 w-8 text-accent-success animate-pulse" />
           </div>
         </div>
       </BentoCard>
@@ -338,49 +338,49 @@ export default function OrganizerLiveMissionControlPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <BentoCard>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium">
               Total Registrations
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-white">
+            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.total_registrations}
             </p>
-            <p className="text-sm text-white/40">registered</p>
+            <p className="text-sm text-muted">registered</p>
           </div>
         </BentoCard>
 
         <BentoCard>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium">
               Last 15 Min
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-white">
+            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_15min}
             </p>
-            <p className="text-sm text-white/40">check-ins</p>
+            <p className="text-sm text-muted">check-ins</p>
           </div>
         </BentoCard>
 
         <BentoCard>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium">
               Last Hour
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-white">
+            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_hour}
             </p>
-            <p className="text-sm text-white/40">check-ins</p>
+            <p className="text-sm text-muted">check-ins</p>
           </div>
         </BentoCard>
 
         <BentoCard>
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium">
               Peak Hour
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-white">
+            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.peak_hour || "—"}
             </p>
-            <p className="text-sm text-white/40">most active</p>
+            <p className="text-sm text-muted">most active</p>
           </div>
         </BentoCard>
       </div>
@@ -389,22 +389,22 @@ export default function OrganizerLiveMissionControlPage() {
       <BentoCard span={2}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Promoter Leaderboard</p>
-            <Trophy className="h-4 w-4 text-white/40" />
+            <p className="text-sm font-semibold text-primary">Promoter Leaderboard</p>
+            <Trophy className="h-4 w-4 text-muted" />
           </div>
           <div className="space-y-2">
             {metrics.promoter_stats.slice(0, 5).map((promoter, index) => (
               <div
                 key={promoter.promoter_id}
-                className="flex items-center justify-between p-3 rounded-md bg-white/5 border border-white/5"
+                className="flex items-center justify-between p-3 rounded-md bg-glass border border-border-subtle"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary text-sm font-bold">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-secondary/20 text-primary text-sm font-bold">
                     #{promoter.rank}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">{promoter.promoter_name}</p>
-                    <p className="text-xs text-white/40">{promoter.check_ins} check-ins</p>
+                    <p className="text-sm font-medium text-primary">{promoter.promoter_name}</p>
+                    <p className="text-xs text-muted">{promoter.check_ins} check-ins</p>
                   </div>
                 </div>
               </div>
@@ -417,52 +417,52 @@ export default function OrganizerLiveMissionControlPage() {
       <BentoCard span={2}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Recent Activity</p>
-            <Clock className="h-4 w-4 text-white/40" />
+            <p className="text-sm font-semibold text-primary">Recent Activity</p>
+            <Clock className="h-4 w-4 text-muted" />
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {metrics.recent_activity.slice(0, 20).map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-center justify-between p-2 rounded-md bg-white/5"
+                className="flex items-center justify-between p-2 rounded-md bg-glass"
               >
                 <div className="flex items-center gap-2">
                   {activity.type === "checkin" ? (
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div className="h-2 w-2 rounded-full bg-accent-success" />
                   ) : (
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <div className="h-2 w-2 rounded-full bg-accent-secondary" />
                   )}
                   <div>
                     {activity.attendee_id ? (
                       <button
                         onClick={() => handleAttendeeClick(activity.attendee_id)}
-                        className="text-sm font-medium text-white hover:text-primary transition-colors cursor-pointer text-left"
+                        className="text-sm font-medium text-primary hover:text-accent-secondary transition-colors cursor-pointer text-left"
                       >
                         {activity.attendee_name}
                       </button>
                     ) : (
-                      <p className="text-sm font-medium text-white">{activity.attendee_name}</p>
+                      <p className="text-sm font-medium text-primary">{activity.attendee_name}</p>
                     )}
                     <div className="flex items-center gap-2">
-                      <p className="text-xs text-white/40">
+                      <p className="text-xs text-muted">
                         {activity.type === "checkin" ? "Checked in" : "Registered"}
                       </p>
                       {activity.promoter_name && (
                         <>
-                          <span className="text-xs text-white/30">•</span>
-                          <p className="text-xs text-white/40">via {activity.promoter_name}</p>
+                          <span className="text-xs text-muted">•</span>
+                          <p className="text-xs text-muted">via {activity.promoter_name}</p>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-muted">
                   {new Date(activity.timestamp).toLocaleTimeString()}
                 </p>
               </div>
             ))}
             {metrics.recent_activity.length === 0 && (
-              <p className="text-sm text-white/40 text-center py-4">No recent activity</p>
+              <p className="text-sm text-muted text-center py-4">No recent activity</p>
             )}
           </div>
         </div>
@@ -472,7 +472,7 @@ export default function OrganizerLiveMissionControlPage() {
           <BentoCard span={4}>
             <div className="space-y-4 relative" style={{ paddingBottom: "80px" }}>
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white flex items-center gap-2">
+                <p className="text-sm font-semibold text-primary flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
                   Message Board
                 </p>
@@ -484,7 +484,7 @@ export default function OrganizerLiveMissionControlPage() {
                 className="space-y-3 max-h-96 overflow-y-auto"
               >
                 {messages.length === 0 ? (
-                  <p className="text-sm text-white/40 text-center py-8">No messages yet. Be the first to post!</p>
+                  <p className="text-sm text-muted text-center py-8">No messages yet. Be the first to post!</p>
                 ) : (
                   messages.map((msg) => {
                     const isOwnMessage = currentUserId === msg.sender_id;
@@ -499,13 +499,13 @@ export default function OrganizerLiveMissionControlPage() {
                       >
                         {/* Swipe delete indicator */}
                         {isOwnMessage && (
-                          <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-r-md pointer-events-none">
-                            <Trash2 className="h-5 w-5 text-red-400" />
+                          <div className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 bg-accent-error/20 rounded-r-md pointer-events-none">
+                            <Trash2 className="h-5 w-5 text-accent-error" />
                           </div>
                         )}
                         
                         <div
-                          className={`p-3 rounded-md bg-white/5 border border-white/10 ${
+                          className={`p-3 rounded-md bg-glass border border-border-subtle ${
                             swipingId === msg.id ? "" : "transition-transform duration-200"
                           } ${
                             editingId === msg.id ? "" : "flex gap-3"
@@ -522,7 +522,6 @@ export default function OrganizerLiveMissionControlPage() {
                                 value={editText}
                                 onChange={(e) => setEditText(e.target.value)}
                                 placeholder="Edit message..."
-                                className="bg-white/10 border-white/20 text-white"
                               />
                               <div className="flex gap-2">
                                 <Button
@@ -559,13 +558,13 @@ export default function OrganizerLiveMissionControlPage() {
                               {/* Message content */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <p className="text-xs text-white/60">
+                                  <p className="text-xs text-secondary">
                                     {new Date(msg.created_at).toLocaleTimeString([], {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                     })}
                                     {msg.updated_at !== msg.created_at && (
-                                      <span className="ml-1 text-white/40">(edited)</span>
+                                      <span className="ml-1 text-muted">(edited)</span>
                                     )}
                                   </p>
                                   {isOwnMessage && (
@@ -575,14 +574,14 @@ export default function OrganizerLiveMissionControlPage() {
                                           setEditingId(msg.id);
                                           setEditText(msg.message);
                                         }}
-                                        className="p-1 text-white/40 hover:text-white transition-colors"
+                                        className="p-1 text-muted hover:text-primary transition-colors"
                                         title="Edit message"
                                       >
                                         <Edit2 className="h-3 w-3" />
                                       </button>
                                       <button
                                         onClick={() => handleDeleteMessage(msg.id)}
-                                        className="p-1 text-white/40 hover:text-red-400 transition-colors"
+                                        className="p-1 text-muted hover:text-accent-error transition-colors"
                                         title="Delete message"
                                       >
                                         <Trash2 className="h-3 w-3" />
@@ -590,7 +589,7 @@ export default function OrganizerLiveMissionControlPage() {
                                     </div>
                                   )}
                                 </div>
-                                <p className="text-sm text-white/90 whitespace-pre-wrap break-words">{msg.message}</p>
+                                <p className="text-sm text-primary whitespace-pre-wrap break-words">{msg.message}</p>
                               </div>
                             </>
                           )}
@@ -603,7 +602,7 @@ export default function OrganizerLiveMissionControlPage() {
 
               {/* New Message Input - Fixed at bottom for mobile */}
               <div 
-                className="absolute bottom-0 left-0 right-0 bg-black/95 backdrop-blur-sm px-4 py-3 border-t border-white/10 flex gap-2 z-10"
+                className="absolute bottom-0 left-0 right-0 bg-void/95 backdrop-blur-sm px-4 py-3 border-t border-border-subtle flex gap-2 z-10"
                 style={{ 
                   paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
                   marginLeft: "-1rem",
@@ -620,7 +619,7 @@ export default function OrganizerLiveMissionControlPage() {
                     }
                   }}
                   placeholder="Type a message..."
-                  className="bg-white/10 border-white/20 text-white flex-1"
+                  className="flex-1"
                 />
                 <Button
                   variant="primary"
@@ -645,7 +644,7 @@ export default function OrganizerLiveMissionControlPage() {
       >
         {loadingAttendee ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-foreground-muted">Loading profile...</div>
+            <div className="text-sm text-secondary">Loading profile...</div>
           </div>
         ) : attendeeDetails?.attendee ? (
           <div className="space-y-6">
@@ -657,11 +656,11 @@ export default function OrganizerLiveMissionControlPage() {
                 size="lg"
               />
               <div>
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-primary">
                   {attendeeDetails.attendee.name} {attendeeDetails.attendee.surname || ""}
                 </h3>
                 {attendeeDetails.registration && (
-                  <p className="text-sm text-foreground-muted">
+                  <p className="text-sm text-secondary">
                     Registered {new Date(attendeeDetails.registration.registered_at).toLocaleDateString()}
                   </p>
                 )}
@@ -677,10 +676,10 @@ export default function OrganizerLiveMissionControlPage() {
             <div className="space-y-3 border-t border-border pt-4">
               {attendeeDetails.attendee.email && (
                 <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-foreground-muted" />
+                  <Mail className="h-4 w-4 text-secondary" />
                   <a
                     href={`mailto:${attendeeDetails.attendee.email}`}
-                    className="text-sm text-foreground hover:text-primary transition-colors"
+                    className="text-sm text-primary hover:text-primary transition-colors"
                   >
                     {attendeeDetails.attendee.email}
                   </a>
@@ -688,10 +687,10 @@ export default function OrganizerLiveMissionControlPage() {
               )}
               {attendeeDetails.attendee.phone && (
                 <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-foreground-muted" />
+                  <Phone className="h-4 w-4 text-secondary" />
                   <a
                     href={`tel:${attendeeDetails.attendee.phone}`}
-                    className="text-sm text-foreground hover:text-primary transition-colors"
+                    className="text-sm text-primary hover:text-primary transition-colors"
                   >
                     {attendeeDetails.attendee.phone}
                   </a>
@@ -699,12 +698,12 @@ export default function OrganizerLiveMissionControlPage() {
               )}
               {attendeeDetails.attendee.instagram_handle && (
                 <div className="flex items-center gap-3">
-                  <Instagram className="h-4 w-4 text-foreground-muted" />
+                  <Instagram className="h-4 w-4 text-secondary" />
                   <a
                     href={`https://instagram.com/${attendeeDetails.attendee.instagram_handle.replace(/^@/, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    className="text-sm text-primary hover:text-primary transition-colors flex items-center gap-1"
                   >
                     @{attendeeDetails.attendee.instagram_handle.replace(/^@/, "")}
                     <ExternalLink className="h-3 w-3" />
@@ -716,16 +715,16 @@ export default function OrganizerLiveMissionControlPage() {
             {/* Previous Events */}
             {attendeeDetails.previous_events && attendeeDetails.previous_events.length > 0 && (
               <div className="border-t border-border pt-4">
-                <h4 className="text-sm font-semibold text-foreground mb-3">Previous Events</h4>
+                <h4 className="text-sm font-semibold text-primary mb-3">Previous Events</h4>
                 <div className="space-y-2">
                   {attendeeDetails.previous_events.map((event: any) => (
                     <div
                       key={event.id}
-                      className="flex items-center justify-between p-2 rounded-md bg-surface border border-border"
+                      className="flex items-center justify-between p-2 rounded-md bg-glass border border-border"
                     >
                       <div>
-                        <p className="text-sm font-medium text-foreground">{event.name}</p>
-                        <p className="text-xs text-foreground-muted">
+                        <p className="text-sm font-medium text-primary">{event.name}</p>
+                        <p className="text-xs text-secondary">
                           {new Date(event.date).toLocaleDateString()}
                         </p>
                       </div>
@@ -742,7 +741,7 @@ export default function OrganizerLiveMissionControlPage() {
           </div>
         ) : (
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-foreground-muted">Failed to load profile</div>
+            <div className="text-sm text-secondary">Failed to load profile</div>
           </div>
         )}
       </Modal>

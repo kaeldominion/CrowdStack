@@ -141,11 +141,11 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-md text-foreground-muted hover:text-foreground hover:bg-surface transition-colors"
+        className="relative p-2 rounded-md text-secondary hover:text-primary hover:bg-glass transition-colors"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent-secondary text-xs font-bold text-primary-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -157,10 +157,10 @@ export function NotificationBell() {
             className="fixed inset-0 z-[60]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 z-[70] mt-2 w-80 sm:w-96 rounded-lg bg-surface border border-border shadow-card overflow-hidden">
+          <div className="absolute right-0 z-[70] mt-2 w-80 sm:w-96 rounded-lg bg-glass border border-border shadow-card overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/50">
-              <h3 className="font-semibold text-foreground">Notifications</h3>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-void/50">
+              <h3 className="font-semibold text-primary">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
@@ -174,7 +174,7 @@ export function NotificationBell() {
             {/* Notifications List */}
             <div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-foreground-muted">
+                <div className="p-8 text-center text-secondary">
                   <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No notifications yet</p>
                 </div>
@@ -183,8 +183,8 @@ export function NotificationBell() {
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left p-4 border-b border-border last:border-b-0 hover:bg-background transition-colors ${
-                      !notification.read_at ? "bg-primary/5" : ""
+                    className={`w-full text-left p-4 border-b border-border last:border-b-0 hover:bg-void transition-colors ${
+                      !notification.read_at ? "bg-accent-secondary/5" : ""
                     }`}
                   >
                     <div className="flex gap-3">
@@ -194,23 +194,23 @@ export function NotificationBell() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p className={`text-sm font-medium ${
-                            !notification.read_at ? "text-foreground" : "text-foreground-muted"
+                            !notification.read_at ? "text-primary" : "text-secondary"
                           }`}>
                             {notification.title}
                           </p>
                           {!notification.read_at && (
-                            <span className="flex-shrink-0 h-2 w-2 rounded-full bg-primary" />
+                            <span className="flex-shrink-0 h-2 w-2 rounded-full bg-accent-secondary" />
                           )}
                         </div>
-                        <p className="text-sm text-foreground-muted line-clamp-2 mt-0.5">
+                        <p className="text-sm text-secondary line-clamp-2 mt-0.5">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-foreground-subtle mt-1">
+                        <p className="text-xs text-primary-subtle mt-1">
                           {formatTime(notification.created_at)}
                         </p>
                       </div>
                       {notification.link && (
-                        <ExternalLink className="h-4 w-4 text-foreground-muted flex-shrink-0" />
+                        <ExternalLink className="h-4 w-4 text-secondary flex-shrink-0" />
                       )}
                     </div>
                   </button>

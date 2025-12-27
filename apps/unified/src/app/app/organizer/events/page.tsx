@@ -99,8 +99,8 @@ export default function OrganizerEventsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Your Events</h1>
-          <p className="mt-2 text-sm text-foreground-muted">
+          <h1 className="text-3xl font-bold text-primary">Your Events</h1>
+          <p className="mt-2 text-sm text-secondary">
             Manage and track all events you've created
           </p>
         </div>
@@ -114,13 +114,13 @@ export default function OrganizerEventsPage() {
 
       {/* Pending Approval Alert */}
       {pendingEvents.length > 0 && (
-        <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+        <div className="bg-accent-warning/10 border border-accent-warning/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-accent-warning flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-warning">
+            <p className="font-medium text-accent-warning">
               {pendingEvents.length} event{pendingEvents.length > 1 ? "s" : ""} pending venue approval
             </p>
-            <p className="text-sm text-foreground-muted mt-1">
+            <p className="text-sm text-secondary mt-1">
               These events are waiting to be approved by their respective venues before they can go live.
             </p>
           </div>
@@ -129,13 +129,13 @@ export default function OrganizerEventsPage() {
 
       {/* Rejected Events Alert */}
       {rejectedEvents.length > 0 && (
-        <div className="bg-danger/10 border border-danger/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
+        <div className="bg-accent-error/10 border border-accent-error/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-accent-error flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-danger">
+            <p className="font-medium text-accent-error">
               {rejectedEvents.length} event{rejectedEvents.length > 1 ? "s" : ""} rejected
             </p>
-            <p className="text-sm text-foreground-muted mt-1">
+            <p className="text-sm text-secondary mt-1">
               These events were not approved by the venue. You can edit and try a different venue.
             </p>
           </div>
@@ -144,7 +144,7 @@ export default function OrganizerEventsPage() {
 
       {events.length === 0 ? (
         <EmptyState
-          icon={<Calendar className="h-12 w-12 text-foreground-muted" />}
+          icon={<Calendar className="h-12 w-12 text-secondary" />}
           title="No events yet"
           description="Create your first event to start tracking attendance and managing promoters."
           action={{
@@ -158,14 +158,14 @@ export default function OrganizerEventsPage() {
           {liveEvents.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                <h2 className="text-xl font-semibold text-foreground">Live Now</h2>
+                <div className="h-3 w-3 bg-accent-error rounded-full animate-pulse" />
+                <h2 className="text-xl font-semibold text-primary">Live Now</h2>
                 <Badge variant="danger" className="text-xs">{liveEvents.length} Active</Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {liveEvents.map((event) => (
                   <div key={event.id} className="relative">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl blur opacity-30 animate-pulse" />
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
                     <div className="relative">
                       <EventCard
                         event={event}
@@ -182,9 +182,9 @@ export default function OrganizerEventsPage() {
           {upcomingEvents.length > 0 && (
             <section className="space-y-4">
               <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-indigo-400" />
-                <h2 className="text-xl font-semibold text-foreground">Upcoming Events</h2>
-                <span className="text-sm text-foreground-muted">({upcomingEvents.length})</span>
+                <Clock className="h-5 w-5 text-accent-secondary" />
+                <h2 className="text-xl font-semibold text-primary">Upcoming Events</h2>
+                <span className="text-sm text-secondary">({upcomingEvents.length})</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {upcomingEvents.map((event) => (
@@ -200,13 +200,13 @@ export default function OrganizerEventsPage() {
 
           {/* Past Events Section - Row View */}
           {pastEvents.length > 0 && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <div className="flex items-center gap-3">
-                <History className="h-5 w-5 text-foreground-muted" />
-                <h2 className="text-xl font-semibold text-foreground">Event History</h2>
-                <span className="text-sm text-foreground-muted">({pastEvents.length})</span>
+                <History className="h-5 w-5 text-secondary" />
+                <h2 className="text-xl font-semibold text-primary">Event History</h2>
+                <span className="text-sm text-secondary">({pastEvents.length})</span>
               </div>
-              <Card className="divide-y divide-border">
+              <div className="space-y-3">
                 {pastEvents.map((event) => {
                   const eventDate = new Date(event.start_time);
                   const conversionRate = event.registrations > 0 
@@ -217,53 +217,57 @@ export default function OrganizerEventsPage() {
                     <Link 
                       key={event.id} 
                       href={`/app/organizer/events/${event.id}`}
-                      className="flex items-center justify-between p-4 hover:bg-surface-elevated transition-colors cursor-pointer group"
+                      className="block"
                     >
-                      <div className="flex items-center gap-4 min-w-0 flex-1">
-                        {event.flier_url && (
-                          <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-border">
-                            <img src={event.flier_url} alt="" className="w-full h-full object-cover opacity-80" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                            {event.name}
-                          </p>
-                          <div className="flex items-center gap-3 text-sm text-foreground-muted mt-1">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                            </span>
-                            {event.venue && (
-                              <span className="flex items-center gap-1 truncate">
-                                <MapPin className="h-3 w-3" />
-                                {event.venue.name}
-                              </span>
+                      <div className="bg-glass border border-border-subtle rounded-2xl p-4 hover:border-accent-primary/30 hover:shadow-soft transition-all cursor-pointer group">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
+                            {event.flier_url && (
+                              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-border-subtle">
+                                <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
+                              </div>
                             )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-sans font-semibold text-primary truncate group-hover:text-accent-primary transition-colors">
+                                {event.name}
+                              </p>
+                              <div className="flex items-center gap-3 text-sm text-secondary mt-1">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 text-muted" />
+                                  {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                </span>
+                                {event.venue && (
+                                  <span className="flex items-center gap-1 truncate">
+                                    <MapPin className="h-3 w-3 text-muted" />
+                                    {event.venue.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm">
+                            <div className="text-center min-w-[60px]">
+                              <p className="font-semibold text-primary">{event.registrations}</p>
+                              <p className="text-xs text-secondary">Registered</p>
+                            </div>
+                            <div className="text-center min-w-[60px]">
+                              <p className="font-semibold text-primary">{event.checkins}</p>
+                              <p className="text-xs text-secondary">Checked In</p>
+                            </div>
+                            <div className="text-center min-w-[60px]">
+                              <p className={`font-semibold ${conversionRate >= 70 ? 'text-accent-success' : conversionRate >= 40 ? 'text-accent-warning' : 'text-secondary'}`}>
+                                {conversionRate}%
+                              </p>
+                              <p className="text-xs text-secondary">Conversion</p>
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 text-secondary group-hover:text-primary transition-colors" />
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div className="text-center min-w-[60px]">
-                          <p className="font-semibold text-foreground">{event.registrations}</p>
-                          <p className="text-xs text-foreground-muted">Registered</p>
-                        </div>
-                        <div className="text-center min-w-[60px]">
-                          <p className="font-semibold text-foreground">{event.checkins}</p>
-                          <p className="text-xs text-foreground-muted">Checked In</p>
-                        </div>
-                        <div className="text-center min-w-[60px]">
-                          <p className={`font-semibold ${conversionRate >= 70 ? 'text-success' : conversionRate >= 40 ? 'text-warning' : 'text-foreground-muted'}`}>
-                            {conversionRate}%
-                          </p>
-                          <p className="text-xs text-foreground-muted">Conversion</p>
-                        </div>
-                        <ArrowUpRight className="h-4 w-4 text-foreground-muted group-hover:text-primary transition-colors" />
                       </div>
                     </Link>
                   );
                 })}
-              </Card>
+              </div>
             </section>
           )}
         </div>

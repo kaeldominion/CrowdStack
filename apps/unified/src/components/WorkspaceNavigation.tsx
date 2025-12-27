@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 import type { UserRole } from "@crowdstack/shared";
-import { ImprovedEntitySwitcher as EntitySwitcher } from "./ImprovedEntitySwitcher";
 import { NotificationBell } from "./NotificationBell";
 
 interface WorkspaceNavigationProps {
@@ -218,13 +217,6 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
         </div>
 
         <div className="h-4 w-px bg-white/20 hidden md:block" />
-
-        {/* Entity Switcher for Superadmin */}
-        {roles.includes("superadmin") && (
-          <div className="hidden sm:block">
-            <EntitySwitcher userRoles={roles} />
-          </div>
-        )}
 
         {/* Notification Bell */}
         <div className="hidden sm:block">

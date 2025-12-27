@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { cn } from "@crowdstack/ui";
 
 interface BentoCardProps {
   children: ReactNode;
@@ -13,15 +14,15 @@ interface BentoCardProps {
 export function BentoCard({ children, className = "", span = 1, onClick }: BentoCardProps) {
   return (
     <motion.div
-      className={`
-        group relative rounded-lg border border-white/5 bg-[#0A0A0A]
-        overflow-hidden transition-all duration-300
-        ${span === 2 ? "md:col-span-2" : ""}
-        ${span === 3 ? "md:col-span-3" : ""}
-        ${span === 4 ? "md:col-span-4" : ""}
-        ${onClick ? "cursor-pointer" : ""}
-        ${className}
-      `}
+      className={cn(
+        "group relative rounded-lg border border-border-subtle bg-glass",
+        "overflow-hidden transition-all duration-300",
+        span === 2 && "md:col-span-2",
+        span === 3 && "md:col-span-3",
+        span === 4 && "md:col-span-4",
+        onClick && "cursor-pointer",
+        className
+      )}
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
@@ -41,8 +42,9 @@ export function BentoCard({ children, className = "", span = 1, onClick }: Bento
         <motion.div
           className="absolute inset-0 rounded-lg"
           style={{
-            background: "linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), rgba(168, 85, 247, 0.5), transparent)",
+            background: "linear-gradient(90deg, transparent, var(--accent-secondary), var(--accent-primary), transparent)",
             backgroundSize: "200% 100%",
+            opacity: 0.5,
           }}
           animate={{
             backgroundPosition: ["200% 0", "-200% 0"],
@@ -53,7 +55,7 @@ export function BentoCard({ children, className = "", span = 1, onClick }: Bento
             ease: "linear",
           }}
         />
-        <div className="absolute inset-[1px] rounded-lg bg-[#0A0A0A]" />
+        <div className="absolute inset-[1px] rounded-lg bg-glass" />
       </div>
 
       {/* Content */}

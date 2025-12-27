@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get venue ID (handles impersonation for superadmin)
+    // Get venue ID for current user
     const venueId = await getUserVenueId();
 
     if (!venueId) {

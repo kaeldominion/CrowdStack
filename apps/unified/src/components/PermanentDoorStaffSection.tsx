@@ -210,12 +210,12 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
+          <div className="p-2 bg-accent-secondary/10 rounded-lg">
             <DoorOpen className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Permanent Door Staff</h3>
-            <p className="text-sm text-foreground-muted">
+            <h3 className="text-lg font-semibold text-primary">Permanent Door Staff</h3>
+            <p className="text-sm text-secondary">
               {resolvedEntityName ? `Staff with access to all ${resolvedEntityName} events` : `Staff with access to all ${type} events`}
             </p>
           </div>
@@ -228,7 +228,7 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
 
       {/* Staff List */}
       {activeStaff.length === 0 ? (
-        <div className="text-center py-8 text-foreground-muted border border-dashed border-border rounded-lg">
+        <div className="text-center py-8 text-secondary border border-dashed border-border rounded-lg">
           <DoorOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>No permanent door staff assigned yet</p>
           <p className="text-sm mt-1">Add staff members who need access to all {type} events</p>
@@ -238,7 +238,7 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
           {activeStaff.map((staff) => (
             <div
               key={staff.id}
-              className="flex items-center justify-between p-4 bg-surface-secondary rounded-lg"
+              className="flex items-center justify-between p-4 bg-raised rounded-lg"
             >
               <div className="flex items-center gap-3">
                 {/* Avatar */}
@@ -252,13 +252,13 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
                   )}
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">{staff.user_name}</p>
-                  <p className="text-sm text-foreground-muted flex items-center gap-1">
+                  <p className="font-medium text-primary">{staff.user_name}</p>
+                  <p className="text-sm text-secondary flex items-center gap-1">
                     <Mail className="h-3 w-3" />
                     {staff.user_email}
                   </p>
                   {staff.notes && (
-                    <p className="text-xs text-foreground-muted mt-1">{staff.notes}</p>
+                    <p className="text-xs text-secondary mt-1">{staff.notes}</p>
                   )}
                 </div>
               </div>
@@ -294,13 +294,13 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-sm text-foreground-muted">
+          <p className="text-sm text-secondary">
             Search for a user by email to add as permanent door staff for all {resolvedEntityName || type} events.
           </p>
 
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -323,8 +323,8 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
                     key={user.id}
                     className={`flex items-center justify-between p-3 rounded-lg border ${
                       user.already_assigned
-                        ? "bg-surface-secondary border-border opacity-60"
-                        : "bg-surface-secondary border-border hover:border-primary/50"
+                        ? "bg-raised border-border opacity-60"
+                        : "bg-raised border-border hover:border-primary/50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -338,8 +338,8 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">{user.name}</p>
-                        <p className="text-sm text-foreground-muted">{user.email}</p>
+                        <p className="font-medium text-primary">{user.name}</p>
+                        <p className="text-sm text-secondary">{user.email}</p>
                       </div>
                     </div>
                     {user.already_assigned ? (
@@ -361,7 +361,7 @@ export function PermanentDoorStaffSection({ type, entityId, entityName }: Perman
                   </div>
                 ))
               ) : !searching ? (
-                <div className="text-center py-6 text-foreground-muted">
+                <div className="text-center py-6 text-secondary">
                   <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No users found</p>
                   <p className="text-sm">Try a different email address</p>

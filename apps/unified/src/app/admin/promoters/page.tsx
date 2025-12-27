@@ -197,13 +197,13 @@ export default function AdminPromotersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Promoter Management</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Promoter Management</h1>
+              <p className="mt-2 text-sm text-secondary">
                 View all promoters and their performance metrics
               </p>
             </div>
@@ -251,7 +251,7 @@ export default function AdminPromotersPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredPromoters.length} of {promoters.length} promoters
           </div>
 
@@ -272,7 +272,7 @@ export default function AdminPromotersPage() {
                 <TableBody>
                   {filteredPromoters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={7} className="text-center py-8 text-secondary">
                         No promoters found
                       </TableCell>
                     </TableRow>
@@ -288,21 +288,21 @@ export default function AdminPromotersPage() {
                         <TableCell>
                           <div className="space-y-1">
                             {promoter.email && (
-                              <div className="text-sm text-foreground-muted">{promoter.email}</div>
+                              <div className="text-sm text-secondary">{promoter.email}</div>
                             )}
                             {promoter.phone && (
-                              <div className="text-sm text-foreground-muted">{promoter.phone}</div>
+                              <div className="text-sm text-secondary">{promoter.phone}</div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>{promoter.parent?.name || "—"}</TableCell>
                         <TableCell>{promoter.events_count || 0}</TableCell>
                         <TableCell>{promoter.total_referrals || 0}</TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(promoter.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          <ChevronRight className="h-4 w-4 text-secondary" />
                         </TableCell>
                       </TableRow>
                     ))
@@ -327,13 +327,13 @@ export default function AdminPromotersPage() {
             size="md"
           >
             <div className="space-y-4">
-              <p className="text-sm text-foreground-muted">
+              <p className="text-sm text-secondary">
                 Create a new promoter profile from scratch. This creates a promoter profile without requiring an existing user or attendee account.
               </p>
 
               {/* Name Field */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Name <span className="text-destructive">*</span>
                 </label>
                 <Input
@@ -346,7 +346,7 @@ export default function AdminPromotersPage() {
 
               {/* Email Field */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Email
                 </label>
                 <Input
@@ -355,14 +355,14 @@ export default function AdminPromotersPage() {
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
                 />
-                <p className="text-xs text-foreground-muted mt-1">
+                <p className="text-xs text-secondary mt-1">
                   Either email or phone is required
                 </p>
               </div>
 
               {/* Phone Field */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Phone
                 </label>
                 <Input
@@ -371,15 +371,15 @@ export default function AdminPromotersPage() {
                   value={createPhone}
                   onChange={(e) => setCreatePhone(e.target.value)}
                 />
-                <p className="text-xs text-foreground-muted mt-1">
+                <p className="text-xs text-secondary mt-1">
                   Either email or phone is required
                 </p>
               </div>
 
               {/* Parent Promoter Field (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Parent Promoter ID <span className="text-foreground-muted">(optional)</span>
+                <label className="block text-sm font-medium text-primary mb-2">
+                  Parent Promoter ID <span className="text-secondary">(optional)</span>
                 </label>
                 <Input
                   type="text"
@@ -387,7 +387,7 @@ export default function AdminPromotersPage() {
                   value={createParentId}
                   onChange={(e) => setCreateParentId(e.target.value)}
                 />
-                <p className="text-xs text-foreground-muted mt-1">
+                <p className="text-xs text-secondary mt-1">
                   Leave empty if this is a top-level promoter
                 </p>
               </div>
@@ -415,7 +415,7 @@ export default function AdminPromotersPage() {
                       {createResult.message}
                     </p>
                     {createResult.success && createResult.promoter && (
-                      <div className="mt-2 text-xs text-foreground-muted">
+                      <div className="mt-2 text-xs text-secondary">
                         <p>
                           <strong>Name:</strong> {createResult.promoter.name}
                         </p>
@@ -478,14 +478,14 @@ export default function AdminPromotersPage() {
             size="md"
           >
             <div className="space-y-4">
-              <p className="text-sm text-foreground-muted">
+              <p className="text-sm text-secondary">
                 Convert a user or attendee to a promoter. The system will find the user by email or attendee ID,
                 create a promoter profile with their existing information, and assign the promoter role.
               </p>
 
               {/* Method Selection */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Search by
                 </label>
                 <div className="flex gap-4">
@@ -496,7 +496,7 @@ export default function AdminPromotersPage() {
                       onChange={() => setConvertMethod("email")}
                       className="text-primary"
                     />
-                    <span className="text-sm text-foreground">Email</span>
+                    <span className="text-sm text-primary">Email</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -505,7 +505,7 @@ export default function AdminPromotersPage() {
                       onChange={() => setConvertMethod("attendeeId")}
                       className="text-primary"
                     />
-                    <span className="text-sm text-foreground">Attendee ID</span>
+                    <span className="text-sm text-primary">Attendee ID</span>
                   </label>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export default function AdminPromotersPage() {
               {/* Input Fields */}
               {convertMethod === "email" ? (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-primary mb-2">
                     Email Address
                   </label>
                   <Input
@@ -530,7 +530,7 @@ export default function AdminPromotersPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-primary mb-2">
                     Attendee ID
                   </label>
                   <Input
@@ -570,7 +570,7 @@ export default function AdminPromotersPage() {
                       {convertResult.message}
                     </p>
                     {convertResult.success && convertResult.promoter && (
-                      <div className="mt-2 text-xs text-foreground-muted">
+                      <div className="mt-2 text-xs text-secondary">
                         <p>
                           <strong>Name:</strong> {convertResult.promoter.name}
                         </p>
@@ -628,9 +628,9 @@ export default function AdminPromotersPage() {
             {selectedPromoter && (
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground">{selectedPromoter.name}</h3>
+                  <h3 className="text-lg font-semibold text-primary">{selectedPromoter.name}</h3>
                   {selectedPromoter.parent?.name && (
-                    <p className="text-sm text-foreground-muted">
+                    <p className="text-sm text-secondary">
                       Parent: {selectedPromoter.parent.name}
                     </p>
                   )}
@@ -638,29 +638,29 @@ export default function AdminPromotersPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Email</p>
-                    <p className="text-sm text-foreground">{selectedPromoter.email || "—"}</p>
+                    <p className="text-xs font-medium text-secondary uppercase tracking-wider">Email</p>
+                    <p className="text-sm text-primary">{selectedPromoter.email || "—"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Phone</p>
-                    <p className="text-sm text-foreground">{selectedPromoter.phone || "—"}</p>
+                    <p className="text-xs font-medium text-secondary uppercase tracking-wider">Phone</p>
+                    <p className="text-sm text-primary">{selectedPromoter.phone || "—"}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Events</p>
-                    <p className="text-sm text-foreground">{selectedPromoter.events_count || 0}</p>
+                    <p className="text-xs font-medium text-secondary uppercase tracking-wider">Events</p>
+                    <p className="text-sm text-primary">{selectedPromoter.events_count || 0}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Total Referrals</p>
-                    <p className="text-sm text-foreground">{selectedPromoter.total_referrals || 0}</p>
+                    <p className="text-xs font-medium text-secondary uppercase tracking-wider">Total Referrals</p>
+                    <p className="text-sm text-primary">{selectedPromoter.total_referrals || 0}</p>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
-                  <p className="text-sm text-foreground">
+                  <p className="text-xs font-medium text-secondary uppercase tracking-wider">Created</p>
+                  <p className="text-sm text-primary">
                     {new Date(selectedPromoter.created_at).toLocaleDateString()}
                   </p>
                 </div>

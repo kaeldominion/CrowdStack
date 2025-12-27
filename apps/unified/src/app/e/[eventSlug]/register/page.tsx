@@ -364,9 +364,9 @@ export default function RegisterPage() {
   if (success && !eventDetails) {
     console.log("[Register] Success but no event details - showing fallback");
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-        <div className="text-white text-xl">Registration Complete!</div>
-        <div className="text-white/60">You're all set for the event.</div>
+      <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4">
+        <div className="text-primary text-xl font-bold">Registration Complete!</div>
+        <div className="text-secondary">You're all set for the event.</div>
       </div>
     );
   }
@@ -375,12 +375,12 @@ export default function RegisterPage() {
   if (error && !loading) {
     console.log("[Register] Rendering error:", error);
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 p-4">
-        <div className="text-red-400 text-xl">Registration Error</div>
-        <div className="text-white/60 text-center">{error}</div>
+      <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4 p-4">
+        <div className="text-accent-error text-xl font-bold">Registration Error</div>
+        <div className="text-secondary text-center">{error}</div>
         <button 
           onClick={() => { setError(""); setLoading(false); setShowSignup(true); }}
-          className="mt-4 px-4 py-2 bg-white/10 text-white rounded-lg"
+          className="mt-4 px-4 py-2 bg-active text-primary rounded-xl border border-border-subtle hover:border-border-strong transition-colors"
         >
           Try Again
         </button>
@@ -392,7 +392,7 @@ export default function RegisterPage() {
   if (loading) {
     console.log("[Register] Rendering loading state");
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-void flex items-center justify-center">
         <LoadingSpinner text="Loading registration..." size="lg" />
       </div>
     );
@@ -468,11 +468,11 @@ export default function RegisterPage() {
   // Fallback - this should not happen, but handle it gracefully
   console.log("[Register] Fallback state reached - this should not happen");
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-      <div className="text-white/60">Something went wrong...</div>
+    <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4">
+      <div className="text-secondary">Something went wrong...</div>
       <button 
         onClick={() => window.location.reload()}
-        className="px-4 py-2 bg-white/10 text-white rounded-lg"
+        className="px-4 py-2 bg-active text-primary rounded-xl border border-border-subtle hover:border-border-strong transition-colors"
       >
         Refresh Page
       </button>

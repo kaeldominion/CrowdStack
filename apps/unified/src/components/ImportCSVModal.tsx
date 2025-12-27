@@ -57,7 +57,7 @@ export function ImportCSVModal({ isOpen, onClose, onSuccess }: ImportCSVModalPro
     <Modal isOpen={isOpen} onClose={onClose} title="Import Attendees from CSV" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
+          <label className="block text-sm font-medium text-primary mb-2">
             CSV File
           </label>
           <div className="border-2 border-dashed border-border rounded-md p-6 text-center">
@@ -72,13 +72,13 @@ export function ImportCSVModal({ isOpen, onClose, onSuccess }: ImportCSVModalPro
               htmlFor="csv-upload"
               className="cursor-pointer flex flex-col items-center gap-2"
             >
-              <Upload className="h-8 w-8 text-foreground-muted" />
-              <span className="text-sm text-foreground-muted">
+              <Upload className="h-8 w-8 text-secondary" />
+              <span className="text-sm text-secondary">
                 {file ? file.name : "Click to upload CSV file"}
               </span>
             </label>
           </div>
-          <p className="mt-2 text-xs text-foreground-muted">
+          <p className="mt-2 text-xs text-secondary">
             CSV should have columns: name, email, phone
           </p>
         </div>

@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     let venueApprovalStatus = "not_required";
     let autoApproved = false;
     
-    // Check if user is acting purely as superadmin (impersonating) vs as a real organizer
+    // Check if user is a superadmin without organizer role (admin-created events)
     const isActingAsOrganizer = roles.includes("event_organizer");
     const isPureSuperadmin = isSuperadmin && !isActingAsOrganizer;
     
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         venueApprovalStatus = "approved";
         autoApproved = true;
       } else if (isPureSuperadmin) {
-        // Pure superadmin (impersonating) events are auto-approved
+        // Admin-created events are auto-approved
         venueApprovalStatus = "approved";
         autoApproved = true;
       } else {
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
           );
         } else if (autoApproved && !isPureSuperadmin) {
           // Notify venue about auto-approved event (from pre-approved organizer)
-          // Skip notification for pure superadmin-created events (impersonation)
+          // Skip notification for admin-created events
           console.log("[Event Creation] Sending auto-approved notification to venue:", body.venue_id);
           await notifyVenueOfAutoApprovedEvent(
             body.venue_id,

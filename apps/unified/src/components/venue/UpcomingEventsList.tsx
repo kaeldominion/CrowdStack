@@ -29,9 +29,9 @@ export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
   if (!events || events.length === 0) {
     return (
       <Card>
-        <h2 className="text-2xl font-semibold text-foreground mb-6">Upcoming Events</h2>
+        <h2 className="text-2xl font-semibold text-primary mb-6">Upcoming Events</h2>
         <div className="text-center py-12">
-          <p className="text-foreground-muted">No upcoming events scheduled.</p>
+          <p className="text-secondary">No upcoming events scheduled.</p>
         </div>
       </Card>
     );
@@ -39,7 +39,7 @@ export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
 
   return (
     <Card>
-      <h2 className="text-2xl font-semibold text-foreground mb-6">Upcoming Events</h2>
+      <h2 className="text-2xl font-semibold text-primary mb-6">Upcoming Events</h2>
       <div className="space-y-6">
         {events.map((event) => {
           const startDate = new Date(event.start_time);
@@ -69,9 +69,9 @@ export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-foreground mb-1">{event.name}</h3>
+                      <h3 className="text-xl font-semibold text-primary mb-1">{event.name}</h3>
                       {event.description && (
-                        <p className="text-sm text-foreground-muted line-clamp-2">
+                        <p className="text-sm text-secondary line-clamp-2">
                           {event.description}
                         </p>
                       )}
@@ -88,7 +88,7 @@ export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-4 text-sm text-foreground-muted">
+                  <div className="flex flex-wrap gap-4 text-sm text-secondary">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
@@ -122,7 +122,7 @@ export function UpcomingEventsList({ events }: UpcomingEventsListProps) {
                       </div>
                     )}
                     {event.organizer && (
-                      <div className="text-foreground-muted">
+                      <div className="text-secondary">
                         by {event.organizer.name}
                       </div>
                     )}

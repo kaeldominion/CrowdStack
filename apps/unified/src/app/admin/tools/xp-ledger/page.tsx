@@ -131,17 +131,17 @@ export default function XPLedgerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-foreground-muted hover:text-foreground mb-2">
+              <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-primary mb-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to Admin
               </Link>
-              <h1 className="text-3xl font-bold text-foreground">XP Ledger</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">XP Ledger</h1>
+              <p className="mt-2 text-sm text-secondary">
                 View and analyze XP transactions
               </p>
             </div>
@@ -156,13 +156,13 @@ export default function XPLedgerPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card>
                 <div className="p-4">
-                  <div className="text-sm text-foreground-muted mb-1">Total XP</div>
-                  <div className="text-2xl font-bold text-foreground">{summary.totalXP.toLocaleString()}</div>
+                  <div className="text-sm text-secondary mb-1">Total XP</div>
+                  <div className="text-2xl font-bold text-primary">{summary.totalXP.toLocaleString()}</div>
                 </div>
               </Card>
               <Card>
                 <div className="p-4">
-                  <div className="text-sm text-foreground-muted mb-1 flex items-center gap-1">
+                  <div className="text-sm text-secondary mb-1 flex items-center gap-1">
                     <TrendingUp className="h-4 w-4 text-green-500" />
                     Positive XP
                   </div>
@@ -171,7 +171,7 @@ export default function XPLedgerPage() {
               </Card>
               <Card>
                 <div className="p-4">
-                  <div className="text-sm text-foreground-muted mb-1 flex items-center gap-1">
+                  <div className="text-sm text-secondary mb-1 flex items-center gap-1">
                     <TrendingDown className="h-4 w-4 text-red-500" />
                     Negative XP
                   </div>
@@ -180,8 +180,8 @@ export default function XPLedgerPage() {
               </Card>
               <Card>
                 <div className="p-4">
-                  <div className="text-sm text-foreground-muted mb-1">Total Entries</div>
-                  <div className="text-2xl font-bold text-foreground">{summary.entryCount.toLocaleString()}</div>
+                  <div className="text-sm text-secondary mb-1">Total Entries</div>
+                  <div className="text-2xl font-bold text-primary">{summary.entryCount.toLocaleString()}</div>
                 </div>
               </Card>
             </div>
@@ -253,7 +253,7 @@ export default function XPLedgerPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredEntries.length} of {pagination.total} entries
           </div>
 
@@ -280,7 +280,7 @@ export default function XPLedgerPage() {
                   <TableBody>
                     {filteredEntries.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-foreground-muted py-8">
+                        <TableCell colSpan={8} className="text-center text-secondary py-8">
                           No XP ledger entries found
                         </TableCell>
                       </TableRow>
@@ -295,7 +295,7 @@ export default function XPLedgerPage() {
                               {entry.user?.email || "N/A"}
                             </div>
                             {entry.user_id && (
-                              <div className="text-xs text-foreground-muted font-mono">
+                              <div className="text-xs text-secondary font-mono">
                                 {entry.user_id.slice(0, 8)}...
                               </div>
                             )}
@@ -323,7 +323,7 @@ export default function XPLedgerPage() {
                                 {entry.event.name}
                               </Link>
                             ) : (
-                              <span className="text-sm text-foreground-muted">N/A</span>
+                              <span className="text-sm text-secondary">N/A</span>
                             )}
                           </TableCell>
                           <TableCell className="max-w-xs truncate text-sm">
@@ -332,15 +332,15 @@ export default function XPLedgerPage() {
                           <TableCell>
                             {entry.metadata && Object.keys(entry.metadata).length > 0 ? (
                               <details className="text-xs">
-                                <summary className="cursor-pointer text-foreground-muted hover:text-foreground">
+                                <summary className="cursor-pointer text-secondary hover:text-primary">
                                   View
                                 </summary>
-                                <pre className="mt-2 p-2 bg-surface rounded text-xs overflow-auto max-w-xs">
+                                <pre className="mt-2 p-2 bg-glass rounded text-xs overflow-auto max-w-xs">
                                   {JSON.stringify(entry.metadata, null, 2)}
                                 </pre>
                               </details>
                             ) : (
-                              <span className="text-sm text-foreground-muted">—</span>
+                              <span className="text-sm text-secondary">—</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -355,7 +355,7 @@ export default function XPLedgerPage() {
           {/* Pagination */}
           {!loading && pagination.total > pagination.limit && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-foreground-muted">
+              <div className="text-sm text-secondary">
                 Showing {pagination.offset + 1} to {Math.min(pagination.offset + pagination.limit, pagination.total)} of {pagination.total}
               </div>
               <div className="flex gap-2">

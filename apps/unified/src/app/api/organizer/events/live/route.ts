@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get organizer ID (handles impersonation for superadmin)
+    // Get organizer ID for current user
     const organizerId = await getUserOrganizerId();
 
     if (!organizerId) {

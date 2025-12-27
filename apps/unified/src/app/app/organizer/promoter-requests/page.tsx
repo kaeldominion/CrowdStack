@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Badge } from "@crowdstack/ui";
+import { Button, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { 
   Users, Calendar, MapPin, Clock, Check, X, Loader2, 
   MessageSquare, Mail, Phone, ChevronDown, ChevronUp,
@@ -131,20 +131,20 @@ export default function PromoterRequestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Promoter Requests</h1>
-            <p className="text-gray-400 mt-1">
+            <h1 className="text-2xl font-bold text-primary">Promoter Requests</h1>
+            <p className="text-secondary mt-1">
               Manage requests from promoters who want to promote your events
             </p>
           </div>
           {counts.pending > 0 && (
-            <Badge variant="default" className="bg-yellow-500/20 text-yellow-400 px-3 py-1">
+            <Badge variant="default" className="bg-accent-warning/20 text-accent-warning px-3 py-1">
               {counts.pending} pending
             </Badge>
           )}
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 bg-white/5 p-1 rounded-lg w-fit">
+        <div className="flex gap-2 bg-glass p-1 rounded-lg w-fit">
           {[
             { value: "pending", label: "Pending", count: counts.pending },
             { value: "approved", label: "Approved", count: counts.approved },
@@ -156,8 +156,8 @@ export default function PromoterRequestsPage() {
               onClick={() => setFilter(tab.value as typeof filter)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 filter === tab.value
-                  ? "bg-white/10 text-white"
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-active text-primary"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               {tab.label}
@@ -171,12 +171,12 @@ export default function PromoterRequestsPage() {
         {/* Requests List */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <LoadingSpinner size="md" />
           </div>
         ) : filteredRequests.length === 0 ? (
-          <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-            <Users className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400">
+          <div className="text-center py-12 bg-glass rounded-xl border border-border-subtle">
+            <Users className="h-12 w-12 text-muted mx-auto mb-4" />
+            <p className="text-secondary">
               {filter === "pending" 
                 ? "No pending requests" 
                 : `No ${filter === "all" ? "" : filter + " "}requests`}
@@ -187,14 +187,14 @@ export default function PromoterRequestsPage() {
             {filteredRequests.map((request) => (
               <div
                 key={request.id}
-                className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+                className="bg-glass border border-border-subtle rounded-xl overflow-hidden"
               >
                 {/* Main Row */}
                 <div className="p-4">
                   <div className="flex items-start gap-4">
                     {/* Promoter Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-lg font-bold text-white">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-primary/30 via-accent-secondary/30 to-accent-primary/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-bold text-primary">
                         {getPromoterDisplayName(request.promoter).charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -203,11 +203,11 @@ export default function PromoterRequestsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="font-semibold text-white">
+                          <h3 className="font-semibold text-primary">
                             {getPromoterDisplayName(request.promoter)}
                           </h3>
                           {request.promoter?.email && (
-                            <p className="text-sm text-gray-400">{request.promoter.email}</p>
+                            <p className="text-sm text-secondary">{request.promoter.email}</p>
                           )}
                         </div>
                         <Badge
@@ -220,10 +220,10 @@ export default function PromoterRequestsPage() {
                           }
                           className={
                             request.status === "pending"
-                              ? "bg-yellow-500/20 text-yellow-400"
+                              ? "bg-accent-warning/20 text-accent-warning"
                               : request.status === "approved"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-red-500/20 text-red-400"
+                              ? "bg-accent-success/20 text-accent-success"
+                              : "bg-accent-error/20 text-accent-error"
                           }
                         >
                           {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
@@ -231,7 +231,7 @@ export default function PromoterRequestsPage() {
                       </div>
 
                       {/* Event Info */}
-                      <div className="flex items-center gap-3 mt-3 text-sm text-gray-400">
+                      <div className="flex items-center gap-3 mt-3 text-sm text-secondary">
                         <div className="flex items-center gap-1.5">
                           <Calendar className="h-4 w-4" />
                           <span className="line-clamp-1">
@@ -248,13 +248,13 @@ export default function PromoterRequestsPage() {
 
                       {/* Request Message Preview */}
                       {request.message && (
-                        <p className="mt-2 text-sm text-gray-300 line-clamp-2">
+                        <p className="mt-2 text-sm text-primary line-clamp-2">
                           &ldquo;{request.message}&rdquo;
                         </p>
                       )}
 
                       {/* Timestamp */}
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-muted">
                         Requested {formatDate(request.created_at)}
                         {request.responded_at && (
                           <> · Responded {formatDate(request.responded_at)}</>
@@ -265,7 +265,7 @@ export default function PromoterRequestsPage() {
                     {/* Expand Button */}
                     <button
                       onClick={() => setExpandedId(expandedId === request.id ? null : request.id)}
-                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                      className="p-2 text-secondary hover:text-primary transition-colors"
                     >
                       {expandedId === request.id ? (
                         <ChevronUp className="h-5 w-5" />
@@ -277,11 +277,11 @@ export default function PromoterRequestsPage() {
 
                   {/* Actions for Pending */}
                   {request.status === "pending" && (
-                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border-subtle">
                       <Button
                         onClick={() => handleAction(request.id, "approve")}
                         disabled={respondingId === request.id}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-accent-success hover:bg-accent-success/90"
                       >
                         {respondingId === request.id ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -294,7 +294,7 @@ export default function PromoterRequestsPage() {
                         variant="ghost"
                         onClick={() => handleAction(request.id, "decline")}
                         disabled={respondingId === request.id}
-                        className="border border-red-500/50 text-red-400 hover:bg-red-500/10"
+                        className="border border-accent-error/50 text-accent-error hover:bg-accent-error/10"
                       >
                         <X className="h-4 w-4 mr-2" />
                         Decline
@@ -302,7 +302,7 @@ export default function PromoterRequestsPage() {
                       {request.promoter?.email && (
                         <a
                           href={`mailto:${request.promoter.email}`}
-                          className="ml-auto flex items-center gap-1.5 text-sm text-gray-400 hover:text-white"
+                          className="ml-auto flex items-center gap-1.5 text-sm text-secondary hover:text-primary"
                         >
                           <Mail className="h-4 w-4" />
                           Contact
@@ -314,20 +314,20 @@ export default function PromoterRequestsPage() {
 
                 {/* Expanded Details */}
                 {expandedId === request.id && (
-                  <div className="px-4 pb-4 pt-0 border-t border-white/10 mt-0 space-y-4">
+                  <div className="px-4 pb-4 pt-0 border-t border-border-subtle mt-0 space-y-4">
                     {/* Full Message */}
                     {request.message && (
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 mb-1">Promoter&apos;s Message</p>
-                        <p className="text-sm text-gray-300">{request.message}</p>
+                      <div className="bg-glass rounded-lg p-3">
+                        <p className="text-xs text-muted mb-1">Promoter&apos;s Message</p>
+                        <p className="text-sm text-primary">{request.message}</p>
                       </div>
                     )}
 
                     {/* Response Message */}
                     {request.response_message && (
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 mb-1">Your Response</p>
-                        <p className="text-sm text-gray-300">{request.response_message}</p>
+                      <div className="bg-glass rounded-lg p-3">
+                        <p className="text-xs text-muted mb-1">Your Response</p>
+                        <p className="text-sm text-primary">{request.response_message}</p>
                       </div>
                     )}
 
@@ -344,9 +344,9 @@ export default function PromoterRequestsPage() {
                           />
                         )}
                         <div className="flex-1">
-                          <p className="text-sm text-white font-medium">{request.event.name}</p>
+                          <p className="text-sm text-primary font-medium">{request.event.name}</p>
                           {request.event.start_time && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-secondary">
                               {formatDate(request.event.start_time)}
                             </p>
                           )}
@@ -369,20 +369,20 @@ export default function PromoterRequestsPage() {
 
       {/* Response Modal */}
       {showResponseModal && pendingAction && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-white/10 rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-xl font-semibold text-white">
+        <div className="fixed inset-0 bg-void/60 backdrop-blur-glass flex items-center justify-center z-50 p-4">
+          <div className="bg-raised border border-border-strong rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-xl font-semibold text-primary">
               {pendingAction.action === "approve" ? "Approve Request" : "Decline Request"}
             </h3>
 
-            <p className="text-gray-400 text-sm">
+            <p className="text-secondary text-sm">
               {pendingAction.action === "approve"
                 ? "The promoter will be added to your event. You can configure their commission in the event settings."
                 : "The promoter will be notified that their request was declined."}
             </p>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-2">
+              <label className="block text-sm text-secondary mb-2">
                 Message to promoter (optional)
               </label>
               <textarea
@@ -393,7 +393,7 @@ export default function PromoterRequestsPage() {
                     ? "Welcome aboard! Looking forward to working with you..."
                     : "Thanks for your interest, but we're not looking for promoters at this time..."
                 }
-                className="w-full h-24 bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-24 bg-raised border border-border-subtle rounded-lg p-3 text-primary placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-primary)]"
               />
             </div>
 
@@ -413,8 +413,8 @@ export default function PromoterRequestsPage() {
                 disabled={respondingId !== null}
                 className={`flex-1 ${
                   pendingAction.action === "approve"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
+                    ? "bg-accent-success hover:bg-accent-success/90"
+                    : "bg-accent-error hover:bg-accent-error/90"
                 }`}
               >
                 {respondingId ? (

@@ -63,8 +63,8 @@ export function VenueMapCard({ venue }: VenueMapCardProps) {
     <Card>
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-foreground-muted" />
-          <h2 className="text-2xl font-semibold text-foreground">Location</h2>
+          <MapPin className="h-5 w-5 text-secondary" />
+          <h2 className="text-2xl font-semibold text-primary">Location</h2>
         </div>
 
         {/* Google Maps Embed */}
@@ -81,8 +81,8 @@ export function VenueMapCard({ venue }: VenueMapCardProps) {
             />
           </div>
         ) : (
-          <div className="w-full h-64 border-2 border-border bg-surface flex items-center justify-center">
-            <p className="text-foreground-muted text-sm text-center px-4">
+          <div className="w-full h-64 border-2 border-border bg-glass flex items-center justify-center">
+            <p className="text-secondary text-sm text-center px-4">
               Map preview unavailable. Click below to open in Google Maps.
             </p>
           </div>
@@ -93,7 +93,7 @@ export function VenueMapCard({ venue }: VenueMapCardProps) {
           href={venue.google_maps_url || "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center px-4 py-2 text-sm bg-surface text-foreground border border-border hover:bg-surface/80 focus:ring-primary w-full"
+          className="inline-flex items-center justify-center px-4 py-2 text-sm bg-glass text-primary border border-border hover:bg-glass/80 focus:ring-primary w-full"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Open in Google Maps

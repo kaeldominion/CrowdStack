@@ -19,7 +19,7 @@ export function VenuePreview({
 }: VenuePreviewProps) {
   if (!venue) {
     return (
-      <div className={`flex items-center gap-2 text-foreground-muted ${className}`}>
+      <div className={`flex items-center gap-2 text-secondary ${className}`}>
         <MapPin className="h-4 w-4" />
         <span className="text-sm">No venue</span>
       </div>
@@ -41,15 +41,15 @@ export function VenuePreview({
           />
         </div>
       ) : (
-        <div className={`${logoSize} flex-shrink-0 border-2 border-border bg-surface flex items-center justify-center`}>
-          <MapPin className="h-4 w-4 text-foreground-muted" />
+        <div className={`${logoSize} flex-shrink-0 border-2 border-border bg-glass flex items-center justify-center`}>
+          <MapPin className="h-4 w-4 text-secondary" />
         </div>
       )}
       
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-foreground truncate text-sm">{venue.name}</p>
+        <p className="font-medium text-primary truncate text-sm">{venue.name}</p>
         {location && (
-          <p className="text-xs text-foreground-muted truncate">{location}</p>
+          <p className="text-xs text-secondary truncate">{location}</p>
         )}
       </div>
 

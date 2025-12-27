@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button, Badge } from "@crowdstack/ui";
+import { Button, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { 
   Users, Calendar, MapPin, Clock, Check, X, Loader2, 
   MessageSquare, Mail, ChevronDown, ChevronUp,
@@ -170,7 +170,7 @@ export default function VenuePromoterRequestsPage() {
         {/* Requests List */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <LoadingSpinner size="md" />
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">

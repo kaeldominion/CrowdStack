@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { UserRole } from "@crowdstack/shared";
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const serviceSupabase = createServiceRoleClient(); // Use service role for XP queries
     
     // Get current user
     const {
@@ -36,118 +37,79 @@ export async function GET(request: NextRequest) {
     // Priority: organizer > promoter > attendee
     let viewResult: any;
 
-    if (roles.includes("event_organizer")) {
-      const { data, error } = await supabase.rpc("get_organizer_xp_view", {
-        p_user_id: user.id,
-      });
-      if (error) {
-        console.error("[XP/me] Error fetching organizer XP view:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch XP data" },
-          { status: 500 }
-        );
+    // Helper to get XP directly from ledger - try BOTH schemas
+    const getXpFromLedger = async () => {
+      console.log("[XP/me] Querying xp_ledger for user:", user.id);
+      
+      // First, try NEW schema (user_id)
+      const { data: newSchemaData, error: newSchemaError } = await serviceSupabase
+        .from("xp_ledger")
+        .select("amount")
+        .eq("user_id", user.id);
+      
+      if (!newSchemaError && newSchemaData && newSchemaData.length > 0) {
+        const totalXp = newSchemaData.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+        console.log("[XP/me] Found via user_id (new schema):", newSchemaData.length, "entries, total XP:", totalXp);
+        return totalXp;
       }
-      // Handle JSONB response
-      if (Array.isArray(data) && data.length > 0) {
-        viewResult = data[0];
-      } else if (data && typeof data === 'object') {
-        viewResult = data;
+      
+      if (newSchemaError) {
+        console.log("[XP/me] New schema (user_id) failed:", newSchemaError.message);
       } else {
-        viewResult = { total_xp: 0, trust_score: 0 };
+        console.log("[XP/me] No entries found with user_id, trying attendee lookup...");
       }
-    } else if (roles.includes("promoter")) {
-      const { data, error } = await supabase.rpc("get_promoter_xp_view", {
-        p_user_id: user.id,
-      });
-      if (error) {
-        console.error("[XP/me] Error fetching promoter XP view:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch XP data" },
-          { status: 500 }
-        );
+      
+      // Try OLD schema (attendee_id) - need to look up attendee first
+      const { data: attendeeData, error: attendeeError } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+      
+      if (attendeeError || !attendeeData) {
+        console.log("[XP/me] No attendee found for user, returning 0 XP");
+        return 0;
       }
-      // Handle JSONB response
-      if (Array.isArray(data) && data.length > 0) {
-        viewResult = data[0];
-      } else if (data && typeof data === 'object') {
-        viewResult = data;
-      } else {
-        viewResult = { total_xp: 0, performance_score: 0 };
+      
+      console.log("[XP/me] Found attendee_id:", attendeeData.id);
+      
+      const { data: oldSchemaData, error: oldSchemaError } = await serviceSupabase
+        .from("xp_ledger")
+        .select("amount")
+        .eq("attendee_id", attendeeData.id);
+      
+      if (oldSchemaError) {
+        console.log("[XP/me] Old schema (attendee_id) failed:", oldSchemaError.message);
+        return 0;
       }
-    } else {
-      // Default to attendee view
-      const { data, error } = await supabase.rpc("get_attendee_xp_view", {
-        p_user_id: user.id,
-      });
-      if (error) {
-        console.error("[XP/me] Error fetching attendee XP view:", error);
-        // Fallback: calculate XP directly from ledger
-        const { data: ledgerData, error: ledgerError } = await supabase
-          .from("xp_ledger")
-          .select("amount, role_context, source_type, description, created_at")
-          .eq("user_id", user.id);
-        
-        if (ledgerError) {
-          console.error("[XP/me] Error fetching XP ledger:", ledgerError);
-          return NextResponse.json(
-            { error: "Failed to fetch XP data" },
-            { status: 500 }
-          );
-        }
-        
-        console.log("[XP/me] Fallback: Found", ledgerData?.length || 0, "XP ledger entries for user", user.id);
-        
-        const totalXp = (ledgerData || []).reduce((sum, entry) => sum + (entry.amount || 0), 0);
-        const attendeeXp = (ledgerData || [])
-          .filter(e => e.role_context === 'attendee')
-          .reduce((sum, entry) => sum + (entry.amount || 0), 0);
-        
-        const recentActivity = (ledgerData || [])
-          .filter(e => e.role_context === 'attendee')
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 10)
-          .map(e => ({
-            amount: e.amount,
-            source: e.source_type,
-            description: e.description,
-            date: e.created_at,
-          }));
-        
-        viewResult = {
-          total_xp: totalXp,
-          level: 0,
-          xp_in_level: totalXp,
-          xp_for_next_level: 100,
-          progress_pct: 0,
-          attendee_xp: attendeeXp,
-          recent_activity: [],
-        };
-      } else {
-        // RPC returns JSONB directly, but Supabase might wrap it
-        // Handle both cases: direct JSONB or array with one element
-        if (Array.isArray(data) && data.length > 0) {
-          viewResult = data[0];
-        } else if (data && typeof data === 'object') {
-          viewResult = data;
-        } else {
-          console.error("[XP/me] Unexpected data format:", data);
-          // Fallback calculation
-          const { data: ledgerData } = await supabase
-            .from("xp_ledger")
-            .select("amount, role_context")
-            .eq("user_id", user.id);
-          const totalXp = (ledgerData || []).reduce((sum, entry) => sum + (entry.amount || 0), 0);
-          const attendeeXp = (ledgerData || [])
-            .filter(e => e.role_context === 'attendee')
-            .reduce((sum, entry) => sum + (entry.amount || 0), 0);
-          viewResult = { total_xp: totalXp, level: 0, attendee_xp: attendeeXp };
-        }
-        console.log("[XP/me] Attendee XP view result:", viewResult);
-      }
-    }
+      
+      const totalXp = (oldSchemaData || []).reduce((sum, entry) => sum + (entry.amount || 0), 0);
+      console.log("[XP/me] Found via attendee_id (old schema):", oldSchemaData?.length || 0, "entries, total XP:", totalXp);
+      return totalXp;
+    };
 
-    // Also fetch badges
-    const { data: badges, error: badgesError } = await supabase
+    // Skip RPC functions (they may be out of sync), always use direct ledger query
+    const totalXp = await getXpFromLedger();
+    const level = Math.floor(totalXp / 100) + 1;
+    const xpInLevel = totalXp % 100;
+    
+    viewResult = {
+      total_xp: totalXp,
+      level: level,
+      xp_in_level: xpInLevel,
+      xp_for_next_level: 100,
+      progress_pct: xpInLevel,
+      attendee_xp: totalXp,
+      trust_score: totalXp, // for organizers
+      performance_score: totalXp, // for promoters
+      recent_activity: [],
+    };
+    
+    console.log("[XP/me] Final XP result:", viewResult);
+
+    // Also fetch badges using service role
+    const { data: badges, error: badgesError } = await serviceSupabase
       .from("user_badges")
       .select(
         `

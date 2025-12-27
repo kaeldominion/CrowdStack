@@ -68,7 +68,7 @@ export default function InviteCodePage() {
 
   if (loading && !event) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner text="Loading invite..." size="lg" />
       </div>
     );
@@ -76,12 +76,12 @@ export default function InviteCodePage() {
 
   if (error && !event) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Card>
           <div className="p-8 text-center">
             <XCircle className="h-12 w-12 text-error mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-foreground mb-2">Invalid Invite Code</h1>
-            <p className="text-foreground-muted">{error}</p>
+            <h1 className="text-2xl font-bold text-primary mb-2">Invalid Invite Code</h1>
+            <p className="text-secondary">{error}</p>
           </div>
         </Card>
       </div>
@@ -89,7 +89,7 @@ export default function InviteCodePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="max-w-md mx-auto">
@@ -97,10 +97,10 @@ export default function InviteCodePage() {
               <div className="p-8">
                 <div className="text-center mb-8">
                   <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h1 className="text-2xl font-bold text-foreground mb-2">You're Invited!</h1>
-                  <p className="text-foreground-muted">{event?.name}</p>
+                  <h1 className="text-2xl font-bold text-primary mb-2">You're Invited!</h1>
+                  <p className="text-secondary">{event?.name}</p>
                   {event?.start_time && (
-                    <p className="text-sm text-foreground-muted mt-2">
+                    <p className="text-sm text-secondary mt-2">
                       {new Date(event.start_time).toLocaleDateString()} at{" "}
                       {new Date(event.start_time).toLocaleTimeString()}
                     </p>

@@ -167,7 +167,7 @@ export function CalendarButtons({
       {compact ? (
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border text-foreground-muted hover:text-foreground hover:border-primary/50 transition-all text-sm font-medium"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-glass border border-border text-secondary hover:text-primary hover:border-primary/50 transition-all text-sm font-medium"
         >
           <Calendar className="h-4 w-4" />
           Calendar
@@ -195,18 +195,18 @@ export function CalendarButtons({
             <button
               key={option.name}
               onClick={option.action}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-surface/50 transition-all text-left group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-glass/50 transition-all text-left group"
             >
               <span className="text-2xl flex-shrink-0">{option.icon}</span>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+                <div className="font-medium text-primary group-hover:text-primary transition-colors">
                   {option.name}
                 </div>
               </div>
               {option.name === "Apple Calendar" ? (
-                <Download className="h-4 w-4 text-foreground-muted flex-shrink-0" />
+                <Download className="h-4 w-4 text-secondary flex-shrink-0" />
               ) : (
-                <ExternalLink className="h-4 w-4 text-foreground-muted flex-shrink-0" />
+                <ExternalLink className="h-4 w-4 text-secondary flex-shrink-0" />
               )}
             </button>
           ))}

@@ -93,20 +93,20 @@ export default function OrganizerPromotersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading promoters...</div>
+          <div className="text-secondary">Loading promoters...</div>
         </div>
       </Container>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Promoters</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Promoters</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Promoters who have worked on your events
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function OrganizerPromotersPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredPromoters.length} of {promoters.length} promoters
           </div>
 
@@ -153,7 +153,7 @@ export default function OrganizerPromotersPage() {
                     <TableRow>
                       <TableCell
                         colSpan={7}
-                        className="text-center py-8 text-foreground-muted"
+                        className="text-center py-8 text-secondary"
                       >
                         {promoters.length === 0
                           ? "No promoters have worked on your events yet. Add one to get started!"
@@ -170,20 +170,20 @@ export default function OrganizerPromotersPage() {
                       >
                         <TableCell>
                           <div className="font-medium flex items-center gap-2">
-                            <Users className="h-4 w-4 text-foreground-muted" />
+                            <Users className="h-4 w-4 text-secondary" />
                             {promoter.name}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {promoter.email && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
                                 {promoter.email}
                               </div>
                             )}
                             {promoter.phone && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
                                 {promoter.phone}
                               </div>
@@ -198,19 +198,19 @@ export default function OrganizerPromotersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-foreground-muted" />
+                            <Users className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{promoter.referrals_count}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Ticket className="h-4 w-4 text-foreground-muted" />
+                            <Ticket className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{promoter.checkins_count}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <TrendingUp className="h-4 w-4 text-foreground-muted" />
+                            <TrendingUp className="h-4 w-4 text-secondary" />
                             <span className="text-sm font-medium">
                               {promoter.conversion_rate}%
                             </span>
@@ -229,7 +229,7 @@ export default function OrganizerPromotersPage() {
                               </Badge>
                             )}
                             {!promoter.has_direct_assignment && !promoter.has_indirect_assignment && (
-                              <span className="text-xs text-foreground-muted">-</span>
+                              <span className="text-xs text-secondary">-</span>
                             )}
                           </div>
                         </TableCell>
@@ -243,10 +243,10 @@ export default function OrganizerPromotersPage() {
 
           {promoters.length > 0 && (
             <Card className="mt-4">
-              <div className="p-4 flex items-start gap-3 bg-background-secondary rounded-lg">
-                <Info className="h-5 w-5 text-foreground-muted mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-foreground-muted">
-                  <p className="font-medium text-foreground mb-1">About Promoter Assignments</p>
+              <div className="p-4 flex items-start gap-3 bg-raised rounded-lg">
+                <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-secondary">
+                  <p className="font-medium text-primary mb-1">About Promoter Assignments</p>
                   <p>
                     <strong>Direct</strong> means you assigned this promoter directly to your events.{" "}
                     <strong>Via Venue</strong> means the promoter was assigned by the venue for events at their location. 

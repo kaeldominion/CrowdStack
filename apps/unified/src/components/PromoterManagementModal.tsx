@@ -230,7 +230,7 @@ export function PromoterManagementModal({
         {/* Current Promoters */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
               <Users className="h-5 w-5" />
               Assigned Promoters ({eventPromoters.length})
             </h3>
@@ -265,7 +265,7 @@ export function PromoterManagementModal({
                     <TableCell className="font-medium">
                       {ep.promoter?.name || "Unknown"}
                     </TableCell>
-                    <TableCell className="text-foreground-muted">
+                    <TableCell className="text-secondary">
                       {ep.promoter?.email || "-"}
                     </TableCell>
                     <TableCell>
@@ -294,7 +294,7 @@ export function PromoterManagementModal({
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-foreground-muted border border-dashed border-border rounded-lg">
+            <div className="text-center py-8 text-secondary border border-dashed border-border rounded-lg">
               No promoters assigned yet
             </div>
           )}
@@ -303,20 +303,20 @@ export function PromoterManagementModal({
         {/* Add Promoter Section */}
         {showAddSection && (
           <div className="border-t border-border pt-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
+            <h3 className="text-lg font-semibold text-primary mb-4">
               Add a Promoter
             </h3>
 
             {/* Commission Settings */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-foreground-muted mb-1">
+                <label className="block text-sm font-medium text-secondary mb-1">
                   Commission Type
                 </label>
                 <select
                   value={commissionType}
                   onChange={(e) => setCommissionType(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
+                  className="w-full px-3 py-2 bg-void border border-border rounded-md text-primary"
                 >
                   <option value="flat_per_head">Flat Per Head</option>
                   <option value="tiered_thresholds">Tiered Thresholds</option>
@@ -324,11 +324,11 @@ export function PromoterManagementModal({
               </div>
               {commissionType === "flat_per_head" && (
                 <div>
-                  <label className="block text-sm font-medium text-foreground-muted mb-1">
+                  <label className="block text-sm font-medium text-secondary mb-1">
                     Amount Per Head ($)
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary" />
                     <Input
                       type="number"
                       min="0"
@@ -345,7 +345,7 @@ export function PromoterManagementModal({
 
             {/* Search */}
             <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary" />
               <Input
                 placeholder="Search promoters by name, email, or phone..."
                 value={searchQuery}
@@ -353,7 +353,7 @@ export function PromoterManagementModal({
                 className="pl-10"
               />
               {searchQuery.length >= 2 && (
-                <p className="mt-2 text-xs text-foreground-muted">
+                <p className="mt-2 text-xs text-secondary">
                   Searching existing promoters and users...
                 </p>
               )}
@@ -362,7 +362,7 @@ export function PromoterManagementModal({
             {/* Available Promoters List */}
             <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
               {searching ? (
-                <div className="text-center py-8 text-foreground-muted">
+                <div className="text-center py-8 text-secondary">
                   Searching...
                 </div>
               ) : displayPromoters.length > 0 ? (
@@ -370,10 +370,10 @@ export function PromoterManagementModal({
                   {displayPromoters.slice(0, 20).map((promoter) => (
                     <div
                       key={promoter.id}
-                      className="flex items-center justify-between p-3 hover:bg-background-secondary"
+                      className="flex items-center justify-between p-3 hover:bg-raised"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-foreground flex items-center gap-2">
+                        <div className="font-medium text-primary flex items-center gap-2">
                           {promoter.name}
                           {promoter.type === "user" && (
                             <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">
@@ -381,7 +381,7 @@ export function PromoterManagementModal({
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-foreground-muted">
+                        <div className="text-sm text-secondary">
                           {promoter.email || promoter.phone || "No contact info"}
                         </div>
                       </div>
@@ -398,7 +398,7 @@ export function PromoterManagementModal({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-foreground-muted">
+                <div className="text-center py-8 text-secondary">
                   {searchQuery.length >= 2
                     ? "No promoters or users found matching your search"
                     : searchQuery

@@ -298,7 +298,7 @@ export function MobileFlierExperience({
             transition: "opacity 0.15s ease-out"
           }}
         >
-          <div className="w-full h-full overflow-y-auto bg-background/80 backdrop-blur-md pt-20">
+          <div className="w-full h-full overflow-y-auto bg-void/80 backdrop-blur-md pt-20">
             {children}
           </div>
         </div>

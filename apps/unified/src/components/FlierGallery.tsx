@@ -55,7 +55,7 @@ export function FlierGallery({ flierUrl, coverImageUrl, eventName }: FlierGaller
               setCurrentImageIndex(index);
               setIsLightboxOpen(true);
             }}
-            className={`group relative overflow-hidden rounded-lg bg-surface border-2 border-border hover:border-primary transition-colors ${
+            className={`group relative overflow-hidden rounded-lg bg-glass border-2 border-border hover:border-primary transition-colors ${
               image.type === "Flier" ? "aspect-[9/16]" : "aspect-[4/3]"
             }`}
           >
@@ -134,7 +134,7 @@ export function FlierGallery({ flierUrl, coverImageUrl, eventName }: FlierGaller
                   e.stopPropagation();
                   downloadImage();
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-sm bg-surface text-foreground border border-border hover:bg-surface/80 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-sm bg-glass text-primary border border-border hover:bg-glass/80 transition-colors"
               >
                 <Download className="h-4 w-4" />
                 Download

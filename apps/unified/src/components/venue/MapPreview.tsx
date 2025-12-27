@@ -1,133 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Map, ExternalLink } from "lucide-react";
+import { Card } from "@crowdstack/ui";
 
 interface MapPreviewProps {
-  url: string;
+  lat?: number | null;
+  lng?: number | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  mapsUrl: string;
 }
 
-export function MapPreview({ url }: MapPreviewProps) {
-  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
-  const [isResolving, setIsResolving] = useState(false);
+export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }: MapPreviewProps) {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  useEffect(() => {
-    const resolveUrl = async () => {
-      if (!url) {
-        setEmbedUrl(null);
-        return;
-      }
+  // Build display address
+  const displayAddress = address || [city, state, country].filter(Boolean).join(", ");
 
-      // Check if it's a short URL (maps.app.goo.gl or goo.gl/maps)
-      const isShortUrl = /^(https?:\/\/)?(maps\.app\.goo\.gl|goo\.gl\/maps)/.test(url);
+  // Try to get a static map image
+  // Using OpenStreetMap static tiles via stadiamaps (free, no API key for low usage)
+  // Or we can use a simple tile approach
+  const hasCoordinates = lat != null && lng != null;
+  
+  // OpenStreetMap tile URL (free, no API key needed)
+  // Format: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+  // We'll use a simple approach with a centered tile
+  const getStaticMapUrl = () => {
+    if (!hasCoordinates) return null;
+    
+    // Use OSM static map service (free tier)
+    // Alternative: use a simple tile from OSM
+    const zoom = 15;
+    const width = 400;
+    const height = 200;
+    
+    // Use staticmap.openstreetmap.de (free OSM static map service)
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=${width}x${height}&maptype=osmarenderer&markers=${lat},${lng},red-pushpin`;
+  };
 
-      if (isShortUrl) {
-        setIsResolving(true);
-        try {
-          // Resolve short URL server-side
-          const response = await fetch(`/api/maps/resolve?url=${encodeURIComponent(url)}`);
-          const data = await response.json();
-          
-          if (data.coordinates) {
-            const { lat, lng } = data.coordinates;
-            const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-            if (googleMapsApiKey) {
-              setEmbedUrl(`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${lat},${lng}&zoom=15`);
-            } else {
-              setEmbedUrl(`https://www.google.com/maps?q=${lat},${lng}&hl=en&z=15&output=embed`);
-            }
-          } else {
-            setEmbedUrl(null);
-          }
-        } catch (error) {
-          console.error("Failed to resolve short URL:", error);
-          setEmbedUrl(null);
-        } finally {
-          setIsResolving(false);
-        }
-        return;
-      }
-
-      // For regular URLs, extract coordinates directly
-      const coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-      if (coordsMatch) {
-        const lat = coordsMatch[1];
-        const lng = coordsMatch[2];
-        
-        const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        if (googleMapsApiKey) {
-          setEmbedUrl(`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${lat},${lng}&zoom=15`);
-        } else {
-          setEmbedUrl(`https://www.google.com/maps?q=${lat},${lng}&hl=en&z=15&output=embed`);
-        }
-        return;
-      }
-
-      // Try API key approach for place names
-      const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (googleMapsApiKey) {
-        const placeMatch = url.match(/\/place\/([^/@?]+)/);
-        if (placeMatch) {
-          const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
-          setEmbedUrl(`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(placeName)}&zoom=15`);
-          return;
-        }
-
-        const queryMatch = url.match(/[?&]q=([^&]+)/);
-        if (queryMatch) {
-          const query = decodeURIComponent(queryMatch[1]);
-          setEmbedUrl(`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(query)}&zoom=15`);
-          return;
-        }
-      }
-
-      setEmbedUrl(null);
-    };
-
-    resolveUrl();
-  }, [url]);
+  const staticMapUrl = getStaticMapUrl();
+  const showImage = staticMapUrl && !imageError;
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium text-foreground">Map Preview</p>
-      {isResolving ? (
-        <div className="w-full h-64 border-2 border-border bg-surface flex items-center justify-center">
-          <p className="text-foreground-muted text-sm">Resolving map URL...</p>
-        </div>
-      ) : embedUrl ? (
-        <div className="w-full h-64 border-2 border-border overflow-hidden">
-          <iframe
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-            src={embedUrl}
-          />
-        </div>
-      ) : (
-        <div className="w-full h-64 border-2 border-border bg-surface flex items-center justify-center">
-          <div className="text-center space-y-2 px-4">
-            <p className="text-foreground-muted text-sm font-medium">
-              Map preview unavailable
-            </p>
-            <p className="text-foreground-muted text-xs">
-              The URL will still work on your public page
-            </p>
+    <a
+      href={mapsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
+    >
+      <Card padding="none" hover className="overflow-hidden group">
+        <div className="relative h-32 bg-raised">
+          {/* Static Map Image */}
+          {showImage && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={staticMapUrl}
+                alt="Map"
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+              {/* Dark overlay for better text visibility */}
+              <div className="absolute inset-0 bg-void/40 group-hover:bg-void/30 transition-colors" />
+            </>
+          )}
+
+          {/* Fallback placeholder (shown when no coords or image fails) */}
+          {(!showImage || !imageLoaded) && (
+            <div className="absolute inset-0">
+              {/* Grid pattern to simulate map */}
+              <div className="absolute inset-0 opacity-20">
+                <div 
+                  className="absolute inset-0" 
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '20px 20px'
+                  }} 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Center pin & button */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+            <div className="w-10 h-10 rounded-full bg-accent-primary/90 flex items-center justify-center shadow-lg">
+              <MapPin className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-glass/80 backdrop-blur-sm border border-border-subtle text-xs font-medium text-primary group-hover:bg-active transition-colors">
+              <Map className="h-3.5 w-3.5" />
+              Open in Maps
+              <ExternalLink className="h-3 w-3 opacity-50" />
+            </div>
           </div>
         </div>
-      )}
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary hover:underline text-sm inline-flex items-center gap-1 break-all"
-      >
-        <ExternalLink className="h-3 w-3 flex-shrink-0" />
-        <span className="truncate">{url}</span>
-      </a>
-    </div>
+
+        {/* Address bar */}
+        {displayAddress && (
+          <div className="px-3 py-2 bg-glass/50 border-t border-border-subtle">
+            <p className="text-xs text-secondary truncate">
+              {displayAddress}
+            </p>
+          </div>
+        )}
+      </Card>
+    </a>
   );
 }
-

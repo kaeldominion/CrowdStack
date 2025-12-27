@@ -82,7 +82,7 @@ export function PermissionsEditor({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between pb-2 border-b border-border">
-        <label className="text-sm font-medium text-foreground">
+        <label className="text-sm font-medium text-primary">
           Permissions
         </label>
       </div>
@@ -97,12 +97,12 @@ export function PermissionsEditor({
             }
             disabled={disabled}
           />
-          <label className="text-sm font-semibold text-foreground cursor-pointer">
+          <label className="text-sm font-semibold text-primary cursor-pointer">
             {labels.full_admin as string}
           </label>
         </div>
         {(localPermissions as any).full_admin && (
-          <p className="text-xs text-foreground-muted mt-1 ml-6">
+          <p className="text-xs text-secondary mt-1 ml-6">
             All permissions are enabled
           </p>
         )}

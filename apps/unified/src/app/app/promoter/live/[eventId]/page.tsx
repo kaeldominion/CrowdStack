@@ -50,7 +50,7 @@ export default function PromoterLiveMissionControlPage() {
   if (loading || !metrics) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading live metrics...</div>
+        <div className="text-secondary">Loading live metrics...</div>
       </div>
     );
   }
@@ -59,12 +59,12 @@ export default function PromoterLiveMissionControlPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Live Mission Control</h1>
-          <p className="mt-2 text-sm text-white/60">Your real-time performance</p>
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Live Mission Control</h1>
+          <p className="mt-2 text-sm text-secondary">Your real-time performance</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm text-white/60">Live</span>
+          <div className="h-2 w-2 bg-accent-success rounded-full animate-pulse" />
+          <span className="text-sm text-secondary">Live</span>
         </div>
       </div>
 
@@ -72,18 +72,18 @@ export default function PromoterLiveMissionControlPage() {
       <BentoCard span={4}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">
+            <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">
               My Check-ins
             </p>
-            <p className="text-6xl font-mono font-bold tracking-tighter text-white">
+            <p className="text-6xl font-mono font-bold tracking-tighter text-primary">
               {myCheckIns}
             </p>
             <div className="mt-4 flex items-center gap-4">
               <Badge variant="primary">#{myRank || "—"} of {metrics.promoter_stats.length}</Badge>
-              <span className="text-sm text-white/60">Leaderboard position</span>
+              <span className="text-sm text-secondary">Leaderboard position</span>
             </div>
           </div>
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 border border-primary/50">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-secondary/20 border border-accent-secondary/50">
             <Users className="h-8 w-8 text-primary animate-pulse" />
           </div>
         </div>
@@ -93,8 +93,8 @@ export default function PromoterLiveMissionControlPage() {
       <BentoCard span={2}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Top Promoters</p>
-            <Trophy className="h-4 w-4 text-white/40" />
+            <p className="text-sm font-semibold text-primary">Top Promoters</p>
+            <Trophy className="h-4 w-4 text-muted" />
           </div>
           <div className="space-y-2">
             {metrics.promoter_stats.slice(0, 5).map((promoter) => (
@@ -102,26 +102,26 @@ export default function PromoterLiveMissionControlPage() {
                 key={promoter.promoter_id}
                 className={`flex items-center justify-between p-3 rounded-md border ${
                   promoter.rank === myRank
-                    ? "bg-primary/10 border-primary/50"
-                    : "bg-white/5 border-white/5"
+                    ? "bg-accent-secondary/10 border-accent-secondary/50"
+                    : "bg-glass border-border-subtle"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
                       promoter.rank === myRank
-                        ? "bg-primary text-white"
-                        : "bg-white/10 text-white/60"
+                        ? "bg-accent-secondary text-white"
+                        : "bg-active text-secondary"
                     }`}
                   >
                     #{promoter.rank}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-sm font-medium text-primary">
                       {promoter.promoter_name}
                       {promoter.rank === myRank && " (You)"}
                     </p>
-                    <p className="text-xs text-white/40">{promoter.check_ins} check-ins</p>
+                    <p className="text-xs text-muted">{promoter.check_ins} check-ins</p>
                   </div>
                 </div>
               </div>
@@ -134,8 +134,8 @@ export default function PromoterLiveMissionControlPage() {
       <BentoCard span={2}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white">Recent Guest Arrivals</p>
-            <Bell className="h-4 w-4 text-white/40" />
+            <p className="text-sm font-semibold text-primary">Recent Guest Arrivals</p>
+            <Bell className="h-4 w-4 text-muted" />
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {metrics.recent_checkins
@@ -144,13 +144,13 @@ export default function PromoterLiveMissionControlPage() {
               .map((checkin) => (
                 <div
                   key={checkin.id}
-                  className="flex items-center justify-between p-2 rounded-md bg-green-500/10 border border-green-500/20"
+                  className="flex items-center justify-between p-2 rounded-md bg-accent-success/10 border border-accent-success/20"
                 >
                   <div>
-                    <p className="text-sm font-medium text-white">{checkin.attendee_name}</p>
-                    <p className="text-xs text-green-400">Just arrived!</p>
+                    <p className="text-sm font-medium text-primary">{checkin.attendee_name}</p>
+                    <p className="text-xs text-accent-success">Just arrived!</p>
                   </div>
-                  <p className="text-xs text-white/40">
+                  <p className="text-xs text-muted">
                     {new Date(checkin.checked_in_at).toLocaleTimeString()}
                   </p>
                 </div>

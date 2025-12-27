@@ -80,7 +80,7 @@ export default function VenueAttendeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading attendees...</div>
+        <div className="text-secondary">Loading attendees...</div>
       </div>
     );
   }
@@ -89,8 +89,8 @@ export default function VenueAttendeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Attendee Database</h1>
+          <p className="mt-2 text-sm text-secondary">
             All attendees who have registered or checked in to events at your venue
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function VenueAttendeesPage() {
       </div>
 
       {/* Access Scope Explanation */}
-      <Card className="bg-blue-500/10 border-blue-500/20">
+      <Card className="bg-accent-secondary/10 border-accent-secondary/20">
         <div className="p-4">
           <p className="text-sm text-white/80">
             <strong>Privacy Protection:</strong> You're viewing attendees who registered or checked in at your venue.
@@ -177,7 +177,7 @@ export default function VenueAttendeesPage() {
             <TableBody>
               {filteredAttendees.length === 0 ? (
                 <TableRow>
-                  <TableCell className="text-center py-8 text-foreground-muted">
+                  <TableCell className="text-center py-8 text-secondary">
                     No attendees found
                   </TableCell>
                 </TableRow>
@@ -192,25 +192,25 @@ export default function VenueAttendeesPage() {
                     <TableCell>
                       <div className="space-y-1">
                         {attendee.email && (
-                          <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                          <div className="text-sm text-secondary">{attendee.email}</div>
                         )}
-                        <div className="text-sm text-foreground-muted">{attendee.phone}</div>
+                        <div className="text-sm text-secondary">{attendee.phone}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {attendee.user_id ? (
                         <div className="flex items-center gap-1">
                           <UserCheck className="h-4 w-4 text-success" />
-                          <span className="text-xs text-foreground-muted">Linked</span>
+                          <span className="text-xs text-secondary">Linked</span>
                         </div>
                       ) : (
-                        <span className="text-xs text-foreground-muted">No account</span>
+                        <span className="text-xs text-secondary">No account</span>
                       )}
                     </TableCell>
                     <TableCell>{attendee.events_attended}</TableCell>
                     <TableCell>{attendee.total_check_ins}</TableCell>
                     <TableCell>{getStrikeBadge(attendee.strike_count)}</TableCell>
-                    <TableCell className="text-sm text-foreground-muted">
+                    <TableCell className="text-sm text-secondary">
                       {attendee.last_event_at
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}

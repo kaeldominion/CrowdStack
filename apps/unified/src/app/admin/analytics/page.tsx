@@ -146,8 +146,8 @@ export default function AnalyticsPage() {
       <Container>
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Analytics</h1>
-          <p className="text-sm text-foreground-muted">
+          <h1 className="text-2xl font-bold text-primary mb-2">Analytics</h1>
+          <p className="text-sm text-secondary">
             Platform-wide metrics and insights
           </p>
         </div>
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Registrations Trend (30 days) */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Registrations (Last 30 Days)
             </h3>
             <div className="h-64">
@@ -270,7 +270,7 @@ export default function AnalyticsPage() {
 
           {/* Monthly Trend */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Monthly Registrations (12 Months)
             </h3>
             <div className="h-64">
@@ -317,7 +317,7 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Role Distribution */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               User Role Distribution
             </h3>
             <div className="h-64">
@@ -364,7 +364,7 @@ export default function AnalyticsPage() {
 
           {/* Events by Status */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Events by Status
             </h3>
             <div className="h-64">
@@ -411,7 +411,7 @@ export default function AnalyticsPage() {
 
           {/* Check-in Rate */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Check-in Rate
             </h3>
             <div className="h-64 flex flex-col items-center justify-center">
@@ -439,15 +439,15 @@ export default function AnalyticsPage() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-foreground">
+                  <span className="text-3xl font-bold text-primary">
                     {data.overview.totalRegistrations > 0
                       ? Math.round((data.overview.totalCheckins / data.overview.totalRegistrations) * 100)
                       : 0}%
                   </span>
-                  <span className="text-xs text-foreground-muted">Checked In</span>
+                  <span className="text-xs text-secondary">Checked In</span>
                 </div>
               </div>
-              <div className="mt-4 text-center text-xs text-foreground-muted">
+              <div className="mt-4 text-center text-xs text-secondary">
                 {formatNumber(data.overview.totalCheckins)} of {formatNumber(data.overview.totalRegistrations)} registrations
               </div>
             </div>
@@ -458,28 +458,28 @@ export default function AnalyticsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Top Events */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Top Events by Registrations
             </h3>
             <div className="space-y-1">
               {data.topEvents.length === 0 ? (
-                <p className="text-sm text-foreground-muted">No events yet</p>
+                <p className="text-sm text-secondary">No events yet</p>
               ) : (
                 data.topEvents.map((event, index) => (
                   <Link
                     key={event.id}
                     href={`/admin/events/${event.id}`}
-                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-raised transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-secondary/10 text-xs font-medium text-primary">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-primary transition-colors">
+                      <span className="text-sm text-primary truncate max-w-[150px] group-hover:text-primary transition-colors">
                         {event.name}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-foreground-muted">
+                    <span className="text-sm font-medium text-secondary">
                       {formatNumber(event.registrations)}
                     </span>
                   </Link>
@@ -490,28 +490,28 @@ export default function AnalyticsPage() {
 
           {/* Top Promoters */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Top Promoters by Referrals
             </h3>
             <div className="space-y-1">
               {data.topPromoters.length === 0 ? (
-                <p className="text-sm text-foreground-muted">No promoters yet</p>
+                <p className="text-sm text-secondary">No promoters yet</p>
               ) : (
                 data.topPromoters.map((promoter, index) => (
                   <Link
                     key={promoter.id}
                     href={`/admin/promoters?highlight=${promoter.id}`}
-                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-raised transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary/10 text-xs font-medium text-secondary">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-secondary transition-colors">
+                      <span className="text-sm text-primary truncate max-w-[150px] group-hover:text-secondary transition-colors">
                         {promoter.name}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-foreground-muted">
+                    <span className="text-sm font-medium text-secondary">
                       {formatNumber(promoter.referrals)}
                     </span>
                   </Link>
@@ -522,28 +522,28 @@ export default function AnalyticsPage() {
 
           {/* Top Organizers */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Top Organizers by Events
             </h3>
             <div className="space-y-1">
               {data.topOrganizers.length === 0 ? (
-                <p className="text-sm text-foreground-muted">No organizers yet</p>
+                <p className="text-sm text-secondary">No organizers yet</p>
               ) : (
                 data.topOrganizers.map((organizer, index) => (
                   <Link
                     key={organizer.id}
                     href={`/admin/organizers?highlight=${organizer.id}`}
-                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-raised transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-warning/10 text-xs font-medium text-warning">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-warning transition-colors">
+                      <span className="text-sm text-primary truncate max-w-[150px] group-hover:text-warning transition-colors">
                         {organizer.name}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-foreground-muted">
+                    <span className="text-sm font-medium text-secondary">
                       {formatNumber(organizer.eventCount)} events
                     </span>
                   </Link>
@@ -554,28 +554,28 @@ export default function AnalyticsPage() {
 
           {/* Top Referrers (All Users) */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-semibold text-primary mb-4">
               Top Referrers (All Users)
             </h3>
             <div className="space-y-1">
               {data.topReferrers && data.topReferrers.length === 0 ? (
-                <p className="text-sm text-foreground-muted">No referrals yet</p>
+                <p className="text-sm text-secondary">No referrals yet</p>
               ) : (
                 (data.topReferrers || []).map((referrer, index) => (
                   <Link
                     key={referrer.userId}
                     href={`/admin/users?highlight=${referrer.userId}`}
-                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-surface-elevated transition-colors group"
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-raised transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-info/10 text-xs font-medium text-info">
                         {index + 1}
                       </span>
-                      <span className="text-sm text-foreground truncate max-w-[150px] group-hover:text-info transition-colors">
+                      <span className="text-sm text-primary truncate max-w-[150px] group-hover:text-info transition-colors">
                         {referrer.name}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-foreground-muted">
+                    <span className="text-sm font-medium text-secondary">
                       {formatNumber(referrer.referrals)} referrals
                     </span>
                   </Link>
@@ -606,13 +606,13 @@ function StatCard({
   size?: "sm" | "lg";
 }) {
   const colorClass = {
-    primary: "bg-primary/10 text-primary",
+    primary: "bg-accent-secondary/10 text-primary",
     secondary: "bg-purple-500/10 text-purple-500",
     success: "bg-success/10 text-success",
     warning: "bg-warning/10 text-warning",
     danger: "bg-danger/10 text-danger",
     info: "bg-cyan-500/10 text-cyan-500",
-    muted: "bg-foreground-muted/10 text-foreground-muted",
+    muted: "bg-foreground-muted/10 text-secondary",
   }[color];
 
   return (
@@ -637,10 +637,10 @@ function StatCard({
         )}
       </div>
       <div className="mt-3">
-        <p className={`font-bold text-foreground ${size === "lg" ? "text-2xl" : "text-xl"}`}>
+        <p className={`font-bold text-primary ${size === "lg" ? "text-2xl" : "text-xl"}`}>
           {value}
         </p>
-        <p className="text-xs text-foreground-muted">{title}</p>
+        <p className="text-xs text-secondary">{title}</p>
       </div>
     </Card>
   );

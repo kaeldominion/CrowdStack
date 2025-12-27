@@ -147,18 +147,18 @@ export function AttendeeDetailModal({
       ) : error ? (
         <div className="py-12 text-center">
           <AlertTriangle className="h-12 w-12 text-error mx-auto mb-4" />
-          <p className="text-foreground-muted">{error}</p>
+          <p className="text-secondary">{error}</p>
         </div>
       ) : details?.attendee ? (
         <div className="space-y-6">
           {/* Attendee Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="h-16 w-16 rounded-full bg-accent-secondary/20 flex items-center justify-center">
                 <User className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">{details.attendee.name}</h2>
+                <h2 className="text-2xl font-bold text-primary">{details.attendee.name}</h2>
                 {details.attendee.user_id && (
                   <Badge variant="success" className="mt-1">Linked Account</Badge>
                 )}
@@ -168,17 +168,17 @@ export function AttendeeDetailModal({
             <div className="grid grid-cols-2 gap-4">
               {details.attendee.email && (
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-foreground-muted" />
-                  <span className="text-foreground">{details.attendee.email}</span>
+                  <Mail className="h-4 w-4 text-secondary" />
+                  <span className="text-primary">{details.attendee.email}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-foreground-muted" />
-                <span className="text-foreground">{details.attendee.phone}</span>
+                <Phone className="h-4 w-4 text-secondary" />
+                <span className="text-primary">{details.attendee.phone}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-foreground-muted" />
-                <span className="text-sm text-foreground-muted">
+                <Calendar className="h-4 w-4 text-secondary" />
+                <span className="text-sm text-secondary">
                   Joined {formatDate(details.attendee.created_at)}
                 </span>
               </div>
@@ -190,11 +190,11 @@ export function AttendeeDetailModal({
             <div className="p-4 rounded-lg bg-warning/10 border border-warning/20">
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-5 w-5 text-warning" />
-                <h3 className="font-semibold text-foreground">Flagged Guest</h3>
+                <h3 className="font-semibold text-primary">Flagged Guest</h3>
               </div>
-              <p className="text-sm text-foreground-muted">{details.flags.reason}</p>
+              <p className="text-sm text-secondary">{details.flags.reason}</p>
               {details.flags.expires_at && (
-                <p className="text-xs text-foreground-muted mt-1">
+                <p className="text-xs text-secondary mt-1">
                   Expires: {formatDate(details.flags.expires_at)}
                 </p>
               )}
@@ -203,12 +203,12 @@ export function AttendeeDetailModal({
 
           {/* Event History */}
           <div className="border-t border-border pt-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
+            <h3 className="text-lg font-semibold text-primary mb-4">
               {role === "promoter" ? "Event History" : "Events"} ({getEventsList().length})
             </h3>
 
             {getEventsList().length === 0 ? (
-              <p className="text-foreground-muted text-sm">No events found</p>
+              <p className="text-secondary text-sm">No events found</p>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {getEventsList().map((reg: any) => {
@@ -220,12 +220,12 @@ export function AttendeeDetailModal({
                   return (
                     <div
                       key={reg.id}
-                      className="p-4 rounded-lg border border-border bg-surface/50"
+                      className="p-4 rounded-lg border border-border bg-glass/50"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-foreground">{event.name}</h4>
+                            <h4 className="font-semibold text-primary">{event.name}</h4>
                             {role === "promoter" && reg.type === "referral" && (
                               <Badge variant="primary" className="text-xs">Your Referral</Badge>
                             )}
@@ -233,7 +233,7 @@ export function AttendeeDetailModal({
                               <Badge variant="default" className="text-xs">Upcoming</Badge>
                             )}
                           </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-foreground-muted">
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {formatDate(event.start_time)}
@@ -256,7 +256,7 @@ export function AttendeeDetailModal({
                               <span className="text-sm font-medium">Checked In</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 text-foreground-muted">
+                            <div className="flex items-center gap-1 text-secondary">
                               <XCircle className="h-5 w-5" />
                               <span className="text-sm">Not Checked In</span>
                             </div>

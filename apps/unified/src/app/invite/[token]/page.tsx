@@ -79,7 +79,7 @@ export default function InviteAcceptPage() {
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
         <LoadingSpinner text="Processing invite..." size="lg" />
       </div>
     );

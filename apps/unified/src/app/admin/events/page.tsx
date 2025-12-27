@@ -137,13 +137,13 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Event Management</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Event Management</h1>
+              <p className="mt-2 text-sm text-secondary">
                 View and manage all events in the system
               </p>
             </div>
@@ -169,7 +169,7 @@ export default function AdminEventsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="rounded-md bg-background border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="rounded-md bg-void border border-border px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">All Status</option>
                   <option value="draft">Draft</option>
@@ -180,7 +180,7 @@ export default function AdminEventsPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredEvents.length} of {events.length} events
           </div>
 
@@ -203,7 +203,7 @@ export default function AdminEventsPage() {
                 <TableBody>
                   {filteredEvents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={9} className="text-center py-8 text-secondary">
                         No events found
                       </TableCell>
                     </TableRow>
@@ -224,7 +224,7 @@ export default function AdminEventsPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-foreground-muted hover:text-primary"
+                                className="text-secondary hover:text-primary"
                                 title="View Public Page"
                               >
                                 <ExternalLink className="h-3 w-3 inline" />
@@ -234,7 +234,7 @@ export default function AdminEventsPage() {
                         </TableCell>
                         <TableCell>{event.venue?.name || "—"}</TableCell>
                         <TableCell>{event.organizer?.name || "—"}</TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(event.start_time).toLocaleDateString()}
                         </TableCell>
                         <TableCell>{event.registrations_count || 0}</TableCell>
@@ -269,7 +269,7 @@ export default function AdminEventsPage() {
                                 Publish
                               </Button>
                             )}
-                            <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                            <ChevronRight className="h-4 w-4 text-secondary" />
                           </div>
                         </TableCell>
                       </TableRow>

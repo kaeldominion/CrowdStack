@@ -62,7 +62,7 @@ export default function OrganizerAttendeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading attendees...</div>
+        <div className="text-secondary">Loading attendees...</div>
       </div>
     );
   }
@@ -71,8 +71,8 @@ export default function OrganizerAttendeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Attendee Database</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Attendee Database</h1>
+          <p className="mt-2 text-sm text-secondary">
             All attendees who have registered or checked in to your events
           </p>
         </div>
@@ -83,9 +83,9 @@ export default function OrganizerAttendeesPage() {
       </div>
 
       {/* Access Scope Explanation */}
-      <Card className="bg-blue-500/10 border-blue-500/20">
+      <Card className="bg-accent-secondary/10 border-accent-secondary/20">
         <div className="p-4">
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-primary">
             <strong>Privacy Protection:</strong> You're viewing attendees who registered or checked in to your events.
             CrowdStack protects attendee privacy - you only see guests who interacted with your events directly.
             Contact details are masked for security. Use our messaging features to communicate with your audience.
@@ -120,7 +120,7 @@ export default function OrganizerAttendeesPage() {
         </div>
       </Card>
 
-      <div className="text-sm text-white/60">
+      <div className="text-sm text-secondary">
         Showing {filteredAttendees.length} of {attendees.length} attendees
       </div>
 
@@ -139,7 +139,7 @@ export default function OrganizerAttendeesPage() {
             <TableBody>
               {filteredAttendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-foreground-muted">
+                  <TableCell colSpan={5} className="text-center py-8 text-secondary">
                     No attendees found
                   </TableCell>
                 </TableRow>
@@ -154,14 +154,14 @@ export default function OrganizerAttendeesPage() {
                     <TableCell>
                       <div className="space-y-1">
                         {attendee.email && (
-                          <div className="text-sm text-foreground-muted">{attendee.email}</div>
+                          <div className="text-sm text-secondary">{attendee.email}</div>
                         )}
-                        <div className="text-sm text-foreground-muted">{attendee.phone}</div>
+                        <div className="text-sm text-secondary">{attendee.phone}</div>
                       </div>
                     </TableCell>
                     <TableCell>{attendee.events_attended}</TableCell>
                     <TableCell>{attendee.total_check_ins}</TableCell>
-                    <TableCell className="text-sm text-foreground-muted">
+                    <TableCell className="text-sm text-secondary">
                       {attendee.last_event_at
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}

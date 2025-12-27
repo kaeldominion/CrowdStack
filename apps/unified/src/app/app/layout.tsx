@@ -3,7 +3,6 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { getUserRoles } from "@crowdstack/shared/auth/roles";
 import { AppLayout } from "@/components/AppLayout";
 import { cookies } from "next/headers";
-import type { UserRole } from "@crowdstack/shared";
 
 /**
  * Extract user from localhost custom cookie (same approach as middleware)
@@ -85,16 +84,6 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  // Check for impersonation cookies (reuse the same cookieStore)
-  const roleCookie = cookieStore.get("cs-impersonate-role");
-  const entityCookie = cookieStore.get("cs-impersonate-entity-id");
-  if (process.env.NODE_ENV === "development") {
-    console.log("[App Layout] Impersonation cookies:", { 
-      roleCookie: roleCookie?.value, 
-      entityCookie: entityCookie?.value 
-    });
-  }
-
   // Get user roles
   if (process.env.NODE_ENV === "development") {
     console.log("[App Layout] Calling getUserRoles() for user:", authenticatedUser.id);
@@ -110,24 +99,8 @@ export default async function AuthenticatedLayout({
     });
   }
 
-  // Check if user is superadmin (needed for impersonation)
-  const isSuperadmin = roles.includes("superadmin");
-
-  // If impersonating, include the impersonated role in allowed roles
-  let effectiveRoles = [...roles];
-  if (roleCookie?.value && roleCookie.value !== "all" && isSuperadmin) {
-    const impersonatedRole = roleCookie.value as UserRole;
-    if (process.env.NODE_ENV === "development") {
-      console.log("[App Layout] Superadmin impersonating role:", impersonatedRole);
-    }
-    // Add impersonated role to effective roles if not already present
-    if (!effectiveRoles.includes(impersonatedRole)) {
-      effectiveRoles.push(impersonatedRole);
-    }
-  }
-
   // If user only has door_staff role, redirect to door scanner
-  if (effectiveRoles.length === 1 && effectiveRoles[0] === "door_staff") {
+  if (roles.length === 1 && roles[0] === "door_staff") {
     if (process.env.NODE_ENV === "development") {
       console.log("[App Layout] Only door_staff role, redirecting to /door");
     }
@@ -135,17 +108,17 @@ export default async function AuthenticatedLayout({
   }
 
   // Superadmin check
-  const hasSuperadmin = effectiveRoles.includes("superadmin");
+  const hasSuperadmin = roles.includes("superadmin");
 
   // NOTE: Promoters can access /app - they have their own dashboard section in UnifiedDashboard
   // Previously we redirected promoters to /me, but they need access to /app for their full dashboard
 
   // If user has no roles or only attendee role, redirect to login
-  const b2bRoles = effectiveRoles.filter(
+  const b2bRoles = roles.filter(
     (r) => r !== "attendee" && r !== "door_staff"
   );
   if (process.env.NODE_ENV === "development") {
-    console.log("[App Layout] Effective B2B roles (including impersonation):", b2bRoles);
+    console.log("[App Layout] Effective B2B roles:", b2bRoles);
   }
   
   // Superadmin should always have access, even if they have no other B2B roles
@@ -165,8 +138,7 @@ export default async function AuthenticatedLayout({
     console.log("[App Layout] Rendering layout with:", { 
       roles: b2bRoles, 
       userEmail, 
-      userId: authenticatedUser.id,
-      impersonating: { role: roleCookie?.value, entityId: entityCookie?.value }
+      userId: authenticatedUser.id
     });
   }
 

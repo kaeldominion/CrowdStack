@@ -2,76 +2,112 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Import AI Studio token system (monorepo root) */
+@import "../../../../styles/tokens.css";
 
-:root {
-  /* CrowdStack Brand Colors */
-  --crowdstack-black: #0B0D10;
-  --crowdstack-graphite: #141821;
-  --crowdstack-steel: #2A2F3A;
-  --crowdstack-blue: #3B82F6;
-  --crowdstack-success: #10B981;
-  --crowdstack-warning: #F59E0B;
-  --crowdstack-error: #EF4444;
-  
-  --background: var(--crowdstack-black);
-  --foreground: #FFFFFF;
-  --surface: var(--crowdstack-graphite);
-  --border: var(--crowdstack-steel);
-}
-
+/* ---------- RESET / BASE ---------- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   scroll-behavior: smooth;
+  min-height: 100%;
+  height: 100%;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  min-height: 100%;
+  height: 100%;
+  margin: 0;
+
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+
+  /* Fonts are applied via next/font in layout.tsx */
+
+  /* Premium text rendering */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
+  text-rendering: geometricPrecision;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  -webkit-font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+
+  line-height: 1.5;
+
+  /* AI Studio HUD atmosphere */
+  position: relative;
 }
 
-/* Custom scrollbar */
+/* Monospace text - clean, technical look */
+.font-mono,
+code,
+pre {
+  font-feature-settings: "liga" 0, "calt" 0;
+  -webkit-font-feature-settings: "liga" 0, "calt" 0;
+  letter-spacing: -0.01em;
+}
+
+/* AI Studio Atmosphere - noise texture overlay only (no colored gradients) */
+.atmosphere-gradient {
+  display: none; /* Not used in AI Studio design */
+}
+
+.atmosphere-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.08;
+}
+
+/* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--crowdstack-black);
+  background: var(--bg-void);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--crowdstack-steel);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--crowdstack-blue);
+  background: var(--accent-secondary);
 }
 
-/* Selection */
+/* ---------- SELECTION ---------- */
 ::selection {
-  background: var(--crowdstack-blue);
-  color: white;
+  background: var(--accent-secondary);
+  color: #ffffff;
 }
 
-/* Focus styles */
+/* ---------- FOCUS ---------- */
 :focus-visible {
-  outline: 2px solid var(--crowdstack-blue);
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
 }
 
-/* Animations */
+/* ---------- OPTIONAL GLASS NOISE UTILITY ---------- */
+.noise-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--glass-noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- ANIMATIONS ---------- */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -95,7 +131,8 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -173,7 +210,8 @@ body {
 
 /* Subtle bounce for hint */
 @keyframes bounceSubtle {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -187,7 +225,8 @@ body {
 
 /* Subtle pulse for live status */
 @keyframes pulseSubtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.1;
   }
   50% {
@@ -199,7 +238,7 @@ body {
   animation: pulseSubtle 2s ease-in-out infinite;
 }
 
-/* 3D Flip Card Styles */
+/* ---------- 3D FLIP CARD HELPERS ---------- */
 .perspective-1000 {
   perspective: 1000px;
   -webkit-perspective: 1000px;
@@ -224,56 +263,141 @@ body {
   transition-duration: 600ms;
 }
 
-/* Utility classes */
+/* ---------- UTILITIES (TOKEN-BASED) ---------- */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-  
-  .bg-surface {
-    background-color: var(--crowdstack-graphite);
+
+  /* Hide scrollbar for horizontal scroll areas */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  
-  .bg-black-brand {
-    background-color: var(--crowdstack-black);
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
-  
-  .border-steel {
-    border-color: var(--crowdstack-steel);
+
+  /* Surfaces - Legacy utility removed, use bg-glass directly */
+
+  .bg-void {
+    background-color: var(--bg-void);
   }
-  
-  .text-blue-brand {
-    color: var(--crowdstack-blue);
+
+  .bg-raised {
+    background-color: var(--bg-raised);
   }
-  
+
+  /* Borders */
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  .border-strong {
+    border-color: var(--border-strong);
+  }
+
+  /* Accents */
+  .text-accent-primary {
+    color: var(--accent-primary);
+  }
+
+  .text-accent-secondary {
+    color: var(--accent-secondary);
+  }
+
   .text-success {
-    color: var(--crowdstack-success);
+    color: var(--accent-success);
   }
-  
+
   .text-warning {
-    color: var(--crowdstack-warning);
+    color: var(--accent-warning);
   }
-  
+
   .text-error {
-    color: var(--crowdstack-error);
+    color: var(--accent-error);
   }
 }
 
-/* Brutal design - clean, sharp, no fluff */
-button, a {
-  transition: all 0.15s ease;
+/* ---------- GLOBAL TAB STYLES ---------- */
+/* Reusable tab navigation styling - Inter caps, premium feel */
+.tab-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding-bottom: 0.75rem;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.tab-label-active {
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent-primary);
+}
+
+.tab-label-inactive {
+  color: var(--text-secondary);
+}
+
+.tab-label-inactive:hover {
+  color: var(--text-primary);
+}
+
+/* ---------- GLOBAL SECTION HEADER ---------- */
+/* Inter caps section headers - consistent across app */
+.section-header {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+/* ---------- GLOBAL PAGE TITLE ---------- */
+/* Large page titles - venues, events, profiles */
+.page-title {
+  font-family: var(--font-sans);
+  font-size: 1.75rem; /* 28px mobile */
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+@media (min-width: 1024px) {
+  .page-title {
+    font-size: 2.25rem; /* 36px desktop */
+  }
+}
+
+/* ---------- INTERACTION DEFAULTS ---------- */
+button,
+a {
+  transition: all var(--duration-fast) var(--ease-default);
 }
 
 /* Smooth transitions for interactive elements */
 .transition-brutal {
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-fast) var(--ease-default);
 }
 
-/* Glow effect for important elements */
-.glow-blue {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+/* Glow effects (tokenized) */
+.glow-primary {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
-.glow-blue-hover:hover {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+.glow-primary-hover:hover {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-primary) 50%, transparent);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-secondary) 30%, transparent);
+}
+
+.glow-secondary-hover:hover {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent-secondary) 50%, transparent);
 }

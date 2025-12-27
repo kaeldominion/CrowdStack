@@ -50,14 +50,14 @@ export default function ContactPage() {
       <Section spacing="xl">
         <Container size="md">
           <Card className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10 mb-4">
-              <CheckCircle2 className="h-8 w-8 text-success" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/10 mb-4">
+              <CheckCircle2 className="h-8 w-8 text-accent-success" />
             </div>
-            <h2 className="text-2xl font-semibold text-foreground">Thank you!</h2>
-            <p className="mt-2 text-foreground-muted">
+            <h2 className="text-2xl font-semibold text-primary">Thank you!</h2>
+            <p className="mt-2 text-secondary">
               We&apos;ve received your request and will contact you within 24 hours.
             </p>
-            <p className="mt-4 text-sm text-foreground-subtle">
+            <p className="mt-4 text-sm text-muted">
               We look forward to speaking with you soon.
             </p>
           </Card>
@@ -70,8 +70,8 @@ export default function ContactPage() {
     <Section spacing="xl">
       <Container size="md">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground">Request a Demo</h1>
-          <p className="mt-4 text-lg text-foreground-muted">
+          <h1 className="text-4xl font-bold text-primary">Request a Demo</h1>
+          <p className="mt-4 text-lg text-secondary">
             Let&apos;s discuss how CrowdStack can streamline your event management
           </p>
         </div>
@@ -130,7 +130,7 @@ export default function ContactPage() {
             />
 
             {error && (
-              <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">
+              <div className="p-3 rounded-lg bg-accent-error/10 border border-accent-error/20 text-accent-error text-sm">
                 {error}
               </div>
             )}

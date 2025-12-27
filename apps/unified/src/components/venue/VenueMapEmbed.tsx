@@ -99,7 +99,7 @@ export function VenueMapEmbed({ venue, mapsUrl }: VenueMapEmbedProps) {
   return (
     <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
       <div className="flex items-center gap-3 p-6 pb-4">
-        <div className="p-2 rounded-lg bg-primary/10">
+        <div className="p-2 rounded-lg bg-accent-secondary/10">
           <MapPin className="h-5 w-5 text-primary" />
         </div>
         <h2 className="text-xl font-semibold text-white">Location</h2>

@@ -299,12 +299,12 @@ export default function VenueSettingsPage() {
     <div className="space-y-8 pt-4">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Venue Settings</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Venue Settings</h1>
+          <p className="mt-2 text-sm text-secondary">
             {venueId ? "Managing venue settings" : "Manage your venue profile and preferences"}
           </p>
           {data?.venue && (
-            <p className="mt-1 text-sm font-medium text-white">{data.venue.name}</p>
+            <p className="mt-1 text-sm font-medium text-primary">{data.venue.name}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -343,7 +343,7 @@ export default function VenueSettingsPage() {
         <TabsContent value="profile">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Profile Information</h2>
+              <h2 className="text-2xl font-semibold text-primary">Profile Information</h2>
 
               <Input
                 label="Venue Name"
@@ -409,7 +409,7 @@ export default function VenueSettingsPage() {
                 />
               </div>
 
-              {errors.save && <p className="text-error text-sm">{errors.save}</p>}
+              {errors.save && <p className="text-accent-error text-sm">{errors.save}</p>}
 
               <div className="flex items-center gap-3">
                 <Button
@@ -422,7 +422,7 @@ export default function VenueSettingsPage() {
                   Save Profile
                 </Button>
                 {savedTab === "profile" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -436,7 +436,7 @@ export default function VenueSettingsPage() {
         <TabsContent value="location">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Location</h2>
+              <h2 className="text-2xl font-semibold text-primary">Location</h2>
 
               <Input
                 label="Google Maps URL"
@@ -454,8 +454,8 @@ export default function VenueSettingsPage() {
 
               {/* Address Fields - Manual Editing */}
               <div className="border-t border-border pt-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Address</h3>
-                <p className="text-sm text-foreground-muted mb-4">
+                <h3 className="text-lg font-semibold text-primary mb-4">Address</h3>
+                <p className="text-sm text-secondary mb-4">
                   Enter the venue address manually below.
                 </p>
                 
@@ -504,7 +504,7 @@ export default function VenueSettingsPage() {
                   Save Location
                 </Button>
                 {savedTab === "location" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -518,12 +518,12 @@ export default function VenueSettingsPage() {
         <TabsContent value="branding">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Branding</h2>
+              <h2 className="text-2xl font-semibold text-primary">Branding</h2>
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Logo</label>
-                <p className="text-xs text-foreground-muted mb-3">
+                <label className="block text-sm font-medium text-primary mb-2">Logo</label>
+                <p className="text-xs text-secondary mb-3">
                   Recommended: 512×512px (square), PNG with transparent background. Max 2MB.
                 </p>
                 {data.venue.logo_url ? (
@@ -544,8 +544,8 @@ export default function VenueSettingsPage() {
 
               {/* Cover Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Cover Image</label>
-                <p className="text-xs text-foreground-muted mb-3">
+                <label className="block text-sm font-medium text-primary mb-2">Cover Image</label>
+                <p className="text-xs text-secondary mb-3">
                   Recommended: 1920×640px (3:1 aspect ratio), JPG or PNG. Max 5MB. This image appears at the top of your public venue page.
                 </p>
                 {data.venue.cover_image_url ? (
@@ -575,7 +575,7 @@ export default function VenueSettingsPage() {
                   Save Branding
                 </Button>
                 {savedTab === "branding" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -589,8 +589,8 @@ export default function VenueSettingsPage() {
         <TabsContent value="media">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Gallery</h2>
-              <p className="text-sm text-foreground-muted">
+              <h2 className="text-2xl font-semibold text-primary">Gallery</h2>
+              <p className="text-sm text-secondary">
                 Upload photos to showcase your venue. You can select multiple images at once.
               </p>
 
@@ -612,13 +612,13 @@ export default function VenueSettingsPage() {
                   {uploadingFiles.length > 0 ? (
                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
                   ) : (
-                    <ImagePlus className="h-10 w-10 text-foreground-muted" />
+                    <ImagePlus className="h-10 w-10 text-secondary" />
                   )}
                   <div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-primary">
                       {uploadingFiles.length > 0 ? 'Uploading...' : 'Click to upload photos'}
                     </p>
-                    <p className="text-xs text-foreground-muted mt-1">
+                    <p className="text-xs text-secondary mt-1">
                       PNG, JPG, WEBP up to 10MB each
                     </p>
                   </div>
@@ -627,8 +627,8 @@ export default function VenueSettingsPage() {
 
               {/* Upload Progress */}
               {uploadingFiles.length > 0 && (
-                <div className="space-y-2 bg-surface-secondary rounded-lg p-4">
-                  <p className="text-sm font-medium text-foreground mb-3">
+                <div className="space-y-2 bg-raised rounded-lg p-4">
+                  <p className="text-sm font-medium text-primary mb-3">
                     Uploading {uploadingFiles.length} {uploadingFiles.length === 1 ? 'file' : 'files'}...
                   </p>
                   {uploadingFiles.map((fileName) => {
@@ -639,19 +639,19 @@ export default function VenueSettingsPage() {
                     return (
                       <div key={fileName} className="flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-foreground truncate">{fileName}</p>
+                          <p className="text-xs text-primary truncate">{fileName}</p>
                           <div className="w-full bg-border rounded-full h-2 mt-1 overflow-hidden">
                             <div 
                               className={`h-full transition-all duration-300 ${
-                                isError ? 'bg-error' : isComplete ? 'bg-success' : 'bg-primary'
+                                isError ? 'bg-accent-error' : isComplete ? 'bg-accent-success' : 'bg-accent-secondary'
                               }`}
                               style={{ width: isError ? '100%' : `${progress}%` }}
                             />
                           </div>
                         </div>
                         <div className="flex-shrink-0 w-6">
-                          {isComplete && <CheckCircle2 className="h-4 w-4 text-success" />}
-                          {isError && <X className="h-4 w-4 text-error" />}
+                          {isComplete && <CheckCircle2 className="h-4 w-4 text-accent-success" />}
+                          {isError && <X className="h-4 w-4 text-accent-error" />}
                           {!isComplete && !isError && <Loader2 className="h-4 w-4 text-primary animate-spin" />}
                         </div>
                       </div>
@@ -662,7 +662,7 @@ export default function VenueSettingsPage() {
 
               {/* Success Message */}
               {uploadSuccess.length > 0 && (
-                <div className="flex items-center gap-2 bg-success/10 text-success border border-success/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 bg-accent-success/10 text-accent-success border border-accent-success/20 rounded-lg p-3">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
                   <p className="text-sm">
                     Successfully uploaded {uploadSuccess.length} {uploadSuccess.length === 1 ? 'image' : 'images'}!
@@ -672,12 +672,12 @@ export default function VenueSettingsPage() {
 
               {/* Error Message */}
               {uploadError && (
-                <div className="flex items-center gap-2 bg-error/10 text-error border border-error/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 bg-accent-error/10 text-accent-error border border-accent-error/20 rounded-lg p-3">
                   <X className="h-5 w-5 flex-shrink-0" />
                   <p className="text-sm">{uploadError}</p>
                   <button 
                     onClick={() => setUploadError(null)}
-                    className="ml-auto p-1 hover:bg-error/20 rounded"
+                    className="ml-auto p-1 hover:bg-accent-error/20 rounded"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -686,7 +686,7 @@ export default function VenueSettingsPage() {
 
               {/* Gallery Grid */}
               {(data.gallery || []).length === 0 ? (
-                <div className="text-center py-12 text-foreground-muted">
+                <div className="text-center py-12 text-secondary">
                   <ImagePlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No images yet. Upload some photos to get started!</p>
                 </div>
@@ -715,7 +715,7 @@ export default function VenueSettingsPage() {
                           {!image.is_hero && (
                             <button
                               onClick={() => handleSetHero(image.id)}
-                              className="p-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"
+                              className="p-2 bg-accent-secondary text-void rounded-lg hover:bg-accent-secondary/80 transition-colors"
                               title="Set as hero image"
                             >
                               <Star className="h-4 w-4" />
@@ -723,14 +723,14 @@ export default function VenueSettingsPage() {
                           )}
                           <button
                             onClick={() => setDeleteConfirm({ id: image.id, caption: image.caption || "this image" })}
-                            className="p-2 bg-error text-white rounded-lg hover:bg-error/80 transition-colors"
+                            className="p-2 bg-accent-error text-white rounded-lg hover:bg-accent-error/80 transition-colors"
                             title="Delete image"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                         {image.is_hero && (
-                          <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 text-xs rounded-md flex items-center gap-1">
+                          <div className="absolute top-2 right-2 bg-accent-secondary text-void px-2 py-1 text-xs rounded-md flex items-center gap-1">
                             <Star className="h-3 w-3" />
                             Hero
                           </div>
@@ -748,13 +748,13 @@ export default function VenueSettingsPage() {
         <TabsContent value="tags">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Vibe Tags</h2>
+              <h2 className="text-2xl font-semibold text-primary">Vibe Tags</h2>
 
               {Object.entries(TAG_OPTIONS).map(([type, options]) => {
                 const typeTags = data.tags.filter((t) => t.tag_type === type);
                 return (
                   <div key={type} className="space-y-2">
-                    <label className="block text-sm font-medium text-foreground capitalize">
+                    <label className="block text-sm font-medium text-primary capitalize">
                       {type.replace("_", " ")}
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -767,8 +767,8 @@ export default function VenueSettingsPage() {
                             onClick={() => handleTagToggle(type as VenueTag["tag_type"], option)}
                             className={`px-3 py-1 text-sm border-2 transition-colors ${
                               isSelected
-                                ? "bg-primary text-white border-primary"
-                                : "bg-surface text-foreground border-border hover:border-primary/50"
+                                ? "bg-accent-secondary text-white border-accent-secondary"
+                                : "bg-glass text-primary border-border hover:border-accent-secondary/50"
                             }`}
                           >
                             {option}
@@ -791,7 +791,7 @@ export default function VenueSettingsPage() {
                   Save Tags
                 </Button>
                 {savedTab === "tags" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -805,7 +805,7 @@ export default function VenueSettingsPage() {
         <TabsContent value="policies">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Policies</h2>
+              <h2 className="text-2xl font-semibold text-primary">Policies</h2>
 
               <Input
                 label="Dress Code"
@@ -848,7 +848,7 @@ export default function VenueSettingsPage() {
                   Save Policies
                 </Button>
                 {savedTab === "policies" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -862,7 +862,7 @@ export default function VenueSettingsPage() {
         <TabsContent value="defaults">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Default Settings</h2>
+              <h2 className="text-2xl font-semibold text-primary">Default Settings</h2>
 
               <Textarea
                 label="Default Registration Questions (JSON)"
@@ -920,7 +920,7 @@ export default function VenueSettingsPage() {
                   Save Defaults
                 </Button>
                 {savedTab === "defaults" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -939,7 +939,7 @@ export default function VenueSettingsPage() {
           title="Preview Public Venue Page"
           size="xl"
         >
-          <div className="max-h-[80vh] overflow-y-auto bg-background">
+          <div className="max-h-[80vh] overflow-y-auto bg-void">
             <div className="space-y-6">
               {/* Preview Header */}
               {data.venue.cover_image_url && (
@@ -966,15 +966,15 @@ export default function VenueSettingsPage() {
                 )}
                 <div className="flex-1">
                   <h1
-                    className="text-3xl font-bold tracking-tight text-foreground"
+                    className="text-3xl font-bold tracking-tight text-primary"
                   >
                     {data.venue.name || "Venue Name"}
                   </h1>
                   {data.venue.tagline && (
-                    <p className="text-lg text-foreground-muted mt-2">{data.venue.tagline}</p>
+                    <p className="text-lg text-secondary mt-2">{data.venue.tagline}</p>
                   )}
                   {data.venue.description && (
-                    <p className="text-foreground-muted mt-3 leading-relaxed">{data.venue.description}</p>
+                    <p className="text-secondary mt-3 leading-relaxed">{data.venue.description}</p>
                   )}
                 </div>
               </div>
@@ -982,7 +982,7 @@ export default function VenueSettingsPage() {
               {/* Location Preview */}
               {data.venue.google_maps_url && (
                 <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-foreground mb-2">Location</h3>
+                  <h3 className="font-semibold text-primary mb-2">Location</h3>
                   <a
                     href={data.venue.google_maps_url}
                     target="_blank"
@@ -997,7 +997,7 @@ export default function VenueSettingsPage() {
               {/* Tags Preview */}
               {data.tags.length > 0 && (
                 <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Vibe</h3>
+                  <h3 className="font-semibold text-primary mb-3">Vibe</h3>
                   <div className="flex flex-wrap gap-2">
                     {data.tags.map((tag) => (
                       <Badge key={tag.id} variant="default" size="sm">
@@ -1011,18 +1011,18 @@ export default function VenueSettingsPage() {
               {/* Policies Preview */}
               {(data.venue.dress_code || data.venue.age_restriction) && (
                 <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Policies</h3>
+                  <h3 className="font-semibold text-primary mb-3">Policies</h3>
                   <div className="space-y-2 text-sm">
                     {data.venue.dress_code && (
                       <div>
-                        <span className="font-medium text-foreground-muted">Dress Code: </span>
-                        <span className="text-foreground">{data.venue.dress_code}</span>
+                        <span className="font-medium text-secondary">Dress Code: </span>
+                        <span className="text-primary">{data.venue.dress_code}</span>
                       </div>
                     )}
                     {data.venue.age_restriction && (
                       <div>
-                        <span className="font-medium text-foreground-muted">Age: </span>
-                        <span className="text-foreground">{data.venue.age_restriction}</span>
+                        <span className="font-medium text-secondary">Age: </span>
+                        <span className="text-primary">{data.venue.age_restriction}</span>
                       </div>
                     )}
                   </div>
@@ -1032,7 +1032,7 @@ export default function VenueSettingsPage() {
               {/* Gallery Preview */}
               {data.gallery.length > 0 && (
                 <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-foreground mb-3">Gallery</h3>
+                  <h3 className="font-semibold text-primary mb-3">Gallery</h3>
                   <div className="grid grid-cols-3 gap-2">
                     {data.gallery.slice(0, 6).map((image) => {
                       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -1057,7 +1057,7 @@ export default function VenueSettingsPage() {
                 </div>
               )}
 
-              <div className="text-center text-sm text-foreground-muted pt-4 border-t border-border">
+              <div className="text-center text-sm text-secondary pt-4 border-t border-border">
                 <p>This is a preview. Changes are not saved until you click "Save" in each tab.</p>
               </div>
             </div>

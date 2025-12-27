@@ -384,9 +384,9 @@ export async function PUT(request: NextRequest) {
       // Delete all existing tags
       await supabase.from("venue_tags").delete().eq("venue_id", venueId);
 
-      // Insert new tags (filter out temp IDs)
+      // Insert all tags (including new ones with temp IDs)
       const tagsToInsert = body.tags
-        .filter((tag: any) => !tag.id?.startsWith("temp-"))
+        .filter((tag: any) => tag.tag_type && tag.tag_value)
         .map((tag: any) => ({
           venue_id: venueId,
           tag_type: tag.tag_type,
@@ -399,6 +399,7 @@ export async function PUT(request: NextRequest) {
           .insert(tagsToInsert);
 
         if (tagsError) {
+          console.error("Failed to insert tags:", tagsError);
           return NextResponse.json(
             { error: tagsError.message || "Failed to update tags" },
             { status: 500 }

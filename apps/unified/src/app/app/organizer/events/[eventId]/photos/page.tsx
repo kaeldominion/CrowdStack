@@ -224,13 +224,13 @@ export default function OrganizerPhotosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href={`/app/organizer/events/${eventId}`}
-            className="inline-flex items-center gap-2 text-foreground-muted hover:text-foreground mb-4"
+            className="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Event
@@ -238,8 +238,8 @@ export default function OrganizerPhotosPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Photo Album</h1>
-              <p className="mt-2 text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Photo Album</h1>
+              <p className="mt-2 text-secondary">
                 {photos.length} {photos.length === 1 ? "photo" : "photos"}
                 {album?.status === "published" && (
                   <Badge variant="success" className="ml-2">
@@ -291,7 +291,7 @@ export default function OrganizerPhotosPage() {
             {photos.map((photo) => (
               <div
                 key={photo.id}
-                className="relative group aspect-square rounded-lg overflow-hidden bg-surface border border-border"
+                className="relative group aspect-square rounded-lg overflow-hidden bg-glass border border-border"
               >
                 <img
                   src={photo.thumbnail_url}
@@ -307,7 +307,7 @@ export default function OrganizerPhotosPage() {
                         e.stopPropagation();
                         handleReorder(photo.id, "up");
                       }}
-                      className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                      className="p-2 rounded-full bg-active text-primary hover:bg-active/80 transition-colors"
                       title="Move up"
                       disabled={photos.findIndex((p) => p.id === photo.id) === 0}
                     >
@@ -318,7 +318,7 @@ export default function OrganizerPhotosPage() {
                         e.stopPropagation();
                         handleReorder(photo.id, "down");
                       }}
-                      className="p-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
+                      className="p-2 rounded-full bg-active text-primary hover:bg-active/80 transition-colors"
                       title="Move down"
                       disabled={
                         photos.findIndex((p) => p.id === photo.id) ===
@@ -336,8 +336,8 @@ export default function OrganizerPhotosPage() {
                       }}
                       className={`p-2 rounded-full ${
                         album?.cover_photo_id === photo.id
-                          ? "bg-primary text-white"
-                          : "bg-white/20 text-white hover:bg-white/30"
+                          ? "bg-accent-secondary text-white"
+                          : "bg-active text-primary hover:bg-active/80"
                       }`}
                       title="Set as cover"
                     >
@@ -348,7 +348,7 @@ export default function OrganizerPhotosPage() {
                         e.stopPropagation();
                         handleDelete(photo.id);
                       }}
-                      className="p-2 rounded-full bg-red-500/80 text-white hover:bg-red-500 transition-colors"
+                      className="p-2 rounded-full bg-accent-error/80 text-white hover:bg-accent-error transition-colors"
                       disabled={deleting === photo.id}
                       title="Delete"
                     >
@@ -380,7 +380,7 @@ export default function OrganizerPhotosPage() {
           <Card className="mt-8">
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-lg font-semibold text-primary mb-2">
                   Album Status
                 </h3>
                 <div className="flex items-center gap-4">
@@ -400,7 +400,7 @@ export default function OrganizerPhotosPage() {
                     )}
                   </Badge>
                   {album.published_at && (
-                    <span className="text-sm text-foreground-muted">
+                    <span className="text-sm text-secondary">
                       Published {new Date(album.published_at).toLocaleDateString()}
                     </span>
                   )}
@@ -409,7 +409,7 @@ export default function OrganizerPhotosPage() {
 
               {album.status === "published" && event && (
                 <div>
-                  <p className="text-sm text-foreground-muted mb-2">
+                  <p className="text-sm text-secondary mb-2">
                     Share this album with attendees:
                   </p>
                   <div className="flex items-center gap-2">
@@ -418,7 +418,7 @@ export default function OrganizerPhotosPage() {
                       type="text"
                       readOnly
                       value={`${typeof window !== 'undefined' ? window.location.origin : ''}/p/${event.slug}`}
-                      className="flex-1 px-3 py-2 bg-surface border border-border rounded-md text-sm text-foreground"
+                      className="flex-1 px-3 py-2 bg-glass border border-border rounded-md text-sm text-primary"
                       onClick={(e) => {
                         (e.target as HTMLInputElement).select();
                       }}

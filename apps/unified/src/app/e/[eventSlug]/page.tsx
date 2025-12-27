@@ -40,7 +40,7 @@ async function getEvent(slug: string) {
       .select(`
         *,
         organizer:organizers!events_organizer_id_fkey(id, name),
-        venue:venues(id, name, slug, address, city, state, country, google_maps_url)
+        venue:venues(id, name, slug, address, city, state, country, google_maps_url, cover_image_url, logo_url)
       `)
       .eq("slug", slug)
       .eq("status", "published")
@@ -56,9 +56,25 @@ async function getEvent(slug: string) {
       .select("*", { count: "exact", head: true })
       .eq("event_id", event.id);
 
+    // Get recent attendees with profile pics (limit 5)
+    const { data: recentAttendees } = await supabase
+      .from("registrations")
+      .select(`
+        id,
+        attendee:attendees(
+          id,
+          name,
+          profile_picture_url
+        )
+      `)
+      .eq("event_id", event.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
     return {
       ...event,
       registration_count: registrationCount || 0,
+      recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
     };
   } catch (error) {
     console.error("Failed to fetch event:", error);
@@ -165,23 +181,39 @@ export default async function EventPage({
       <Suspense fallback={null}>
         <ReferralTracker eventId={event.id}>
           <>
-            {/* Blurred Flier Background - Fixed, fills entire viewport */}
+            {/* Blurred Background - Fixed, fills entire viewport (desktop only) */}
             <div 
-              className="fixed inset-0 z-0 overflow-hidden pointer-events-none"
+              className="hidden lg:block fixed inset-0 z-0 overflow-hidden pointer-events-none bg-void"
               aria-hidden="true"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={event.flier_url}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{
-                  filter: 'blur(60px)',
-                  transform: 'scale(1.3)',
-                  opacity: 0.4,
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/30 to-black/70" />
+              {event.flier_video_url ? (
+                <video
+                  src={event.flier_video_url}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{
+                    filter: 'blur(80px)',
+                    transform: 'scale(1.3)',
+                    opacity: 0.15,
+                  }}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={event.flier_url}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{
+                    filter: 'blur(80px)',
+                    transform: 'scale(1.3)',
+                    opacity: 0.15,
+                  }}
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-void/40 via-void/70 to-void" />
             </div>
 
             {/* Mobile: Scroll parallax flier experience */}
@@ -189,6 +221,9 @@ export default async function EventPage({
               flierUrl={event.flier_url}
               videoUrl={event.flier_video_url || undefined}
               eventName={event.name}
+              venueName={event.venue?.name}
+              venueCity={event.venue?.city}
+              startDate={startDate}
             >
               <Suspense fallback={null}>
                 <EventPageContent
@@ -200,7 +235,6 @@ export default async function EventPage({
                   isUpcoming={isUpcoming}
                   isLive={isLive}
                   isMobileFlierView={true}
-                  isScrollMode={true}
                 />
               </Suspense>
             </MobileExperience>
@@ -220,17 +254,7 @@ export default async function EventPage({
                 />
               </Suspense>
             </div>
-
-            <MobileStickyCTAWrapper
-              eventSlug={params.eventSlug}
-              eventName={event.name}
-              shareUrl={shareUrl}
-              startDate={startDate}
-              venue={event.venue}
-              description={event.description}
-              flierUrl={event.flier_url}
-              flierVideoUrl={event.flier_video_url}
-            />
+            {/* Mobile CTA is now integrated into the pull-up sheet */}
           </>
         </ReferralTracker>
       </Suspense>

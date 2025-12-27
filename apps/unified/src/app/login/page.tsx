@@ -687,20 +687,20 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <Link href="/">
-            <Logo variant="full" size="lg" animated={false} className="text-white" />
+            <Logo variant="tricolor" size="lg" />
           </Link>
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-primary">
             {useMagicLink ? "Welcome" : (isSignup ? "Create Account" : "Sign In")}
           </h1>
-          <p className="mt-2 text-sm text-white/60">
+          <p className="mt-2 text-sm text-secondary">
             {useMagicLink 
               ? "Enter your email to sign in or create an account" 
               : isSignup
@@ -712,16 +712,15 @@ function LoginContent() {
         <form onSubmit={useMagicLink ? handleMagicLink : handlePasswordLogin} className="space-y-6">
           {!showOtpInput && (
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-primary mb-2">
               Email
             </label>
-            <input
+            <Input
               type="email"
               id="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
               placeholder="you@example.com"
             />
           </div>
@@ -730,32 +729,30 @@ function LoginContent() {
           {!useMagicLink && !showOtpInput && (
             <>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-primary mb-2">
                   Password
                 </label>
-                <input
+                <Input
                   type="password"
                   id="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
                   placeholder={isSignup ? "Create a password (min 6 characters)" : "Enter your password"}
                   minLength={isSignup ? 6 : undefined}
                 />
               </div>
               {isSignup && (
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-2">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-primary mb-2">
                     Confirm Password
                   </label>
-                  <input
+                  <Input
                     type="password"
                     id="confirmPassword"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
                     placeholder="Confirm your password"
                     minLength={6}
                   />
@@ -765,7 +762,7 @@ function LoginContent() {
                 <div className="text-right">
                   <Link
                     href="/auth/forgot-password"
-                    className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                    className="text-sm text-accent-secondary hover:text-accent-secondary/80"
                   >
                     Forgot password?
                   </Link>
@@ -775,7 +772,7 @@ function LoginContent() {
           )}
 
           {error && (
-            <div className="rounded-md p-4 bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444]">
+            <div className="rounded-md p-4 bg-accent-error/10 border border-accent-error/20 text-accent-error">
               <p className="text-sm font-medium">Authentication Error</p>
               <p className="text-sm mt-1">{error}</p>
               {(typeof window !== "undefined" && window.location.search.includes("error=pkce_error")) && (
@@ -794,7 +791,7 @@ function LoginContent() {
           )}
 
           {message && !showOtpInput && (
-            <div className="rounded-md p-4 bg-[#10B981]/10 border border-[#10B981]/20 text-[#10B981]">
+            <div className="rounded-md p-4 bg-accent-success/10 border border-accent-success/20 text-accent-success">
               <p className="text-sm">{message}</p>
             </div>
           )}
@@ -802,18 +799,18 @@ function LoginContent() {
           {/* OTP Input for mobile users */}
           {showOtpInput && magicLinkSent && (
             <div className="space-y-4">
-              <div className="rounded-md p-4 bg-[#3B82F6]/10 border border-[#3B82F6]/20">
-                <p className="text-[#3B82F6] text-sm font-medium mb-1">Check your email</p>
-                <p className="text-white/70 text-xs">
-                  We sent an 8-digit code to <span className="font-medium text-white">{email}</span>
+              <div className="rounded-md p-4 bg-accent-secondary/10 border border-accent-secondary/20">
+                <p className="text-accent-secondary text-sm font-medium mb-1">Check your email</p>
+                <p className="text-secondary text-xs">
+                  We sent an 8-digit code to <span className="font-medium text-primary">{email}</span>
                 </p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
+                <label className="block text-sm font-medium text-primary mb-2">
                   Verification Code
                 </label>
-                <input
+                <Input
                   type="text"
                   value={otpCode}
                   onChange={(e) => {
@@ -828,7 +825,7 @@ function LoginContent() {
                     }
                   }}
                   placeholder="Enter code"
-                  className="w-full rounded-md bg-[#0B0D10] border border-[#2A2F3A] px-3 py-4 text-white text-center text-2xl tracking-[0.3em] font-mono placeholder-white/20 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+                  className="text-center text-2xl tracking-[0.3em] font-mono"
                   autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -837,7 +834,7 @@ function LoginContent() {
               </div>
               
               {otpError && (
-                <div className="rounded-md p-3 bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444]">
+                <div className="rounded-md p-3 bg-accent-error/10 border border-accent-error/20 text-accent-error">
                   <p className="text-sm">{otpError}</p>
                 </div>
               )}
@@ -862,7 +859,7 @@ function LoginContent() {
                     handleMagicLink({ preventDefault: () => {} } as React.FormEvent);
                   }}
                   disabled={loading}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  className="text-sm text-muted hover:text-secondary transition-colors"
                 >
                   Didn't receive it? Send new code
                 </button>
@@ -877,7 +874,7 @@ function LoginContent() {
                     setMessage("");
                     setUseMagicLink(false);
                   }}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  className="text-sm text-muted hover:text-secondary transition-colors"
                 >
                   Use password instead
                 </button>
@@ -910,7 +907,7 @@ function LoginContent() {
                   setMessage("");
                     setMagicLinkSent(false);
                 }}
-                className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                className="text-sm text-muted hover:text-secondary transition-colors"
               >
                 Use password instead
               </button>
@@ -925,7 +922,7 @@ function LoginContent() {
                     setPassword("");
                     setConfirmPassword("");
                   }}
-                  className="text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+                  className="text-sm text-accent-secondary hover:text-accent-secondary/80"
                 >
                   {isSignup ? "Already have an account?" : "Need an account?"}
                 </button>
@@ -939,7 +936,7 @@ function LoginContent() {
                     setPassword("");
                     setConfirmPassword("");
                   }}
-                  className="text-sm text-white/50 hover:text-white/80 transition-colors"
+                  className="text-sm text-muted hover:text-secondary transition-colors"
                 >
                   Use magic link instead
                 </button>

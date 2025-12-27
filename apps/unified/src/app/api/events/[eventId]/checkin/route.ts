@@ -230,6 +230,54 @@ export async function POST(
 
     console.log(`[Check-in API] ✅ Successfully checked in ${attendeeName} (checkin ID: ${checkin.id})`);
 
+    // Award XP for check-in using new schema (user_id)
+    try {
+      // Get the user_id from the attendee record
+      const { data: attendeeRecord } = await serviceSupabase
+        .from("attendees")
+        .select("user_id")
+        .eq("id", registration.attendee_id)
+        .single();
+      
+      if (attendeeRecord?.user_id) {
+        // Use the award_xp RPC function if available, otherwise direct insert
+        const { error: xpError } = await serviceSupabase.rpc("award_xp", {
+          p_user_id: attendeeRecord.user_id,
+          p_amount: 100,
+          p_source_type: "ATTENDED_EVENT",
+          p_role_context: "attendee",
+          p_event_id: eventId,
+          p_description: "Checked in to event",
+        });
+        
+        if (xpError) {
+          console.warn(`[Check-in API] Failed to award XP via RPC:`, xpError);
+          // Fallback to direct insert
+          const { error: insertError } = await serviceSupabase
+            .from("xp_ledger")
+            .insert({
+              user_id: attendeeRecord.user_id,
+              event_id: eventId,
+              amount: 100,
+              source_type: "ATTENDED_EVENT",
+              role_context: "attendee",
+              description: "Checked in to event",
+            });
+          if (insertError) {
+            console.warn(`[Check-in API] Failed to award XP via insert:`, insertError);
+          } else {
+            console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id}`);
+          }
+        } else {
+          console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id} via RPC`);
+        }
+      } else {
+        console.warn(`[Check-in API] No user_id found for attendee ${registration.attendee_id}`);
+      }
+    } catch (xpAwardError) {
+      console.warn(`[Check-in API] XP award error:`, xpAwardError);
+    }
+
     // Try to emit outbox event (non-blocking)
     try {
       await emitOutboxEvent("attendee_checked_in", {

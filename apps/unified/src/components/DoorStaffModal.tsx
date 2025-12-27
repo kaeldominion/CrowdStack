@@ -286,9 +286,9 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
     >
       <div className="space-y-6">
         {/* Event info */}
-        <div className="p-3 bg-surface-secondary rounded-lg">
-          <p className="text-sm text-foreground-muted">Managing door staff for:</p>
-          <p className="font-medium text-foreground">{eventName}</p>
+        <div className="p-3 bg-raised rounded-lg">
+          <p className="text-sm text-secondary">Managing door staff for:</p>
+          <p className="font-medium text-primary">{eventName}</p>
         </div>
 
         {loading ? (
@@ -302,7 +302,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
             {/* Permanent door staff (from venue/organizer) */}
             {permanentStaff.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Permanent Door Staff ({permanentStaff.length})
                 </h3>
@@ -310,21 +310,21 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                   {permanentStaff.map((staff) => (
                     <div
                       key={`permanent-${staff.id}`}
-                      className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-primary/20"
+                      className="flex items-center justify-between p-3 bg-raised rounded-lg border border-primary/20"
                     >
                       <div>
-                        <p className="font-medium text-foreground flex items-center gap-2">
+                        <p className="font-medium text-primary flex items-center gap-2">
                           {staff.user_name}
                           <Badge variant="primary" size="sm">
                             {staff.permanent_source === "venue" ? "Venue Staff" : "Organizer Staff"}
                           </Badge>
                         </p>
-                        <p className="text-sm text-foreground-muted">{staff.user_email}</p>
+                        <p className="text-sm text-secondary">{staff.user_email}</p>
                         {staff.notes && (
-                          <p className="text-xs text-foreground-muted mt-1">{staff.notes}</p>
+                          <p className="text-xs text-secondary mt-1">{staff.notes}</p>
                         )}
                       </div>
-                      <span className="text-xs text-foreground-muted">
+                      <span className="text-xs text-secondary">
                         Managed in settings
                       </span>
                     </div>
@@ -335,13 +335,13 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
 
             {/* Event-specific door staff */}
             <div>
-              <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Event Door Staff ({activeStaff.length})
               </h3>
               
               {activeStaff.length === 0 ? (
-                <div className="text-center py-6 text-foreground-muted border border-dashed border-border rounded-lg">
+                <div className="text-center py-6 text-secondary border border-dashed border-border rounded-lg">
                   No event-specific door staff assigned yet
                   {permanentStaff.length > 0 && (
                     <p className="text-xs mt-1">Permanent staff above will have access</p>
@@ -352,13 +352,13 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                   {activeStaff.map((staff) => (
                     <div
                       key={staff.id}
-                      className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
+                      className="flex items-center justify-between p-3 bg-raised rounded-lg"
                     >
                       <div>
-                        <p className="font-medium text-foreground">{staff.user_name}</p>
-                        <p className="text-sm text-foreground-muted">{staff.user_email}</p>
+                        <p className="font-medium text-primary">{staff.user_name}</p>
+                        <p className="text-sm text-secondary">{staff.user_email}</p>
                         {staff.notes && (
-                          <p className="text-xs text-foreground-muted mt-1">{staff.notes}</p>
+                          <p className="text-xs text-secondary mt-1">{staff.notes}</p>
                         )}
                       </div>
                       <Button
@@ -378,7 +378,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
             {/* Pending invites */}
             {pendingInvites.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Pending Invites ({pendingInvites.length})
                 </h3>
@@ -386,18 +386,18 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                   {pendingInvites.map((invite) => (
                     <div
                       key={invite.id}
-                      className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
+                      className="flex items-center justify-between p-3 bg-raised rounded-lg"
                     >
                       <div>
                         {invite.email ? (
-                          <p className="font-medium text-foreground flex items-center gap-2">
+                          <p className="font-medium text-primary flex items-center gap-2">
                             <Mail className="h-4 w-4" />
                             {invite.email}
                           </p>
                         ) : (
-                          <p className="font-medium text-foreground">Open invite link</p>
+                          <p className="font-medium text-primary">Open invite link</p>
                         )}
-                        <p className="text-xs text-foreground-muted">
+                        <p className="text-xs text-secondary">
                           Expires: {new Date(invite.expires_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -419,7 +419,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
             <div className="border-t border-border pt-4">
               {newInviteUrl ? (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-primary flex items-center gap-2">
                     <Check className="h-4 w-4 text-success" />
                     Invite Link Created!
                   </h3>
@@ -433,7 +433,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-xs text-foreground-muted">
+                  <p className="text-xs text-secondary">
                     Share this link with your door staff. They'll need to log in to accept.
                   </p>
                   <Button
@@ -447,7 +447,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
               ) : showAddStaff ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-foreground">Add Door Staff</h3>
+                    <h3 className="text-sm font-medium text-primary">Add Door Staff</h3>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -475,7 +475,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                       {searching ? (
                         <InlineSpinner size="sm" />
                       ) : (
-                        <Search className="h-4 w-4 text-foreground-muted" />
+                        <Search className="h-4 w-4 text-secondary" />
                       )}
                     </div>
                   </div>
@@ -486,7 +486,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                       {searchResults.map((user) => (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg"
+                          className="flex items-center justify-between p-3 bg-raised rounded-lg"
                         >
                           <div className="flex items-center gap-3">
                             {user.avatar_url ? (
@@ -501,8 +501,8 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                               </div>
                             )}
                             <div>
-                              <p className="text-sm font-medium text-foreground">{user.name}</p>
-                              <p className="text-xs text-foreground-muted">{user.email}</p>
+                              <p className="text-sm font-medium text-primary">{user.name}</p>
+                              <p className="text-xs text-secondary">{user.email}</p>
                             </div>
                           </div>
                           {user.already_assigned ? (
@@ -524,7 +524,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
 
                   {/* No results / Create invite option */}
                   {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
-                    <div className="text-center py-4 text-foreground-muted border border-dashed border-border rounded-lg">
+                    <div className="text-center py-4 text-secondary border border-dashed border-border rounded-lg">
                       <p className="text-sm">No users found with that email</p>
                     <Button
                       variant="secondary"
@@ -540,8 +540,8 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
 
                   {/* Create invite link section */}
                   {showInviteLink && (
-                    <div className="p-3 bg-surface-secondary rounded-lg space-y-3">
-                      <p className="text-sm text-foreground-muted">
+                    <div className="p-3 bg-raised rounded-lg space-y-3">
+                      <p className="text-sm text-secondary">
                         User not in system? Create an invite link they can use to get access.
                       </p>
                       <Button
@@ -558,7 +558,7 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
 
                   {/* Make permanent checkbox */}
                   {(venueId || organizerId) && (
-                    <div className="p-3 bg-surface-secondary rounded-lg">
+                    <div className="p-3 bg-raised rounded-lg">
                       <label className="flex items-start gap-3 cursor-pointer">
                         <input
                           type="checkbox"
@@ -567,10 +567,10 @@ export function DoorStaffModal({ isOpen, onClose, eventId, eventName, venueId, o
                           className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
                         />
                         <div>
-                          <p className="text-sm font-medium text-foreground">
+                          <p className="text-sm font-medium text-primary">
                             Grant permanent access
                           </p>
-                          <p className="text-xs text-foreground-muted mt-0.5">
+                          <p className="text-xs text-secondary mt-0.5">
                             Access to all {organizerId ? "organizer" : "venue"} events, not just this one
                           </p>
                         </div>

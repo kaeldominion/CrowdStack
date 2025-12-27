@@ -102,12 +102,12 @@ export function OrganizerProfileModal({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
               <Building2 className="h-6 w-6" />
               {organizer.name}
             </h2>
             {organizer.company_name && (
-              <p className="text-foreground-muted mt-1">{organizer.company_name}</p>
+              <p className="text-secondary mt-1">{organizer.company_name}</p>
             )}
           </div>
           {organizer.is_preapproved ? (
@@ -122,16 +122,16 @@ export function OrganizerProfileModal({
 
         {/* Contact Information */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Contact Information
           </h3>
           <div className="space-y-2">
             {organizer.email && (
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-foreground-muted" />
+                <Mail className="h-4 w-4 text-secondary" />
                 <a
                   href={`mailto:${organizer.email}`}
-                  className="text-foreground hover:text-primary"
+                  className="text-primary hover:text-primary"
                 >
                   {organizer.email}
                 </a>
@@ -139,10 +139,10 @@ export function OrganizerProfileModal({
             )}
             {organizer.phone && (
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-foreground-muted" />
+                <Phone className="h-4 w-4 text-secondary" />
                 <a
                   href={`tel:${organizer.phone}`}
-                  className="text-foreground hover:text-primary"
+                  className="text-primary hover:text-primary"
                 >
                   {organizer.phone}
                 </a>
@@ -153,32 +153,32 @@ export function OrganizerProfileModal({
 
         {/* Statistics */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Statistics
           </h3>
           <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Events</span>
+                <Calendar className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Events</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{organizer.events_count}</p>
+              <p className="text-2xl font-bold text-primary">{organizer.events_count}</p>
             </div>
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Users className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Registrations</span>
+                <Users className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Registrations</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-primary">
                 {organizer.total_registrations.toLocaleString()}
               </p>
             </div>
-            <div className="p-4 bg-background-secondary rounded-lg">
+            <div className="p-4 bg-raised rounded-lg">
               <div className="flex items-center gap-2 mb-1">
-                <Ticket className="h-4 w-4 text-foreground-muted" />
-                <span className="text-xs text-foreground-muted uppercase">Check-ins</span>
+                <Ticket className="h-4 w-4 text-secondary" />
+                <span className="text-xs text-secondary uppercase">Check-ins</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">
+              <p className="text-2xl font-bold text-primary">
                 {organizer.total_checkins.toLocaleString()}
               </p>
             </div>
@@ -187,10 +187,10 @@ export function OrganizerProfileModal({
 
         {/* Additional Info */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
             Additional Information
           </h3>
-          <div className="text-sm text-foreground-muted">
+          <div className="text-sm text-secondary">
             <p>Member since: {formatDate(organizer.created_at)}</p>
           </div>
         </div>
@@ -202,8 +202,8 @@ export function OrganizerProfileModal({
               onClick={handlePreapproveToggle}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 organizer.is_preapproved
-                  ? "bg-background-secondary text-foreground hover:bg-background-tertiary"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  ? "bg-raised text-primary hover:bg-active"
+                  : "bg-accent-secondary text-white hover:bg-accent-secondary/90"
               }`}
             >
               {organizer.is_preapproved ? (
@@ -220,7 +220,7 @@ export function OrganizerProfileModal({
             </button>
             <Link
               href={`/app/venue/events?organizer=${organizer.id}`}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-background-secondary text-foreground hover:bg-background-tertiary transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-raised text-primary hover:bg-active transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
               View Events

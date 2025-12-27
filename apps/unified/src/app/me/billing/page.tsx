@@ -20,17 +20,17 @@ export default function BillingPage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          <h1 className="text-4xl font-bold tracking-tight text-primary">
             Billing
           </h1>
-          <p className="mt-2 text-foreground-muted">
+          <p className="mt-2 text-secondary">
             Manage your billing and subscription
           </p>
         </div>
 
         <Card>
           <div className="p-8 text-center">
-            <p className="text-foreground-muted">
+            <p className="text-secondary">
               Billing page coming soon
             </p>
           </div>

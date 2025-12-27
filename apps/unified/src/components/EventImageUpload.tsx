@@ -127,15 +127,15 @@ export function EventImageUpload({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-foreground">{label}</label>
+      <label className="block text-sm font-medium text-primary">{label}</label>
       {helperText && (
-        <p className="text-xs text-foreground-muted">{helperText}</p>
+        <p className="text-xs text-secondary">{helperText}</p>
       )}
 
       {preview ? (
         <div className="relative">
           <div
-            className={`relative w-full max-w-md overflow-hidden rounded-lg border border-border bg-surface ${
+            className={`relative w-full max-w-md overflow-hidden rounded-lg border border-border bg-glass ${
               aspectRatio === "9:16"
                 ? "aspect-[9/16]"
                 : aspectRatio === "16:9"

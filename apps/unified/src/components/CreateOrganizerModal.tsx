@@ -59,7 +59,7 @@ export function CreateOrganizerModal({ isOpen, onClose, onSuccess }: CreateOrgan
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           placeholder="Event Productions Inc. or DJ Marcus"
         />
-        <p className="text-xs text-foreground-muted">
+        <p className="text-xs text-secondary">
           Enter the company name if they have one, otherwise enter the organizer name. The actual person's name will come from the user assigned to this organizer later.
         </p>
 

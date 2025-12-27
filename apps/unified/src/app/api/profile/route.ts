@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
+// Helper to check if profile is complete
+function isProfileComplete(attendee: any): boolean {
+  return !!(
+    attendee?.name &&
+    attendee?.bio &&
+    (attendee?.instagram_handle || attendee?.tiktok_handle)
+  );
+}
+
 /**
  * GET /api/profile
  * Get current user's profile
@@ -116,11 +125,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (existingAttendee) {
-      // Update existing attendee
-      // Phone is required NOT NULL - ensure we never set it to null
-      // If whatsapp was provided and has a value, phone is already set in updateData above
-      // If whatsapp was not provided or is empty, phone won't be in updateData (preserves existing)
+      // Check if profile was complete BEFORE this update
+      const { data: beforeUpdate } = await serviceSupabase
+        .from("attendees")
+        .select("*")
+        .eq("id", existingAttendee.id)
+        .single();
+      
+      const wasCompleteBefore = isProfileComplete(beforeUpdate);
 
+      // Update existing attendee
       const { data: updated, error: updateError } = await serviceSupabase
         .from("attendees")
         .update(updateData)
@@ -130,6 +144,36 @@ export async function PATCH(request: NextRequest) {
 
       if (updateError) {
         throw updateError;
+      }
+
+      // Check if profile is now complete (and wasn't before)
+      const isCompleteNow = isProfileComplete(updated);
+      
+      if (isCompleteNow && !wasCompleteBefore) {
+        // Check if user already received profile completion XP
+        const { data: existingXp } = await serviceSupabase
+          .from("xp_ledger")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("source_type", "PROFILE_COMPLETION")
+          .limit(1);
+        
+        if (!existingXp || existingXp.length === 0) {
+          // Award 50 XP for profile completion
+          try {
+            await serviceSupabase.rpc("award_xp", {
+              p_user_id: user.id,
+              p_amount: 50,
+              p_source_type: "PROFILE_COMPLETION",
+              p_role_context: "attendee",
+              p_description: "Completed profile",
+            });
+            console.log(`[Profile] Awarded 50 XP to user ${user.id} for profile completion`);
+          } catch (xpError) {
+            // Don't fail the request if XP awarding fails
+            console.error("[Profile] Error awarding XP:", xpError);
+          }
+        }
       }
 
       return NextResponse.json({ attendee: updated });
@@ -155,6 +199,22 @@ export async function PATCH(request: NextRequest) {
 
       if (createError) {
         throw createError;
+      }
+
+      // Check if new profile is complete and award XP
+      if (isProfileComplete(created)) {
+        try {
+          await serviceSupabase.rpc("award_xp", {
+            p_user_id: user.id,
+            p_amount: 50,
+            p_source_type: "PROFILE_COMPLETION",
+            p_role_context: "attendee",
+            p_description: "Completed profile",
+          });
+          console.log(`[Profile] Awarded 50 XP to user ${user.id} for profile completion`);
+        } catch (xpError) {
+          console.error("[Profile] Error awarding XP:", xpError);
+        }
       }
 
       return NextResponse.json({ attendee: created });

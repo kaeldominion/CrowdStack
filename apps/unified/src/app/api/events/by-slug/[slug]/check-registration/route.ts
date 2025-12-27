@@ -36,7 +36,7 @@ export async function GET(
     // Find attendee by user_id or email
     const { data: attendee } = await serviceSupabase
       .from("attendees")
-      .select("id")
+      .select("id, name, email")
       .or(`user_id.eq.${user.id},email.eq.${user.email}`)
       .single();
 
@@ -93,6 +93,10 @@ export async function GET(
     return NextResponse.json({
       registered: true,
       qr_pass_token: qrToken,
+      attendee: {
+        id: attendee.id,
+        name: attendee.name || attendee.email?.split("@")[0] || "Guest",
+      },
       event: eventDetails ? {
         id: eventDetails.id,
         name: eventDetails.name,

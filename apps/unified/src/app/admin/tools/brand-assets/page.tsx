@@ -236,13 +236,13 @@ export default function BrandAssetsPage() {
         <div className="mb-8">
           <Link
             href="/admin"
-            className="inline-flex items-center gap-2 text-sm text-foreground-muted hover:text-foreground mb-4"
+            className="inline-flex items-center gap-2 text-sm text-secondary hover:text-primary mb-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Admin
           </Link>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Brand Assets</h1>
-          <p className="text-sm text-foreground-muted">
+          <h1 className="text-2xl font-bold text-primary mb-2">Brand Assets</h1>
+          <p className="text-sm text-secondary">
             Download CrowdStack logos and brand materials in various formats
           </p>
         </div>
@@ -251,8 +251,8 @@ export default function BrandAssetsPage() {
         <Card className="mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-foreground mb-1">Quick Download</h2>
-              <p className="text-sm text-foreground-muted">Download all logo variations at once</p>
+              <h2 className="text-lg font-semibold text-primary mb-1">Quick Download</h2>
+              <p className="text-sm text-secondary">Download all logo variations at once</p>
             </div>
             <Button onClick={downloadAllAssets}>
               <Download className="h-4 w-4 mr-2" />
@@ -263,13 +263,13 @@ export default function BrandAssetsPage() {
 
         {/* Logo Variations */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Logo Variations</h2>
+          <h2 className="text-xl font-semibold text-primary mb-4">Logo Variations</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {logoVariants.map((logoVar) => (
               <Card key={logoVar.value} className="overflow-hidden">
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-foreground">{logoVar.label}</h3>
-                  <p className="text-xs text-foreground-muted">{logoVar.description}</p>
+                  <h3 className="text-sm font-semibold text-primary">{logoVar.label}</h3>
+                  <p className="text-xs text-secondary">{logoVar.description}</p>
                 </div>
                 
                 {/* Preview for each color scheme */}
@@ -284,24 +284,24 @@ export default function BrandAssetsPage() {
                         >
                           <LogoPreview variant={logoVar.value} scheme={scheme} />
                       </div>
-                      <div className="flex gap-2 p-2 bg-surface-elevated">
+                      <div className="flex gap-2 p-2 bg-raised">
                         <button
                             onClick={() => downloadSVG(logoVar.value, scheme)}
-                          className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors"
+                          className="flex-1 text-xs px-3 py-1.5 rounded bg-glass hover:bg-active text-secondary hover:text-primary transition-colors"
                         >
                           SVG
                         </button>
                         <button
                             onClick={() => downloadPNG(logoVar.value, scheme, 2)}
                             disabled={downloading === `${logoVar.value}-${scheme}-2`}
-                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
+                            className="flex-1 text-xs px-3 py-1.5 rounded bg-glass hover:bg-active text-secondary hover:text-primary transition-colors disabled:opacity-50"
                         >
                             {downloading === `${logoVar.value}-${scheme}-2` ? "..." : "PNG 2x"}
                         </button>
                         <button
                             onClick={() => downloadPNG(logoVar.value, scheme, 4)}
                             disabled={downloading === `${logoVar.value}-${scheme}-4`}
-                            className="flex-1 text-xs px-3 py-1.5 rounded bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50"
+                            className="flex-1 text-xs px-3 py-1.5 rounded bg-glass hover:bg-active text-secondary hover:text-primary transition-colors disabled:opacity-50"
                         >
                             {downloading === `${logoVar.value}-${scheme}-4` ? "..." : "PNG 4x"}
                         </button>
@@ -317,8 +317,8 @@ export default function BrandAssetsPage() {
 
         {/* High-Res Downloads */}
         <Card className="mb-12">
-          <h2 className="text-lg font-semibold text-foreground mb-4">High Resolution Downloads</h2>
-          <p className="text-sm text-foreground-muted mb-4">
+          <h2 className="text-lg font-semibold text-primary mb-4">High Resolution Downloads</h2>
+          <p className="text-sm text-secondary mb-4">
             Download larger PNG files for print and high-DPI displays
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -328,7 +328,7 @@ export default function BrandAssetsPage() {
                   key={`${variant}-${scheme}-8`}
                   onClick={() => downloadPNG(variant, scheme, 8)}
                   disabled={downloading === `${variant}-${scheme}-8`}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-surface hover:bg-surface-hover text-foreground-muted hover:text-foreground transition-colors disabled:opacity-50 text-sm"
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-glass hover:bg-active text-secondary hover:text-primary transition-colors disabled:opacity-50 text-sm"
                 >
                   <Download className="h-4 w-4" />
                   {downloading === `${variant}-${scheme}-8` 
@@ -342,7 +342,7 @@ export default function BrandAssetsPage() {
 
         {/* Brand Colors */}
         <div className="mb-12">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Brand Colors</h2>
+          <h2 className="text-xl font-semibold text-primary mb-4">Brand Colors</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {brandColors.map((color) => (
               <Card key={color.name} className="p-0 overflow-hidden">
@@ -351,10 +351,10 @@ export default function BrandAssetsPage() {
                   style={{ backgroundColor: color.hex }}
                 />
                 <div className="p-3">
-                  <p className="text-xs font-medium text-foreground mb-1">{color.name}</p>
+                  <p className="text-xs font-medium text-primary mb-1">{color.name}</p>
                   <button
                     onClick={() => copyToClipboard(color.hex, color.name)}
-                    className="flex items-center gap-1 text-xs text-foreground-muted hover:text-foreground transition-colors"
+                    className="flex items-center gap-1 text-xs text-secondary hover:text-primary transition-colors"
                   >
                     {copiedColor === color.name ? (
                       <>
@@ -376,22 +376,22 @@ export default function BrandAssetsPage() {
 
         {/* Usage Guidelines */}
         <Card>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Usage Guidelines</h2>
-          <div className="space-y-4 text-sm text-foreground-muted">
+          <h2 className="text-lg font-semibold text-primary mb-4">Usage Guidelines</h2>
+          <div className="space-y-4 text-sm text-secondary">
             <div>
-              <h3 className="font-medium text-foreground mb-1">Clear Space</h3>
+              <h3 className="font-medium text-primary mb-1">Clear Space</h3>
               <p>Maintain clear space around the logo equal to the height of the "C" in CrowdStack.</p>
             </div>
             <div>
-              <h3 className="font-medium text-foreground mb-1">Minimum Size</h3>
+              <h3 className="font-medium text-primary mb-1">Minimum Size</h3>
               <p>The full logo should not be smaller than 100px wide. The icon should not be smaller than 24px.</p>
             </div>
             <div>
-              <h3 className="font-medium text-foreground mb-1">Color Usage</h3>
+              <h3 className="font-medium text-primary mb-1">Color Usage</h3>
               <p>Use the white logo on dark backgrounds, the dark logo on light backgrounds. The blue accent version is for special applications.</p>
             </div>
             <div>
-              <h3 className="font-medium text-foreground mb-1">Don't</h3>
+              <h3 className="font-medium text-primary mb-1">Don't</h3>
               <ul className="list-disc list-inside ml-2 space-y-1">
                 <li>Stretch or distort the logo</li>
                 <li>Add effects like shadows or gradients</li>

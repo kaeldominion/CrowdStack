@@ -81,7 +81,7 @@ export function LoadingSpinner({
       
       {text && (
         <motion.p
-          className="text-sm text-foreground-muted"
+          className="text-sm text-secondary"
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}

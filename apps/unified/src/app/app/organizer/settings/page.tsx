@@ -201,8 +201,8 @@ export default function OrganizerSettingsPage() {
   return (
     <div className="space-y-8 pt-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Organizer Settings</h1>
-        <p className="mt-2 text-sm text-white/60">Manage your organizer profile and team</p>
+        <h1 className="text-3xl font-bold tracking-tighter text-primary">Organizer Settings</h1>
+        <p className="mt-2 text-sm text-secondary">Manage your organizer profile and team</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -216,12 +216,12 @@ export default function OrganizerSettingsPage() {
         <TabsContent value="profile">
           <Card>
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold text-foreground">Profile Information</h2>
+              <h2 className="text-2xl font-semibold text-primary">Profile Information</h2>
 
               {/* Logo Upload */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Logo</label>
-                <p className="text-xs text-foreground-muted mb-3">
+                <label className="block text-sm font-medium text-primary mb-2">Logo</label>
+                <p className="text-xs text-secondary mb-3">
                   Recommended: 512×512px (square), PNG with transparent background. Max 5MB.
                 </p>
                 {data.organizer.logo_url && (
@@ -279,7 +279,7 @@ export default function OrganizerSettingsPage() {
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-foreground">Social Links</h3>
+                <h3 className="text-sm font-medium text-primary">Social Links</h3>
                 <Input
                   label="Instagram"
                   type="text"
@@ -303,7 +303,7 @@ export default function OrganizerSettingsPage() {
                 />
               </div>
 
-              {errors.save && <p className="text-error text-sm">{errors.save}</p>}
+              {errors.save && <p className="text-accent-error text-sm">{errors.save}</p>}
 
               <div className="flex items-center gap-3">
                 <Button
@@ -316,7 +316,7 @@ export default function OrganizerSettingsPage() {
                   Save Profile
                 </Button>
                 {savedTab === "profile" && (
-                  <div className="flex items-center gap-2 text-success animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
                     <Check className="h-4 w-4" />
                     <span className="text-sm font-medium">Saved!</span>
                   </div>
@@ -331,7 +331,7 @@ export default function OrganizerSettingsPage() {
           <Card>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-foreground">Team Members</h2>
+                <h2 className="text-2xl font-semibold text-primary">Team Members</h2>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -365,7 +365,7 @@ export default function OrganizerSettingsPage() {
 
               {/* Team Members List */}
               {data.team_members.length === 0 ? (
-                <div className="text-center py-8 text-foreground-muted">
+                <div className="text-center py-8 text-secondary">
                   <p>No team members yet. Add your first team member above.</p>
                 </div>
               ) : (
@@ -384,7 +384,7 @@ export default function OrganizerSettingsPage() {
                           onClick={() => handleDeleteTeamMember(member.id, member.user_id)}
                           title={member.user_id ? "Remove user access" : "Delete team member"}
                         >
-                          <Trash2 className="h-4 w-4 text-error" />
+                          <Trash2 className="h-4 w-4 text-accent-error" />
                         </Button>
                       </div>
                     </div>
@@ -484,7 +484,7 @@ function TeamMemberForm({
       {!member && (
         <>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Search for Existing User (by email)
             </label>
             <div className="flex gap-2">
@@ -524,10 +524,10 @@ function TeamMemberForm({
             {searchResult && (
               <div className={`mt-2 p-3 rounded-md text-sm ${
                 searchResult.found && !searchResult.alreadyAdded
-                  ? "bg-success/10 border border-success/20 text-success"
+                  ? "bg-accent-success/10 border border-accent-success/20 text-accent-success"
                   : searchResult.alreadyAdded
-                  ? "bg-warning/10 border border-warning/20 text-warning"
-                  : "bg-background-secondary border border-border text-foreground-muted"
+                  ? "bg-accent-warning/10 border border-accent-warning/20 text-accent-warning"
+                  : "bg-raised border border-border text-secondary"
               }`}>
                 {searchResult.found && searchResult.user && !searchResult.alreadyAdded && (
                   <p>✓ Found user: {searchResult.user.name} ({searchResult.user.email})</p>
@@ -542,7 +542,7 @@ function TeamMemberForm({
             )}
           </div>
           <div className="border-t border-border pt-4">
-            <p className="text-xs text-foreground-muted mb-3">
+            <p className="text-xs text-secondary mb-3">
               Or enter team member details manually:
             </p>
           </div>
@@ -577,7 +577,7 @@ function TeamMemberForm({
       />
       
       {selectedUser && (
-        <div className="text-xs text-foreground-muted">
+        <div className="text-xs text-secondary">
           This team member will be linked to an existing user account and have access to the organizer dashboard.
         </div>
       )}

@@ -820,7 +820,7 @@ export default function DoorScannerPage() {
           size="md"
         >
           <div className="space-y-4">
-            <p className="text-sm text-foreground-muted">
+            <p className="text-sm text-secondary">
               Scan this QR code to register for the event. Registrations will be attributed to the venue.
             </p>
             
@@ -844,8 +844,8 @@ export default function DoorScannerPage() {
             </div>
             
             <div className="text-center space-y-2">
-              <p className="text-sm font-medium text-foreground">Event Registration Link</p>
-              <p className="text-xs text-foreground-muted break-all">
+              <p className="text-sm font-medium text-primary">Event Registration Link</p>
+              <p className="text-xs text-secondary break-all">
                 {typeof window !== "undefined" 
                   ? `${window.location.origin}/e/${eventInfo.slug}/register`
                   : `/e/${eventInfo.slug}/register`}
@@ -871,7 +871,7 @@ export default function DoorScannerPage() {
         title="Quick Add Attendee"
       >
         <div className="space-y-4">
-          <p className="text-sm text-foreground-muted">
+          <p className="text-sm text-secondary">
             Add a new attendee and check them in immediately.
           </p>
           

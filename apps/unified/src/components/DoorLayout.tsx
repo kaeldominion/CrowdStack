@@ -86,7 +86,7 @@ export function DoorLayout({ children, userEmail, userId, userRoles = [] }: Door
         <div className="flex h-12 sm:h-14 items-center gap-2 px-3 sm:px-4 md:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
           {/* Logo */}
           <Link href="/door" className="flex items-center transition-all duration-300 hover:scale-105 pr-1 sm:pr-2">
-            <Logo variant="full" size="sm" animated={false} className="text-white" />
+            <Logo variant="tricolor" size="sm" />
           </Link>
 
           <div className="h-4 w-px bg-white/20" />

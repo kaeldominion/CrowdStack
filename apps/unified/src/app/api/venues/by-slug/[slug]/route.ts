@@ -123,14 +123,29 @@ export async function GET(
     upcomingEvents.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     pastEvents.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
+    // Get favorite count (followers)
+    const { count: favoriteCount } = await supabase
+      .from("attendee_favorites")
+      .select("*", { count: "exact", head: true })
+      .eq("venue_id", venue.id);
+
+    // Get total published event count
+    const { count: totalEventCount } = await supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("venue_id", venue.id)
+      .eq("status", "published");
+
     return NextResponse.json({
       venue: {
         ...venue,
         gallery: gallery || [],
         tags: tags || [],
         live_events: liveEvents,
-        upcoming_events: upcomingEvents.slice(0, 10),
-        past_events: pastEvents.slice(0, 6),
+        upcoming_events: upcomingEvents.slice(0, 20),
+        past_events: pastEvents.slice(0, 50), // Return more for client-side pagination
+        follower_count: favoriteCount || 0,
+        total_event_count: totalEventCount || 0,
       },
     });
   } catch (error: any) {

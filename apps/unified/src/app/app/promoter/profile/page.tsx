@@ -86,7 +86,7 @@ export default function PromoterProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading profile...</div>
+        <div className="text-secondary">Loading profile...</div>
       </div>
     );
   }
@@ -95,15 +95,15 @@ export default function PromoterProfilePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Profile</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Profile</h1>
+          <p className="mt-2 text-sm text-secondary">
             Manage your promoter profile information
           </p>
         </div>
         <BentoCard>
           <div className="text-center py-12">
-            <User className="h-12 w-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60">Profile not found</p>
+            <User className="h-12 w-12 text-muted mx-auto mb-4" />
+            <p className="text-secondary">Profile not found</p>
           </div>
         </BentoCard>
       </div>
@@ -113,8 +113,8 @@ export default function PromoterProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Profile</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <h1 className="text-3xl font-bold tracking-tighter text-primary">Profile</h1>
+        <p className="mt-2 text-sm text-secondary">
           Manage your promoter profile information
         </p>
       </div>
@@ -122,9 +122,9 @@ export default function PromoterProfilePage() {
       <BentoCard>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Profile Information</h2>
+            <h2 className="text-lg font-semibold text-primary">Profile Information</h2>
             {saved && (
-              <div className="flex items-center gap-2 text-green-400 text-sm">
+              <div className="flex items-center gap-2 text-accent-success text-sm">
                 <Check className="h-4 w-4" />
                 Saved
               </div>
@@ -132,14 +132,14 @@ export default function PromoterProfilePage() {
           </div>
 
           {errors.save && (
-            <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <div className="p-3 rounded-md bg-accent-error/10 border border-accent-error/20 text-accent-error text-sm">
               {errors.save}
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Name
               </label>
@@ -152,7 +152,7 @@ export default function PromoterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Email
               </label>
@@ -163,13 +163,13 @@ export default function PromoterProfilePage() {
                 placeholder="your@email.com"
                 className="w-full"
               />
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Your email address for notifications and communications
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Phone
               </label>
@@ -180,13 +180,13 @@ export default function PromoterProfilePage() {
                 placeholder="+1 (555) 123-4567"
                 className="w-full"
               />
-              <p className="text-xs text-white/40 mt-1">
+              <p className="text-xs text-muted mt-1">
                 Your phone number for contact
               </p>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-white/10">
+          <div className="pt-4 border-t border-border-subtle">
             <Button onClick={saveProfile} disabled={saving}>
               {saving ? (
                 "Saving..."

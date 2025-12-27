@@ -68,21 +68,21 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="fixed inset-0 bg-void/60 backdrop-blur-glass" />
       <div
         className={cn(
-          "relative z-[1] w-full rounded-md bg-surface border border-border shadow-card my-auto max-h-[90vh] flex flex-col",
+          "relative z-[1] w-full rounded-2xl bg-raised border border-border-strong shadow-soft my-auto max-h-[90vh] flex flex-col",
           sizeClasses[size],
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
-            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle flex-shrink-0">
+            <h2 className="text-lg font-semibold text-primary">{title}</h2>
             <button
               onClick={onClose}
-              className="text-foreground-muted hover:text-foreground transition-colors"
+              className="text-secondary hover:text-primary transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -90,7 +90,7 @@ export function Modal({
         )}
         <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border flex-shrink-0">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle flex-shrink-0">
             {footer}
           </div>
         )}

@@ -39,7 +39,7 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
   if (loading) {
     return (
       <div className="pt-4 border-t border-border">
-        <div className="text-center text-foreground-muted text-sm">
+        <div className="text-center text-secondary text-sm">
           Loading QR code...
         </div>
       </div>
@@ -53,7 +53,7 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
   return (
     <div className="hidden md:block pt-4 border-t border-border space-y-4">
       <div className="text-center">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-2">
+        <h3 className="text-sm font-semibold text-primary mb-3 flex items-center justify-center gap-2">
           <QrCode className="h-4 w-4" />
           Promotion QR Code
         </h3>
@@ -67,10 +67,10 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
             />
           </div>
           <div className="space-y-2">
-            <p className="text-xs text-foreground-muted text-center max-w-sm">
+            <p className="text-xs text-secondary text-center max-w-sm">
               Scan this QR code to register for the event. Registrations will be attributed to the event organizer.
             </p>
-            <p className="text-xs text-foreground-muted text-center italic">
+            <p className="text-xs text-secondary text-center italic">
               Save this QR code to share with others
             </p>
           </div>

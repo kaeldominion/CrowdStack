@@ -50,7 +50,7 @@ export function VenueTags({ tags }: VenueTagsProps) {
 
   return (
     <Card>
-      <h2 className="text-2xl font-semibold text-foreground mb-6">Vibe</h2>
+      <h2 className="text-2xl font-semibold text-primary mb-6">Vibe</h2>
       <div className="space-y-6">
         {Object.entries(groupedTags).map(([type, typeTags]) => {
           const config = tagTypeConfig[type as keyof typeof tagTypeConfig];
@@ -60,7 +60,7 @@ export function VenueTags({ tags }: VenueTagsProps) {
 
           return (
             <div key={type} className="space-y-2">
-              <div className="flex items-center gap-2 text-foreground-muted">
+              <div className="flex items-center gap-2 text-secondary">
                 <Icon className="h-4 w-4" />
                 <span className="text-sm font-medium uppercase tracking-wider">{config.label}</span>
               </div>

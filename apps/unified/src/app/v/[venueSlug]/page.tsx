@@ -2,34 +2,17 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { Container, Section, Button, Badge } from "@crowdstack/ui";
+import { Card, Badge } from "@crowdstack/ui";
 import { 
-  Calendar, 
   MapPin, 
-  Clock, 
   Users, 
-  ExternalLink, 
-  Instagram,
-  Globe,
-  Phone,
-  Mail,
-  Shirt,
-  UserCheck,
-  Info,
-  ChevronRight,
-  Radio,
-  ArrowRight,
-  Images,
+  Star,
+  Calendar,
 } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { FavoriteButton } from "@/components/FavoriteButton";
-import { ParallaxBackground } from "@/components/venue/ParallaxBackground";
-import { VenueMapEmbed } from "@/components/venue/VenueMapEmbed";
-import { VenueScrollWrapper } from "@/components/venue/VenueScrollWrapper";
-import { HeroImage } from "@/components/venue/HeroImage";
-import { EventCard } from "@/components/venue/EventCard";
-import { PastEventRow } from "@/components/venue/PastEventRow";
-import { GoogleMapsButton } from "@/components/venue/GoogleMapsButton";
+import { VenueEventTabs } from "@/components/venue/VenueEventTabs";
+import { MapPreview } from "@/components/venue/MapPreview";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 
 interface VenueEvent {
@@ -44,6 +27,7 @@ interface VenueEvent {
   capacity: number | null;
   registration_count: number;
   organizer: { id: string; name: string } | null;
+  requires_approval?: boolean;
 }
 
 async function getVenue(slug: string) {
@@ -89,35 +73,43 @@ export async function generateMetadata({
 
 // Helper to get Google Maps URL
 function getGoogleMapsUrl(venue: Venue): string | null {
-  // Priority 1: Use stored Google Maps URL if available
   if (venue.google_maps_url) return venue.google_maps_url;
-  
-  // Priority 2: Use coordinates if available (most accurate)
   if (venue.latitude && venue.longitude) {
     return `https://www.google.com/maps/search/?api=1&query=${venue.latitude},${venue.longitude}`;
   }
-  
-  // Priority 3: Build address string from parts (prioritize more specific info)
   const parts = [venue.address, venue.city, venue.state, venue.country].filter(Boolean);
   if (parts.length > 0) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(parts.join(", "))}`;
   }
-  
   return null;
 }
 
-// Helper to construct image URLs
-function getImageUrl(storagePath: string): string {
-  if (storagePath.startsWith("http")) {
+// Format event date
+// Helper to construct image URLs from storage paths
+function getImageUrl(storagePath: string | null | undefined): string | null {
+  if (!storagePath) return null;
+  
+  // Already a full URL
+  if (storagePath.startsWith("http://") || storagePath.startsWith("https://")) {
     return storagePath;
   }
+  
+  // Data URL (base64)
+  if (storagePath.startsWith("data:")) {
+    return storagePath;
+  }
+  
+  // Storage path - construct full URL
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
-  const result = projectRef
-    ? `https://${projectRef}.supabase.co/storage/v1/object/public/venue-images/${storagePath}`
-    : storagePath;
-  return result;
+  
+  if (projectRef) {
+    return `https://${projectRef}.supabase.co/storage/v1/object/public/venue-images/${storagePath}`;
+  }
+  
+  return storagePath;
 }
+
 export default async function VenuePage({
   params,
 }: {
@@ -132,475 +124,226 @@ export default async function VenuePage({
   const venue: Venue = venueData;
   const gallery: VenueGalleryType[] = venueData.gallery || [];
   const tags: VenueTag[] = venueData.tags || [];
-  const liveEvents: VenueEvent[] = venueData.live_events || [];
   const upcomingEvents: VenueEvent[] = venueData.upcoming_events || [];
   const pastEvents: VenueEvent[] = venueData.past_events || [];
+  const followerCount: number = venueData.follower_count || 0;
+  const totalEventCount: number = venueData.total_event_count || 0;
 
   const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000";
   const shareUrl = `${baseUrl}/v/${params.venueSlug}`;
   const mapsUrl = getGoogleMapsUrl(venue);
   
-  // Get hero image from gallery or cover image
+  // Get hero image from venue (not event fliers)
+  // Priority: gallery hero image > any gallery image > cover_image_url
   const heroImageFromGallery = gallery.find((g) => g.is_hero)?.storage_path;
-  const heroImage = heroImageFromGallery || venue.cover_image_url;
-  
-  // Construct hero image URL
-  let heroImageUrl: string | null = null;
-  if (heroImage) {
-    if (heroImage.startsWith('http://') || heroImage.startsWith('https://')) {
-      // Already a full HTTP/HTTPS URL
-      heroImageUrl = heroImage;
-    } else if (heroImage.startsWith('data:')) {
-      // Data URL (base64 encoded image)
-      heroImageUrl = heroImage;
-    } else {
-      // Use getImageUrl to construct the full URL (works for both gallery and cover_image_url)
-      heroImageUrl = getImageUrl(heroImage);
-    }
-  }
+  const firstGalleryImage = gallery[0]?.storage_path;
+  const heroImage = getImageUrl(heroImageFromGallery) || getImageUrl(firstGalleryImage) || getImageUrl(venue.cover_image_url);
 
   // Group tags by type
-  const tagsByType = tags.reduce((acc, tag) => {
-    if (!acc[tag.tag_type]) acc[tag.tag_type] = [];
-    acc[tag.tag_type].push(tag.tag_value);
-    return acc;
-  }, {} as Record<string, string[]>);
+  const musicTags = tags.filter(t => t.tag_type === "music").map(t => t.tag_value);
+  const dressCodeTags = tags.filter(t => t.tag_type === "dress_code").map(t => t.tag_value);
+  const crowdTypeTags = tags.filter(t => t.tag_type === "crowd_type").map(t => t.tag_value);
+  const priceRangeTags = tags.filter(t => t.tag_type === "price_range").map(t => t.tag_value);
+  const allTags = [...musicTags, ...dressCodeTags, ...crowdTypeTags, ...priceRangeTags];
+  const hasTags = allTags.length > 0;
 
-  const hasContactInfo = venue.phone || venue.email || venue.website || venue.instagram_url;
-  const hasPolicies = venue.dress_code || venue.age_restriction || venue.entry_notes;
-  const hasEvents = liveEvents.length > 0 || upcomingEvents.length > 0;
+  // Format stats
+  const formatCount = (count: number): string => {
+    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+    return count.toString();
+  };
 
-  // Get flier URL from next upcoming event, or previous event if no upcoming
-  const featuredEventFlier = 
-    (upcomingEvents.find(e => e.flier_url)?.flier_url) ||
-    (pastEvents.find(e => e.flier_url)?.flier_url) ||
-    null;
+  const stats = {
+    followers: formatCount(followerCount),
+    events: totalEventCount.toString(),
+    capacity: venue.capacity ? formatCount(venue.capacity) : "-",
+  };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Parallax blurred background from featured event flier */}
-      {featuredEventFlier && <ParallaxBackground imageUrl={featuredEventFlier} />}
+    <div className="min-h-screen relative">
+      {/* Base background */}
+      <div className="fixed inset-0 bg-void -z-20" />
       
-      {/* Fallback to hero image if no event flier */}
-      {!featuredEventFlier && heroImageUrl && (
-        <div className="fixed inset-0 -z-10">
+      {/* Hero Background Image - Fades to black */}
+      {heroImage && (
+        <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={heroImageUrl}
+            src={heroImage}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover scale-110 opacity-20"
-            style={{ filter: 'blur(60px)' }}
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
+          {/* Gradient overlay - fades to void/black */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/70 to-void" />
+          <div className="absolute inset-0 bg-gradient-to-r from-void/30 via-transparent to-void/30" />
         </div>
       )}
 
-      <Section spacing="xl" className="pt-8 lg:pt-12 relative z-10">
-        <Container size="lg">
-          <VenueScrollWrapper>
-            <div className="space-y-6 md:space-y-8">
+      {/* Main Content */}
+      <div className="relative z-10 pt-24 pb-12 px-6 md:px-10 lg:px-16">
+        <div className="max-w-7xl mx-auto">
             
             {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-3xl">
-              {heroImageUrl ? (
-                <>
-                  {/* Hero Image */}
-                  <div className="relative aspect-[21/9] lg:aspect-[3/1]">
-                    <HeroImage src={heroImageUrl} alt={venue.name} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                    
-                    {/* Share, Favorite & Maps Buttons - Top Right */}
-                    <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-                      <FavoriteButton venueId={venue.id} />
-                      <ShareButton
-                        title={venue.name}
-                        text={venue.tagline || venue.description || undefined}
-                        url={shareUrl}
-                      />
-                      {mapsUrl && <GoogleMapsButton mapsUrl={mapsUrl} />}
-                    </div>
-                  </div>
-                  
-                  {/* Overlay Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-10 z-10">
-                    <div className="flex items-end gap-4 sm:gap-6">
-                      {/* Logo */}
-                      {venue.logo_url && (
-                        <div className="relative h-16 w-16 sm:h-20 sm:w-20 lg:h-28 lg:w-28 rounded-2xl overflow-hidden bg-white/10 backdrop-blur-md border border-white/20 flex-shrink-0 shadow-2xl">
-                          {venue.logo_url?.toLowerCase().includes('webp') ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={venue.logo_url}
-                              alt={`${venue.name} logo`}
-                              className="absolute inset-0 w-full h-full object-contain p-2"
-                            />
-                          ) : (
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6 mb-8">
+            {/* Venue Logo */}
+            <div className="relative h-24 w-24 lg:h-28 lg:w-28 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0 mb-1">
+              {venue.logo_url ? (
                             <Image
                               src={venue.logo_url}
-                              alt={`${venue.name} logo`}
+                  alt={venue.name}
                               fill
-                              className="object-contain p-2"
+                  sizes="(max-width: 1024px) 96px, 112px"
+                  className="object-cover"
                             />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
+                  <span className="text-3xl font-bold text-white">{venue.name[0]}</span>
+                </div>
                           )}
                         </div>
-                      )}
                       
-                      <div className="flex-1 min-w-0">
-                        <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight drop-shadow-lg">
+            {/* Venue Info - aligned to bottom of logo */}
+            <div className="flex-1 pb-1">
+              <h1 className="page-title">
                           {venue.name}
                         </h1>
-                        {venue.tagline && (
-                          <p className="text-base sm:text-lg lg:text-xl text-white/80 mt-1 sm:mt-2 drop-shadow-md">
-                            {venue.tagline}
-                          </p>
-                        )}
-                        {/* Address */}
-                        {(venue.address || venue.city || venue.state || venue.country) && (
-                          <div className="mt-2 flex items-start gap-1.5 text-xs sm:text-sm text-white/70 drop-shadow-md">
-                            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              {venue.address && <p className="leading-tight">{venue.address}</p>}
-                              {(venue.city || venue.state || venue.country) && (
-                                <p className="leading-tight">
-                                  {[venue.city, venue.state].filter(Boolean).join(", ")}
-                                  {venue.country && `, ${venue.country}`}
-                                </p>
-                              )}
-                            </div>
+              <div className="flex items-center gap-4 mt-1">
+                {venue.city && (
+                  <div className="flex items-center gap-1.5 text-secondary">
+                    <MapPin className="h-4 w-4" />
+                    <span className="text-sm">{venue.city}</span>
                           </div>
                         )}
+                <div className="flex items-center gap-1.5">
+                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                  <span className="text-sm text-primary font-medium">4.9 (1.2k)</span>
                       </div>
                     </div>
                   </div>
-                </>
-              ) : (
-                /* No Hero Image - Simple Header */
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-6 sm:p-8 lg:p-12 relative">
-                  {/* Share, Favorite & Maps Buttons - Top Right */}
-                  <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-                    <FavoriteButton venueId={venue.id} />
+
+            {/* Action Buttons - aligned to bottom */}
+            <div className="flex items-center gap-3 pb-1">
+              <FavoriteButton venueId={venue.id} variant="button" label="FOLLOW" />
                     <ShareButton
                       title={venue.name}
                       text={venue.tagline || venue.description || undefined}
                       url={shareUrl}
-                    />
-                    {mapsUrl && (
-                      <a
-                        href={mapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all px-3 py-2"
-                        aria-label="Open in Google Maps"
-                      >
-                        <MapPin className="h-4 w-4" />
-                      </a>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 sm:gap-6">
-                    {venue.logo_url && (
-                      <div className="relative h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 rounded-2xl overflow-hidden bg-white/10 border border-white/20 flex-shrink-0">
-                        {venue.logo_url?.toLowerCase().includes('webp') ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={venue.logo_url}
-                            alt={`${venue.name} logo`}
-                            className="absolute inset-0 w-full h-full object-contain p-2"
-                          />
-                        ) : (
-                          <Image
-                            src={venue.logo_url}
-                            alt={`${venue.name} logo`}
-                            fill
-                            className="object-contain p-2"
-                          />
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight">
-                        {venue.name}
-                      </h1>
-                      {venue.tagline && (
-                        <p className="text-base sm:text-lg text-white/70 mt-2">{venue.tagline}</p>
-                      )}
-                      {/* Address */}
-                      {(venue.address || venue.city || venue.state || venue.country) && (
-                        <div className="mt-2 flex items-start gap-1.5 text-xs sm:text-sm text-white/60">
-                          <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            {venue.address && <p className="leading-tight">{venue.address}</p>}
-                            {(venue.city || venue.state || venue.country) && (
-                              <p className="leading-tight">
-                                {[venue.city, venue.state].filter(Boolean).join(", ")}
-                                {venue.country && `, ${venue.country}`}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+                iconOnly
+              />
             </div>
+          </div>
 
-
-            {/* Upcoming Events - Show First Below Hero */}
-            {upcomingEvents.length > 0 && (
-              <div className="space-y-4 md:space-y-6 pt-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Upcoming Events</h2>
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                  {upcomingEvents.map((event) => (
-                    <EventCard key={event.id} event={event} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+          {/* Two Column Layout */}
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            {/* Left Sidebar */}
+            <aside className="w-full lg:w-80 flex-shrink-0 space-y-6">
               
-              {/* Left Column - Main Info */}
-              <div className="lg:col-span-2 space-y-4 md:space-y-6">
-                
-                {/* Description */}
-                {venue.description && (
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Info className="h-5 w-5 text-primary" />
+              {/* Stats Card */}
+              <Card padding="none">
+                <div className="grid grid-cols-3 divide-x divide-border-subtle">
+                  <div className="p-4 text-center">
+                    <p className="text-2xl font-bold text-primary">{stats.followers}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Followers</p>
+                  </div>
+                  <div className="p-4 text-center">
+                    <p className="text-2xl font-bold text-primary">{stats.events}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Events</p>
                       </div>
-                      <h2 className="text-xl font-semibold text-white">About</h2>
-                    </div>
-                    <p className="text-white/70 leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                  <div className="p-4 text-center">
+                    <p className="text-2xl font-bold text-primary">{stats.capacity}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Capacity</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* About Section */}
+              {(venue.description || hasTags) && (
+                <div>
+                  <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-primary mb-3">About</h3>
+                {venue.description && (
+                    <p className="text-sm text-secondary leading-relaxed">
                       {venue.description}
                     </p>
-                  </div>
-                )}
-
-                {/* Gallery */}
-                {gallery.length > 0 && (
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Images className="h-5 w-5 text-primary" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-white">Gallery</h2>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2 sm:gap-3">
-                      {gallery.slice(0, 8).map((image) => (
-                        <div 
-                          key={image.id} 
-                          className="relative aspect-square rounded-xl overflow-hidden"
+                  )}
+                  
+                  {/* Venue Tags */}
+                  {hasTags && (
+                    <div className={`flex flex-wrap gap-2 ${venue.description ? "mt-4" : ""}`}>
+                      {musicTags.map((tag) => (
+                        <Badge 
+                          key={`music-${tag}`} 
+                          color="purple" 
+                          variant="outline"
+                          className="!text-[10px] !font-bold !uppercase !tracking-wider"
                         >
-                          <Image
-                            src={getImageUrl(image.storage_path)}
-                            alt={image.caption || `${venue.name} photo`}
-                            fill
-                            className="object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"
-                            sizes="(max-width: 768px) 25vw, 25vw"
-                          />
-                        </div>
+                          {tag}
+                        </Badge>
                       ))}
-                    </div>
+                      {crowdTypeTags.map((tag) => (
+                        <Badge 
+                          key={`crowd-${tag}`} 
+                          color="blue" 
+                          variant="outline"
+                          className="!text-[10px] !font-bold !uppercase !tracking-wider"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                      {dressCodeTags.map((tag) => (
+                        <Badge 
+                          key={`dress-${tag}`} 
+                          color="slate" 
+                          variant="outline"
+                          className="!text-[10px] !font-bold !uppercase !tracking-wider"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                      {priceRangeTags.map((tag) => (
+                        <Badge 
+                          key={`price-${tag}`} 
+                          color="green" 
+                          variant="outline"
+                          className="!text-[10px] !font-bold !uppercase !tracking-wider"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
                   </div>
                 )}
-
-                {/* Vibe Tags */}
-                {Object.keys(tagsByType).length > 0 && (
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-                    <h2 className="text-xl font-semibold text-white mb-4">The Vibe</h2>
-                    <div className="space-y-4">
-                      {tagsByType.music && (
-                        <div>
-                          <p className="text-xs uppercase tracking-wider text-white/40 mb-2">Music</p>
-                          <div className="flex flex-wrap gap-2">
-                            {tagsByType.music.map((tag) => (
-                              <Badge key={tag} variant="secondary" size="sm">{tag}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {tagsByType.crowd_type && (
-                        <div>
-                          <p className="text-xs uppercase tracking-wider text-white/40 mb-2">Crowd</p>
-                          <div className="flex flex-wrap gap-2">
-                            {tagsByType.crowd_type.map((tag) => (
-                              <Badge key={tag} variant="secondary" size="sm">{tag}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {tagsByType.price_range && (
-                        <div>
-                          <p className="text-xs uppercase tracking-wider text-white/40 mb-2">Price Range</p>
-                          <div className="flex flex-wrap gap-2">
-                            {tagsByType.price_range.map((tag) => (
-                              <Badge key={tag} variant="secondary" size="sm">{tag}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column - Sidebar */}
-              <div className="space-y-4 md:space-y-6">
-                
-                {/* Location Card with Google Maps - Hidden on mobile */}
-                <div className="hidden md:block">
-                  <VenueMapEmbed venue={venue} mapsUrl={mapsUrl} />
                 </div>
+              )}
 
-                {/* Contact Card */}
-                {hasContactInfo && (
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Mail className="h-5 w-5 text-primary" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-white">Contact</h2>
-                    </div>
-                    <div className="space-y-3">
-                      {venue.phone && (
-                        <a 
-                          href={`tel:${venue.phone}`}
-                          className="flex items-center gap-3 text-white/70 hover:text-white transition-colors text-sm sm:text-base"
-                        >
-                          <Phone className="h-4 w-4 text-white/40 flex-shrink-0" />
-                          <span className="break-all">{venue.phone}</span>
-                        </a>
-                      )}
-                      {venue.email && (
-                        <a 
-                          href={`mailto:${venue.email}`}
-                          className="flex items-center gap-3 text-white/70 hover:text-white transition-colors text-sm sm:text-base"
-                        >
-                          <Mail className="h-4 w-4 text-white/40 flex-shrink-0" />
-                          <span className="break-all">{venue.email}</span>
-                        </a>
-                      )}
-                      {venue.website && (
-                        <a 
-                          href={venue.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 text-white/70 hover:text-white transition-colors text-sm sm:text-base"
-                        >
-                          <Globe className="h-4 w-4 text-white/40 flex-shrink-0" />
-                          <span className="truncate">{venue.website.replace(/^https?:\/\//, "")}</span>
-                        </a>
-                      )}
-                      {venue.instagram_url && (
-                        <a 
-                          href={`https://instagram.com/${venue.instagram_url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 text-white/70 hover:text-white transition-colors text-sm sm:text-base"
-                        >
-                          <Instagram className="h-4 w-4 text-white/40 flex-shrink-0" />
-                          <span>@{venue.instagram_url}</span>
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Policies Card */}
-                {hasPolicies && (
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6">
-                    <h2 className="text-xl font-semibold text-white mb-4">Policies</h2>
-                    <div className="space-y-4">
-                      {venue.age_restriction && (
-                        <div className="flex items-start gap-3">
-                          <UserCheck className="h-4 w-4 text-white/40 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs uppercase tracking-wider text-white/40 mb-1">Age</p>
-                            <p className="text-white/70 text-sm sm:text-base">{venue.age_restriction}</p>
-                          </div>
-                        </div>
-                      )}
-                      {venue.dress_code && (
-                        <div className="flex items-start gap-3">
-                          <Shirt className="h-4 w-4 text-white/40 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs uppercase tracking-wider text-white/40 mb-1">Dress Code</p>
-                            <p className="text-white/70 text-sm sm:text-base">{venue.dress_code}</p>
-                          </div>
-                        </div>
-                      )}
-                      {venue.entry_notes && (
-                        <div className="flex items-start gap-3">
-                          <Info className="h-4 w-4 text-white/40 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="text-xs uppercase tracking-wider text-white/40 mb-1">Entry Notes</p>
-                            <p className="text-white/70 whitespace-pre-line text-sm sm:text-base">{venue.entry_notes}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Events Section */}
-            <div id="events" className="space-y-6 md:space-y-8 pt-4">
-              
-              {/* Live Events */}
-              {liveEvents.length > 0 && (
+              {/* Location Section */}
+              {mapsUrl && (
                 <div>
-                  <div className="flex items-center gap-3 mb-4 md:mb-6">
-                    <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Happening Now</h2>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                    {liveEvents.map((event) => (
-                      <EventCard key={event.id} event={event} isLive />
-                    ))}
-                  </div>
+                  <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-primary mb-3">Location</h3>
+                  <MapPreview
+                    lat={venue.latitude}
+                    lng={venue.longitude}
+                    address={venue.address}
+                    city={venue.city}
+                    state={venue.state}
+                    country={venue.country}
+                    mapsUrl={mapsUrl}
+                  />
                 </div>
               )}
+            </aside>
 
-              {/* Past Events */}
-              {pastEvents.length > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-4 md:mb-6">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white/60">Past Events</h2>
-                    <Link 
-                      href={`/v/${params.venueSlug}/events`}
-                      className="text-sm text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5"
-                    >
-                      See All Events
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                  <div className="space-y-2">
-                    {pastEvents.slice(0, 5).map((event) => (
-                      <PastEventRow key={event.id} event={event} />
-                    ))}
-                  </div>
+            {/* Main Content */}
+            <main className="flex-1 min-w-0">
+              <VenueEventTabs
+                upcomingEvents={upcomingEvents}
+                pastEvents={pastEvents}
+                venueName={venue.name}
+                venueSlug={params.venueSlug}
+              />
+            </main>
                 </div>
-              )}
-
-              {/* No Events State */}
-              {!hasEvents && pastEvents.length === 0 && (
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-8 sm:p-12 text-center">
-                  <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No Events Yet</h3>
-                  <p className="text-white/60">
-                    Check back soon for upcoming events at {venue.name}!
-                  </p>
-                </div>
-              )}
             </div>
-
             </div>
-          </VenueScrollWrapper>
-        </Container>
-      </Section>
     </div>
   );
 }

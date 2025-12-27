@@ -71,12 +71,12 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-            <p className="mt-2 text-sm text-foreground-muted">
+            <h1 className="text-3xl font-bold text-primary">User Management</h1>
+            <p className="mt-2 text-sm text-secondary">
               Manage users and their roles
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredUsers.length} of {users.length} users
           </div>
 
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-foreground-muted">
+                      <TableCell colSpan={5} className="text-center py-8 text-secondary">
                         No users found
                       </TableCell>
                     </TableRow>
@@ -129,16 +129,16 @@ export default function AdminUsersPage() {
                             {getRoleBadges(user.roles || [])}
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(user.created_at).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {user.last_sign_in_at
                             ? new Date(user.last_sign_in_at).toLocaleDateString()
                             : "Never"}
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-foreground-muted" />
+                          <ChevronRight className="h-4 w-4 text-secondary" />
                         </TableCell>
                       </TableRow>
                     ))
@@ -175,13 +175,13 @@ export default function AdminUsersPage() {
                   <div className="flex-1 min-w-0">
                     {selectedUser.profile?.name ? (
                       <>
-                        <h3 className="text-xl font-bold text-foreground">
+                        <h3 className="text-xl font-bold text-primary">
                           {selectedUser.profile.name} {selectedUser.profile.surname || ""}
                         </h3>
-                        <p className="text-sm text-foreground-muted">{selectedUser.email}</p>
+                        <p className="text-sm text-secondary">{selectedUser.email}</p>
                       </>
                     ) : (
-                      <h3 className="text-xl font-bold text-foreground">{selectedUser.email}</h3>
+                      <h3 className="text-xl font-bold text-primary">{selectedUser.email}</h3>
                     )}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {getRoleBadges(selectedUser.roles || [])}
@@ -192,11 +192,11 @@ export default function AdminUsersPage() {
                 {/* Profile Info */}
                 {selectedUser.profile && (
                   <div className="border-t border-border pt-4">
-                    <p className="text-sm font-medium text-foreground mb-3">Profile Information</p>
+                    <p className="text-sm font-medium text-primary mb-3">Profile Information</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedUser.profile.phone && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-foreground-muted" />
+                          <Phone className="h-4 w-4 text-secondary" />
                           <span>{selectedUser.profile.phone}</span>
                         </div>
                       )}
@@ -221,7 +221,7 @@ export default function AdminUsersPage() {
                       )}
                       {selectedUser.profile.date_of_birth && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-foreground-muted" />
+                          <Calendar className="h-4 w-4 text-secondary" />
                           <span>
                             {new Date(selectedUser.profile.date_of_birth).toLocaleDateString(undefined, {
                               year: "numeric",
@@ -233,7 +233,7 @@ export default function AdminUsersPage() {
                       )}
                     </div>
                     {selectedUser.profile.bio && (
-                      <p className="mt-3 text-sm text-foreground-muted">{selectedUser.profile.bio}</p>
+                      <p className="mt-3 text-sm text-secondary">{selectedUser.profile.bio}</p>
                     )}
                   </div>
                 )}
@@ -241,7 +241,7 @@ export default function AdminUsersPage() {
                 {/* Assignments */}
                 {(selectedUser.venues?.length > 0 || selectedUser.organizers?.length > 0) && (
                   <div className="border-t border-border pt-4">
-                    <p className="text-sm font-medium text-foreground mb-3">Current Assignments</p>
+                    <p className="text-sm font-medium text-primary mb-3">Current Assignments</p>
                     <div className="space-y-2">
                       {selectedUser.venues?.map((venue: any) => (
                         <div key={venue.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
@@ -263,17 +263,17 @@ export default function AdminUsersPage() {
 
                 {/* Account Info */}
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Account Details</p>
+                  <p className="text-sm font-medium text-primary mb-3">Account Details</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Created</p>
-                      <p className="text-sm text-foreground">
+                      <p className="text-xs font-medium text-secondary uppercase tracking-wider">Created</p>
+                      <p className="text-sm text-primary">
                         {new Date(selectedUser.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Last Sign In</p>
-                      <p className="text-sm text-foreground">
+                      <p className="text-xs font-medium text-secondary uppercase tracking-wider">Last Sign In</p>
+                      <p className="text-sm text-primary">
                         {selectedUser.last_sign_in_at
                           ? new Date(selectedUser.last_sign_in_at).toLocaleDateString()
                           : "Never"}
@@ -284,7 +284,7 @@ export default function AdminUsersPage() {
 
                 {/* Actions */}
                 <div className="border-t border-border pt-4">
-                  <p className="text-sm font-medium text-foreground mb-3">Assign to Entity</p>
+                  <p className="text-sm font-medium text-primary mb-3">Assign to Entity</p>
                   <div className="flex gap-3">
                     <Button
                       variant="secondary"

@@ -146,7 +146,7 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
                     <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-destructive">Are you sure?</p>
-                      <p className="text-xs text-foreground-muted mt-1">
+                      <p className="text-xs text-secondary mt-1">
                         This action cannot be undone. This will permanently delete the organizer.
                       </p>
                       {!canDelete && (
@@ -184,7 +184,7 @@ export function EditOrganizerModal({ isOpen, onClose, onSuccess, organizer, onDe
                     <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium text-destructive">Final confirmation required</p>
-                      <p className="text-xs text-foreground-muted mt-1">
+                      <p className="text-xs text-secondary mt-1">
                         Type <strong>{organizer?.name}</strong> to confirm deletion.
                       </p>
                       <Input

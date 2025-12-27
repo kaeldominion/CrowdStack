@@ -175,8 +175,8 @@ export default function AdminDashboardPage() {
     <Section spacing="lg">
       <Container>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-          <p className="text-sm text-foreground-muted">
+          <h1 className="text-2xl font-bold text-primary mb-2">Admin Dashboard</h1>
+          <p className="text-sm text-secondary">
             Quick access to all dashboards, tools, and areas of the platform
           </p>
         </div>
@@ -187,9 +187,9 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                  <h2 className="text-xl font-semibold text-foreground">Live Events</h2>
+                  <h2 className="text-xl font-semibold text-primary">Live Events</h2>
                 </div>
-                <span className="text-sm text-foreground-muted">
+                <span className="text-sm text-secondary">
                   {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
                 </span>
               </div>
@@ -203,13 +203,13 @@ export default function AdminDashboardPage() {
                   >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-foreground truncate">
+                          <h3 className="text-sm font-semibold text-primary truncate">
                             {event.name}
                           </h3>
                           {event.venue && (
                             <div className="flex items-center gap-1 mt-1">
-                              <MapPin className="h-3 w-3 text-foreground-muted flex-shrink-0" />
-                              <span className="text-xs text-foreground-muted truncate">
+                              <MapPin className="h-3 w-3 text-secondary flex-shrink-0" />
+                              <span className="text-xs text-secondary truncate">
                                 {event.venue.name}
                               </span>
                             </div>
@@ -220,8 +220,8 @@ export default function AdminDashboardPage() {
                       
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 text-foreground-muted" />
-                          <span className="text-foreground-muted">
+                          <Users className="h-3 w-3 text-secondary" />
+                          <span className="text-secondary">
                             {event.registrations} registered
                           </span>
                         </div>
@@ -235,7 +235,7 @@ export default function AdminDashboardPage() {
 
                       {event.capacity && (
                         <div className="mt-3">
-                          <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-raised rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
                               style={{
@@ -243,7 +243,7 @@ export default function AdminDashboardPage() {
                               }}
                             />
                           </div>
-                          <p className="text-[10px] text-foreground-muted mt-1">
+                          <p className="text-[10px] text-secondary mt-1">
                             {Math.round((event.checkins / event.capacity) * 100)}% capacity
                           </p>
                         </div>
@@ -270,23 +270,23 @@ export default function AdminDashboardPage() {
             <div className="mb-12">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-3 w-3 bg-foreground-muted rounded-full animate-pulse" />
-                <h2 className="text-xl font-semibold text-foreground-muted">Loading live events...</h2>
+                <h2 className="text-xl font-semibold text-secondary">Loading live events...</h2>
               </div>
             </div>
           )}
 
           {/* Quick Access */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Quick Access</h2>
+            <h2 className="text-xl font-semibold text-primary mb-4">Quick Access</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
               {dashboards.map((dashboard) => (
                 <Link key={dashboard.href} href={dashboard.href}>
                   <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary mb-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
                       {dashboard.icon}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2">{dashboard.name}</h3>
-                    <p className="text-xs text-foreground-muted">{dashboard.description}</p>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{dashboard.name}</h3>
+                    <p className="text-xs text-secondary">{dashboard.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -295,16 +295,16 @@ export default function AdminDashboardPage() {
 
           {/* Admin Management */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Management</h2>
+            <h2 className="text-xl font-semibold text-primary mb-4">Management</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
               {adminManagement.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary mb-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
                       {item.icon}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2">{item.name}</h3>
-                    <p className="text-xs text-foreground-muted">{item.description}</p>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{item.name}</h3>
+                    <p className="text-xs text-secondary">{item.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -313,7 +313,7 @@ export default function AdminDashboardPage() {
 
           {/* Admin Tools */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Admin Tools</h2>
+            <h2 className="text-xl font-semibold text-primary mb-4">Admin Tools</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {adminTools.map((tool) => (
                 <Link key={tool.href} href={tool.href}>
@@ -321,8 +321,8 @@ export default function AdminDashboardPage() {
                     <div className="flex h-10 w-10 items-center justify-center rounded-md bg-warning/10 text-warning mb-4">
                       {tool.icon}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2">{tool.name}</h3>
-                    <p className="text-xs text-foreground-muted">{tool.description}</p>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{tool.name}</h3>
+                    <p className="text-xs text-secondary">{tool.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -331,16 +331,16 @@ export default function AdminDashboardPage() {
 
           {/* Brand & Assets */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Brand & Assets</h2>
+            <h2 className="text-xl font-semibold text-primary mb-4">Brand & Assets</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {brandTools.map((tool) => (
                 <Link key={tool.href} href={tool.href}>
                   <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary mb-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
                       {tool.icon}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2">{tool.name}</h3>
-                    <p className="text-xs text-foreground-muted">{tool.description}</p>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{tool.name}</h3>
+                    <p className="text-xs text-secondary">{tool.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -349,7 +349,7 @@ export default function AdminDashboardPage() {
 
           {/* Web App Areas */}
           <div className="mb-12">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Web App Areas</h2>
+            <h2 className="text-xl font-semibold text-primary mb-4">Web App Areas</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {webAppAreas.map((area) => (
                 <a
@@ -364,11 +364,11 @@ export default function AdminDashboardPage() {
                         {area.icon}
                       </div>
                       {area.external && (
-                        <ExternalLink className="h-4 w-4 text-foreground-subtle" />
+                        <ExternalLink className="h-4 w-4 text-primary-subtle" />
                       )}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2">{area.name}</h3>
-                    <p className="text-xs text-foreground-muted">{area.description}</p>
+                    <h3 className="text-sm font-semibold text-primary mb-2">{area.name}</h3>
+                    <p className="text-xs text-secondary">{area.description}</p>
                   </Card>
                 </a>
               ))}
@@ -377,13 +377,13 @@ export default function AdminDashboardPage() {
 
           {/* Quick Info */}
           <Card>
-            <h3 className="text-sm font-semibold text-foreground mb-4">Quick Info</h3>
-            <div className="grid grid-cols-1 gap-2 text-xs text-foreground-muted sm:grid-cols-2">
+            <h3 className="text-sm font-semibold text-primary mb-4">Quick Info</h3>
+            <div className="grid grid-cols-1 gap-2 text-xs text-secondary sm:grid-cols-2">
               <div>
-                <span className="font-medium text-foreground">App URL:</span> {baseUrl || "Loading..."}
+                <span className="font-medium text-primary">App URL:</span> {baseUrl || "Loading..."}
               </div>
               <div>
-                <span className="font-medium text-foreground">Environment:</span> {process.env.NEXT_PUBLIC_APP_ENV || "development"}
+                <span className="font-medium text-primary">Environment:</span> {process.env.NEXT_PUBLIC_APP_ENV || "development"}
               </div>
             </div>
           </Card>

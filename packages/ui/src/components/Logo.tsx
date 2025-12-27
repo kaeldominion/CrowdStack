@@ -3,11 +3,13 @@
 import { motion } from "framer-motion";
 
 interface LogoProps {
-  variant?: "full" | "icon" | "wordmark";
-  size?: "sm" | "md" | "lg" | "xl";
+  variant?: "full" | "icon" | "wordmark" | "tricolor";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
   animated?: boolean;
   loading?: boolean;
+  /** Show only the icon (for tricolor variant) */
+  iconOnly?: boolean;
 }
 
 export function Logo({ 
@@ -15,9 +17,11 @@ export function Logo({
   size = "md", 
   className = "", 
   animated = true,
-  loading = false 
+  loading = false,
+  iconOnly = false,
 }: LogoProps) {
   const sizeClasses = {
+    xs: "h-4",
     sm: "h-6",
     md: "h-8",
     lg: "h-12",
@@ -28,6 +32,7 @@ export function Logo({
   
   // Numerical sizes for calculations
   const numericSizes = {
+    xs: 16,
     sm: 24,
     md: 32,
     lg: 48,
@@ -408,6 +413,33 @@ export function Logo({
       </span>
     );
   };
+
+  // Tricolor logo variant - uses PNG image
+  if (variant === "tricolor") {
+    const tricolorSizes = {
+      xs: { icon: "h-5 w-5", text: "text-[10px]" },
+      sm: { icon: "h-6 w-6", text: "text-xs" },
+      md: { icon: "h-7 w-7", text: "text-xs" },
+      lg: { icon: "h-10 w-10", text: "text-sm" },
+      xl: { icon: "h-14 w-14", text: "text-base" },
+    };
+    const triSize = tricolorSizes[size];
+    
+    return (
+      <div className={`inline-flex items-center gap-2 ${className}`}>
+        <img 
+          src="/crowdstack-logo-tricolor-on-transparent.png" 
+          alt="CrowdStack" 
+          className={`${triSize.icon} object-contain`}
+        />
+        {!iconOnly && (
+          <span className={`font-black tracking-tighter ${triSize.text} text-primary`}>
+            CROWDSTACK<span className="text-accent-primary">.</span>
+          </span>
+        )}
+      </div>
+    );
+  }
 
   if (variant === "icon") {
     return <div className={`inline-flex items-center ${className}`}>{StackIcon()}</div>;

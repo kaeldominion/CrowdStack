@@ -140,7 +140,7 @@ export default function EventInvitesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-foreground-muted">Loading invite codes...</div>
+        <div className="text-secondary">Loading invite codes...</div>
       </div>
     );
   }
@@ -149,8 +149,8 @@ export default function EventInvitesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Invite QR Codes</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Invite QR Codes</h1>
+          <p className="mt-2 text-sm text-secondary">
             Generate QR codes to invite attendees to your event
           </p>
         </div>
@@ -163,10 +163,10 @@ export default function EventInvitesPage() {
       {showCreate && (
         <Card>
           <div className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Create Invite QR Code</h3>
+            <h3 className="text-lg font-semibold text-primary">Create Invite QR Code</h3>
             
             <div>
-              <label className="block text-sm font-medium text-foreground-muted mb-2">
+              <label className="block text-sm font-medium text-secondary mb-2">
                 Assign to Promoter (Optional)
               </label>
               <Select
@@ -215,20 +215,20 @@ export default function EventInvitesPage() {
             <div className="p-6 space-y-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <p className="font-mono text-sm font-semibold text-white">{inviteQR.invite_code}</p>
-                  <p className="text-xs text-white/60">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
+                  <p className="font-mono text-sm font-semibold text-primary">{inviteQR.invite_code}</p>
+                  <p className="text-xs text-secondary">Created {new Date(inviteQR.created_at).toLocaleDateString()}</p>
                   {inviteQR.owner_name && (
                     <div className="mt-1">
                       {inviteQR.self_promote ? (
-                        <p className="text-xs text-purple-400 font-medium">
+                        <p className="text-xs text-accent-primary font-medium">
                           🎯 Self Promote: {inviteQR.owner_name}
                         </p>
                       ) : inviteQR.promoter_id ? (
-                        <p className="text-xs text-blue-400 font-medium">
+                        <p className="text-xs text-accent-secondary font-medium">
                           🎯 For Promoter: {inviteQR.owner_name}
                         </p>
                       ) : (
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-muted">
                           {inviteQR.creator_role === "event_organizer" && "Organizer: "}
                           {inviteQR.creator_role === "venue_admin" && "Venue: "}
                           {inviteQR.creator_role === "promoter" && "Promoter: "}
@@ -252,23 +252,23 @@ export default function EventInvitesPage() {
                     loading={deletingId === inviteQR.id}
                     className="!p-2"
                   >
-                    <Trash2 className="h-4 w-4 text-red-400" />
+                    <Trash2 className="h-4 w-4 text-accent-error" />
                   </Button>
                 </div>
               </div>
 
               {(inviteQR.promoter_id || inviteQR.self_promote) && (
-                <div className={`${inviteQR.self_promote ? 'bg-purple-500/10 border-purple-500/20' : 'bg-blue-500/10 border-blue-500/20'} border rounded-lg p-2 mb-2`}>
-                  <p className={`text-xs ${inviteQR.self_promote ? 'text-purple-400' : 'text-blue-400'} font-medium text-center`}>
+                <div className={`${inviteQR.self_promote ? 'bg-accent-primary/10 border-accent-primary/20' : 'bg-accent-secondary/10 border-accent-secondary/20'} border rounded-lg p-2 mb-2`}>
+                  <p className={`text-xs ${inviteQR.self_promote ? 'text-accent-primary' : 'text-accent-secondary'} font-medium text-center`}>
                     🎯 {inviteQR.self_promote ? 'Self Promote' : 'Promoter'} QR Code
                   </p>
-                  <p className={`text-xs ${inviteQR.self_promote ? 'text-purple-300/70' : 'text-blue-300/70'} text-center mt-1`}>
+                  <p className={`text-xs ${inviteQR.self_promote ? 'text-accent-primary/70' : 'text-accent-secondary/70'} text-center mt-1`}>
                     Links directly to registration
                   </p>
                 </div>
               )}
 
-              <div className="flex items-center justify-center p-4 bg-white rounded-md">
+              <div className="flex items-center justify-center p-4 bg-void rounded-md">
                 <img src={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id, inviteQR.self_promote)} alt="QR Code" className="w-32 h-32" />
               </div>
 
@@ -290,7 +290,7 @@ export default function EventInvitesPage() {
                     </>
                   )}
                 </Button>
-                <p className="text-xs text-center text-white/60">
+                <p className="text-xs text-center text-secondary">
                   {inviteQR.expires_at
                     ? `Expires ${new Date(inviteQR.expires_at).toLocaleDateString()}`
                     : "No expiration"}
@@ -304,8 +304,8 @@ export default function EventInvitesPage() {
       {inviteQRCodes.length === 0 && (
         <Card>
           <div className="p-12 text-center">
-            <QrCode className="h-12 w-12 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60">No invite QR codes yet</p>
+            <QrCode className="h-12 w-12 text-muted mx-auto mb-4" />
+            <p className="text-secondary">No invite QR codes yet</p>
             <Button className="mt-4" onClick={() => setShowCreate(true)}>
               Create First Invite QR Code
             </Button>

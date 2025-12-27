@@ -111,7 +111,7 @@ export default function InviteSignupPage() {
 
   if (tokenValid === null) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner text="Validating invite..." size="md" />
@@ -123,7 +123,7 @@ export default function InviteSignupPage() {
 
   if (tokenValid === false) {
     return (
-      <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white mb-4">Invalid Invite</h1>
@@ -140,7 +140,7 @@ export default function InviteSignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D10] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-void flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">

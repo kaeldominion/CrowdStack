@@ -1,10 +1,28 @@
 "use client";
 
+/**
+ * QR PASS PAGE
+ * 
+ * Displays the user's entry pass for an event.
+ * Uses design system tokens and patterns.
+ */
+
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Ticket, ArrowLeft, XCircle } from "lucide-react";
+import { X, CheckCircle2, QrCode, Scan } from "lucide-react";
 import Link from "next/link";
-import { Logo, LoadingSpinner, Button } from "@crowdstack/ui";
+import { Logo, LoadingSpinner, Button, Card, ConfirmModal } from "@crowdstack/ui";
+import { DockNav } from "@/components/navigation/DockNav";
+
+interface PassData {
+  qrToken: string;
+  eventName: string;
+  eventDate: string;
+  venueName: string;
+  attendeeName: string;
+  passId: string;
+  flierUrl?: string;
+}
 
 export default function QRPassPage() {
   const params = useParams();
@@ -12,57 +30,119 @@ export default function QRPassPage() {
   const router = useRouter();
   const eventSlug = params.eventSlug as string;
   const tokenFromQuery = searchParams.get("token");
+  
+  const [passData, setPassData] = useState<PassData | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [eventName, setEventName] = useState<string>("");
-  const [venueName, setVenueName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeregistering, setIsDeregistering] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [deregisterError, setDeregisterError] = useState<string | null>(null);
 
-  // Fetch registration and QR token if not provided in URL
+  // Format date for display
+  const formatEventDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const month = date.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+    const day = date.getDate();
+    return `${month} ${day}`;
+  };
+
+  // Generate short pass ID from token
+  const generatePassId = (token: string) => {
+    if (!token) return "--------";
+    const hash = token.replace(/-/g, "").substring(0, 12).toUpperCase();
+    return `${hash.slice(0, 4)}-${hash.slice(4, 8)}-${hash.slice(8, 12)}`;
+  };
+
+  // Fetch registration and QR token
   useEffect(() => {
     const loadPassData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // If token is provided in URL, use it
+        let token = tokenFromQuery;
+        let eventDetails = { name: "", venue: "", date: "", attendee: "", flier: "" };
+        
+        // If we have a token in URL, validate it first to get all details
         if (tokenFromQuery) {
-          const qrData = encodeURIComponent(tokenFromQuery);
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
-          setQrCodeUrl(qrUrl);
-          setLoading(false);
-          return;
+          const validateResponse = await fetch("/api/pass/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: tokenFromQuery }),
+          });
+          
+          if (validateResponse.ok) {
+            const validData = await validateResponse.json();
+            if (validData.valid) {
+              eventDetails.name = validData.event?.name || "";
+              eventDetails.venue = validData.event?.venue?.name || "";
+              eventDetails.date = validData.event?.start_time || "";
+              eventDetails.flier = validData.event?.flier_url || "";
+              eventDetails.attendee = validData.attendee?.name || "Guest";
+            }
+          }
         }
         
-        // Otherwise, fetch registration status to get the token
+        // Also try check-registration for logged-in users (to get fresh token if needed)
         const response = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
-        if (!response.ok) {
-          throw new Error("Failed to check registration");
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (!data.registered && !tokenFromQuery) {
+            setError("You are not registered for this event");
+            setLoading(false);
+            return;
+          }
+          
+          if (data.event) {
+            if (!eventDetails.name) eventDetails.name = data.event.name || "";
+            if (!eventDetails.venue) eventDetails.venue = data.event.venue?.name || "";
+            if (!eventDetails.date) eventDetails.date = data.event.start_time || "";
+            if (!eventDetails.flier) eventDetails.flier = data.event.flier_url || data.event.cover_image_url || "";
+          }
+          
+          if (data.attendee && !eventDetails.attendee) {
+            eventDetails.attendee = data.attendee.name || "Guest";
+          }
+          
+          if (data.qr_pass_token && !token) {
+            token = data.qr_pass_token;
+          }
         }
         
-        const data = await response.json();
-        if (!data.registered) {
-          setError("You are not registered for this event");
-          setLoading(false);
-          return;
+        // Always fetch full event details to get flier, venue, etc.
+        const eventResponse = await fetch(`/api/events/by-slug/${eventSlug}`);
+        if (eventResponse.ok) {
+          const eventData = await eventResponse.json();
+          if (!eventDetails.name) eventDetails.name = eventData.name || "";
+          if (!eventDetails.venue) eventDetails.venue = eventData.venue?.name || "";
+          if (!eventDetails.date) eventDetails.date = eventData.start_time || "";
+          // Always get flier from this endpoint as it's more reliable
+          eventDetails.flier = eventData.flier_url || eventData.cover_image_url || eventDetails.flier || "";
         }
         
-        // Set event details from response
-        if (data.event) {
-          setEventName(data.event.name || "");
-          setVenueName(data.event.venue?.name || "");
-        }
-        
-        if (data.qr_pass_token) {
-          const qrData = encodeURIComponent(data.qr_pass_token);
+        if (token) {
+          // Generate QR code URL
+          const qrData = encodeURIComponent(token);
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
           setQrCodeUrl(qrUrl);
           
+          setPassData({
+            qrToken: token,
+            eventName: eventDetails.name,
+            eventDate: eventDetails.date,
+            venueName: eventDetails.venue,
+            attendeeName: eventDetails.attendee || "Guest",
+            passId: generatePassId(token),
+            flierUrl: eventDetails.flier,
+          });
+          
           // Update URL to include token for sharing/bookmarking
-          if (typeof window !== "undefined") {
+          if (typeof window !== "undefined" && !tokenFromQuery) {
             const newUrl = new URL(window.location.href);
-            newUrl.searchParams.set("token", data.qr_pass_token);
+            newUrl.searchParams.set("token", token);
             window.history.replaceState({}, "", newUrl.toString());
           }
         } else {
@@ -81,35 +161,9 @@ export default function QRPassPage() {
     }
   }, [eventSlug, tokenFromQuery]);
 
-  // Fetch event details (fallback if token is provided directly in URL)
-  useEffect(() => {
-    const fetchEventDetails = async () => {
-      // Only fetch if we have a token in URL but no event details yet
-      if (tokenFromQuery && !eventName) {
-        try {
-          const response = await fetch(`/api/events/by-slug/${eventSlug}`);
-          if (response.ok) {
-            const data = await response.json();
-            setEventName(data.name || "");
-            setVenueName(data.venue?.name || "");
-          }
-        } catch (err) {
-          console.error("Failed to fetch event details:", err);
-        }
-      }
-    };
-    
-    if (eventSlug) {
-      fetchEventDetails();
-    }
-  }, [eventSlug, tokenFromQuery, eventName]);
-
   async function handleDeregister() {
-    if (!confirm("Are you sure you want to deregister from this event? This action cannot be undone.")) {
-      return;
-    }
-
     setIsDeregistering(true);
+    setDeregisterError(null);
     try {
       const response = await fetch(`/api/events/by-slug/${eventSlug}/deregister`, {
         method: "DELETE",
@@ -120,110 +174,163 @@ export default function QRPassPage() {
         throw new Error(data.error || "Failed to deregister");
       }
 
-      // Redirect to event page
+      setShowCancelModal(false);
       router.push(`/e/${eventSlug}`);
     } catch (err: any) {
       console.error("Error deregistering:", err);
-      alert(err.message || "Failed to deregister. Please try again.");
+      setDeregisterError(err.message || "Failed to deregister. Please try again.");
       setIsDeregistering(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between">
-        <Logo size="sm" />
-        <Link 
+    <div className="min-h-screen bg-void flex flex-col">
+      {/* Navigation Bar */}
+      <DockNav />
+      
+      {/* Close button */}
+      <div className="absolute top-4 right-4 z-10">
+        <Link
           href={`/e/${eventSlug}`}
-          className="text-white/60 hover:text-white flex items-center gap-2 text-sm"
+          className="w-10 h-10 rounded-full bg-glass/80 border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:bg-active transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Event
+          <X className="h-5 w-5" />
         </Link>
       </div>
 
-      <div className="flex flex-col items-center justify-center px-4 py-8">
-        {/* Pass Card */}
-        <div className="w-full max-w-sm bg-white rounded-2xl overflow-hidden shadow-2xl">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white text-center">
-            <Ticket className="h-8 w-8 mx-auto mb-2" />
-            <h1 className="text-xl font-bold">Event Pass</h1>
-            {eventName && (
-              <p className="text-white/90 mt-2 font-medium">{eventName}</p>
-            )}
-            {venueName && (
-              <p className="text-white/70 text-sm mt-1">{venueName}</p>
-            )}
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+        
+        {loading ? (
+          <div className="flex flex-col items-center gap-4">
+            <LoadingSpinner size="lg" />
+            <p className="text-secondary">Loading your pass...</p>
           </div>
-
-          {/* QR Code */}
-          <div className="p-8 flex flex-col items-center">
-            {loading ? (
-              <div className="w-64 h-64 bg-gray-100 rounded-xl flex items-center justify-center">
-                <LoadingSpinner text="Loading QR code..." />
-              </div>
-            ) : error ? (
-              <div className="w-64 h-64 bg-red-50 rounded-xl flex flex-col items-center justify-center p-4">
-                <p className="text-red-600 text-center font-medium mb-2">{error}</p>
-                <Link 
-                  href={`/e/${eventSlug}/register`}
-                  className="text-red-600 text-sm underline hover:no-underline"
-                >
-                  Register for this event
-                </Link>
-              </div>
-            ) : qrCodeUrl ? (
-              <>
-                <div className="bg-white p-4 rounded-xl shadow-inner border-2 border-gray-100">
-                  <img 
-                    src={qrCodeUrl} 
-                    alt="Event QR Pass" 
-                    className="w-64 h-64"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                </div>
-                <p className="mt-6 text-gray-600 text-center text-sm">
-                  Show this QR code at the event entrance
-                </p>
-                <p className="mt-2 text-gray-400 text-xs text-center">
-                  Keep your screen brightness high for easy scanning
-                </p>
-              </>
-            ) : null}
-          </div>
-
-          {/* Footer */}
-          <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-3">
-            {/* Deregister Button */}
-            <Button
-              variant="secondary"
-              onClick={handleDeregister}
-              disabled={isDeregistering}
-              className="w-full bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-            >
-              {isDeregistering ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Deregistering...
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Deregister from Event
-                </>
-              )}
-            </Button>
-            
-            <div className="flex items-center justify-center gap-2 text-gray-400 text-xs">
-              <Logo size="sm" />
-              <span>Powered by CrowdStack</span>
+        ) : error ? (
+          <Card className="max-w-sm w-full !p-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-accent-error/20 flex items-center justify-center mx-auto mb-4">
+              <X className="h-8 w-8 text-accent-error" />
             </div>
-          </div>
-        </div>
+            <h2 className="font-sans text-xl font-bold text-primary mb-2">{error}</h2>
+            <p className="text-sm text-secondary mb-6">
+              Please register for this event to get your entry pass.
+            </p>
+            <Button href={`/e/${eventSlug}/register`} variant="primary" fullWidth>
+              Register Now
+            </Button>
+          </Card>
+        ) : passData && qrCodeUrl ? (
+          <>
+            {/* Logo Badge */}
+            <div className="mb-6">
+              <div className="w-24 h-24 rounded-2xl bg-void border-2 border-accent-primary/50 flex items-center justify-center shadow-lg shadow-accent-primary/20">
+                <Logo variant="tricolor" size="xl" iconOnly />
+              </div>
+            </div>
+
+            {/* Event Info */}
+            <div className="text-center mb-8">
+              <h1 className="font-sans text-3xl font-black text-primary uppercase tracking-tight">
+                {passData.eventName || "Event"}
+              </h1>
+              <p className="font-mono text-sm font-medium text-accent-secondary tracking-wide mt-2">
+                {formatEventDate(passData.eventDate)}
+                {passData.venueName && ` • ${passData.venueName.toUpperCase()}`}
+              </p>
+            </div>
+
+            {/* Pass Card */}
+            <div className="w-full max-w-sm">
+              {/* Gradient top border */}
+              <div className="h-1 rounded-t-2xl bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary" />
+              
+              {/* Card */}
+              <div className="rounded-b-2xl border border-border-subtle border-t-0 bg-glass">
+                {/* Guest & Status */}
+                <div className="flex items-start justify-between p-5 border-b border-border-subtle/50">
+                  <div>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-primary mb-1">
+                      Guest
+                    </p>
+                    <p className="font-sans text-xl font-bold text-primary">
+                      {passData.attendeeName}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">
+                      Status
+                    </p>
+                    <div className="flex items-center gap-1.5 text-accent-success">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span className="font-sans text-base font-bold">Confirmed</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* QR Code */}
+                <div className="p-6 flex flex-col items-center">
+                  <div className="bg-white p-3 rounded-xl shadow-lg">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Event QR Pass" 
+                      className="w-52 h-52"
+                      style={{ imageRendering: "pixelated" }}
+                    />
+                  </div>
+                  
+                  {/* Pass ID */}
+                  <p className="mt-5 font-mono text-xs text-muted tracking-wider">
+                    ID: {passData.passId}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Scan Instruction */}
+            <div className="mt-8 flex items-center gap-2 text-muted">
+              <Scan className="h-4 w-4" />
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                Scan at door for entry
+              </p>
+            </div>
+
+            {/* Deregister Button */}
+            <div className="mt-8 w-full max-w-sm">
+              <button
+                onClick={() => setShowCancelModal(true)}
+                disabled={isDeregistering}
+                className="w-full py-3 rounded-xl text-sm font-medium text-accent-error hover:bg-accent-error/10 transition-colors disabled:opacity-50"
+              >
+                Cancel Registration
+              </button>
+            </div>
+          </>
+        ) : null}
       </div>
+
+      {/* Cancel Registration Modal */}
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onClose={() => {
+          setShowCancelModal(false);
+          setDeregisterError(null);
+        }}
+        onConfirm={handleDeregister}
+        title="Cancel Registration?"
+        message={
+          <>
+            Are you sure you want to cancel your registration for{" "}
+            <span className="font-semibold text-primary">{passData?.eventName}</span>?
+            {deregisterError && (
+              <span className="block mt-2 text-accent-error">{deregisterError}</span>
+            )}
+          </>
+        }
+        confirmText={isDeregistering ? "Cancelling..." : "Yes, Cancel"}
+        cancelText="Keep Registration"
+        variant="danger"
+        loading={isDeregistering}
+      />
     </div>
   );
 }
-

@@ -190,20 +190,20 @@ export default function VenueUsersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading users...</div>
+          <div className="text-secondary">Loading users...</div>
         </div>
       </Container>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Venue Users</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Venue Users</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Manage users who can access this venue and their permissions
               </p>
             </div>
@@ -229,7 +229,7 @@ export default function VenueUsersPage() {
                     <TableRow>
                       <TableCell
                         colSpan={4}
-                        className="text-center py-8 text-foreground-muted"
+                        className="text-center py-8 text-secondary"
                       >
                         No users assigned yet
                       </TableCell>
@@ -239,13 +239,13 @@ export default function VenueUsersPage() {
                       <TableRow key={venueUser.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <UserIcon className="h-4 w-4 text-foreground-muted" />
+                            <UserIcon className="h-4 w-4 text-secondary" />
                             <div>
                               <div className="font-medium">
                                 {venueUser.user?.email || "Unknown"}
                               </div>
                               {venueUser.user?.email && (
-                                <div className="text-xs text-foreground-muted flex items-center gap-1">
+                                <div className="text-xs text-secondary flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
                                   {venueUser.user.email}
                                 </div>
@@ -256,7 +256,7 @@ export default function VenueUsersPage() {
                         <TableCell>
                           {getPermissionBadges(venueUser.permissions)}
                         </TableCell>
-                        <TableCell className="text-sm text-foreground-muted">
+                        <TableCell className="text-sm text-secondary">
                           {new Date(venueUser.assigned_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
@@ -355,7 +355,7 @@ export default function VenueUsersPage() {
             >
               <div className="space-y-6">
                 <div>
-                  <p className="text-sm text-foreground-muted mb-1">User</p>
+                  <p className="text-sm text-secondary mb-1">User</p>
                   <p className="font-medium">{editingUser.user?.email}</p>
                 </div>
 

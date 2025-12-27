@@ -89,20 +89,20 @@ export default function VenuePromotersPage() {
     return (
       <Container>
         <div className="flex items-center justify-center h-64">
-          <div className="text-foreground-muted">Loading promoters...</div>
+          <div className="text-secondary">Loading promoters...</div>
         </div>
       </Container>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Promoters</h1>
-              <p className="mt-2 text-sm text-foreground-muted">
+              <h1 className="text-3xl font-bold text-primary">Promoters</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Promoters who have worked events at your venue
               </p>
             </div>
@@ -129,7 +129,7 @@ export default function VenuePromotersPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-foreground-muted">
+          <div className="mt-4 text-sm text-secondary">
             Showing {filteredPromoters.length} of {promoters.length} promoters
           </div>
 
@@ -152,7 +152,7 @@ export default function VenuePromotersPage() {
                     <TableRow>
                       <TableCell
                         colSpan={7}
-                        className="text-center py-8 text-foreground-muted"
+                        className="text-center py-8 text-secondary"
                       >
                         {promoters.length === 0
                           ? "No promoters have worked events at your venue yet"
@@ -169,20 +169,20 @@ export default function VenuePromotersPage() {
                       >
                         <TableCell>
                           <div className="font-medium flex items-center gap-2">
-                            <Users className="h-4 w-4 text-foreground-muted" />
+                            <Users className="h-4 w-4 text-secondary" />
                             {promoter.name}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {promoter.email && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
                                 {promoter.email}
                               </div>
                             )}
                             {promoter.phone && (
-                              <div className="text-sm text-foreground-muted flex items-center gap-1">
+                              <div className="text-sm text-secondary flex items-center gap-1">
                                 <Phone className="h-3 w-3" />
                                 {promoter.phone}
                               </div>
@@ -197,19 +197,19 @@ export default function VenuePromotersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-foreground-muted" />
+                            <Users className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{promoter.referrals_count}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Ticket className="h-4 w-4 text-foreground-muted" />
+                            <Ticket className="h-4 w-4 text-secondary" />
                             <span className="text-sm">{promoter.checkins_count}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <TrendingUp className="h-4 w-4 text-foreground-muted" />
+                            <TrendingUp className="h-4 w-4 text-secondary" />
                             <span className="text-sm font-medium">
                               {promoter.conversion_rate}%
                             </span>
@@ -228,7 +228,7 @@ export default function VenuePromotersPage() {
                               </Badge>
                             )}
                             {!promoter.has_direct_assignment && !promoter.has_indirect_assignment && (
-                              <span className="text-xs text-foreground-muted">-</span>
+                              <span className="text-xs text-secondary">-</span>
                             )}
                           </div>
                         </TableCell>

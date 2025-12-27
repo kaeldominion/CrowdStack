@@ -19,24 +19,14 @@ export async function GET() {
       }
     }
 
-    // Check if user has venue_admin role or is superadmin (or impersonating)
-    // Allow superadmin to access venue stats (they can impersonate venues)
+    // Check if user has venue_admin role or is superadmin
     const hasAccess = await userHasRoleOrSuperadmin("venue_admin");
     
-    // Also check if impersonating as venue_admin
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    const roleCookie = cookieStore.get("cs-impersonate-role");
-    const entityCookie = cookieStore.get("cs-impersonate-entity-id");
-    
-    const isImpersonating = roleCookie?.value === "venue_admin" && entityCookie?.value;
-    
-    if (!hasAccess && !isImpersonating) {
-      console.log("[Venue Dashboard Stats] Access denied. hasAccess:", hasAccess, "isImpersonating:", isImpersonating, "roleCookie:", roleCookie?.value, "entityCookie:", entityCookie?.value);
+    if (!hasAccess) {
+      console.log("[Venue Dashboard Stats] Access denied. hasAccess:", hasAccess);
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    console.log("[Venue Dashboard Stats] Access granted. hasAccess:", hasAccess, "isImpersonating:", isImpersonating);
     const result = await getVenueDashboardStats();
 
     // Extract venue from stats and return separately
