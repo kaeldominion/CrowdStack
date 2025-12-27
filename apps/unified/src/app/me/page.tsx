@@ -421,7 +421,9 @@ export default function MePage() {
                           venue: reg.event?.venue,
                         }}
                         registration={{ id: reg.id }}
+                        variant={happeningNowEvents.includes(reg) ? "live" : "attending"}
                         isAttending
+                        capacityPercent={happeningNowEvents.includes(reg) ? 84 : undefined}
                         onCancelRegistration={handleCancelRegistration}
                       />
                     </div>

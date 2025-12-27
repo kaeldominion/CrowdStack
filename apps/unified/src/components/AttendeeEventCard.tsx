@@ -165,6 +165,170 @@ export function AttendeeEventCard({
 
   const badgeConfig = getBadgeConfig();
 
+  // Wrap with glow effect for live events
+  if (isLive) {
+    return (
+      <div className={`relative ${className}`}>
+        {/* Flowing orange/red glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
+        <div className="relative">
+          <div 
+            className="relative rounded-2xl overflow-hidden group border border-accent-error/50 hover:border-accent-error transition-all shadow-soft hover:shadow-lg bg-void"
+          >
+            <Link href={`/e/${event.slug}`} className="block">
+              {/* Full-bleed background image */}
+              <div className="relative aspect-[3/4] min-h-[320px]">
+                {heroImage ? (
+                  <img
+                    src={heroImage}
+                    alt={event.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-accent-error/40 via-accent-warning/30 to-void flex items-center justify-center">
+                    <Ticket className="h-16 w-16 text-muted" />
+                  </div>
+                )}
+                
+                {/* Gradient overlay - stronger fade to black at bottom */}
+                <div className="absolute inset-0 bg-gradient-to-t from-void via-void/95 to-transparent" />
+                
+                {/* Top badges */}
+                <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
+                  {badgeConfig && (
+                    <Badge 
+                      color={badgeConfig.color} 
+                      variant="solid" 
+                      className="!rounded-md !px-3 !py-1.5 !text-xs !font-bold"
+                    >
+                      {badgeConfig.showDot && (
+                        <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse" />
+                      )}
+                      {badgeConfig.text}
+                    </Badge>
+                  )}
+                  
+                  {showShare && (
+                    <div 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    >
+                      <ShareButton
+                        title={event.name}
+                        text={`Check out ${event.name}${event.venue?.name ? ` at ${event.venue.name}` : ""}`}
+                        url={`${typeof window !== "undefined" ? window.location.origin : ""}/e/${event.slug}`}
+                        imageUrl={event.flier_url || event.cover_image_url || undefined}
+                        compact
+                        iconOnly
+                        userId={userId || undefined}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom content overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  {/* Event name */}
+                  <h3 className="font-sans text-xl font-black text-primary uppercase tracking-tight leading-tight line-clamp-2">
+                    {event.name}
+                  </h3>
+                  
+                  {/* Venue info */}
+                  {event.venue?.name && (
+                    <p className="text-sm text-secondary mt-1">
+                      {event.venue.name}
+                      {event.venue.city && <span> · {event.venue.city}</span>}
+                    </p>
+                  )}
+
+                  {/* Date & Time */}
+                  <div className="flex items-center gap-3 mt-3 text-xs text-secondary">
+                    <span className="font-mono font-medium text-primary">
+                      {formatEventDate(event.start_time)}
+                    </span>
+                    <span className="font-mono">{formatEventTime(event.start_time)}</span>
+                  </div>
+
+                  {/* Capacity for live events */}
+                  {capacityPercent !== undefined && (
+                    <p className="text-sm text-secondary mt-2">
+                      {capacityPercent}% Capacity
+                    </p>
+                  )}
+
+                  {/* Action buttons for registered attendees */}
+                  {registration && isAttending && (
+                    <div className="flex items-center justify-between mt-4">
+                      {showVip && (
+                        <Badge color="green" variant="solid" className="!rounded-md !px-2 !py-1 !text-[10px]">
+                          VIP
+                        </Badge>
+                      )}
+                      <div className="flex items-center gap-2 ml-auto">
+                        <button
+                          onClick={handleViewEntry}
+                          disabled={loading}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-primary/90 hover:bg-accent-primary text-white text-xs font-semibold transition-colors"
+                        >
+                          {loading ? (
+                            <InlineSpinner size="sm" />
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3" />
+                              Entry
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowQrModal(true); }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-glass hover:bg-active text-primary text-xs font-semibold transition-colors"
+                        >
+                          <QrCode className="h-3 w-3" />
+                          QR
+                        </button>
+                        <button
+                          onClick={handleCancelClick}
+                          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-glass hover:bg-active text-secondary hover:text-accent-error text-xs transition-colors"
+                          title="Cancel registration"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* QR Modal */}
+        {showQrModal && registration && (
+          <QRPassModal
+            isOpen={showQrModal}
+            onClose={() => setShowQrModal(false)}
+            registrationId={registration.id}
+            eventName={event.name}
+            eventSlug={event.slug}
+          />
+        )}
+
+        {/* Cancel Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={handleConfirmCancel}
+          title="Cancel Registration"
+          message={`Are you sure you want to cancel your registration for ${event.name}? You can always register again later.`}
+          variant="danger"
+          confirmText="Cancel Registration"
+          cancelText="Keep Registration"
+          loading={cancelling}
+        />
+      </div>
+    );
+  }
+
   return (
     <div 
       className={`relative rounded-2xl overflow-hidden group border border-border-subtle hover:border-accent-primary/50 transition-all shadow-soft hover:shadow-lg ${className}`}
