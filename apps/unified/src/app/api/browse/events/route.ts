@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq("status", "published")
+      .in("venue_approval_status", ["approved", "not_required"])
       .gte("start_time", now.toISOString())
       .order("start_time", { ascending: true });
 
@@ -126,19 +127,31 @@ export async function GET(request: NextRequest) {
       query = query.in("venue_id", cityVenueIds);
     }
 
-    // Apply search filter
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,venues.name.ilike.%${search}%`);
-    }
+    // Apply search filter - need to handle separately due to join limitations
+    // We'll filter after fetching if search is provided
 
-    // Execute query
+    // Execute query - get more results if we need to filter by search
+    const fetchLimit = search ? limit * 3 : limit; // Get more if we need to filter
     let { data: events, error: eventsError } = await query
-      .limit(limit)
-      .range(offset, offset + limit - 1);
+      .limit(fetchLimit)
+      .range(offset, offset + fetchLimit - 1);
 
     if (eventsError) {
       console.error("[Browse Events] Error fetching:", eventsError);
-      return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
+      return NextResponse.json({ 
+        error: "Failed to fetch events",
+        details: eventsError.message 
+      }, { status: 500 });
+    }
+
+    // Apply search filter after fetching (due to join limitations)
+    if (search && events) {
+      const searchLower = search.toLowerCase();
+      events = events.filter((event: any) => {
+        const eventName = event.name?.toLowerCase() || "";
+        const venueName = (event.venue as any)?.name?.toLowerCase() || "";
+        return eventName.includes(searchLower) || venueName.includes(searchLower);
+      });
     }
 
     // If featured filter and no results, fall back to random events
@@ -163,6 +176,7 @@ export async function GET(request: NextRequest) {
           )
         `)
         .eq("status", "published")
+        .in("venue_approval_status", ["approved", "not_required"])
         .gte("start_time", now.toISOString())
         .order("start_time", { ascending: true })
         .limit(limit);
@@ -202,9 +216,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Apply pagination after filtering
+    const paginatedEvents = (events || []).slice(0, limit);
+    const totalCount = events?.length || 0;
+
     return NextResponse.json({
-      events: events || [],
-      count: events?.length || 0,
+      events: paginatedEvents,
+      count: totalCount,
     });
   } catch (error: any) {
     console.error("[Browse Events] Error:", error);

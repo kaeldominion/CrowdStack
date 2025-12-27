@@ -157,51 +157,55 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
           </span>
           
           {filters.date && (
-            <Badge
-              color="blue"
-              variant="outline"
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
-              onClick={() => clearFilter("date")}
-            >
-              Date: {dateOptions.find((o) => o.value === filters.date)?.label || filters.date}
-              <X className="h-3 w-3" />
-            </Badge>
+            <button onClick={() => clearFilter("date")} className="inline-flex">
+              <Badge
+                color="blue"
+                variant="outline"
+                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
+              >
+                Date: {dateOptions.find((o) => o.value === filters.date)?.label || filters.date}
+                <X className="h-3 w-3" />
+              </Badge>
+            </button>
           )}
 
           {filters.city && (
-            <Badge
-              color="blue"
-              variant="outline"
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
-              onClick={() => clearFilter("city")}
-            >
-              City: {filters.city}
-              <X className="h-3 w-3" />
-            </Badge>
+            <button onClick={() => clearFilter("city")} className="inline-flex">
+              <Badge
+                color="blue"
+                variant="outline"
+                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
+              >
+                City: {filters.city}
+                <X className="h-3 w-3" />
+              </Badge>
+            </button>
           )}
 
           {filters.genre && (
-            <Badge
-              color="blue"
-              variant="outline"
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
-              onClick={() => clearFilter("genre")}
-            >
-              Genre: {filters.genre}
-              <X className="h-3 w-3" />
-            </Badge>
+            <button onClick={() => clearFilter("genre")} className="inline-flex">
+              <Badge
+                color="blue"
+                variant="outline"
+                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
+              >
+                Genre: {filters.genre}
+                <X className="h-3 w-3" />
+              </Badge>
+            </button>
           )}
 
           {filters.venue_id && (
-            <Badge
-              color="blue"
-              variant="outline"
-              className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
-              onClick={() => clearFilter("venue_id")}
-            >
-              Venue: {venues.find((v) => v.value === filters.venue_id)?.label || "Selected"}
-              <X className="h-3 w-3" />
-            </Badge>
+            <button onClick={() => clearFilter("venue_id")} className="inline-flex">
+              <Badge
+                color="blue"
+                variant="outline"
+                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
+              >
+                Venue: {venues.find((v) => v.value === filters.venue_id)?.label || "Selected"}
+                <X className="h-3 w-3" />
+              </Badge>
+            </button>
           )}
 
           <button

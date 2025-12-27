@@ -94,7 +94,15 @@ export default function BrowsePage() {
       }
 
       const res = await fetch(`/api/browse/events?${params}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Error fetching events:", res.status, errorData);
+        throw new Error(errorData.error || "Failed to fetch events");
+      }
+      
       const data = await res.json();
+      console.log("[Browse] Fetched events:", data.events?.length || 0, "events");
       
       if (reset) {
         setAllEvents(data.events || []);
