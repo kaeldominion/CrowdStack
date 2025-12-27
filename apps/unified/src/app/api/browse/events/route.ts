@@ -59,6 +59,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Debug: First check total published events
+    const { count: totalPublished } = await supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "published");
+    
+    const { count: totalApproved } = await supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "published")
+      .in("venue_approval_status", ["approved", "not_required"]);
+    
+    const { count: totalFuture } = await supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "published")
+      .in("venue_approval_status", ["approved", "not_required"])
+      .gte("start_time", now.toISOString());
+
+    console.log("[Browse Events] Debug counts:", {
+      totalPublished,
+      totalApproved,
+      totalFuture,
+    });
+
     // Build base query
     let query = supabase
       .from("events")
@@ -70,7 +95,7 @@ export async function GET(request: NextRequest) {
         cover_image_url,
         start_time,
         end_time,
-        is_featured,
+        venue_approval_status,
         venue:venues(
           id,
           name,
@@ -84,10 +109,23 @@ export async function GET(request: NextRequest) {
       .gte("start_time", now.toISOString())
       .order("start_time", { ascending: true });
 
-    // Apply featured filter
+    console.log("[Browse Events] Query params:", {
+      search,
+      dateFilter,
+      city,
+      genre,
+      venueId,
+      featured,
+      limit,
+      offset,
+      now: now.toISOString(),
+    });
+
+    // Apply featured filter (if is_featured column exists)
+    // Note: This will be enabled after migration 068 is run
     if (featured) {
-      // First try to get featured events
-      query = query.eq("is_featured", true);
+      // For now, just return regular events until migration is applied
+      // query = query.eq("is_featured", true);
     }
 
     // Apply date filters
@@ -96,10 +134,8 @@ export async function GET(request: NextRequest) {
     }
     if (endDate) {
       query = query.lte("start_time", endDate.toISOString());
-    } else if (!dateFilter) {
-      // Default: only show future events
-      query = query.gte("start_time", now.toISOString());
     }
+    // Note: We already filter for future events in the base query, so no need to add it again
 
     // Apply venue filter
     if (venueId) {
@@ -136,6 +172,12 @@ export async function GET(request: NextRequest) {
       .limit(fetchLimit)
       .range(offset, offset + fetchLimit - 1);
 
+    console.log("[Browse Events] Query result:", {
+      eventsCount: events?.length || 0,
+      error: eventsError?.message,
+      hasError: !!eventsError,
+    });
+
     if (eventsError) {
       console.error("[Browse Events] Error fetching:", eventsError);
       return NextResponse.json({ 
@@ -143,6 +185,9 @@ export async function GET(request: NextRequest) {
         details: eventsError.message 
       }, { status: 500 });
     }
+
+    // Debug: Check if we have events before filtering
+    console.log("[Browse Events] Events before filtering:", events?.length || 0);
 
     // Apply search filter after fetching (due to join limitations)
     if (search && events) {
@@ -166,7 +211,6 @@ export async function GET(request: NextRequest) {
           cover_image_url,
           start_time,
           end_time,
-          is_featured,
           venue:venues(
             id,
             name,
@@ -219,6 +263,11 @@ export async function GET(request: NextRequest) {
     // Apply pagination after filtering
     const paginatedEvents = (events || []).slice(0, limit);
     const totalCount = events?.length || 0;
+
+    console.log("[Browse Events] Final result:", {
+      paginatedCount: paginatedEvents.length,
+      totalCount,
+    });
 
     return NextResponse.json({
       events: paginatedEvents,

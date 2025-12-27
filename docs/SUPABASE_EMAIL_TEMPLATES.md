@@ -6,9 +6,9 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
 
 **Email clients (Gmail, Outlook, Yahoo) do NOT support SVG images!**
 
-The templates below use the PNG version at `https://crowdstack.app/crowdstack-full-dark-2x.png`.
+The templates below use the PNG version at `https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png`.
 
-This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
+This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent.png`.
 
 ---
 
@@ -22,7 +22,7 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
 
 ## Magic Link / OTP Template
 
-**Subject:** `Sign in to CrowdStack`
+**Subject:** `Your CrowdStack verification code`
 
 **Body:**
 
@@ -38,57 +38,70 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0B0D10;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 16px; border: 1px solid #2A2F3A;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 20px; border: 1px solid rgba(168, 85, 247, 0.2); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+            <td style="padding: 40px 32px 24px; text-align: center;">
+              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
+                CROWDSTACK<span style="color: #A855F7;">.</span>
+              </p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px;">
-              <h1 style="margin: 0 0 8px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
+            <td style="padding: 0 32px 32px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: -0.02em;">
                 Your Verification Code
               </h1>
               
-              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #9CA3AF; text-align: center;">
                 Enter this code in the app to sign in. It expires in 24 hours.
               </p>
               
-              <!-- OTP Code Section (Primary - Most Prominent) -->
+              <!-- OTP Code Section -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px;">
                 <tr>
-                  <td style="background-color: #1A1D24; border-radius: 16px; padding: 36px 28px; border: 2px solid #3B82F6;">
-                    <p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; color: #6B7280; text-align: center; text-transform: uppercase; letter-spacing: 0.1em;">
+                  <td style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border-radius: 16px; padding: 32px 24px; border: 2px solid rgba(168, 85, 247, 0.4);">
+                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #A855F7; text-align: center; text-transform: uppercase; letter-spacing: 0.15em;">
                       Verification Code
                     </p>
-                    <p style="margin: 0; font-size: 48px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.5em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
+                    <p style="margin: 0; font-size: 44px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.4em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
                       {{ .Token }}
                     </p>
                   </td>
                 </tr>
               </table>
               
-              <!-- Magic Link (Secondary - Less Prominent) -->
-              <div style="margin: 32px 0 0; padding-top: 24px; border-top: 1px solid #2A2F3A;">
-                <p style="margin: 0 0 12px; font-size: 12px; color: #6B7280; text-align: center;">
-                  Prefer to use a link instead?
-                </p>
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                  <tr>
-                    <td style="text-align: center; padding: 0;">
-                      <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 10px 20px; background: transparent; border: 1px solid #4B5563; color: #9CA3AF; font-size: 13px; font-weight: 500; text-decoration: none; border-radius: 6px;">
-                        Sign In with Magic Link
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
+              <!-- Divider -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 8px 0 24px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 42%;"></td>
+                        <td style="text-align: center; color: #4B5563; font-size: 11px; padding: 0 12px; text-transform: uppercase; letter-spacing: 0.1em;">or</td>
+                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 42%;"></td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
               
-              <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
+              <!-- Magic Link Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center; padding: 0;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 28px; background: transparent; border: 1px solid #3B82F6; color: #3B82F6; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Sign In with Link
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
                 If you didn't request this email, you can safely ignore it.
               </p>
             </td>
@@ -96,12 +109,12 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #2A2F3A; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+            <td style="padding: 24px 32px; border-top: 1px solid #1F2937; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; text-transform: uppercase; letter-spacing: 0.1em;">
                 © 2025 CrowdStack. All rights reserved.
               </p>
-              <p style="margin: 8px 0 0; font-size: 12px; color: #4B5563;">
-                <a href="https://crowdstack.app" style="color: #3B82F6; text-decoration: none;">crowdstack.app</a>
+              <p style="margin: 12px 0 0; font-size: 12px;">
+                <a href="https://crowdstack.app" style="color: #A855F7; text-decoration: none; font-weight: 500;">crowdstack.app</a>
               </p>
             </td>
           </tr>
@@ -118,7 +131,7 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
 
 ## Confirm Signup Template
 
-**Subject:** `Confirm your CrowdStack account`
+**Subject:** `Welcome to CrowdStack - Confirm your email`
 
 **Body:**
 
@@ -134,63 +147,70 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0B0D10;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 16px; border: 1px solid #2A2F3A;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 20px; border: 1px solid rgba(168, 85, 247, 0.2); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+            <td style="padding: 40px 32px 24px; text-align: center;">
+              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
+                CROWDSTACK<span style="color: #A855F7;">.</span>
+              </p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px;">
-              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
-                Welcome! 🎉
+            <td style="padding: 0 32px 32px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: -0.02em;">
+                Welcome to CrowdStack!
               </h1>
               
-              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #9CA3AF; text-align: center;">
                 Thanks for signing up! Enter this code to confirm your email.
               </p>
               
-              <!-- OTP Code Section (Primary) -->
-              <div style="background-color: #1A1D24; border-radius: 12px; padding: 28px; margin: 0 0 24px; border: 1px solid #2A2F3A;">
-                <p style="margin: 0; font-size: 42px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.4em; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">
-                  {{ .Token }}
-                </p>
-              </div>
+              <!-- OTP Code Section -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 32px;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%); border-radius: 16px; padding: 32px 24px; border: 2px solid rgba(16, 185, 129, 0.4);">
+                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #10B981; text-align: center; text-transform: uppercase; letter-spacing: 0.15em;">
+                      Confirmation Code
+                    </p>
+                    <p style="margin: 0; font-size: 44px; font-weight: 700; color: #FFFFFF; text-align: center; letter-spacing: 0.4em; font-family: 'SF Mono', Monaco, 'Courier New', monospace; line-height: 1.2;">
+                      {{ .Token }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
               
               <!-- Divider -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 16px 0;">
+                  <td style="padding: 8px 0 24px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                       <tr>
-                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 45%;"></td>
-                        <td style="text-align: center; color: #6B7280; font-size: 12px; padding: 0 12px;">OR</td>
-                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 45%;"></td>
+                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 42%;"></td>
+                        <td style="text-align: center; color: #4B5563; font-size: 11px; padding: 0 12px; text-transform: uppercase; letter-spacing: 0.1em;">or</td>
+                        <td style="border-bottom: 1px solid #2A2F3A; height: 1px; width: 42%;"></td>
                       </tr>
                     </table>
                   </td>
                 </tr>
               </table>
               
-              <!-- Confirm Button (Secondary) -->
-              <p style="margin: 0 0 12px; font-size: 13px; color: #6B7280; text-align: center;">
-                Or click the button below to confirm directly:
-              </p>
+              <!-- Confirm Button -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="text-align: center; padding: 0 0 16px;">
-                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 12px 28px; background: transparent; border: 1px solid #10B981; color: #10B981; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px;">
-                      Confirm with Link
+                  <td style="text-align: center; padding: 0;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Confirm Email
                     </a>
                   </td>
                 </tr>
               </table>
               
-              <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
+              <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
                 If you didn't create this account, you can safely ignore this email.
               </p>
             </td>
@@ -198,12 +218,12 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #2A2F3A; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+            <td style="padding: 24px 32px; border-top: 1px solid #1F2937; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; text-transform: uppercase; letter-spacing: 0.1em;">
                 © 2025 CrowdStack. All rights reserved.
               </p>
-              <p style="margin: 8px 0 0; font-size: 12px; color: #4B5563;">
-                <a href="https://crowdstack.app" style="color: #3B82F6; text-decoration: none;">crowdstack.app</a>
+              <p style="margin: 12px 0 0; font-size: 12px;">
+                <a href="https://crowdstack.app" style="color: #A855F7; text-decoration: none; font-weight: 500;">crowdstack.app</a>
               </p>
             </td>
           </tr>
@@ -236,51 +256,61 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0B0D10;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 16px; border: 1px solid #2A2F3A;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 20px; border: 1px solid rgba(168, 85, 247, 0.2); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+            <td style="padding: 40px 32px 24px; text-align: center;">
+              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
+                CROWDSTACK<span style="color: #A855F7;">.</span>
+              </p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px;">
-              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
+            <td style="padding: 0 32px 32px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: -0.02em;">
                 Reset Your Password
               </h1>
               
-              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #9CA3AF; text-align: center;">
                 We received a request to reset your password. Click the button below to choose a new password.
               </p>
               
               <!-- Reset Button -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="text-align: center; padding: 8px 0 24px;">
-                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">
+                  <td style="text-align: center; padding: 0 0 24px;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 36px; background: linear-gradient(135deg, #A855F7 0%, #7C3AED 100%); color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);">
                       Reset Password
                     </a>
                   </td>
                 </tr>
               </table>
               
-              <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
-                This link will expire in 24 hours. If you didn't request a password reset, you can safely ignore this email.
-              </p>
+              <!-- Security Notice -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 0 16px;">
+                <tr>
+                  <td style="background-color: rgba(245, 158, 11, 0.1); border-radius: 10px; padding: 16px; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #F59E0B; text-align: center;">
+                      ⚠️ This link expires in 24 hours. If you didn't request a password reset, please ignore this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #2A2F3A; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+            <td style="padding: 24px 32px; border-top: 1px solid #1F2937; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; text-transform: uppercase; letter-spacing: 0.1em;">
                 © 2025 CrowdStack. All rights reserved.
               </p>
-              <p style="margin: 8px 0 0; font-size: 12px; color: #4B5563;">
-                <a href="https://crowdstack.app" style="color: #3B82F6; text-decoration: none;">crowdstack.app</a>
+              <p style="margin: 12px 0 0; font-size: 12px;">
+                <a href="https://crowdstack.app" style="color: #A855F7; text-decoration: none; font-weight: 500;">crowdstack.app</a>
               </p>
             </td>
           </tr>
@@ -313,31 +343,34 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0B0D10;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 16px; border: 1px solid #2A2F3A;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 20px; border: 1px solid rgba(168, 85, 247, 0.2); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);">
           
           <!-- Logo Header -->
           <tr>
-            <td style="padding: 32px 32px 24px; text-align: center; border-bottom: 1px solid #2A2F3A;">
-              <img src="https://crowdstack.app/crowdstack-full-dark-2x.png" alt="CrowdStack" width="180" style="display: block; margin: 0 auto;" />
+            <td style="padding: 40px 32px 24px; text-align: center;">
+              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
+                CROWDSTACK<span style="color: #A855F7;">.</span>
+              </p>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 32px;">
-              <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 700; color: #FFFFFF; text-align: center;">
-                You're Invited! 🎉
+            <td style="padding: 0 32px 32px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: -0.02em;">
+                You're Invited!
               </h1>
               
-              <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #A0A0A0; text-align: center;">
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #9CA3AF; text-align: center;">
                 You've been invited to join CrowdStack. Click the button below to accept your invitation and set up your account.
               </p>
               
               <!-- Accept Button -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="text-align: center; padding: 8px 0 24px;">
-                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px;">
+                  <td style="text-align: center; padding: 0 0 24px;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 36px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);">
                       Accept Invitation
                     </a>
                   </td>
@@ -352,12 +385,92 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 32px; border-top: 1px solid #2A2F3A; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+            <td style="padding: 24px 32px; border-top: 1px solid #1F2937; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; text-transform: uppercase; letter-spacing: 0.1em;">
                 © 2025 CrowdStack. All rights reserved.
               </p>
-              <p style="margin: 8px 0 0; font-size: 12px; color: #4B5563;">
-                <a href="https://crowdstack.app" style="color: #3B82F6; text-decoration: none;">crowdstack.app</a>
+              <p style="margin: 12px 0 0; font-size: 12px;">
+                <a href="https://crowdstack.app" style="color: #A855F7; text-decoration: none; font-weight: 500;">crowdstack.app</a>
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+---
+
+## Email Change Template
+
+**Subject:** `Confirm your new email address`
+
+**Body:**
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm your new email address</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0B0D10; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0B0D10;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 480px; margin: 0 auto; background-color: #12151A; border-radius: 20px; border: 1px solid rgba(168, 85, 247, 0.2); box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td style="padding: 40px 32px 24px; text-align: center;">
+              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
+                CROWDSTACK<span style="color: #A855F7;">.</span>
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 0 32px 32px;">
+              <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: -0.02em;">
+                Confirm Email Change
+              </h1>
+              
+              <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #9CA3AF; text-align: center;">
+                Click the button below to confirm your new email address.
+              </p>
+              
+              <!-- Confirm Button -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center; padding: 0 0 24px;">
+                    <a href="{{ .ConfirmationURL }}" target="_blank" style="display: inline-block; padding: 16px 36px; background: linear-gradient(135deg, #A855F7 0%, #3B82F6 100%); color: #FFFFFF; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(168, 85, 247, 0.4);">
+                      Confirm Email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #6B7280; text-align: center;">
+                If you didn't request this change, please contact support immediately.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #1F2937; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #4B5563; text-transform: uppercase; letter-spacing: 0.1em;">
+                © 2025 CrowdStack. All rights reserved.
+              </p>
+              <p style="margin: 12px 0 0; font-size: 12px;">
+                <a href="https://crowdstack.app" style="color: #A855F7; text-decoration: none; font-weight: 500;">crowdstack.app</a>
               </p>
             </td>
           </tr>
@@ -374,26 +487,32 @@ This file exists in `apps/unified/public/crowdstack-full-dark-2x.png`.
 
 ## Important Notes
 
-1. **Logo Image**: The email templates reference `https://crowdstack.app/logo.png`. You have two options:
-   - **Option A**: Go to `/admin/tools/brand-assets` and download the "Full Logo PNG (White)" - upload this to your CDN or Supabase Storage
-   - **Option B**: Use an SVG file at `/logo.svg` (already in public folder) - note: some email clients don't support SVG
-   
-   Update the `src` URL in the templates to point to your hosted image.
+1. **Logo Image**: The email templates reference `https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png`.
+   - This is the new tricolor chevron logo (purple + blue)
+   - File exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent.png`
+   - Email clients don't support SVG, so we use PNG
 
-2. **Template Variables**:
+2. **Design System Colors**:
+   - Primary Purple: `#A855F7` / `#7C3AED`
+   - Primary Blue: `#3B82F6` / `#2563EB`
+   - Success Green: `#10B981` / `#059669`
+   - Warning Amber: `#F59E0B`
+   - Background: `#0B0D10` (void), `#12151A` (card)
+   - Border: `rgba(168, 85, 247, 0.2)` (purple tint)
+
+3. **Template Variables**:
    - `{{ .ConfirmationURL }}` - The magic link/confirmation URL
    - `{{ .Token }}` - The 6-digit OTP code (for Magic Link/Confirm templates)
    - `{{ .TokenHash }}` - Token hash (alternative to Token)
    - `{{ .SiteURL }}` - Your site URL
    - `{{ .Email }}` - User's email address
 
-3. **Apply to Both Projects**: 
+4. **Apply to Both Projects**: 
    - **Beta**: https://supabase.com/dashboard/project/aiopjznxnoqgmmqowpxb/auth/templates
    - **Production**: https://supabase.com/dashboard/project/fvrjcyscwibrqpsviblx/auth/templates
 
-4. **Test the Templates**: After updating, request a magic link and verify:
-   - The email looks correct
-   - The magic link button works
-   - The 6-digit OTP code is visible
-   - OTP verification works in the app
-
+5. **Test the Templates**: After updating, request a magic link and verify:
+   - The email looks correct with new tricolor logo
+   - OTP code box has purple/blue gradient border
+   - Buttons have correct gradient colors
+   - The magic link and OTP verification work
