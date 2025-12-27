@@ -1114,7 +1114,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             />
           </div>
           <p className="text-sm text-secondary text-center px-4">
-            We'll send you a magic link to verify your email
+            We'll send you an OTP code to verify your email
           </p>
         </div>
       );
@@ -1685,7 +1685,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   </>
                 ) : (
                   <>
-                    Send Magic Link <ArrowRight className="h-5 w-5" />
+                    Send OTP Code <ArrowRight className="h-5 w-5" />
                   </>
                 )}
               </Button>
