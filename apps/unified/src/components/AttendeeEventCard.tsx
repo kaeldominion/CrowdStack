@@ -280,7 +280,8 @@ export function AttendeeEventCard({
                           )}
                         </button>
                         <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowQrModal(true); }}
+                          onClick={handleViewEntry}
+                          disabled={loading}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-glass hover:bg-active text-primary text-xs font-semibold transition-colors"
                         >
                           <QrCode className="h-3 w-3" />
