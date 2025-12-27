@@ -152,7 +152,7 @@ export function EventPageContent({
   // ===========================================
   if (isMobileFlierView) {
   return (
-      <div className="bg-black/95 rounded-t-3xl min-h-screen">
+      <div className="bg-black/95 rounded-t-3xl">
         {/* Drag indicator */}
         <div className="flex justify-center pt-3 pb-3">
           <div className="w-12 h-1 bg-border-strong rounded-full" />
