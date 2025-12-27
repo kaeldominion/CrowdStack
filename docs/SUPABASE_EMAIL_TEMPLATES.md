@@ -6,9 +6,9 @@ To enable OTP code verification (especially for iOS users) and add CrowdStack br
 
 **Email clients (Gmail, Outlook, Yahoo) do NOT support SVG images!**
 
-The templates below use the PNG version at `https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png`.
+The templates below use the PNG version at `https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png`.
 
-This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent.png`.
+This file exists in `apps/unified/public/logos/crowdstack-icon-tricolor-on-transparent.png`.
 
 ---
 
@@ -43,7 +43,7 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
           <!-- Logo Header -->
           <tr>
             <td style="padding: 40px 32px 24px; text-align: center;">
-              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <img src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
               <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
                 CROWDSTACK<span style="color: #A855F7;">.</span>
               </p>
@@ -152,7 +152,7 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
           <!-- Logo Header -->
           <tr>
             <td style="padding: 40px 32px 24px; text-align: center;">
-              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <img src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
               <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
                 CROWDSTACK<span style="color: #A855F7;">.</span>
               </p>
@@ -261,7 +261,7 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
           <!-- Logo Header -->
           <tr>
             <td style="padding: 40px 32px 24px; text-align: center;">
-              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <img src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
               <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
                 CROWDSTACK<span style="color: #A855F7;">.</span>
               </p>
@@ -348,7 +348,7 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
           <!-- Logo Header -->
           <tr>
             <td style="padding: 40px 32px 24px; text-align: center;">
-              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <img src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
               <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
                 CROWDSTACK<span style="color: #A855F7;">.</span>
               </p>
@@ -428,7 +428,7 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
           <!-- Logo Header -->
           <tr>
             <td style="padding: 40px 32px 24px; text-align: center;">
-              <img src="https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
+              <img src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" alt="CrowdStack" width="56" height="56" style="display: block; margin: 0 auto 16px;" />
               <p style="margin: 0; font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #FFFFFF; text-transform: uppercase;">
                 CROWDSTACK<span style="color: #A855F7;">.</span>
               </p>
@@ -487,10 +487,16 @@ This file exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent
 
 ## Important Notes
 
-1. **Logo Image**: The email templates reference `https://crowdstack.app/crowdstack-logo-tricolor-on-transparent.png`.
-   - This is the new tricolor chevron logo (purple + blue)
-   - File exists in `apps/unified/public/crowdstack-logo-tricolor-on-transparent.png`
+1. **Logo Image**: The email templates reference `https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png`.
+   - This is the new tricolor stacked layers logo (white top, purple middle, blue bottom)
+   - File exists in `apps/unified/public/logos/crowdstack-icon-tricolor-on-transparent.png`
    - Email clients don't support SVG, so we use PNG
+   - Other available logos in `/public/logos/`:
+     - `crowdstack-icon-white-on-transparent.png` (all white)
+     - `crowdstack-icon-purple-on-transparent.png` (all purple)
+     - `crowdstack-icon-black-on-transparent.png` (all black)
+     - `crowdstack-wordmark-dark-standard-transparent.png` (full wordmark for dark bg)
+     - `crowdstack-wordmark-light-standard-transparent.png` (full wordmark for light bg)
 
 2. **Design System Colors**:
    - Primary Purple: `#A855F7` / `#7C3AED`
