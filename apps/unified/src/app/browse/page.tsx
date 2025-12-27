@@ -61,16 +61,18 @@ export default function BrowsePage() {
 
   const EVENTS_PER_PAGE = 12;
 
-  // Fetch available cities on mount
+  // Fetch available cities from upcoming events only
   useEffect(() => {
     async function fetchCities() {
       try {
-        const res = await fetch("/api/browse/venues?limit=1000");
+        // Fetch all upcoming events to get cities with active events
+        const res = await fetch("/api/browse/events?limit=1000");
         const data = await res.json();
         
+        // Extract unique cities from events that have venue cities
         const uniqueCities = Array.from(
           new Set(
-            data.venues?.map((v: any) => v.city).filter(Boolean) || []
+            data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
           )
         ).sort() as string[];
 
