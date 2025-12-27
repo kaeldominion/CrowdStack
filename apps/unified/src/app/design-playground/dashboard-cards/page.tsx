@@ -64,10 +64,34 @@ import Image from "next/image";
 import Link from "next/link";
 
 // ============================================
+// TYPES
+// ============================================
+
+interface DashboardEvent {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  end_time: string | null;
+  status: string;
+  venue_approval_status: string;
+  flier_url: string | null;
+  venue: { id: string; name: string; city: string; slug: string; } | null;
+  organizer: { id: string; name: string; avatar_url: string | null; };
+  registrations: number;
+  checkins: number;
+  capacity: number;
+  referral_link: string | null;
+  promoter_registrations: number;
+  promoter_checkins: number;
+  commission_earned: number;
+}
+
+// ============================================
 // MOCK DATA
 // ============================================
 
-const MOCK_EVENTS = {
+const MOCK_EVENTS: Record<string, DashboardEvent> = {
   live: {
     id: "event-live-1",
     name: "Saturday Night Sessions",
@@ -267,7 +291,7 @@ function CapacityBar({ current, max }: { current: number; max: number }) {
 // ============================================
 
 interface DashboardEventCardFullProps {
-  event: typeof MOCK_EVENTS.live;
+  event: DashboardEvent;
   role: "organizer" | "venue" | "promoter";
   isLive?: boolean;
 }
@@ -427,7 +451,7 @@ function DashboardEventCardFull({ event, role, isLive }: DashboardEventCardFullP
 // ============================================
 
 interface DashboardEventCardRowProps {
-  event: typeof MOCK_EVENTS.past;
+  event: DashboardEvent;
   role: "organizer" | "venue" | "promoter";
 }
 
@@ -506,7 +530,7 @@ function DashboardEventCardRow({ event, role }: DashboardEventCardRowProps) {
 // ============================================
 
 interface DashboardEventCardCompactProps {
-  event: typeof MOCK_EVENTS.upcoming;
+  event: DashboardEvent;
   role: "organizer" | "venue" | "promoter";
   isLive?: boolean;
 }

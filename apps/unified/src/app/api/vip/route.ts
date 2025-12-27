@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@crowdstack/shared/supabase/server";
 
 /**
  * GET /api/vip
@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
           if (venueVip) {
             isVenueVip = true;
             venueVipReason = venueVip.reason;
-            venueName = (event.venues as { name: string } | null)?.name || null;
+            // Supabase returns single relations as objects, not arrays
+            const venueData = event.venues as unknown as { name: string } | null;
+            venueName = venueData?.name || null;
           }
         }
 
@@ -78,7 +80,9 @@ export async function GET(request: NextRequest) {
           if (organizerVip) {
             isOrganizerVip = true;
             organizerVipReason = organizerVip.reason;
-            organizerName = (event.organizers as { name: string } | null)?.name || null;
+            // Supabase returns single relations as objects, not arrays
+            const organizerData = event.organizers as unknown as { name: string } | null;
+            organizerName = organizerData?.name || null;
           }
         }
       }

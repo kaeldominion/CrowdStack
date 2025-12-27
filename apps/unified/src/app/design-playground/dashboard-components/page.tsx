@@ -105,14 +105,50 @@ function StatCard({ label, value, subLabel, trend, icon, accent = "default", siz
     neutral: "text-secondary",
   };
 
+  // Compact layout - optimized for tight grids
+  if (size === "compact") {
+    return (
+      <Card className={`${accentColors[accent]} !p-3`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary truncate">
+              {label}
+            </p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <p className="font-sans text-xl font-bold tracking-tight text-primary">
+                {value}
+              </p>
+              {trend && (
+                <div className={`flex items-center gap-0.5 ${trendColors[trend.direction]}`}>
+                  {trend.direction === "up" && <TrendingUp className="h-2.5 w-2.5" />}
+                  {trend.direction === "down" && <TrendingDown className="h-2.5 w-2.5" />}
+                  <span className="text-[10px] font-semibold">{trend.value}</span>
+                </div>
+              )}
+            </div>
+            {subLabel && (
+              <p className="text-[10px] text-secondary mt-0.5 truncate">{subLabel}</p>
+            )}
+          </div>
+          {icon && (
+            <div className="text-muted flex-shrink-0">
+              {icon}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  // Default layout
   return (
-    <Card className={`${accentColors[accent]} ${size === "compact" ? "!p-4" : ""}`}>
+    <Card className={accentColors[accent]}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
             {label}
           </p>
-          <p className={`font-sans font-bold tracking-tight text-primary mt-2 ${size === "compact" ? "text-2xl" : "text-4xl"}`}>
+          <p className="font-sans text-4xl font-bold tracking-tight text-primary mt-2">
             {value}
           </p>
           {subLabel && (
@@ -732,7 +768,7 @@ export default function DashboardComponentsPage() {
           </div>
 
           <div className="mb-8">
-            <CardLabel>Compact Size</CardLabel>
+            <CardLabel>Compact Size (Basic)</CardLabel>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <StatCard label="RSVPs" value="1,240" size="compact" />
               <StatCard label="Check-ins" value="890" size="compact" accent="success" />
@@ -740,6 +776,110 @@ export default function DashboardComponentsPage() {
               <StatCard label="Rejected" value="12" size="compact" accent="error" />
               <StatCard label="Conv. %" value="72%" size="compact" />
               <StatCard label="Revenue" value="$4.2k" size="compact" accent="primary" />
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <CardLabel>Compact Size (With Trends)</CardLabel>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard 
+                label="RSVPs" 
+                value="1,240" 
+                size="compact" 
+                trend={{ value: "+12%", direction: "up" }}
+              />
+              <StatCard 
+                label="Check-ins" 
+                value="890" 
+                size="compact" 
+                accent="success"
+                trend={{ value: "+8%", direction: "up" }}
+              />
+              <StatCard 
+                label="Pending" 
+                value="156" 
+                size="compact" 
+                accent="warning"
+                trend={{ value: "-3%", direction: "down" }}
+              />
+              <StatCard 
+                label="Rejected" 
+                value="12" 
+                size="compact" 
+                accent="error"
+                trend={{ value: "+2", direction: "up" }}
+              />
+              <StatCard 
+                label="Conv. %" 
+                value="72%" 
+                size="compact"
+                trend={{ value: "+5%", direction: "up" }}
+              />
+              <StatCard 
+                label="Revenue" 
+                value="$4.2k" 
+                size="compact" 
+                accent="primary"
+                trend={{ value: "+18%", direction: "up" }}
+              />
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <CardLabel>Compact Size (With Icons & Sub-labels)</CardLabel>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard 
+                label="Total RSVPs" 
+                value="1,240" 
+                size="compact"
+                subLabel="82% capacity"
+                icon={<Users className="h-4 w-4" />}
+                trend={{ value: "+12%", direction: "up" }}
+              />
+              <StatCard 
+                label="Checked In" 
+                value="890" 
+                size="compact" 
+                accent="success"
+                subLabel="72% turnout"
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                trend={{ value: "+8%", direction: "up" }}
+              />
+              <StatCard 
+                label="Page Views" 
+                value="12.5k" 
+                size="compact"
+                subLabel="Last 24h"
+                icon={<Eye className="h-4 w-4" />}
+                trend={{ value: "+24%", direction: "up" }}
+              />
+              <StatCard 
+                label="Signups" 
+                value="342" 
+                size="compact" 
+                accent="primary"
+                subLabel="Via promoters"
+                icon={<UserPlus className="h-4 w-4" />}
+                trend={{ value: "+15%", direction: "up" }}
+              />
+              <StatCard 
+                label="No Shows" 
+                value="48" 
+                size="compact" 
+                accent="error"
+                subLabel="3.9% rate"
+                icon={<Target className="h-4 w-4" />}
+                trend={{ value: "-2%", direction: "down" }}
+              />
+              <StatCard 
+                label="Earnings" 
+                value="$2.4k" 
+                size="compact" 
+                accent="success"
+                subLabel="This event"
+                icon={<Zap className="h-4 w-4" />}
+                trend={{ value: "+$320", direction: "up" }}
+              />
             </div>
           </div>
 
