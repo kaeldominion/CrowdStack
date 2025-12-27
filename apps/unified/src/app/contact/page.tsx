@@ -58,20 +58,21 @@ export default function ContactPage() {
             <Card className="text-center" padding="none">
               <div className="p-6">
                 <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/10 mb-6"
-              >
-                <CheckCircle2 className="h-8 w-8 text-accent-success" />
-              </motion.div>
-              <h2 className="page-title mb-4">Thank you!</h2>
-              <p className="text-lg text-secondary mb-2">
-                We&apos;ve received your request and will contact you within 24 hours.
-              </p>
-              <p className="text-sm text-muted">
-                We look forward to speaking with you soon.
-              </p>
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+                  className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/10 mb-6"
+                >
+                  <CheckCircle2 className="h-8 w-8 text-accent-success" />
+                </motion.div>
+                <h2 className="page-title mb-4">Thank you!</h2>
+                <p className="text-lg text-secondary mb-2">
+                  We&apos;ve received your request and will contact you within 24 hours.
+                </p>
+                <p className="text-sm text-muted">
+                  We look forward to speaking with you soon.
+                </p>
+              </div>
             </Card>
           </motion.div>
         </div>
