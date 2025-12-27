@@ -215,7 +215,7 @@ export default function QRPassPage() {
             <p className="text-sm text-secondary mb-6">
               Please register for this event to get your entry pass.
             </p>
-            <Button href={`/e/${eventSlug}/register`} variant="primary" fullWidth>
+            <Button href={`/e/${eventSlug}/register`} variant="primary" className="w-full">
               Register Now
             </Button>
           </Card>

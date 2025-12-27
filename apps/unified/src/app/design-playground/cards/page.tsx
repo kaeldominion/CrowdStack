@@ -328,7 +328,7 @@ export default function DesignCardsPage() {
             <CardLabel>Row / List Format</CardLabel>
             <div className="space-y-3 max-w-3xl">
               <EventCardRow event={MOCK_EVENT} />
-              <EventCardRow event={MOCK_EVENT} isAttending />
+              <EventCardRow event={MOCK_EVENT} registration={MOCK_REGISTRATION} />
               <EventCardRow event={MOCK_EVENT_TODAY} isLive />
               <EventCardRow event={MOCK_EVENT_NO_IMAGE} />
             </div>

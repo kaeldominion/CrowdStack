@@ -88,13 +88,13 @@ export default function ButtonsPage() {
                 <Button variant="primary">Primary</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="ghost">Ghost</Button>
-                <Button variant="danger">Danger</Button>
+                <Button variant="destructive">Destructive</Button>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <CodeBlock>variant="primary"</CodeBlock>
                 <CodeBlock>variant="secondary"</CodeBlock>
                 <CodeBlock>variant="ghost"</CodeBlock>
-                <CodeBlock>variant="danger"</CodeBlock>
+                <CodeBlock>variant="destructive"</CodeBlock>
               </div>
             </Card>
 
@@ -164,11 +164,11 @@ export default function ButtonsPage() {
                 Full Width
               </p>
               <div className="space-y-3 max-w-sm">
-                <Button variant="primary" fullWidth>Join Guestlist</Button>
-                <Button variant="secondary" fullWidth>View Details</Button>
+                <Button variant="primary" className="w-full">Join Guestlist</Button>
+                <Button variant="secondary" className="w-full">View Details</Button>
               </div>
               <div className="mt-4">
-                <CodeBlock>fullWidth</CodeBlock>
+                <CodeBlock>className="w-full"</CodeBlock>
               </div>
             </Card>
           </div>

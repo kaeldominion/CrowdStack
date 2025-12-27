@@ -81,7 +81,6 @@ export default async function PastEventsPage({
                 key={event.id} 
                 event={event} 
                 isPast
-                registrationCount={event.registration_count}
               />
             ))}
           </div>

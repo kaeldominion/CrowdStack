@@ -449,7 +449,7 @@ export default function VenueSettingsPage() {
 
               {/* Map Preview */}
               {data.venue.google_maps_url && (
-                <MapPreview url={data.venue.google_maps_url} />
+                <MapPreview mapsUrl={data.venue.google_maps_url} />
               )}
 
               {/* Address Fields - Manual Editing */}

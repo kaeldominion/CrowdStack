@@ -156,7 +156,6 @@ export default async function VenuePage({
   const stats = {
     followers: formatCount(followerCount),
     events: totalEventCount.toString(),
-    capacity: venue.capacity ? formatCount(venue.capacity) : "-",
   };
 
   return (
@@ -241,7 +240,7 @@ export default async function VenuePage({
               
               {/* Stats Card */}
               <Card padding="none">
-                <div className="grid grid-cols-3 divide-x divide-border-subtle">
+                <div className="grid grid-cols-2 divide-x divide-border-subtle">
                   <div className="p-4 text-center">
                     <p className="text-2xl font-bold text-primary">{stats.followers}</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Followers</p>
@@ -249,10 +248,6 @@ export default async function VenuePage({
                   <div className="p-4 text-center">
                     <p className="text-2xl font-bold text-primary">{stats.events}</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Events</p>
-                      </div>
-                  <div className="p-4 text-center">
-                    <p className="text-2xl font-bold text-primary">{stats.capacity}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Capacity</p>
                   </div>
                 </div>
               </Card>

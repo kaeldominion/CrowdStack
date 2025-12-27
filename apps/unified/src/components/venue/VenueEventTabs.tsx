@@ -71,7 +71,6 @@ export function VenueEventTabs({ upcomingEvents, pastEvents, venueName, venueSlu
                 <EventCardRow 
                   key={event.id} 
                   event={event}
-                  registrationCount={event.registration_count}
                 />
               ))}
             </div>
@@ -94,7 +93,6 @@ export function VenueEventTabs({ upcomingEvents, pastEvents, venueName, venueSlu
                   key={event.id} 
                   event={event}
                   isPast
-                  registrationCount={event.registration_count}
                 />
               ))}
               

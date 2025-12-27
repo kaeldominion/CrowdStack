@@ -263,7 +263,6 @@ export function EventCardRow({
                   url={shareUrl}
                   imageUrl={event.flier_url || event.cover_image_url || undefined}
                   iconOnly
-                  size="sm"
                 />
               </div>
             </div>
