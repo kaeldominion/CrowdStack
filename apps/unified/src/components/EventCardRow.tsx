@@ -187,84 +187,67 @@ export function EventCardRow({
             </div>
           )}
 
-          {/* Avatars + Spots Row */}
-          <div className="flex items-center gap-1.5">
-            {(event.registration_count || 0) > 0 && (
-              <>
-                <div className="flex -space-x-1">
-                  {recentAttendees.slice(0, 3).map((attendee, i) => (
-                    <div
-                      key={attendee.id || i}
-                      className="w-5 h-5 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary border border-void flex items-center justify-center overflow-hidden"
-                    >
-                      {attendee.profile_picture_url ? (
-                        <Image
-                          src={attendee.profile_picture_url}
-                          alt={attendee.name || "Attendee"}
-                          width={20}
-                          height={20}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <span className="text-[7px] font-bold text-void">
-                          {attendee.name?.[0]?.toUpperCase() || "?"}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                  {(event.registration_count || 0) > 3 && (
-                    <div className="w-5 h-5 rounded-full bg-raised border border-void flex items-center justify-center">
-                      <span className="text-[7px] font-bold text-primary">
-                        +{((event.registration_count || 0) - 3)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <span className="font-mono text-[9px] text-muted uppercase">
-                  {event.registration_count} going
-                </span>
-              </>
-            )}
-            {spotsLeft !== null && (
-              <span className="font-mono text-[9px] text-accent-primary font-bold">
-                {(event.registration_count || 0) > 0 ? "• " : ""}{spotsLeft} left
-              </span>
-            )}
-          </div>
-
-          {/* Action Buttons */}
+          {/* Bottom Row: Action Buttons Left + Stats Right */}
           {!isPast && (
-            <div className="flex items-center gap-2 mt-auto pt-1">
-              {isAttending ? (
-                <button
-                  onClick={handleViewPass}
-                  disabled={loading}
-                  className="flex items-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
-                >
-                  <Check className="h-3 w-3" />
-                  View Entry
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    router.push(`/e/${event.slug}/register`);
-                  }}
-                  className="bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-white/90 transition-colors"
-                >
-                  Join Guestlist
-                </button>
-              )}
-              <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                <ShareButton
-                  title={event.name}
-                  text={`Check out ${event.name}`}
-                  url={shareUrl}
-                  imageUrl={event.flier_url || event.cover_image_url || undefined}
-                  iconOnly
-                />
+            <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+              {/* Left: Action Buttons */}
+              <div className="flex items-center gap-2">
+                {isAttending ? (
+                  <button
+                    onClick={handleViewPass}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
+                  >
+                    <Check className="h-3 w-3" />
+                    View Entry
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/e/${event.slug}/register`);
+                    }}
+                    className="bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-white/90 transition-colors"
+                  >
+                    Join Guestlist
+                  </button>
+                )}
+                <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  <ShareButton
+                    title={event.name}
+                    text={`Check out ${event.name}`}
+                    url={shareUrl}
+                    imageUrl={event.flier_url || event.cover_image_url || undefined}
+                    iconOnly
+                  />
+                </div>
               </div>
+
+              {/* Right: Registration Stats */}
+              <div className="flex items-center gap-2 text-right">
+                {(event.registration_count || 0) > 0 && (
+                  <span className="font-mono text-[10px] text-secondary">
+                    <span className="font-bold text-primary">{event.registration_count}</span> registered
+                  </span>
+                )}
+                {spotsLeft !== null && (
+                  <span className={`font-mono text-[10px] font-bold ${
+                    spotsLeft <= 10 ? "text-accent-warning" : "text-accent-success"
+                  }`}>
+                    {spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Past event stats (no buttons) */}
+          {isPast && (event.registration_count || 0) > 0 && (
+            <div className="flex items-center justify-end gap-2 mt-auto pt-1">
+              <span className="font-mono text-[10px] text-secondary">
+                <span className="font-bold text-primary">{event.registration_count}</span> attended
+              </span>
             </div>
           )}
         </div>
