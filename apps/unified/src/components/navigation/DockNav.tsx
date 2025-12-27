@@ -194,8 +194,8 @@ export function DockNav() {
       return ATTENDEE_NAV_ITEMS;
     }
     
-    // On landing page, show "For Business" link for unauthenticated users
-    if (pathname === "/" || pathname === "/for-business") {
+    // On landing page, contact, and for-business pages, show "For Business" link for unauthenticated users
+    if (pathname === "/" || pathname === "/for-business" || pathname === "/contact") {
       return [FOR_BUSINESS_ITEM, ...PUBLIC_NAV_ITEMS];
     }
     
