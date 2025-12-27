@@ -117,6 +117,11 @@ export default function UpcomingEventsPage() {
       setLoading(false);
     }
   };
+  
+  // Handle registration cancellation - remove from list
+  const handleCancelRegistration = (registrationId: string) => {
+    setEvents(prev => prev.filter(r => r.id !== registrationId));
+  };
 
   if (loading) {
     return (
@@ -176,6 +181,7 @@ export default function UpcomingEventsPage() {
                   variant="attending"
                   isAttending={true}
                   showShare={true}
+                  onCancelRegistration={handleCancelRegistration}
                 />
               )
             ))}

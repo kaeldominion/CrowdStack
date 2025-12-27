@@ -70,7 +70,9 @@ export function EventPageContent({
   const userId = useReferralUserId();
   const searchParams = useSearchParams();
   const [isRegistered, setIsRegistered] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [canEditEvent, setCanEditEvent] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   
   const dateInfo = formatEventDate(startDate);
   const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
@@ -83,6 +85,7 @@ export function EventPageContent({
         const data = await res.json();
         if (data.registered) {
           setIsRegistered(true);
+          setRegistrationId(data.registration_id || null);
         }
       } catch (error) {
         // Silently fail
@@ -90,6 +93,32 @@ export function EventPageContent({
     };
     checkRegistration();
   }, [params.eventSlug]);
+  
+  // Handle cancel registration
+  const handleCancelRegistration = async () => {
+    if (!registrationId) return;
+    
+    if (!confirm(`Cancel your registration for ${event.name}?`)) return;
+    
+    setCancelling(true);
+    try {
+      const response = await fetch(`/api/registrations/${registrationId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setIsRegistered(false);
+        setRegistrationId(null);
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to cancel registration");
+      }
+    } catch (error) {
+      console.error("Error cancelling registration:", error);
+      alert("Failed to cancel registration");
+    } finally {
+      setCancelling(false);
+    }
+  };
   
   // Check if user can edit this event
   useEffect(() => {
@@ -215,8 +244,10 @@ export function EventPageContent({
             </Link>
             {isRegistered && (
               <button 
-                className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors"
+                className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors disabled:opacity-50"
                 aria-label="Cancel registration"
+                onClick={handleCancelRegistration}
+                disabled={cancelling}
               >
                 <X className="h-5 w-5" />
               </button>

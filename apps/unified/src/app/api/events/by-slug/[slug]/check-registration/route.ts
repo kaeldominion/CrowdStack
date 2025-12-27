@@ -92,6 +92,7 @@ export async function GET(
 
     return NextResponse.json({
       registered: true,
+      registration_id: registration.id,
       qr_pass_token: qrToken,
       attendee: {
         id: attendee.id,
