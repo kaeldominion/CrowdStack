@@ -706,10 +706,9 @@ export default function OrganizerLiveMissionControlPage() {
                 <h4 className="text-sm font-semibold text-primary mb-3">Previous Events</h4>
                 <div className="space-y-2">
                   {attendeeDetails.previous_events.map((event: any) => (
-                    <Card
+                    <div
                       key={event.id}
-                      padding="compact"
-                      className="flex items-center justify-between"
+                      className="flex items-center justify-between p-3 rounded-lg bg-raised"
                     >
                       <div>
                         <p className="text-sm font-medium text-primary">{event.name}</p>
