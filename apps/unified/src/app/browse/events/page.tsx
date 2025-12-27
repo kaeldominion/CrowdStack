@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Input } from "@crowdstack/ui";
@@ -25,7 +25,45 @@ interface Event {
 
 const EVENTS_PER_PAGE = 20;
 
+// Loading skeleton for Suspense fallback
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-void">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="h-4 w-32 bg-raised rounded animate-pulse mb-4" />
+          <div className="h-10 w-64 bg-raised rounded animate-pulse" />
+        </div>
+        <div className="space-y-3">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse"
+            >
+              <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-3 w-24 bg-raised rounded" />
+                <div className="h-5 w-3/4 bg-raised rounded" />
+                <div className="h-3 w-1/2 bg-raised rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page wrapper with Suspense
 export default function BrowseAllEventsPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <BrowseAllEventsContent />
+    </Suspense>
+  );
+}
+
+function BrowseAllEventsContent() {
   const searchParams = useSearchParams();
   const initialCity = searchParams.get("city") || "";
   const initialSearch = searchParams.get("search") || "";
