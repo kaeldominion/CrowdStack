@@ -429,7 +429,7 @@ export default function MePage() {
                   <Ticket className="h-12 w-12 text-muted mx-auto mb-4" />
                   <h3 className="font-sans text-lg font-bold text-primary mb-2">No upcoming events</h3>
                   <p className="text-sm text-secondary mb-4">Discover events and get on the guestlist!</p>
-                  <Button href="/">Browse Events</Button>
+                  <Button href="/browse">Browse Events</Button>
                 </Card>
               )}
             </>
@@ -660,7 +660,7 @@ export default function MePage() {
                       <Ticket className="h-12 w-12 text-muted mx-auto mb-4" />
                       <h3 className="font-sans text-lg font-bold text-primary mb-2">No upcoming events</h3>
                       <p className="text-sm text-secondary mb-4">Discover events and get on the guestlist!</p>
-                      <Button href="/">Browse Events</Button>
+                      <Button href="/browse">Browse Events</Button>
                     </Card>
                   )}
                 </section>

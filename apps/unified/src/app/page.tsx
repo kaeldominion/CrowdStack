@@ -122,7 +122,7 @@ const SHOWCASE_VENUES = [
 ];
 
 // Event Card Component (simplified version for landing)
-function EventShowcaseCard({ event, index }: { event: typeof SHOWCASE_EVENTS[0]; index: number }) {
+function EventShowcaseCard({ event, index }: { event: any; index: number }) {
   return (
           <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -209,39 +209,30 @@ function EventShowcaseCard({ event, index }: { event: typeof SHOWCASE_EVENTS[0];
 }
 
 // Mobile Event Carousel - scroll-snap through events
-function MobileEventCarousel() {
+function MobileEventCarousel({ events, loading }: { events: any[]; loading: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   
-  const events = [
-    {
-      id: "1",
-      name: "NEW YEAR'S EVE GALA",
-      date: "TONIGHT • 22:00",
-      venue: "@ The Grand Ballroom, NYC",
-      attending: 342,
-      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
-      badge: { text: "LIVE NOW", color: "green" as const },
-    },
-    {
-      id: "2",
-      name: "TECHNO UNDERGROUND",
-      date: "SAT 28 DEC • 23:00",
-      venue: "@ Warehouse 51, LA",
-      attending: 189,
-      image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=800&fit=crop",
-      badge: { text: "SELLING FAST", color: "purple" as const },
-    },
-    {
-      id: "3",
-      name: "ROOFTOP SUNSET",
-      date: "SUN 29 DEC • 18:00",
-      venue: "@ Sky Lounge, Miami",
-      attending: 256,
-      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=800&fit=crop",
-      badge: { text: "FEATURED", color: "blue" as const },
-    },
-  ];
+  // Transform events for mobile carousel
+  const mobileEvents = events.length > 0 ? events.slice(0, 3).map((event) => {
+    const now = new Date();
+    const isLive = event.date.includes("TONIGHT");
+    const spotsLeft = event.spotsLeft || 0;
+    
+    return {
+      id: event.id,
+      name: event.name.toUpperCase(),
+      date: `${event.date} • ${event.time}`,
+      venue: `@ ${event.venue}${event.city ? `, ${event.city}` : ""}`,
+      attending: event.capacity - spotsLeft,
+      image: event.image,
+      badge: isLive 
+        ? { text: "LIVE NOW", color: "green" as const }
+        : spotsLeft <= 20
+        ? { text: "SELLING FAST", color: "purple" as const }
+        : { text: "FEATURED", color: "blue" as const },
+    };
+  }) : [];
 
   // Handle scroll to detect active card
   const handleScroll = () => {
@@ -269,7 +260,7 @@ function MobileEventCarousel() {
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide px-6 gap-4 pb-4"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {events.map((event, index) => (
+        {mobileEvents.map((event, index) => (
           <div 
             key={event.id}
             className="snap-center shrink-0 w-[85vw] max-w-[340px]"
@@ -323,7 +314,7 @@ function MobileEventCarousel() {
 
       {/* Indicators */}
       <div className="flex justify-center gap-2 mt-4">
-        {events.map((_, i) => (
+        {mobileEvents.map((_, i) => (
           <div
                             key={i}
             className={`h-2 rounded-full transition-all duration-300 ${
@@ -344,46 +335,51 @@ function MobileEventCarousel() {
 }
 
 // Hero Event Carousel - auto-rotating through featured events
-function HeroEventCarousel() {
+function HeroEventCarousel({ events, loading }: { events: any[]; loading: boolean }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  const heroEvents = [
-    {
-      id: "1",
-      name: "NEW YEAR'S EVE GALA",
-      date: "TONIGHT • 22:00",
-      venue: "@ The Grand Ballroom, NYC",
-      attending: 342,
-      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
-      badge: { text: "LIVE NOW", color: "green" as const },
-    },
-    {
-      id: "2",
-      name: "TECHNO UNDERGROUND",
-      date: "SAT 28 DEC • 23:00",
-      venue: "@ Warehouse 51, LA",
-      attending: 189,
-      image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=800&fit=crop",
-      badge: { text: "SELLING FAST", color: "purple" as const },
-    },
-    {
-      id: "3",
-      name: "ROOFTOP SUNSET",
-      date: "SUN 29 DEC • 18:00",
-      venue: "@ Sky Lounge, Miami",
-      attending: 256,
-      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=800&fit=crop",
-      badge: { text: "FEATURED", color: "blue" as const },
-    },
-  ];
+  // Transform events for hero carousel
+  const heroEvents = events.length > 0 ? events.slice(0, 3).map((event) => {
+    const now = new Date();
+    const startDate = new Date(event.date.includes("TONIGHT") ? now : `${event.date} ${event.time}`);
+    const isLive = event.date.includes("TONIGHT");
+    const spotsLeft = event.spotsLeft || 0;
+    
+    return {
+      id: event.id,
+      name: event.name.toUpperCase(),
+      date: `${event.date} • ${event.time}`,
+      venue: `@ ${event.venue}${event.city ? `, ${event.city}` : ""}`,
+      attending: event.capacity - spotsLeft,
+      image: event.image,
+      badge: isLive 
+        ? { text: "LIVE NOW", color: "green" as const }
+        : spotsLeft <= 20
+        ? { text: "SELLING FAST", color: "purple" as const }
+        : { text: "FEATURED", color: "blue" as const },
+    };
+  }) : [];
 
   // Auto-rotate every 3 seconds
   useEffect(() => {
+    if (heroEvents.length === 0) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % heroEvents.length);
     }, 3000);
     return () => clearInterval(timer);
   }, [heroEvents.length]);
+
+  if (loading) {
+    return (
+      <div className="relative w-80 sm:w-96 rounded-2xl overflow-hidden border-2 border-white/30 bg-raised animate-pulse">
+        <div className="aspect-[3/4] w-full" />
+      </div>
+    );
+  }
+
+  if (heroEvents.length === 0) {
+    return null;
+  }
 
   const currentEvent = heroEvents[currentIndex];
 
@@ -466,7 +462,7 @@ function HeroEventCarousel() {
 }
 
 // Venue Card Component (simplified version for landing)
-function VenueShowcaseCard({ venue, index }: { venue: typeof SHOWCASE_VENUES[0]; index: number }) {
+function VenueShowcaseCard({ venue, index }: { venue: any; index: number }) {
   return (
                         <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -507,7 +503,7 @@ function VenueShowcaseCard({ venue, index }: { venue: typeof SHOWCASE_VENUES[0];
             
             {/* Tags */}
             <div className="flex gap-2 flex-wrap">
-              {venue.tags.map((tag, i) => (
+              {venue.tags.map((tag: string, i: number) => (
                 <Badge 
                   key={i}
                   color="blue" 
@@ -516,8 +512,8 @@ function VenueShowcaseCard({ venue, index }: { venue: typeof SHOWCASE_VENUES[0];
                 >
                   {tag}
                 </Badge>
-            ))}
-          </div>
+              ))}
+            </div>
         </div>
         </div>
       </Link>
@@ -526,6 +522,89 @@ function VenueShowcaseCard({ venue, index }: { venue: typeof SHOWCASE_VENUES[0];
 }
 
 export default function HomePage() {
+  const [showcaseEvents, setShowcaseEvents] = useState<any[]>([]);
+  const [showcaseVenues, setShowcaseVenues] = useState<any[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingVenues, setLoadingVenues] = useState(true);
+
+  // Fetch featured events on mount
+  useEffect(() => {
+    async function fetchFeaturedEvents() {
+      try {
+        const res = await fetch("/api/browse/events?featured=true&limit=6");
+        const data = await res.json();
+        
+        if (data.events && data.events.length > 0) {
+          // Transform API data to match component format
+          const transformed = data.events.map((event: any) => {
+            const startDate = new Date(event.start_time);
+            const day = startDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+            const dayNum = startDate.getDate();
+            const month = startDate.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+            const time = startDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+            
+            const now = new Date();
+            const isToday = startDate.toDateString() === now.toDateString();
+            const dateStr = isToday ? "TONIGHT" : `${day} ${dayNum} ${month}`;
+            
+            const spotsLeft = event.capacity && event.registration_count 
+              ? Math.max(event.capacity - event.registration_count, 0)
+              : null;
+            
+            return {
+              id: event.id,
+              name: event.name,
+              slug: event.slug,
+              date: dateStr,
+              time: time,
+              venue: event.venue?.name || "Venue TBA",
+              city: event.venue?.city || "",
+              image: event.flier_url || event.cover_image_url || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=800&fit=crop",
+              spotsLeft: spotsLeft || 0,
+              capacity: event.capacity || 0,
+            };
+          });
+          setShowcaseEvents(transformed);
+        }
+      } catch (error) {
+        console.error("Error fetching featured events:", error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    }
+
+    async function fetchPopularVenues() {
+      try {
+        const res = await fetch("/api/browse/venues?limit=4");
+        const data = await res.json();
+        
+        if (data.venues && data.venues.length > 0) {
+          // Transform API data to match component format
+          const transformed = data.venues.map((venue: any) => {
+            const musicTags = venue.tags?.filter((t: any) => t.tag_type === "music") || [];
+            return {
+              id: venue.id,
+              name: venue.name,
+              slug: venue.slug || venue.id,
+              city: venue.city || "",
+              country: venue.country || "",
+              image: venue.cover_image_url || venue.logo_url || "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&h=400&fit=crop",
+              rating: venue.rating || 4.5,
+              tags: musicTags.map((t: { tag_type: string; tag_value: string }) => t.tag_value) || [],
+            };
+          });
+          setShowcaseVenues(transformed);
+        }
+      } catch (error) {
+        console.error("Error fetching venues:", error);
+      } finally {
+        setLoadingVenues(false);
+      }
+    }
+
+    fetchFeaturedEvents();
+    fetchPopularVenues();
+  }, []);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -679,7 +758,7 @@ export default function HomePage() {
 
             {/* Right: Auto-Rotating Event Cards */}
             <div className="hidden lg:flex justify-center lg:justify-end">
-              <HeroEventCarousel />
+              <HeroEventCarousel events={showcaseEvents} loading={loadingEvents} />
             </div>
           </div>
                 </div>
@@ -721,7 +800,7 @@ export default function HomePage() {
       </section>
 
       {/* Mobile Event Cards - Scroll-Snap Section */}
-      <MobileEventCarousel />
+      <MobileEventCarousel events={showcaseEvents} loading={loadingEvents} />
 
       {/* Popular Venues Section */}
       <section className="py-24 relative overflow-hidden -mt-24">
@@ -755,11 +834,23 @@ export default function HomePage() {
           </motion.div>
 
           {/* Venues Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SHOWCASE_VENUES.map((venue, index) => (
-              <VenueShowcaseCard key={venue.id} venue={venue} index={index} />
-            ))}
-          </div>
+          {loadingVenues ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-64 bg-raised rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          ) : showcaseVenues.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {showcaseVenues.map((venue, index) => (
+                <VenueShowcaseCard key={venue.id} venue={venue} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-secondary">
+              <p>No venues available at the moment.</p>
+            </div>
+          )}
         </div>
       </section>
 
