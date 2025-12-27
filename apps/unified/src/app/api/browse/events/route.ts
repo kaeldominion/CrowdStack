@@ -5,6 +5,7 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * GET /api/browse/events
  * Public browse events endpoint with search and filters
  * Returns published upcoming events with venue data
+ * Updated: Dec 2024 - Added live events fallback and featured support
  */
 export async function GET(request: NextRequest) {
   try {
