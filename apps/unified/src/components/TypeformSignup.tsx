@@ -934,7 +934,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
                 placeholder="your@email.com"
-                className="text-xl sm:text-2xl py-4 sm:py-6 pl-14 text-center border-2 focus:border-accent-primary w-full"
+                className="text-lg sm:text-xl py-4 sm:py-6 pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoComplete="email"
                 inputMode="email"
               />
@@ -953,7 +953,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }
               }}
               placeholder="Password (min 6 characters)"
-              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
+              className="text-lg sm:text-xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="new-password"
               minLength={6}
@@ -972,7 +972,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 }
               }}
               placeholder="Confirm password"
-              className="text-xl sm:text-2xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
+              className="text-lg sm:text-xl py-4 sm:py-6 text-center border-2 focus:border-accent-primary w-full"
               autoComplete="new-password"
               minLength={6}
             />
@@ -1029,7 +1029,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     }
                   }}
                   placeholder="Enter code"
-                  className="text-2xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-accent-primary w-full"
+                  className="text-xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-accent-primary w-full"
                   autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -1107,7 +1107,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               }}
               onFocus={scrollFormIntoView}
               placeholder="your@email.com"
-              className="text-2xl sm:text-3xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-accent-primary w-full"
+              className="text-xl sm:text-2xl py-6 sm:py-8 pl-14 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="email"
               inputMode="email"
@@ -1133,7 +1133,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               onKeyDown={handleKeyDown}
               onFocus={scrollFormIntoView}
               placeholder="First name"
-              className="text-2xl sm:text-3xl py-6 sm:py-8 text-center border-2 focus:border-accent-primary w-full"
+              className="text-xl sm:text-2xl py-6 sm:py-8 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="given-name"
             />
@@ -1152,7 +1152,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               onKeyDown={handleKeyDown}
               onFocus={scrollFormIntoView}
               placeholder="Last name"
-              className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-accent-primary w-full"
+              className="text-lg sm:text-xl md:text-2xl py-4 sm:py-6 md:py-8 text-center border-2 focus:border-accent-primary w-full"
               autoFocus
               autoComplete="family-name"
             />
@@ -1199,7 +1199,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     : "bg-active border-border-subtle text-secondary hover:border-border-strong"
                 }`}
               >
-                <span className="text-xl sm:text-2xl font-semibold">Male</span>
+                <span className="text-lg sm:text-xl font-semibold">Male</span>
               </button>
               <button
                 type="button"
@@ -1213,7 +1213,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                     : "bg-active border-border-subtle text-secondary hover:border-border-strong"
                 }`}
               >
-                <span className="text-xl sm:text-2xl font-semibold">Female</span>
+                <span className="text-lg sm:text-xl font-semibold">Female</span>
               </button>
             </div>
           </div>
@@ -1234,7 +1234,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 onKeyDown={handleKeyDown}
                 onFocus={scrollFormIntoView}
                 placeholder="+1234567890"
-                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
+                className="text-lg sm:text-xl md:text-2xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoFocus
                 autoComplete="tel"
                 inputMode="tel"
@@ -1273,7 +1273,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 onKeyDown={handleKeyDown}
                 onFocus={scrollFormIntoView}
                 placeholder="username"
-                className="text-xl sm:text-2xl md:text-3xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
+                className="text-lg sm:text-xl md:text-2xl py-4 sm:py-6 md:py-8 pl-12 sm:pl-14 text-center border-2 focus:border-accent-primary w-full"
                 autoFocus
                 autoComplete="username"
               />
