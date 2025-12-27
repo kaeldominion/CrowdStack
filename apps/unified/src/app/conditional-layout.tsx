@@ -113,7 +113,7 @@ export function ConditionalLayout({
   const mainPaddingClass = `flex-1 ${topPadding}`;
 
   return (
-    <div className="flex min-h-screen flex-col font-sans">
+    <div className="flex min-h-screen flex-col font-sans bg-void">
       {/* AI Studio atmosphere layers */}
       <div className="atmosphere-gradient" aria-hidden="true" />
       <div className="atmosphere-noise" aria-hidden="true" />

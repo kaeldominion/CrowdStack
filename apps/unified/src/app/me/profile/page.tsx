@@ -4,9 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
-import { User, Mail, Phone, Save, Check, AlertCircle, Calendar, Instagram, MessageCircle, FileText, ArrowLeft } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Save,
+  Check,
+  AlertCircle,
+  Calendar,
+  Instagram,
+  MessageCircle,
+  FileText,
+  ArrowLeft,
+} from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { Button, InlineSpinner, LoadingSpinner } from "@crowdstack/ui";
+import { Button, Card, Input, Textarea, LoadingSpinner, Badge } from "@crowdstack/ui";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -36,7 +48,9 @@ export default function ProfilePage() {
   const loadProfile = async () => {
     try {
       const supabase = createBrowserClient();
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
       if (!authUser) {
         router.push("/login");
@@ -50,7 +64,7 @@ export default function ProfilePage() {
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         const attendee = profileData.attendee;
-        
+
         if (attendee) {
           setFormData({
             name: attendee.name || "",
@@ -66,19 +80,19 @@ export default function ProfilePage() {
             avatar_url: attendee.avatar_url || "",
           });
         } else {
-        setFormData({
-          name: authUser.user_metadata?.name || "",
-          surname: "",
-          email: authUser.email || "",
-          phone: "",
-          whatsapp: "",
-          date_of_birth: "",
-          gender: "male",
-          bio: "",
-          instagram_handle: "",
-          tiktok_handle: "",
-          avatar_url: "",
-        });
+          setFormData({
+            name: authUser.user_metadata?.name || "",
+            surname: "",
+            email: authUser.email || "",
+            phone: "",
+            whatsapp: "",
+            date_of_birth: "",
+            gender: "male",
+            bio: "",
+            instagram_handle: "",
+            tiktok_handle: "",
+            avatar_url: "",
+          });
         }
       } else {
         setFormData({
@@ -153,26 +167,27 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-void px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 pt-4 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/me" className="inline-flex items-center text-white/60 hover:text-white mb-4 transition-colors">
+          <Link
+            href="/me"
+            className="inline-flex items-center text-secondary hover:text-primary mb-4 transition-colors"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
-            Edit Profile
-          </h1>
-          <p className="mt-2 text-white/60">
+          <h1 className="page-title">Edit Profile</h1>
+          <p className="mt-2 text-secondary">
             Manage your personal information
           </p>
         </div>
 
-        {/* Profile Form */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 sm:p-8">
-          {/* Avatar Upload */}
-          <div className="flex flex-col items-center mb-8 pb-8 border-b border-white/10">
+        {/* Profile Form Card */}
+        <Card>
+          {/* Avatar Upload Section */}
+          <div className="flex flex-col items-center mb-8 pb-8 border-b border-border-subtle">
             <AvatarUpload
               currentAvatarUrl={formData.avatar_url}
               name={formData.name}
@@ -180,231 +195,226 @@ export default function ProfilePage() {
               onUploadComplete={handleAvatarUpload}
               size="lg"
             />
+            <p className="mt-3 text-xs text-muted text-center">
+              Click to upload a new photo
+            </p>
           </div>
 
           <form onSubmit={handleSave} className="space-y-6">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                First Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
+                Personal Information
+              </h3>
+
+              {/* Name Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="First Name"
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Enter your first name"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   required
                 />
-              </div>
-            </div>
-
-            {/* Surname */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Last Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
+                <Input
+                  label="Last Name"
                   type="text"
                   value={formData.surname}
-                  onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, surname: e.target.value })
+                  }
                   placeholder="Enter your last name"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   required
                 />
               </div>
-            </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="email"
-                  value={formData.email}
-                  disabled
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/60 cursor-not-allowed"
-                />
-              </div>
-              <p className="mt-1 text-xs text-white/40">
-                Email cannot be changed here. Contact support to update your email.
-              </p>
-            </div>
+              {/* Email (Disabled) */}
+              <Input
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                disabled
+                helperText="Email cannot be changed here. Contact support to update your email."
+              />
 
-            {/* WhatsApp */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                WhatsApp Number
-              </label>
-              <div className="relative">
-                <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                  placeholder="+1234567890"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <p className="mt-1 text-xs text-white/40">
-                Optional - Your WhatsApp number for event updates
-              </p>
-            </div>
-
-            {/* Date of Birth */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Date of Birth
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
+              {/* Date of Birth & Gender Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input
+                  label="Date of Birth"
                   type="date"
                   value={formData.date_of_birth}
-                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 13)).toISOString().split('T')[0]}
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  onChange={(e) =>
+                    setFormData({ ...formData, date_of_birth: e.target.value })
+                  }
+                  max={
+                    new Date(
+                      new Date().setFullYear(new Date().getFullYear() - 13)
+                    )
+                      .toISOString()
+                      .split("T")[0]
+                  }
+                  helperText="Used for age verification at events"
                 />
+
+                {/* Gender Toggle */}
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-primary mb-2">
+                    Gender
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, gender: "male" })
+                      }
+                      className={`flex-1 py-3 px-4 rounded-xl border font-medium text-sm transition-all ${
+                        formData.gender === "male"
+                          ? "bg-accent-primary/20 border-accent-primary text-primary"
+                          : "bg-raised border-border-subtle text-secondary hover:border-accent-primary/30"
+                      }`}
+                    >
+                      Male
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, gender: "female" })
+                      }
+                      className={`flex-1 py-3 px-4 rounded-xl border font-medium text-sm transition-all ${
+                        formData.gender === "female"
+                          ? "bg-accent-primary/20 border-accent-primary text-primary"
+                          : "bg-raised border-border-subtle text-secondary hover:border-accent-primary/30"
+                      }`}
+                    >
+                      Female
+                    </button>
+                  </div>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-white/40">
-                Optional - Used for age verification at events
-              </p>
             </div>
 
-            {/* Gender */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Gender
-              </label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, gender: "male" })}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
-                    formData.gender === "male"
-                      ? "bg-accent-secondary/20 border-accent-secondary text-white"
-                      : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
-                  }`}
-                >
-                  Male
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, gender: "female" })}
-                  className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all ${
-                    formData.gender === "female"
-                      ? "bg-accent-secondary/20 border-accent-secondary text-white"
-                      : "bg-white/5 border-white/10 text-white/60 hover:border-white/20"
-                  }`}
-                >
-                  Female
-                </button>
-              </div>
+            {/* Contact Section */}
+            <div className="space-y-4 pt-4 border-t border-border-subtle">
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
+                Contact
+              </h3>
+
+              <Input
+                label="WhatsApp Number"
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) =>
+                  setFormData({ ...formData, whatsapp: e.target.value })
+                }
+                placeholder="+1234567890"
+                helperText="For event updates and notifications"
+              />
             </div>
 
-            {/* Bio */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Bio
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-4 top-4 h-5 w-5 text-white/40" />
-                <textarea
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  placeholder="Tell us a bit about yourself..."
-                  rows={4}
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
-                />
-              </div>
-              <p className="mt-1 text-xs text-white/40">
-                Optional - A short bio about yourself
-              </p>
+            {/* About Section */}
+            <div className="space-y-4 pt-4 border-t border-border-subtle">
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
+                About You
+              </h3>
+
+              <Textarea
+                label="Bio"
+                value={formData.bio}
+                onChange={(e) =>
+                  setFormData({ ...formData, bio: e.target.value })
+                }
+                placeholder="Tell us a bit about yourself..."
+                rows={4}
+                helperText="A short bio about yourself"
+              />
             </div>
 
-            {/* Instagram Handle */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Instagram Handle
-              </label>
-              <div className="relative">
-                <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="text"
-                  value={formData.instagram_handle}
-                  onChange={(e) => setFormData({ ...formData, instagram_handle: e.target.value.replace("@", "") })}
-                  placeholder="username (without @)"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-              <p className="mt-1 text-xs text-white/40">
-                Optional - Your Instagram username
-              </p>
-            </div>
+            {/* Social Media Section */}
+            <div className="space-y-4 pt-4 border-t border-border-subtle">
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
+                Social Media
+              </h3>
 
-            {/* TikTok Handle */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                TikTok Handle
-              </label>
-              <div className="relative">
-                <MessageCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="text"
-                  value={formData.tiktok_handle}
-                  onChange={(e) => setFormData({ ...formData, tiktok_handle: e.target.value.replace("@", "") })}
-                  placeholder="username (without @)"
-                  className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Input
+                    label="Instagram"
+                    type="text"
+                    value={formData.instagram_handle}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        instagram_handle: e.target.value.replace("@", ""),
+                      })
+                    }
+                    placeholder="username"
+                    className="pl-8"
+                  />
+                  <Instagram className="absolute left-3 top-[38px] h-4 w-4 text-muted" />
+                </div>
+
+                <div className="relative">
+                  <Input
+                    label="TikTok"
+                    type="text"
+                    value={formData.tiktok_handle}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        tiktok_handle: e.target.value.replace("@", ""),
+                      })
+                    }
+                    placeholder="username"
+                    className="pl-8"
+                  />
+                  <MessageCircle className="absolute left-3 top-[38px] h-4 w-4 text-muted" />
+                </div>
               </div>
-              <p className="mt-1 text-xs text-white/40">
-                Optional - Your TikTok username
-              </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
-                <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">{error}</p>
+              <div className="flex items-center gap-3 p-4 bg-accent-error/10 border border-accent-error/30 rounded-xl">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-accent-error" />
+                <p className="text-sm text-accent-error">{error}</p>
               </div>
             )}
 
             {/* Success Message */}
             {saved && (
-              <div className="flex items-center gap-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400">
-                <Check className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">Profile updated successfully!</p>
+              <div className="flex items-center gap-3 p-4 bg-accent-success/10 border border-accent-success/30 rounded-xl">
+                <Check className="h-5 w-5 flex-shrink-0 text-accent-success" />
+                <p className="text-sm text-accent-success">
+                  Profile updated successfully!
+                </p>
               </div>
             )}
 
-            {/* Save Button */}
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              {saving ? (
-                <>
-                  <InlineSpinner size="md" className="text-white" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5" />
-                  Save Changes
-                </>
-              )}
-            </button>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => router.push("/me")}
+                className="sm:flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={saving}
+                className="sm:flex-1"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
           </form>
-        </div>
+        </Card>
       </div>
     </div>
   );
