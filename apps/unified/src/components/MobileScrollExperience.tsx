@@ -275,8 +275,8 @@ export function MobileScrollExperience({
         {/* Content Container */}
         <div className="relative">
           {children}
-          {/* Bottom spacer - allows scrolling content completely off screen */}
-          <div className="h-[100vh]" />
+          {/* Bottom padding - just enough to ensure content card clears safe area */}
+          <div className="h-24 sm:h-32" />
         </div>
       </div>
     </div>

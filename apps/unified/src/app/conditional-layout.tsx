@@ -50,6 +50,10 @@ const isStandaloneRoute = (pathname: string) => {
   if (pathname.match(/^\/e\/[^/]+\/pass/)) return true; // /e/[slug]/pass
   // Door scanner is always standalone
   if (pathname.startsWith("/door")) return true;
+  // Invite code pages (QR code registration) have their own layout
+  if (pathname.startsWith("/i/")) return true;
+  // Invite token signup pages
+  if (pathname.match(/^\/invite\/[^/]+\/signup/)) return true;
   return false;
 };
 
@@ -68,8 +72,7 @@ const shouldShowSimpleNav = (pathname: string) => {
   if (isStandaloneRoute(pathname)) return false;
   if (pathname.startsWith("/e/")) return true; // Event landing pages (not register/pass)
   if (pathname.startsWith("/v/")) return true; // Venue profile pages
-  if (pathname.startsWith("/invite/")) return true; // Invite pages
-  if (pathname.startsWith("/i/")) return true; // Invite code pages
+  if (pathname.startsWith("/invite/") && !pathname.includes("/signup")) return true; // Invite pages (not signup)
   if (pathname.startsWith("/checkin/")) return true; // Check-in pages
   if (pathname.startsWith("/p/")) return true; // Photo gallery pages
   return false;
@@ -123,8 +126,8 @@ export function ConditionalLayout({
         {children}
       </main>
       {showFooter && <PublicFooter />}
-      {/* Only show DockNav for routes that don't have nested layouts (public routes) */}
-      {!hasNestedLayoutNav && <DockNav />}
+      {/* Only show DockNav for routes that don't have nested layouts AND are not standalone experiences */}
+      {!hasNestedLayoutNav && !isStandaloneRoute(pathname) && <DockNav />}
     </div>
   );
 }
