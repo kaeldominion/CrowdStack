@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
-import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users } from "lucide-react";
+import { Modal } from "@crowdstack/ui";
+import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users, Filter, X } from "lucide-react";
 import { EventCardCompact } from "@/components/EventCardCompact";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
@@ -40,6 +41,7 @@ export default function BrowsePage() {
   const [activeTab, setActiveTab] = useState("events");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<BrowseFiltersType>({});
+  const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -188,7 +190,7 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-void">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mb-4">
@@ -200,9 +202,9 @@ export default function BrowsePage() {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
+        {/* Search Bar with Mobile Filter Button */}
+        <div className="mb-6 flex gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
             <Input
               type="text"
@@ -212,6 +214,19 @@ export default function BrowsePage() {
               className="pl-11"
             />
           </div>
+          {/* Mobile Filter Button */}
+          <button
+            onClick={() => setShowFiltersModal(true)}
+            className="lg:hidden flex items-center justify-center w-12 h-12 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/50 transition-all"
+            aria-label="Open filters"
+          >
+            <Filter className="h-5 w-5 text-primary" />
+            {Object.keys(filters).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-primary text-white text-[10px] font-bold flex items-center justify-center">
+                {Object.keys(filters).length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Main Layout: Sidebar + Content */}
@@ -226,9 +241,9 @@ export default function BrowsePage() {
               </div>
             </Card>
 
-            {/* Stats Summary */}
+            {/* Stats Summary - Desktop Only */}
             {activeTab === "events" && (
-              <Card>
+              <Card className="hidden lg:block">
                 <div className="space-y-4">
                   <h3 className="section-header">Summary</h3>
                   
@@ -262,7 +277,7 @@ export default function BrowsePage() {
             )}
 
             {activeTab === "djs-venues" && (
-              <Card>
+              <Card className="hidden lg:block">
                 <div className="space-y-4">
                   <h3 className="section-header">Summary</h3>
                   
@@ -429,6 +444,26 @@ export default function BrowsePage() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Filters Modal */}
+      <Modal
+        isOpen={showFiltersModal}
+        onClose={() => setShowFiltersModal(false)}
+        title="Filters"
+        size="md"
+      >
+        <div className="space-y-4">
+          <BrowseFilters filters={filters} onChange={setFilters} />
+          <div className="flex justify-end pt-4 border-t border-border-subtle">
+            <button
+              onClick={() => setShowFiltersModal(false)}
+              className="px-6 py-2 rounded-xl bg-accent-primary text-white font-medium hover:bg-accent-primary/90 transition-colors"
+            >
+              Apply Filters
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

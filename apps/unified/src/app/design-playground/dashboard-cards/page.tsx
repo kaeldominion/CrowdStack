@@ -271,13 +271,20 @@ function ConversionBadge({ rate }: { rate: number }) {
 
 function CapacityBar({ current, max }: { current: number; max: number }) {
   const percentage = Math.min((current / max) * 100, 100);
+  const spacesLeft = Math.max(max - current, 0);
   const color = percentage >= 90 ? "bg-accent-error" : percentage >= 70 ? "bg-accent-warning" : "bg-accent-success";
+  const textColor = percentage >= 90 ? "text-accent-error" : percentage >= 70 ? "text-accent-warning" : "text-accent-success";
   
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px]">
-        <span className="text-muted uppercase tracking-wider">Capacity</span>
-        <span className="text-secondary font-medium">{current}/{max}</span>
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted uppercase tracking-wider">Capacity</span>
+          <span className="text-xs font-medium text-secondary">{current}/{max}</span>
+        </div>
+        <span className={`text-xs font-bold ${textColor}`}>
+          {spacesLeft > 0 ? `${spacesLeft} left` : "Full"}
+        </span>
       </div>
       <div className="h-1.5 bg-raised rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${percentage}%` }} />
@@ -399,8 +406,14 @@ function DashboardEventCardFull({ event, role, isLive }: DashboardEventCardFullP
           ) : (
             <>
               <StatBlock label="Registered" value={event.registrations} icon={<Users className="h-4 w-4 text-muted" />} />
+              <StatBlock 
+                label="Spaces Left" 
+                value={Math.max(event.capacity - event.registrations, 0)} 
+                icon={<Ticket className="h-4 w-4 text-muted" />} 
+                color={event.capacity - event.registrations <= 10 ? "warning" : "default"}
+              />
               <StatBlock label="Checked In" value={event.checkins} icon={<CheckCircle2 className="h-4 w-4 text-muted" />} color="success" />
-              <div className="text-center min-w-[70px]">
+              <div className="text-center min-w-[60px]">
                 <ConversionBadge rate={conversionRate} />
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted">Conv.</p>
               </div>
@@ -498,7 +511,7 @@ function DashboardEventCardRow({ event, role }: DashboardEventCardRowProps) {
       </div>
       
       {/* Stats */}
-      <div className="hidden sm:flex items-center gap-6">
+      <div className="hidden sm:flex items-center gap-4 lg:gap-6">
         {role === "promoter" ? (
           <>
             <StatBlock label="Referrals" value={event.promoter_registrations} size="sm" />
@@ -508,8 +521,14 @@ function DashboardEventCardRow({ event, role }: DashboardEventCardRowProps) {
         ) : (
           <>
             <StatBlock label="Registered" value={event.registrations} size="sm" />
-            <StatBlock label="Checked In" value={event.checkins} size="sm" color="success" />
-            <div className="text-center min-w-[50px]">
+            <StatBlock 
+              label="Left" 
+              value={Math.max(event.capacity - event.registrations, 0)} 
+              size="sm" 
+              color={event.capacity - event.registrations <= 10 ? "warning" : "default"}
+            />
+            <StatBlock label="Check-ins" value={event.checkins} size="sm" color="success" />
+            <div className="text-center min-w-[45px]">
               <span className={`text-sm font-bold ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
                 {conversionRate}%
               </span>
@@ -578,7 +597,7 @@ function DashboardEventCardCompact({ event, role, isLive }: DashboardEventCardCo
           </div>
           
           {/* Stats */}
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             {role === "promoter" ? (
               <>
                 <span className="text-xs text-secondary">{event.promoter_registrations} refs</span>
@@ -586,11 +605,11 @@ function DashboardEventCardCompact({ event, role, isLive }: DashboardEventCardCo
               </>
             ) : (
               <>
-                <span className="text-xs text-secondary">{event.registrations} reg</span>
-                <span className="text-xs text-accent-success">{event.checkins} in</span>
-                <span className={`text-xs font-medium ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
-                  {conversionRate}%
+                <span className="text-xs text-secondary">{event.registrations}/{event.capacity}</span>
+                <span className={`text-xs font-medium ${event.capacity - event.registrations <= 10 ? "text-accent-warning" : "text-accent-success"}`}>
+                  {Math.max(event.capacity - event.registrations, 0)} left
                 </span>
+                <span className="text-xs text-accent-success">{event.checkins} in</span>
               </>
             )}
           </div>
