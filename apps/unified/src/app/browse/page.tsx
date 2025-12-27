@@ -5,7 +5,7 @@ import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
 import { Modal } from "@crowdstack/ui";
 import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users, Filter, X } from "lucide-react";
-import { EventCardCompact } from "@/components/EventCardCompact";
+import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
 import { FeaturedEventsCarousel } from "@/components/browse/FeaturedEventsCarousel";
@@ -385,14 +385,15 @@ export default function BrowsePage() {
                 {liveEvents.length > 0 && (
                   <section>
                     <h2 className="section-header mb-6">Live Now</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
                       {liveEvents.map((event) => (
                         <div key={event.id} className="relative">
                           {/* Glowing pulsing background */}
-                          <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur-sm opacity-40 animate-pulse" />
+                          <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
                           <div className="relative">
-                            <EventCardCompact
+                            <EventCardRow
                               event={event}
+                              isLive
                             />
                           </div>
                         </div>
@@ -405,23 +406,23 @@ export default function BrowsePage() {
                 <section>
                   <h2 className="section-header mb-6">All Events</h2>
                   
-          {eventsLoading && allEvents.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex gap-4 p-4 rounded-2xl bg-glass border border-border-subtle animate-pulse"
-                >
-                  <div className="w-20 sm:w-24 aspect-[9/16] rounded-xl bg-raised" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 w-24 bg-raised rounded" />
-                    <div className="h-6 w-3/4 bg-raised rounded" />
-                    <div className="h-4 w-1/2 bg-raised rounded" />
-                    <div className="h-10 w-36 bg-raised rounded-lg mt-auto" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                  {eventsLoading && allEvents.length === 0 ? (
+                    <div className="space-y-3">
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse"
+                        >
+                          <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
+                          <div className="flex-1 space-y-2 py-1">
+                            <div className="h-3 w-24 bg-raised rounded" />
+                            <div className="h-5 w-3/4 bg-raised rounded" />
+                            <div className="h-3 w-1/2 bg-raised rounded" />
+                            <div className="h-8 w-28 bg-raised rounded-md mt-auto" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : allEvents.length === 0 ? (
                     <Card className="!border-dashed !p-12 text-center">
                       <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
@@ -434,9 +435,9 @@ export default function BrowsePage() {
                     </Card>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
                         {allEvents.map((event) => (
-                          <EventCardCompact
+                          <EventCardRow
                             key={event.id}
                             event={event}
                           />
