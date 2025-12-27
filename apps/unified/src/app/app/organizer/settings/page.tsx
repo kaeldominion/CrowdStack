@@ -226,7 +226,7 @@ export default function OrganizerSettingsPage() {
                 </p>
                 {data.organizer.logo_url && (
                   <div className="relative w-32 h-32 border-2 border-border mb-2">
-                    <Image src={data.organizer.logo_url} alt="Logo" fill className="object-contain" />
+                    <Image src={data.organizer.logo_url} alt="Logo" fill sizes="128px" className="object-contain" />
                   </div>
                 )}
                 <input

@@ -33,6 +33,7 @@ export function TeamMemberCard({
             src={member.avatar_url}
             alt={member.name}
             fill
+            sizes="80px"
             className="object-cover"
           />
         </div>

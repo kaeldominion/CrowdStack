@@ -528,7 +528,7 @@ export default function VenueSettingsPage() {
                 </p>
                 {data.venue.logo_url ? (
                   <div className="relative w-32 h-32 border-2 border-border mb-2">
-                    <Image src={data.venue.logo_url} alt="Logo" fill className="object-contain" />
+                    <Image src={data.venue.logo_url} alt="Logo" fill sizes="128px" className="object-contain" />
                   </div>
                 ) : null}
                 <input
@@ -550,7 +550,7 @@ export default function VenueSettingsPage() {
                 </p>
                 {data.venue.cover_image_url ? (
                   <div className="relative w-full h-48 border-2 border-border mb-2">
-                    <Image src={data.venue.cover_image_url} alt="Cover" fill className="object-cover" />
+                    <Image src={data.venue.cover_image_url} alt="Cover" fill sizes="100vw" className="object-cover" />
                   </div>
                 ) : null}
                 <input

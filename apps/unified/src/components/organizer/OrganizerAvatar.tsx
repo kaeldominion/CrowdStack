@@ -32,6 +32,7 @@ export function OrganizerAvatar({
           src={organizer.logo_url}
           alt={organizer.name}
           fill
+          sizes="48px"
           className="object-cover"
         />
       </div>

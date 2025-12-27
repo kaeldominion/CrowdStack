@@ -32,6 +32,7 @@ export function OrganizerLogo({
           src={organizer.logo_url}
           alt={`${organizer.name} logo`}
           fill
+          sizes="128px"
           className="object-contain"
         />
       </div>
