@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient } from "@crowdstack/shared/supabase/server";
 import { getOrganizerAttendeeDetails } from "@/lib/data/attendees-organizer";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 
 export async function GET(
   request: NextRequest,
@@ -17,21 +18,15 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const serviceSupabase = createServiceRoleClient();
+    // Get organizer ID for this user (checks organizer_users junction table and created_by)
+    const organizerId = await getUserOrganizerId();
 
-    // Get organizer ID for this user
-    const { data: organizer } = await serviceSupabase
-      .from("organizers")
-      .select("id")
-      .eq("created_by", user.id)
-      .single();
-
-    if (!organizer) {
+    if (!organizerId) {
       return NextResponse.json({ error: "Organizer not found" }, { status: 404 });
     }
 
     // Get attendee details
-    const details = await getOrganizerAttendeeDetails(attendeeId, organizer.id);
+    const details = await getOrganizerAttendeeDetails(attendeeId, organizerId);
 
     if (!details) {
       return NextResponse.json({ error: "Attendee not found" }, { status: 404 });
