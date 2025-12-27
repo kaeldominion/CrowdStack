@@ -44,6 +44,9 @@ const PUBLIC_NAV_ITEMS: NavItem[] = [
   { href: "/browse", label: "Browse", icon: Compass },
 ];
 
+// Additional nav item for landing page only
+const FOR_BUSINESS_ITEM: NavItem = { href: "/for-business", label: "For Business", icon: Building2 };
+
 // Attendee nav items (for /me routes) - ME | BROWSE | MODE
 const ATTENDEE_NAV_ITEMS: NavItem[] = [
   { href: "/me", label: "Me", icon: User, exact: true },
@@ -191,6 +194,11 @@ export function DockNav() {
       return ATTENDEE_NAV_ITEMS;
     }
     
+    // On landing page, show "For Business" link for unauthenticated users
+    if (pathname === "/" || pathname === "/for-business") {
+      return [FOR_BUSINESS_ITEM, ...PUBLIC_NAV_ITEMS];
+    }
+    
     return PUBLIC_NAV_ITEMS;
   };
 
@@ -268,7 +276,7 @@ export function DockNav() {
           </div>
 
           {/* Nav Links */}
-          <div className="flex items-center gap-0.5 px-2">
+          <div className="flex items-center gap-0.5 pl-2">
             {/* Primary Items - Always Visible */}
             {primaryItems.map((item, index) => {
               const isActive = isItemActive(item);
@@ -431,7 +439,7 @@ export function DockNav() {
 
           {/* Login Button (inside pill for unauthenticated) */}
           {!isAuthenticated && (
-            <div className="flex items-center pl-2 border-l border-border-strong ml-2">
+            <div className="flex items-center pl-2 border-l border-border-strong ml-1">
               <Link
                 href="/login"
                 className={cn(

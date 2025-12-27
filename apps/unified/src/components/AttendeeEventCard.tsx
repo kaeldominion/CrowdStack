@@ -185,7 +185,7 @@ export function AttendeeEventCard({
           )}
           
           {/* Gradient overlay - stronger fade to black at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/85 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/95 to-transparent" />
           
           {/* Top badges */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between">

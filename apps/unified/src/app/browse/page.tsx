@@ -18,6 +18,8 @@ interface Event {
   start_time: string;
   flier_url?: string | null;
   cover_image_url?: string | null;
+  capacity?: number | null;
+  registration_count?: number;
   venue?: {
     name: string;
     city?: string | null;
@@ -55,11 +57,13 @@ export default function BrowsePage() {
   const [totalEventsCount, setTotalEventsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
   const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("");
   const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
 
   const EVENTS_PER_PAGE = 12;
+  const INITIAL_EVENTS_LIMIT = 10;
 
   // Fetch available cities from upcoming events only
   useEffect(() => {
@@ -119,11 +123,12 @@ export default function BrowsePage() {
   }, []);
 
   // Fetch all events
-  const fetchEvents = async (reset = false) => {
+  const fetchEvents = async (reset = false, useInitialLimit = false) => {
     setEventsLoading(true);
     try {
+      const limit = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
       const params = new URLSearchParams({
-        limit: String(EVENTS_PER_PAGE),
+        limit: String(limit),
         offset: String(reset ? 0 : eventsOffset),
       });
 
@@ -156,15 +161,18 @@ export default function BrowsePage() {
       
       if (reset) {
         setAllEvents(data.events || []);
-        setEventsOffset(EVENTS_PER_PAGE);
+        const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
+        setEventsOffset(limitUsed);
         setTotalEventsCount(data.count || data.events?.length || 0);
         setAllEventsTotalCount(data.totalCount || data.count || 0);
       } else {
         setAllEvents((prev) => [...prev, ...(data.events || [])]);
-        setEventsOffset((prev) => prev + EVENTS_PER_PAGE);
+        const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
+        setEventsOffset((prev) => prev + limitUsed);
       }
       
-      setHasMoreEvents((data.events || []).length === EVENTS_PER_PAGE);
+      const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
+      setHasMoreEvents((data.events || []).length === limitUsed);
     } catch (error) {
       console.error("Error fetching events:", error);
     } finally {
@@ -202,7 +210,8 @@ export default function BrowsePage() {
   // Fetch events when search, filters, or location changes
   useEffect(() => {
     if (activeTab === "events") {
-      fetchEvents(true);
+      setShowAllEvents(false);
+      fetchEvents(true, true); // Use initial limit
     }
   }, [searchQuery, filters, selectedLocation, activeTab]);
 
@@ -436,7 +445,7 @@ export default function BrowsePage() {
                   ) : (
                     <>
                       <div className="space-y-3">
-                        {allEvents.map((event) => (
+                        {(showAllEvents ? allEvents : allEvents.slice(0, INITIAL_EVENTS_LIMIT)).map((event) => (
                           <EventCardRow
                             key={event.id}
                             event={event}
@@ -444,7 +453,24 @@ export default function BrowsePage() {
                         ))}
                       </div>
 
-                      {hasMoreEvents && (
+                      {!showAllEvents && allEvents.length > INITIAL_EVENTS_LIMIT && (
+                        <div className="mt-8 text-center">
+                          <button
+                            onClick={() => {
+                              setShowAllEvents(true);
+                              // If we only have initial limit loaded, fetch more
+                              if (allEvents.length <= INITIAL_EVENTS_LIMIT) {
+                                fetchEvents(false, false);
+                              }
+                            }}
+                            className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all"
+                          >
+                            See All Events ({allEventsTotalCount} total)
+                          </button>
+                        </div>
+                      )}
+
+                      {showAllEvents && hasMoreEvents && (
                         <div className="mt-8 text-center">
                           <button
                             onClick={handleLoadMore}

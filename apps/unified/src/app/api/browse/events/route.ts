@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
         start_time,
         end_time,
         venue_approval_status,
+        capacity,
         venue:venues(
           id,
           name,
@@ -224,6 +225,7 @@ export async function GET(request: NextRequest) {
           start_time,
           end_time,
           venue_approval_status,
+          capacity,
           venue:venues(
             id,
             name,
@@ -239,9 +241,31 @@ export async function GET(request: NextRequest) {
         .limit(limit);
 
       if (!randomError && randomEvents) {
-        // Shuffle and take limit
+        // Get registration counts for random events
+        const randomEventIds = randomEvents.map((e: any) => e.id);
+        let randomRegistrationCounts: Record<string, number> = {};
+
+        if (randomEventIds.length > 0) {
+          const { data: randomRegistrations } = await supabase
+            .from("registrations")
+            .select("event_id")
+            .in("event_id", randomEventIds);
+
+          randomRegistrationCounts = (randomRegistrations || []).reduce(
+            (acc, reg) => {
+              acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>
+          );
+        }
+
+        // Shuffle and take limit, then add registration counts
         const shuffled = randomEvents.sort(() => Math.random() - 0.5);
-        events = shuffled.slice(0, limit);
+        events = shuffled.slice(0, limit).map((event: any) => ({
+          ...event,
+          registration_count: randomRegistrationCounts[event.id] || 0,
+        }));
       }
     }
 
@@ -310,14 +334,39 @@ export async function GET(request: NextRequest) {
     const paginatedEvents = (events || []).slice(0, limit);
     const filteredCount = events?.length || 0;
 
+    // Get registration counts for paginated events
+    const eventIds = paginatedEvents.map((e: any) => e.id);
+    let registrationCounts: Record<string, number> = {};
+
+    if (eventIds.length > 0) {
+      const { data: registrations } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .in("event_id", eventIds);
+
+      registrationCounts = (registrations || []).reduce(
+        (acc, reg) => {
+          acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+    }
+
+    // Add registration_count to each event
+    const eventsWithCounts = paginatedEvents.map((event: any) => ({
+      ...event,
+      registration_count: registrationCounts[event.id] || 0,
+    }));
+
     console.log("[Browse Events] Final result:", {
-      paginatedCount: paginatedEvents.length,
+      paginatedCount: eventsWithCounts.length,
       filteredCount,
       totalCount,
     });
 
     return NextResponse.json({
-      events: paginatedEvents,
+      events: eventsWithCounts,
       count: filteredCount, // Count of events after all filters (before pagination)
       totalCount: totalCount || 0, // Total count of all matching events
     });

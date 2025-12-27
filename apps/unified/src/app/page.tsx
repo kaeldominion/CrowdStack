@@ -1,629 +1,943 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { 
-  Zap, 
-  QrCode, 
-  Trophy, 
-  BarChart3,
-  ArrowRight,
-  TrendingUp,
-  Users,
-  Clock,
-  CheckCircle2,
-  Activity,
   Sparkles,
-  Shield,
-  Bell,
   Calendar,
-  Building2,
-  UserCheck,
-  Wallet,
-  LineChart
+  MapPin,
+  Users,
+  Ticket,
+  QrCode, 
+  Star,
+  ChevronRight,
+  Search,
+  Zap,
+  PartyPopper,
+  Music,
+  Camera,
+  ArrowRight,
+  Navigation,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
-import { BentoGrid, BentoCard, MovingBorder } from "@crowdstack/ui";
+import { Card, Badge, Button } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
+
+// Sample event data for showcase
+const SHOWCASE_EVENTS = [
+  {
+    id: "1",
+    name: "Friday Night Sessions",
+    slug: "friday-night-sessions",
+    date: "SAT 28 DEC",
+    time: "22:00",
+    venue: "Jade by Todd English",
+    city: "Dubai",
+    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=800&fit=crop",
+    spotsLeft: 45,
+    capacity: 200,
+  },
+  {
+    id: "2",
+    name: "Techno Underground",
+    slug: "techno-underground",
+    date: "SUN 29 DEC",
+    time: "23:00",
+    venue: "Warehouse 51",
+    city: "Los Angeles",
+    image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=800&fit=crop",
+    spotsLeft: 12,
+    capacity: 150,
+  },
+  {
+    id: "3",
+    name: "New Year's Eve Gala",
+    slug: "nye-gala",
+    date: "TUE 31 DEC",
+    time: "21:00",
+    venue: "The Grand Ballroom",
+    city: "New York",
+    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
+    spotsLeft: 89,
+    capacity: 500,
+  },
+  {
+    id: "4",
+    name: "Sunset Rooftop Party",
+    slug: "sunset-rooftop",
+    date: "FRI 3 JAN",
+    time: "18:00",
+    venue: "Sky Lounge",
+    city: "Miami",
+    image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=800&fit=crop",
+    spotsLeft: 28,
+    capacity: 100,
+  },
+];
+
+// Sample venue data
+const SHOWCASE_VENUES = [
+  {
+    id: "1",
+    name: "Jade by Todd English",
+    slug: "jade-by-todd-english",
+    city: "Dubai",
+    country: "UAE",
+    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&h=400&fit=crop",
+    rating: 4.8,
+    tags: ["House", "Upscale"],
+  },
+  {
+    id: "2",
+    name: "Warehouse 51",
+    slug: "warehouse-51",
+    city: "Los Angeles",
+    country: "USA",
+    image: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=600&h=400&fit=crop",
+    rating: 4.6,
+    tags: ["Techno", "Underground"],
+  },
+  {
+    id: "3",
+    name: "The Grand Ballroom",
+    slug: "grand-ballroom",
+    city: "New York",
+    country: "USA",
+    image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=400&fit=crop",
+    rating: 4.9,
+    tags: ["Exclusive", "Formal"],
+  },
+  {
+    id: "4",
+    name: "Sky Lounge",
+    slug: "sky-lounge",
+    city: "Miami",
+    country: "USA",
+    image: "https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&h=400&fit=crop",
+    rating: 4.7,
+    tags: ["Rooftop", "Beach"],
+  },
+];
+
+// Event Card Component (simplified version for landing)
+function EventShowcaseCard({ event, index }: { event: typeof SHOWCASE_EVENTS[0]; index: number }) {
+  return (
+          <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="group relative"
+    >
+      <Link href={`/e/${event.slug}`}>
+        <div className="relative rounded-2xl overflow-hidden border border-border-subtle hover:border-accent-primary/50 transition-all duration-500 shadow-soft hover:shadow-xl hover:shadow-accent-primary/10">
+          {/* Image */}
+          <div className="relative aspect-[3/4] min-h-[380px]">
+            <img
+              src={event.image}
+              alt={event.name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/80 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            {/* Floating badge */}
+            <motion.div
+              className="absolute top-4 left-4"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
+            >
+              <Badge 
+                color="purple" 
+                variant="solid" 
+                className="!rounded-lg !px-3 !py-1.5 !text-xs !font-bold backdrop-blur-sm"
+              >
+                {event.spotsLeft <= 20 ? "SELLING FAST" : "FEATURED"}
+              </Badge>
+              </motion.div>
+
+            {/* Content */}
+            <div className="absolute bottom-0 left-0 right-0 p-5 space-y-3">
+              {/* Date & Time */}
+              <p className="font-mono text-sm font-medium text-accent-secondary tracking-wider">
+                {event.date} • {event.time}
+              </p>
+              
+              {/* Event Name */}
+              <h3 className="font-sans text-2xl font-black text-primary uppercase tracking-tight leading-tight group-hover:text-white transition-colors duration-300">
+                {event.name}
+              </h3>
+              
+              {/* Venue */}
+              <div className="flex items-center gap-1.5 text-secondary">
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="text-sm">@ {event.venue}, {event.city}</span>
+              </div>
+              
+              {/* Spots left */}
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-medium ${
+                  event.spotsLeft <= 20 ? "text-accent-warning" : "text-accent-success"
+                }`}>
+                  {event.spotsLeft} spots left
+                </span>
+                <span className="text-xs text-muted">
+                  {event.capacity} capacity
+                </span>
+              </div>
+              
+              {/* CTA Button */}
+                  <motion.button
+                className="w-full bg-white text-void font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-xl hover:bg-accent-secondary hover:text-white transition-all duration-300 flex items-center justify-center gap-2 group/btn"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Join Guestlist
+                <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </motion.button>
+            </div>
+          </div>
+        </div>
+                </Link>
+              </motion.div>
+  );
+}
+
+// Mobile Event Carousel - scroll-snap through events
+function MobileEventCarousel() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  const events = [
+    {
+      id: "1",
+      name: "NEW YEAR'S EVE GALA",
+      date: "TONIGHT • 22:00",
+      venue: "@ The Grand Ballroom, NYC",
+      attending: 342,
+      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
+      badge: { text: "LIVE NOW", color: "green" as const },
+    },
+    {
+      id: "2",
+      name: "TECHNO UNDERGROUND",
+      date: "SAT 28 DEC • 23:00",
+      venue: "@ Warehouse 51, LA",
+      attending: 189,
+      image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=800&fit=crop",
+      badge: { text: "SELLING FAST", color: "purple" as const },
+    },
+    {
+      id: "3",
+      name: "ROOFTOP SUNSET",
+      date: "SUN 29 DEC • 18:00",
+      venue: "@ Sky Lounge, Miami",
+      attending: 256,
+      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=800&fit=crop",
+      badge: { text: "FEATURED", color: "blue" as const },
+    },
+  ];
+
+  // Handle scroll to detect active card
+  const handleScroll = () => {
+    if (!containerRef.current) return;
+    const scrollLeft = containerRef.current.scrollLeft;
+    const cardWidth = containerRef.current.offsetWidth;
+    const index = Math.round(scrollLeft / cardWidth);
+    setActiveIndex(Math.min(index, events.length - 1));
+  };
+
+  return (
+    <section className="lg:hidden bg-void py-8">
+      {/* Section Header */}
+      <div className="px-6 mb-6">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-secondary mb-2 block">
+          Happening Now
+        </span>
+        <h2 className="text-2xl font-black text-white">Featured Events</h2>
+                </div>
+
+      {/* Scroll-snap container */}
+      <div 
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide px-6 gap-4 pb-4"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {events.map((event, index) => (
+          <div 
+            key={event.id}
+            className="snap-center shrink-0 w-[85vw] max-w-[340px]"
+          >
+            <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-xl">
+              <div className="relative aspect-[3/4]">
+                <img
+                  src={event.image}
+                  alt={event.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
+                
+                {/* Badge */}
+                <div className="absolute top-4 left-4">
+                  <Badge 
+                    color={event.badge.color} 
+                    variant="solid" 
+                    className="!rounded-lg !px-3 !py-1.5 !text-xs !font-bold"
+                  >
+                    {event.badge.color === "green" && (
+                      <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse inline-block" />
+                    )}
+                    {event.badge.text}
+                  </Badge>
+                      </div>
+                
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="font-mono text-sm font-medium text-accent-secondary tracking-wider mb-2">
+                    {event.date}
+                  </p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+                    {event.name}
+                  </h3>
+                  <p className="text-sm text-white/70 mb-4">
+                    {event.venue}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-accent-success font-medium">{event.attending} attending</span>
+                    <button className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
+                      Join
+                    </button>
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Indicators */}
+      <div className="flex justify-center gap-2 mt-4">
+        {events.map((_, i) => (
+          <div
+                            key={i}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === activeIndex 
+                ? "bg-white w-6" 
+                : "bg-white/30 w-2"
+            }`}
+                          />
+                        ))}
+                      </div>
+
+      {/* Swipe hint */}
+      <p className="text-center text-white/40 text-xs font-mono uppercase tracking-widest mt-4">
+        Swipe to explore
+      </p>
+    </section>
+  );
+}
+
+// Hero Event Carousel - auto-rotating through featured events
+function HeroEventCarousel() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const heroEvents = [
+    {
+      id: "1",
+      name: "NEW YEAR'S EVE GALA",
+      date: "TONIGHT • 22:00",
+      venue: "@ The Grand Ballroom, NYC",
+      attending: 342,
+      image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=800&fit=crop",
+      badge: { text: "LIVE NOW", color: "green" as const },
+    },
+    {
+      id: "2",
+      name: "TECHNO UNDERGROUND",
+      date: "SAT 28 DEC • 23:00",
+      venue: "@ Warehouse 51, LA",
+      attending: 189,
+      image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600&h=800&fit=crop",
+      badge: { text: "SELLING FAST", color: "purple" as const },
+    },
+    {
+      id: "3",
+      name: "ROOFTOP SUNSET",
+      date: "SUN 29 DEC • 18:00",
+      venue: "@ Sky Lounge, Miami",
+      attending: 256,
+      image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&h=800&fit=crop",
+      badge: { text: "FEATURED", color: "blue" as const },
+    },
+  ];
+
+  // Auto-rotate every 3 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % heroEvents.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [heroEvents.length]);
+
+  const currentEvent = heroEvents[currentIndex];
+
+  return (
+    <div className="relative">
+      {/* Main card - larger size */}
+                    <motion.div
+        key={currentEvent.id}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="relative w-80 sm:w-96 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl shadow-black/50 hover:scale-[1.02] transition-transform duration-300"
+      >
+        <div className="relative aspect-[3/4]">
+          <motion.img
+            key={currentEvent.image}
+            src={currentEvent.image}
+            alt={currentEvent.name}
+            className="w-full h-full object-cover"
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent" />
+          
+          {/* Badge */}
+          <div className="absolute top-5 left-5">
+            <Badge color={currentEvent.badge.color} variant="solid" className="!rounded-lg !px-3 !py-1.5 !text-xs !font-bold">
+              {currentEvent.badge.color === "green" && (
+                <span className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse inline-block" />
+              )}
+              {currentEvent.badge.text}
+            </Badge>
+                  </div>
+
+          {/* Content */}
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <motion.div
+              key={`content-${currentEvent.id}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <p className="font-mono text-sm font-medium text-accent-secondary tracking-wider mb-2">
+                {currentEvent.date}
+              </p>
+              <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-2">
+                {currentEvent.name}
+              </h3>
+              <p className="text-sm text-white/70 mb-5">
+                {currentEvent.venue}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-accent-success font-medium">{currentEvent.attending} attending</span>
+                <button className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
+                  Join
+                </button>
+                    </div>
+                  </motion.div>
+          </div>
+                </div>
+              </motion.div>
+
+      {/* Carousel indicators */}
+      <div className="flex justify-center gap-2 mt-6">
+        {heroEvents.map((_, i) => (
+          <div
+            key={i}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === currentIndex 
+                ? "bg-white w-6" 
+                : "bg-white/40 w-2"
+            }`}
+          />
+        ))}
+                </div>
+                      </div>
+  );
+}
+
+// Venue Card Component (simplified version for landing)
+function VenueShowcaseCard({ venue, index }: { venue: typeof SHOWCASE_VENUES[0]; index: number }) {
+  return (
+                        <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
+      className="group"
+    >
+      <Link href={`/v/${venue.slug}`}>
+        <div className="relative rounded-2xl overflow-hidden border border-border-subtle hover:border-accent-secondary/50 transition-all duration-500 shadow-soft hover:shadow-lg bg-glass">
+          {/* Image */}
+          <div className="relative h-48 overflow-hidden">
+            <img
+              src={venue.image}
+              alt={venue.name}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-transparent" />
+            
+            {/* Rating badge */}
+            <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-void/80 backdrop-blur-sm border border-border-subtle">
+              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+              <span className="text-xs font-bold text-primary">{venue.rating}</span>
+                      </div>
+                </div>
+          
+          {/* Content */}
+          <div className="p-4 space-y-3">
+            <div>
+              <h3 className="font-sans text-lg font-bold text-primary group-hover:text-accent-secondary transition-colors duration-300">
+                {venue.name}
+              </h3>
+              <div className="flex items-center gap-1.5 mt-1 text-secondary">
+                <MapPin className="h-3.5 w-3.5" />
+                <span className="text-sm">{venue.city}, {venue.country}</span>
+          </div>
+        </div>
+            
+            {/* Tags */}
+            <div className="flex gap-2 flex-wrap">
+              {venue.tags.map((tag, i) => (
+                <Badge 
+                  key={i}
+                  color="blue" 
+                  variant="outline" 
+                  className="!rounded-full !px-2.5 !py-0.5 !text-[9px] !font-bold !uppercase !tracking-wider"
+                >
+                  {tag}
+                </Badge>
+            ))}
+          </div>
+        </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check if user is already logged in and redirect to /me
-  // Don't block rendering - show page content immediately
   useEffect(() => {
     const checkAuth = async () => {
       try {
       const supabase = createBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // User is logged in, redirect to their dashboard
         router.push("/me");
         }
       } catch (error) {
         console.error("Error checking auth:", error);
-        // Continue showing page even if auth check fails
       }
     };
-    // Use setTimeout to ensure page renders first
     const timer = setTimeout(() => {
     checkAuth();
     }, 100);
     return () => clearTimeout(timer);
   }, [router]);
-  const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 300], [0, 100]);
-  const y2 = useTransform(scrollY, [0, 300], [0, -80]);
-  const opacity = useTransform(scrollY, [0, 200], [1, 0.5]);
 
-  const features = [
-    {
-      title: "Instant QR Check-in",
-      description: "Lightning-fast entry scanning that works offline. Door staff can check in hundreds of guests per hour with real-time sync.",
-      icon: <QrCode className="h-5 w-5" />,
-      gradient: "from-accent-secondary via-accent-primary to-accent-secondary",
-    },
-    {
-      title: "Promoter Attribution",
-      description: "Track every guest back to the promoter who brought them. Automatic commission calculations and transparent payouts.",
-      icon: <Trophy className="h-5 w-5" />,
-      gradient: "from-accent-warning via-accent-primary to-accent-secondary",
-    },
-    {
-      title: "Venue Dashboard",
-      description: "Complete visibility into attendance, revenue, and trends. Compare events, track peak times, and optimize capacity.",
-      icon: <BarChart3 className="h-5 w-5" />,
-      gradient: "from-accent-success via-accent-secondary to-accent-primary",
-    },
-    {
-      title: "Event Approval Flow",
-      description: "Venues approve events before they go live. Pre-approve trusted organizers for seamless recurring events.",
-      icon: <Shield className="h-5 w-5" />,
-      gradient: "from-accent-secondary via-accent-primary to-accent-primary",
-    },
-    {
-      title: "Smart Notifications",
-      description: "Real-time alerts for pending approvals, check-in milestones, and event updates. Never miss an important moment.",
-      icon: <Bell className="h-5 w-5" />,
-      gradient: "from-accent-primary via-accent-secondary to-accent-primary",
-    },
-    {
-      title: "Frictionless Registration",
-      description: "Magic link authentication means no passwords. Guests sign up in seconds with just their phone number.",
-      icon: <Zap className="h-5 w-5" />,
-      gradient: "from-accent-warning via-accent-primary to-accent-secondary",
-    },
-  ];
+  // Scroll-based hero fade and blur effect
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.6], [1, 1.05]);
+  const heroBlur = useTransform(scrollYProgress, [0, 0.6], [0, 20]);
 
-  const roles = [
+  const benefits = [
     {
-      title: "Venues",
-      description: "Own your data. See every event, every guest, every promoter performance across your space.",
-      icon: <Building2 className="h-6 w-6" />,
-      features: ["Approve events", "Track attendance", "Manage door staff", "View analytics"],
+      icon: <QrCode className="h-6 w-6" />,
+      title: "Skip the Queue",
+      description: "Instant QR check-in means no waiting. Just scan and you're in.",
     },
     {
-      title: "Organizers",
-      description: "Create events, manage promoter teams, and get real-time insights into ticket sales and check-ins.",
-      icon: <Calendar className="h-6 w-6" />,
-      features: ["Create events", "Invite promoters", "Set commissions", "Generate reports"],
+      icon: <Ticket className="h-6 w-6" />,
+      title: "Your Pass, Your Phone",
+      description: "No printed tickets. Your digital pass lives in your pocket.",
     },
     {
-      title: "Promoters",
-      description: "Get your own tracking links, see your stats, and get paid automatically based on check-ins.",
-      icon: <Users className="h-6 w-6" />,
-      features: ["Personal QR codes", "Real-time stats", "Commission tracking", "Leaderboard rank"],
-    },
-  ];
-
-  const stats = [
-    { value: "50K+", label: "Guests Checked In" },
-    { value: "200+", label: "Events Managed" },
-    { value: "98%", label: "Check-in Accuracy" },
-    { value: "<2s", label: "Avg Check-in Time" },
-  ];
-
-  const howItWorks = [
-    {
-      step: "01",
-      title: "Create Your Event",
-      description: "Set up your event with venue, date, capacity, and promoter commission structure.",
+      icon: <Camera className="h-6 w-6" />,
+      title: "Event Photos",
+      description: "Get tagged in event photos automatically. Relive the memories.",
     },
     {
-      step: "02",
-      title: "Invite Your Team",
-      description: "Add promoters who get unique tracking links to share with their networks.",
-    },
-    {
-      step: "03",
-      title: "Guests Register",
-      description: "Attendees sign up via magic link — no app download, no password needed.",
-    },
-    {
-      step: "04",
-      title: "Scan & Track",
-      description: "Door staff scan QR codes. Every check-in is attributed and commissions calculated.",
+      icon: <Star className="h-6 w-6" />,
+      title: "VIP Treatment",
+      description: "Build your profile and unlock exclusive access to premium events.",
     },
   ];
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden border-b border-border-subtle">
-        {/* Animated gradient orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="min-h-screen bg-void">
+      {/* Hero Section - Full-Width Event Showcase */}
+      <section ref={heroRef} className="relative h-screen">
+        {/* Hero Background Image with scroll fade and blur */}
+        <motion.div
+          className="absolute inset-0 origin-center"
+          style={{
+            opacity: heroOpacity, 
+            scale: heroScale,
+          }}
+        >
+          {/* Inner div for blur effect */}
           <motion.div
-            className="absolute top-20 left-10 w-96 h-96 bg-accent-secondary/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.2, 1],
-              x: [0, 50, 0],
-              y: [0, 30, 0],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-20 right-10 w-96 h-96 bg-accent-primary/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.3, 1],
-              x: [0, -30, 0],
-              y: [0, -50, 0],
-            }}
-            transition={{
-              duration: 25,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
+            className="absolute inset-0"
+            style={{ filter: useTransform(heroBlur, (v) => `blur(${v}px)`) }}
+          >
+            <img 
+              src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1920&h=1080&fit=crop"
+              alt="Event atmosphere"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/60" />
+            <div className="absolute inset-0 bg-gradient-to-t from-void via-transparent to-void/50" />
+          </motion.div>
+        </motion.div>
+        
+        {/* Bottom fade gradient for seamless transition */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-void via-void/80 to-transparent z-[5] pointer-events-none" />
 
-        <div className="mx-auto max-w-7xl px-4 py-32 sm:px-6 lg:px-8 lg:py-40 relative z-10">
-          <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-20 items-center">
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              className="space-y-8"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <span className="text-xs uppercase tracking-widest text-muted font-medium">
-                  Event Management Platform
+        {/* Main content */}
+        <div className="relative z-10 mx-auto max-w-[1400px] px-8 sm:px-12 lg:px-16 xl:px-20 w-full h-full flex items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center w-full">
+            
+            {/* Left: Text Content */}
+            <div className="text-center lg:text-left">
+              {/* Badge */}
+              <div className="mb-6 inline-block">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
+                  <Sparkles className="h-3 w-3" />
+                  FOR ATTENDEES
+            </span>
+              </div>
+
+              {/* Main Headline */}
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter text-white leading-[0.9] mb-6">
+                DISCOVER.
+                <br />
+                <span className="bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent">
+                  REGISTER.
                 </span>
-              </motion.div>
+                <br />
+                WALK IN.
+              </h1>
 
-              <motion.h1
-                className="text-6xl font-bold tracking-tighter text-primary sm:text-7xl lg:text-8xl leading-tight"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                Run events with{" "}
-                <span className="bg-gradient-to-r from-accent-secondary via-accent-primary to-accent-primary bg-clip-text text-transparent">
-                  data, not guesswork.
-                </span>
-              </motion.h1>
-              
-              <motion.p
-                className="text-xl text-secondary leading-relaxed max-w-xl"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                CrowdStack is the operating system for venues, organizers, and promoters — tracking attendance, attribution, payouts, and performance in one place.
-              </motion.p>
+              {/* Subheadline */}
+              <p className="text-lg sm:text-xl text-white/80 max-w-lg mx-auto lg:mx-0 mb-8">
+                One profile. Instant QR check-in. No apps, no printed tickets, no waiting in line.
+              </p>
 
-              <motion.div
-                className="flex flex-col sm:flex-row gap-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-              >
-                <Link href="/contact">
-                  <motion.button
-                    className="px-6 py-3 text-base font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-primary/50"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Book a demo
-                  </motion.button>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 mb-10">
+                <Link href="/browse">
+                  <button className="group px-8 py-4 text-sm font-bold uppercase tracking-widest bg-white text-void rounded-xl transition-all duration-300 hover:bg-accent-secondary hover:text-white hover:scale-105 flex items-center gap-2 shadow-xl">
+                    <Search className="h-4 w-4" />
+                    BROWSE EVENTS
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </Link>
-              </motion.div>
+                <Link href="/login">
+                  <button className="px-8 py-4 text-sm font-semibold uppercase tracking-wider text-white bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+                    I HAVE A PASS
+                  </button>
+                </Link>
+          </div>
 
-              {/* Trusted By */}
-              <motion.div
-                className="pt-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-              >
-                <p className="text-xs uppercase tracking-widest text-muted font-medium mb-4">
-                  Trusted by
-                </p>
-                <div className="flex items-center gap-8">
-                  {["CLUBHOUSE", "ARENA", "FESTY"].map((name, i) => (
-                    <motion.div
-                      key={name}
-                      className="text-muted font-semibold text-base"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 0.4, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }}
-                      whileHover={{ opacity: 1, scale: 1.05 }}
-                    >
-                      {name}
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* Right - Dashboard Preview */}
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              style={{ y: y1, opacity }}
-            >
-              <motion.div
-                className="relative rounded-lg border border-border-subtle bg-glass/50 backdrop-blur-md p-1"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Monitor Frame */}
-                <div className="rounded-md bg-glass p-4">
-                  {/* Top Card - Live Attendance */}
-                  <motion.div
-                    className="mb-4 rounded-md border border-border-subtle bg-raised backdrop-blur-sm p-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <motion.div
-                          className="h-2 w-2 rounded-full bg-accent-error"
-                          animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [1, 0.7, 1],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                        />
-                        <span className="text-xs uppercase tracking-widest text-secondary font-medium">Live Attendance</span>
+              {/* Stats row */}
+              <div className="flex items-center justify-center lg:justify-start gap-8">
+                {[
+                  { value: "50K+", label: "GUESTS" },
+                  { value: "<2s", label: "CHECK-IN" },
+                  { value: "200+", label: "EVENTS" },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/60">{stat.label}</div>
                       </div>
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <motion.span
-                        className="text-3xl font-bold tracking-tighter text-primary"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.6, delay: 0.6 }}
-                      >
-                        1,248
-                      </motion.span>
-                      <span className="text-sm text-muted">/ 1,500 CAP</span>
-                    </div>
-                    <div className="h-1.5 bg-active rounded-full overflow-hidden mb-2">
-                      <motion.div
-                        className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary"
-                        initial={{ width: 0 }}
-                        animate={{ width: "83%" }}
-                        transition={{ duration: 1, delay: 0.8, ease: "easeOut" }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <motion.span
-                        className="text-accent-success font-medium flex items-center gap-1"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 1 }}
-                      >
-                        <TrendingUp className="h-3 w-3" />
-                        +12.4%
-                      </motion.span>
-                      <span className="text-muted">vs last event</span>
-                    </div>
-                  </motion.div>
-
-                  {/* Charts Area - Bento Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <motion.div
-                      className="h-32 rounded-md border border-border-subtle bg-raised backdrop-blur-sm flex items-center justify-center"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 0.5 }}
-                    >
-                      <div className="space-y-2 w-full px-4">
-                        {[75, 100, 83, 90].map((width, i) => (
-                          <motion.div
-                            key={i}
-                            className="h-1.5 bg-gradient-to-r from-accent-primary/30 to-accent-secondary/30 rounded"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${width}%` }}
-                            transition={{ duration: 0.8, delay: 0.7 + i * 0.1 }}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                    <motion.div
-                      className="h-32 rounded-md border border-border-subtle bg-raised backdrop-blur-sm flex items-center justify-center"
-                      initial={{ opacity: 0, rotate: -90 }}
-                      animate={{ opacity: 1, rotate: 0 }}
-                      transition={{ duration: 0.8, delay: 0.6 }}
-                    >
-                      <div className="relative w-16 h-16">
-                        <motion.div
-                          className="absolute inset-0 rounded-full border-2 border-border-subtle"
-                          initial={{ rotate: 0 }}
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, delay: 0.8, ease: "easeInOut" }}
-                        />
-                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-accent-secondary" />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Line Chart */}
-                  <motion.div
-                    className="h-20 rounded-md border border-border-subtle bg-raised backdrop-blur-sm mb-3"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
-                  >
-                    <div className="h-full p-3 flex items-end gap-1">
-                      {[40, 60, 45, 70, 55, 80, 65].map((height, i) => (
-                        <motion.div
-                          key={i}
-                          className="flex-1 bg-gradient-to-t from-accent-primary to-accent-secondary rounded-t"
-                          initial={{ height: 0 }}
-                          animate={{ height: `${height}%` }}
-                          transition={{ duration: 0.6, delay: 0.9 + i * 0.1, ease: "easeOut" }}
-                        />
                       ))}
                     </div>
-                  </motion.div>
-                </div>
-              </motion.div>
+            </div>
 
-              {/* Floating Promoter Card */}
-              <motion.div
-                className="absolute -right-4 top-1/4 rounded-md border border-border-subtle bg-glass/50 backdrop-blur-md p-4 w-64"
-                initial={{ opacity: 0, x: 20, y: -20 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                style={{ y: y2 }}
-                whileHover={{ scale: 1.05, borderColor: "var(--border-strong)" }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-accent-secondary" />
-                  <h3 className="text-sm font-semibold tracking-tight text-primary">Promoter Team</h3>
-                </div>
-                <p className="text-xs uppercase tracking-widest text-muted font-medium mb-4 flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  Real-time Attribution
-                </p>
-                <div className="space-y-3">
-                  {[
-                    { name: "Marcus R.", value: 142, width: 71 },
-                    { name: "Sarah J.", value: 98, width: 49 },
-                  ].map((promoter, i) => (
-                    <motion.div
-                      key={promoter.name}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, delay: 0.8 + i * 0.2 }}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm text-secondary">{promoter.name}</span>
-                        <span className="text-sm font-semibold text-primary">{promoter.value}</span>
-                      </div>
-                      <div className="h-1 bg-active rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${promoter.width}%` }}
-                          transition={{ duration: 0.8, delay: 1 + i * 0.2, ease: "easeOut" }}
-                        />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
+            {/* Right: Auto-Rotating Event Cards */}
+            <div className="hidden lg:flex justify-center lg:justify-end">
+              <HeroEventCarousel />
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 border-b border-border-subtle">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div
-                key={stat.label}
-                className="text-center"
-              >
-                <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent mb-2">
-                  {stat.value}
                 </div>
-                <div className="text-sm text-secondary">{stat.label}</div>
+
+        {/* Scrolling BETA Notice Bar */}
+        <div className="absolute bottom-24 left-0 right-0 z-20 overflow-hidden">
+          <div className="bg-void/80 backdrop-blur-md border-y border-border-subtle py-3">
+            <div className="animate-marquee whitespace-nowrap flex items-center">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center font-mono text-[11px] font-bold uppercase tracking-widest">
+                  <span className="text-accent-primary px-6">BETA</span>
+                  <span className="text-white/30">•</span>
+                  <span className="text-white/70 px-6">TESTING IN SHANGHAI, BALI, DUBAI</span>
+                  <span className="text-white/30">•</span>
+                  <span className="text-white px-6">50K+ GUESTS CHECKED IN</span>
+                  <span className="text-white/30">•</span>
+                  <span className="text-white/70 px-6">&lt;2S AVG CHECK-IN</span>
+                  <span className="text-white/30">•</span>
+                  <span className="text-white px-6">200+ EVENTS HOSTED</span>
+                  <span className="text-white/30">•</span>
+                  <Link href="/for-business" className="mx-6">
+                    <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent-primary/20 hover:bg-accent-primary/30 border border-accent-primary/50 rounded-full text-accent-primary hover:text-white transition-all duration-200">
+                      FOR VENUES & ORGANIZERS
+                      <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </Link>
               </div>
             ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 hidden lg:flex">
+          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1">
+            <div className="w-1.5 h-3 bg-white/60 rounded-full animate-bounce" />
           </div>
         </div>
       </section>
 
-      {/* Features Section - Bento Grid */}
-      <section id="features" className="py-32 relative overflow-hidden">
-        {/* Animated background gradient */}
-        <motion.div
-          className="absolute inset-0 opacity-20"
-          style={{
-            background: "radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 70%)",
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.2, 0.3, 0.2],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
+      {/* Mobile Event Cards - Scroll-Snap Section */}
+      <MobileEventCarousel />
 
+      {/* Popular Venues Section */}
+      <section className="py-24 relative overflow-hidden -mt-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-void via-accent-secondary/5 to-transparent pointer-events-none" />
+        
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-20">
-            <span className="text-xs uppercase tracking-widest text-muted font-medium mb-4 block">
-              Platform Features
+          <motion.div
+            className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-secondary mb-2 block">
+                Top Destinations
             </span>
-            <h2 className="text-5xl font-bold tracking-tighter text-primary mb-6">
-              Everything you need to manage your crowd
+              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-primary">
+                Popular Venues
             </h2>
-            <p className="text-xl text-secondary max-w-2xl mx-auto">
-              End-to-end tools to streamline operations, track performance, and grow your events.
-            </p>
           </div>
+            <Link href="/browse">
+              <motion.button
+                className="text-sm font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-1 group"
+                whileHover={{ x: 5 }}
+              >
+                Explore venues
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+            </Link>
+          </motion.div>
 
-          {/* Aceternity UI Bento Grid with Moving Borders */}
-          <BentoGrid className="md:grid-cols-3 md:auto-rows-[18rem]">
-            {features.map((feature, index) => (
-              <div key={feature.title}>
-                <MovingBorder
-                  duration={2000}
-                  rx="8"
-                  ry="8"
-                  className="flex h-full"
-                >
-                  <BentoCard
-                    name={feature.title}
-                    description={feature.description}
-                    icon={
-                      <div className={`text-white bg-gradient-to-br ${feature.gradient} p-2 rounded-md`}>
-                        {feature.icon}
-                      </div>
-                    }
-                    rows={1}
-                    cols={1}
-                    className="h-full"
-                  />
-                </MovingBorder>
-              </div>
+          {/* Venues Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {SHOWCASE_VENUES.map((venue, index) => (
+              <VenueShowcaseCard key={venue.id} venue={venue} index={index} />
             ))}
-          </BentoGrid>
+          </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-32 border-t border-border-subtle relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent-secondary/5 to-transparent" />
+      <section className="py-24 border-t border-border-subtle relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-accent-secondary/5 via-transparent to-transparent pointer-events-none" />
         
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="text-center mb-20"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div className="text-center mb-16">
+            <motion.span 
+              className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4 block"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              Simple as 1-2-3
+            </motion.span>
+            <motion.h2 
+              className="text-4xl lg:text-5xl font-black tracking-tighter text-primary"
+              initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="text-xs uppercase tracking-widest text-muted font-medium mb-4 block">
-              Simple Process
-            </span>
-            <h2 className="text-5xl font-bold tracking-tighter text-primary mb-6">
-              How it works
-            </h2>
-            <p className="text-xl text-secondary max-w-2xl mx-auto">
-              Get started in minutes. No complex setup required.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {howItWorks.map((item, index) => (
-              <div
-                key={item.step}
-                className="relative"
-              >
-                {/* Connector line */}
-                {index < howItWorks.length - 1 && (
-                  <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-gradient-to-r from-border-subtle to-transparent z-0" />
-                )}
-                
-                <div className="relative z-10 p-6 rounded-lg border border-border-subtle bg-raised backdrop-blur-sm h-full">
-                  <div className="text-4xl font-bold bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-lg font-semibold text-primary mb-2">{item.title}</h3>
-                  <p className="text-sm text-secondary">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Built for Everyone Section */}
-      <section id="solutions" className="py-32 border-t border-border-subtle relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-20">
-            <span className="text-xs uppercase tracking-widest text-muted font-medium mb-4 block">
-              One Platform, Every Role
-            </span>
-            <h2 className="text-5xl font-bold tracking-tighter text-primary mb-6">
-              Built for everyone in the event ecosystem
-            </h2>
-            <p className="text-xl text-secondary max-w-2xl mx-auto">
-              Whether you're a venue owner, event organizer, or promoter — CrowdStack gives you the tools you need.
-            </p>
+              viewport={{ once: true }}
+            >
+              Your night, streamlined
+            </motion.h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {roles.map((role, index) => (
-              <div
-                key={role.title}
-                className="p-8 rounded-lg border border-border-subtle bg-raised backdrop-blur-sm relative overflow-hidden group hover:border-accent-secondary/50 transition-colors"
+            {[
+              {
+                step: "01",
+                title: "Find & Register",
+                description: "Browse events, find your vibe, and register in seconds with just your phone number.",
+                icon: <Search className="h-8 w-8" />,
+              },
+              {
+                step: "02",
+                title: "Get Your Pass",
+                description: "Receive your unique QR pass instantly. No app download needed—it's all in your browser.",
+                icon: <QrCode className="h-8 w-8" />,
+              },
+              {
+                step: "03",
+                title: "Walk Right In",
+                description: "Show your QR at the door. One scan, you're in. No lines, no waiting, no stress.",
+                icon: <Zap className="h-8 w-8" />,
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.step}
+                className="relative"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: index * 0.15 }}
               >
-                {/* Hover gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-accent-secondary/10 to-accent-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Connector line */}
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-16 left-full w-full h-px bg-gradient-to-r from-border-strong via-accent-primary/30 to-transparent z-0" />
+                )}
                 
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent-secondary to-accent-primary flex items-center justify-center text-white mb-6">
-                    {role.icon}
+                <Card hover className="h-full relative z-10 group">
+                  <div className="flex flex-col items-center text-center p-6">
+                    <motion.div 
+                      className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white mb-6 shadow-lg shadow-accent-primary/30 group-hover:shadow-xl group-hover:shadow-accent-primary/40 transition-shadow duration-500"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                    >
+                      {item.icon}
+                    </motion.div>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-secondary mb-2">
+                      Step {item.step}
+                    </span>
+                    <h3 className="text-xl font-bold text-primary mb-3">{item.title}</h3>
+                    <p className="text-sm text-secondary leading-relaxed">{item.description}</p>
                   </div>
-                  <h3 className="text-2xl font-semibold text-primary mb-3">{role.title}</h3>
-                  <p className="text-secondary mb-6">{role.description}</p>
-                  <ul className="space-y-2">
-                    {role.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm text-secondary">
-                        <CheckCircle2 className="h-4 w-4 text-accent-success" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonial / Social Proof Section */}
-      <section className="py-32 border-t border-border-subtle relative overflow-hidden">
+      {/* Benefits Section */}
+      <section className="py-24 border-t border-border-subtle">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <motion.span 
+              className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4 block"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              Why CrowdStack
+            </motion.span>
+            <motion.h2 
+              className="text-4xl lg:text-5xl font-black tracking-tighter text-primary mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              Made for people who love going out
+            </motion.h2>
+            <motion.p 
+              className="text-xl text-secondary max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              We've reimagined every step of the event experience to make your night smoother.
+            </motion.p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {benefits.map((benefit, index) => (
+              <motion.div
+                key={benefit.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Card hover className="h-full group">
+                  <div className="flex flex-col h-full p-2">
+                    <motion.div 
+                      className="w-14 h-14 rounded-xl bg-accent-secondary/10 border border-accent-secondary/20 flex items-center justify-center text-accent-secondary mb-4 group-hover:bg-accent-secondary/20 transition-colors duration-500"
+                      whileHover={{ rotate: 10 }}
+                    >
+                      {benefit.icon}
+                    </motion.div>
+                    <h3 className="text-lg font-bold text-primary mb-2">{benefit.title}</h3>
+                    <p className="text-sm text-secondary flex-1">{benefit.description}</p>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+                </div>
+              </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 border-t border-b border-border-subtle bg-raised/30">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { value: "50K+", label: "Happy Guests" },
+              { value: "200+", label: "Events" },
+              { value: "98%", label: "Check-in Rate" },
+              { value: "<2s", label: "Check-in Time" },
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                className="text-center"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <motion.div 
+                  className="text-4xl md:text-5xl font-black bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent mb-2"
+                  whileInView={{ scale: [0.8, 1.1, 1] }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  {stat.value}
+                </motion.div>
+                <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0">
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent-secondary/10 rounded-full blur-3xl"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-accent-primary/10 rounded-full blur-3xl"
             animate={{
               scale: [1, 1.2, 1],
               opacity: [0.3, 0.5, 0.3],
@@ -636,81 +950,127 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center">
-            <motion.div
-              className="mb-8"
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <Sparkles className="h-12 w-12 mx-auto text-accent-secondary" />
-            </motion.div>
-            <blockquote className="text-3xl md:text-4xl font-medium text-primary leading-relaxed mb-8">
-              "CrowdStack eliminated all the spreadsheets and guesswork. Now we know exactly which promoters are delivering and can pay them fairly based on actual check-ins."
-            </blockquote>
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary" />
-              <div className="text-left">
-                <div className="text-primary font-medium">Jordan Chen</div>
-                <div className="text-secondary text-sm">Operations Manager, Arena Events</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="border-t border-border-subtle bg-raised backdrop-blur-sm py-32 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0">
-          <motion.div
-            className="absolute top-0 left-1/4 w-64 h-64 bg-accent-secondary/10 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.5, 1],
-              x: [0, 100, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
-
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8 relative z-10">
-          <div>
-            <span className="text-xs uppercase tracking-widest text-muted font-medium mb-4 block">
-              Get Started
+            <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4 block">
+              Ready to experience the difference?
             </span>
-            <h2 className="text-5xl font-bold tracking-tighter text-primary mb-6">
-              Ready to run smarter events?
+            <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-primary mb-6">
+              Your next great night
+              <br />
+              <span className="bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent">
+                starts here
+              </span>
             </h2>
-            <p className="text-xl text-secondary mb-10">
-              Join venues and organizers using CrowdStack to streamline their operations
+            <p className="text-xl text-secondary mb-10 max-w-2xl mx-auto">
+              Join thousands of people who've upgraded their event experience. 
+              No apps to download, no passwords to remember.
             </p>
+            
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/contact">
+              <Link href="/browse">
                 <motion.button
-                  className="px-8 py-4 text-base font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-accent-primary/50"
+                  className="group px-8 py-4 text-base font-bold uppercase tracking-widest bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Request Demo
-                  <motion.div
-                    className="inline ml-2"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <ArrowRight className="h-4 w-4 inline" />
-                  </motion.div>
+                  <Calendar className="h-5 w-5" />
+                  Browse Events
                 </motion.button>
               </Link>
             </div>
-          </div>
+            </motion.div>
         </div>
       </section>
+
+      {/* For Business Section */}
+      <section className="py-20 relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/10 via-void to-accent-secondary/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
+        
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-accent-primary/20 to-accent-secondary/20 border border-accent-primary/30 mb-6">
+              <span className="text-yellow-400">🏢</span>
+              <span className="text-sm font-semibold text-white">For Venues, Organizers & Promoters</span>
+        </div>
+
+            {/* Heading */}
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
+              Run events with{" "}
+              <span className="bg-gradient-to-r from-accent-primary via-purple-400 to-accent-secondary bg-clip-text text-transparent">
+                data, not guesswork
+            </span>
+            </h2>
+            
+            {/* Description */}
+            <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10">
+              The complete operating system for modern events. Track attendance, manage door lists, handle payouts, and grow your audience—all in one place.
+            </p>
+            
+            {/* Features row */}
+            <div className="flex flex-wrap justify-center gap-4 mb-10">
+              {[
+                { icon: "📊", text: "Real-time analytics" },
+                { icon: "🎫", text: "QR check-in" },
+                { icon: "💰", text: "Automated payouts" },
+                { icon: "📱", text: "No app required" },
+              ].map((feature) => (
+                <div key={feature.text} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                  <span>{feature.icon}</span>
+                  <span className="text-sm text-white/80">{feature.text}</span>
+                </div>
+              ))}
+            </div>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/for-business">
+                <motion.button
+                  className="px-8 py-4 text-base font-bold uppercase tracking-wider bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Explore for Business
+                  <ArrowRight className="h-5 w-5" />
+                </motion.button>
+              </Link>
+              <Link href="/contact">
+                <motion.button
+                  className="px-8 py-4 text-base font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-xl transition-all duration-300 hover:bg-white/20 flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  Book a Demo
+                </motion.button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Custom CSS for gradient animation */}
+      <style jsx>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
     </div>
   );
 }

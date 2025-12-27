@@ -86,6 +86,8 @@ const MOCK_EVENT = {
   end_time: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
   flier_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=800&fit=crop",
   cover_image_url: null,
+  capacity: 200,
+  registration_count: 145,
   venue: {
     name: "Jade by Todd English",
     city: "Dubai",

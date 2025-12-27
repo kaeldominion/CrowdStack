@@ -224,19 +224,30 @@ export function EventCardRow({
                 </div>
               </div>
 
-              {/* Right: Registration Stats */}
-              <div className="flex items-center gap-2 text-right">
-                {(event.registration_count || 0) > 0 && (
-                  <span className="font-mono text-[10px] text-secondary">
-                    <span className="font-bold text-primary">{event.registration_count}</span> registered
-                  </span>
-                )}
-                {spotsLeft !== null && (
-                  <span className={`font-mono text-[10px] font-bold ${
-                    spotsLeft <= 10 ? "text-accent-warning" : "text-accent-success"
-                  }`}>
-                    {spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
-                  </span>
+              {/* Right: Registration Stats with Progress Bar */}
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="flex items-center gap-2 text-right">
+                  {(event.registration_count || 0) > 0 && (
+                    <span className="font-mono text-[10px] text-secondary">
+                      <span className="font-bold text-primary">{event.registration_count}</span> registered
+                    </span>
+                  )}
+                  {spotsLeft !== null && (
+                    <span className={`font-mono text-[10px] font-bold ${
+                      spotsLeft <= 10 ? "text-accent-warning" : "text-accent-success"
+                    }`}>
+                      {spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+                    </span>
+                  )}
+                </div>
+                {/* Progress bar */}
+                {spotsLeft !== null && event.capacity && event.capacity > 0 && (
+                  <div className="w-24 h-1.5 bg-raised rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary"
+                      style={{ width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` }}
+                    />
+                  </div>
                 )}
               </div>
             </div>

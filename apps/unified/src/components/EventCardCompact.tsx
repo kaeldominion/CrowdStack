@@ -151,25 +151,34 @@ export function EventCardCompact({
           
           {/* Venue */}
           {event.venue?.name && (
-            <div className="flex items-center gap-1.5 text-secondary">
-              <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="text-sm truncate">{event.venue.name}</span>
+            <div className="flex items-center gap-1 text-secondary">
+              <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+              <span className="text-[10px] truncate">{event.venue.name}</span>
             </div>
           )}
           
-          {/* Registration count & spots left */}
+          {/* Registration count & spots left with progress bar */}
           {capacity > 0 && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-secondary font-medium">
-                {registrationCount}/{capacity}
-              </span>
-              <span className={`font-bold ${
-                spotsLeft !== null && spotsLeft <= 10 
-                  ? "text-accent-warning" 
-                  : "text-accent-success"
-              }`}>
-                {spotsLeft !== null && spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
-              </span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-secondary font-medium">
+                  {registrationCount}/{capacity}
+                </span>
+                <span className={`font-bold ${
+                  spotsLeft !== null && spotsLeft <= 10 
+                    ? "text-accent-warning" 
+                    : "text-accent-success"
+                }`}>
+                  {spotsLeft !== null && spotsLeft > 0 ? `${spotsLeft} left` : "Full"}
+                </span>
+              </div>
+              {/* Progress bar with purple/blue gradient */}
+              <div className="w-full h-1.5 bg-raised rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary"
+                  style={{ width: `${Math.min((registrationCount / capacity) * 100, 100)}%` }}
+                />
+              </div>
             </div>
           )}
           

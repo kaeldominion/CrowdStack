@@ -238,6 +238,20 @@ pre {
   animation: pulseSubtle 2s ease-in-out infinite;
 }
 
+/* ---------- MARQUEE ANIMATION ---------- */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
 /* ---------- 3D FLIP CARD HELPERS ---------- */
 .perspective-1000 {
   perspective: 1000px;

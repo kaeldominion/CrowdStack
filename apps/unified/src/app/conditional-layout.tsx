@@ -12,6 +12,7 @@ import { createBrowserClient } from "@crowdstack/shared";
 // Routes that should show public navigation and footer (marketing pages)
 const publicMarketingRoutes = [
   "/",
+  "/for-business",
   "/contact",
   "/legal",
 ];
@@ -99,7 +100,8 @@ export function ConditionalLayout({
   const isEventPage = pathname.startsWith("/e/") && !pathname.includes("/register") && !pathname.includes("/pass");
   const isPhotoPage = pathname.startsWith("/p/");
   const isMePage = pathname === "/me"; // ME page has hero gradient that needs to extend behind nav
-  const handlesOwnLayout = isEventPage || isPhotoPage || isMePage;
+  const isLandingPage = pathname === "/" || pathname === "/for-business"; // Landing pages have their own BETA banner
+  const handlesOwnLayout = isEventPage || isPhotoPage || isMePage || isLandingPage;
   
   // Pages that handle own layout: no padding (they manage nav clearance themselves)
   // Routes that have their own nested layouts with DockNav (don't render DockNav here)
@@ -132,7 +134,7 @@ export function ConditionalLayout({
   );
 }
 
-function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "simple" }) {
+function PublicNavigation({ variant = "marketing", showForBusiness = false }: { variant?: "marketing" | "simple"; showForBusiness?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -149,12 +151,11 @@ function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "
             
             {/* Desktop Marketing Navigation */}
             <div className="hidden sm:flex items-center gap-4 sm:gap-6">
-              <Link href="#features" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
-                Features
-              </Link>
-              <Link href="#solutions" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
-                Solutions
-              </Link>
+              {showForBusiness && (
+                <Link href="/for-business" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
+                  For Business
+                </Link>
+              )}
               <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
                 Log in
               </Link>
@@ -186,20 +187,15 @@ function PublicNavigation({ variant = "marketing" }: { variant?: "marketing" | "
                 />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden">
                   <div className="flex flex-col py-2">
-                    <Link
-                      href="#features"
-                      onClick={() => setIsOpen(false)}
-                      className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#solutions"
-                      onClick={() => setIsOpen(false)}
-                      className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
-                    >
-                      Solutions
-                    </Link>
+                    {showForBusiness && (
+                      <Link
+                        href="/for-business"
+                        onClick={() => setIsOpen(false)}
+                        className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                      >
+                        For Business
+                      </Link>
+                    )}
                     <Link
                       href="/login"
                       onClick={() => setIsOpen(false)}

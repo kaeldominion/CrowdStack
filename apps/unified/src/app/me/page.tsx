@@ -404,7 +404,7 @@ export default function MePage() {
           {mobileEventsTab === "upcoming" && (
             <>
               {allUpcoming.length > 0 ? (
-                <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
+                <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 pl-4 pr-4 snap-x snap-mandatory scrollbar-hide">
                   {allUpcoming.slice(0, 5).map((reg) => (
                     <div key={reg.id} className="flex-shrink-0 w-[280px] snap-start">
                       <AttendeeEventCard
@@ -524,8 +524,8 @@ export default function MePage() {
 
       {/* Desktop Layout */}
       <div className="hidden lg:block min-h-screen pt-20">
-        <div className="max-w-7xl mx-auto px-6 xl:px-12">
-          <div className="flex">
+        <div className="max-w-7xl mx-auto px-6 xl:px-12 overflow-visible">
+          <div className="flex overflow-visible">
             {/* Left Sidebar */}
             <aside className="w-72 flex-shrink-0 py-8 pr-8 border-r border-border-subtle">
           <div className="sticky top-24 space-y-5">
@@ -602,8 +602,8 @@ export default function MePage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
-          <div className="max-w-4xl">
+        <main className="flex-1 p-6 overflow-visible">
+          <div className="max-w-4xl overflow-visible">
             {/* Tab Navigation - uses global .tab-label styles */}
             <nav className="flex gap-6 border-b border-border-subtle mb-6">
               <button 
@@ -630,11 +630,11 @@ export default function MePage() {
             {activeTab === "events" && (
               <>
                 {/* Upcoming Events - Cards */}
-                <section className="mb-8">
+                <section className="mb-8 overflow-visible">
                   <h2 className="section-header">Upcoming Events</h2>
 
                   {allUpcoming.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-visible">
                       {allUpcoming.slice(0, 6).map((reg) => (
                         <AttendeeEventCard
                           key={reg.id}
