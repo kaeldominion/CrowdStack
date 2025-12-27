@@ -179,10 +179,10 @@ export function EventCardCompact({
               <button
                 onClick={handleViewEntry}
                 disabled={loading}
-                className="flex items-center gap-2 bg-white text-void font-bold text-xs uppercase tracking-wider py-2 px-4 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
               >
-                <QrCode className="h-4 w-4" />
-                View Entry Pass
+                <QrCode className="h-3 w-3" />
+                View Entry
               </button>
             ) : (
               <button
@@ -191,7 +191,7 @@ export function EventCardCompact({
                   e.stopPropagation();
                   router.push(`/e/${event.slug}/register`);
                 }}
-                className="flex items-center gap-2 bg-white text-void font-bold text-xs uppercase tracking-wider py-2 px-4 rounded-lg hover:bg-white/90 transition-colors"
+                className="flex items-center gap-1.5 bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-white/90 transition-colors"
               >
                 Join Guestlist
               </button>

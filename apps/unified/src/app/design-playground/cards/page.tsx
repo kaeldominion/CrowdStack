@@ -363,6 +363,40 @@ export default function DesignCardsPage() {
             </CardGrid>
           </div>
 
+          {/* Compact Live Cards with Glowing Background */}
+          <div className="mb-8">
+            <CardLabel>Compact - Live (with Glowing Pulsing Background)</CardLabel>
+            <CardGrid columns={3}>
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="relative">
+                  <EventCardCompact 
+                    event={MOCK_EVENT_TODAY} 
+                    registration={MOCK_REGISTRATION}
+                  />
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="relative">
+                  <EventCardCompact 
+                    event={MOCK_EVENT_TODAY} 
+                    registration={MOCK_REGISTRATION}
+                    showVip
+                  />
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
+                <div className="relative">
+                  <EventCardCompact 
+                    event={MOCK_EVENT_TODAY}
+                  />
+                </div>
+              </div>
+            </CardGrid>
+          </div>
+
           {/* Skeleton States */}
           <div className="mb-8">
             <CardLabel>Skeleton / Loading State</CardLabel>
