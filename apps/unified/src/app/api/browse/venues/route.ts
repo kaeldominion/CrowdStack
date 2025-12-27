@@ -29,8 +29,7 @@ export async function GET(request: NextRequest) {
         cover_image_url,
         city,
         state,
-        country,
-        rating
+        country
       `)
       .order("name", { ascending: true });
 
@@ -44,14 +43,12 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,tagline.ilike.%${search}%`);
     }
 
-    // Execute query
-    const { data: venues, error: venuesError } = await query
-      .limit(limit)
-      .range(offset, offset + limit - 1);
+    // Execute query with pagination
+    const { data: venues, error: venuesError } = await query.range(offset, offset + limit - 1);
 
     if (venuesError) {
       console.error("[Browse Venues] Error fetching:", venuesError);
-      return NextResponse.json({ error: "Failed to fetch venues" }, { status: 500 });
+      return NextResponse.json({ error: venuesError.message, details: venuesError }, { status: 500 });
     }
 
     // Get tags for all venues
@@ -91,9 +88,9 @@ export async function GET(request: NextRequest) {
       count: venuesWithTags.length,
     });
   } catch (error: any) {
-    console.error("[Browse Venues] Error:", error);
+    console.error("[Browse Venues] Caught error:", error.message, error.stack);
     return NextResponse.json(
-      { error: error.message || "Server error" },
+      { error: error.message || "Server error", stack: error.stack },
       { status: 500 }
     );
   }
