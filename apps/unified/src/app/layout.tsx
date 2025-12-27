@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ConditionalLayout } from "./conditional-layout";
 import { Analytics } from "@vercel/analytics/next";
 import { CrispChat } from "@/components/CrispChat";
+import { NavigationProgress } from "@/components/NavigationProgress";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -36,6 +38,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className} antialiased`}>
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <ConditionalLayout>{children}</ConditionalLayout>
         <Analytics />
         <CrispChat />
