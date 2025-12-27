@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
-import { Compass, Search, Music, Calendar, MapPin } from "lucide-react";
+import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Users } from "lucide-react";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
@@ -37,6 +37,7 @@ interface Venue {
 }
 
 export default function BrowsePage() {
+  const [activeTab, setActiveTab] = useState("events");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<BrowseFiltersType>({});
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
@@ -47,6 +48,8 @@ export default function BrowsePage() {
   const [venuesLoading, setVenuesLoading] = useState(false);
   const [hasMoreEvents, setHasMoreEvents] = useState(true);
   const [eventsOffset, setEventsOffset] = useState(0);
+  const [totalEventsCount, setTotalEventsCount] = useState(0);
+  const [totalVenuesCount, setTotalVenuesCount] = useState(0);
 
   const EVENTS_PER_PAGE = 12;
 
@@ -96,6 +99,7 @@ export default function BrowsePage() {
       if (reset) {
         setAllEvents(data.events || []);
         setEventsOffset(EVENTS_PER_PAGE);
+        setTotalEventsCount(data.count || data.events?.length || 0);
       } else {
         setAllEvents((prev) => [...prev, ...(data.events || [])]);
         setEventsOffset((prev) => prev + EVENTS_PER_PAGE);
@@ -128,6 +132,7 @@ export default function BrowsePage() {
       const res = await fetch(`/api/browse/venues?${params}`);
       const data = await res.json();
       setVenues(data.venues || []);
+      setTotalVenuesCount(data.count || data.venues?.length || 0);
     } catch (error) {
       console.error("Error fetching venues:", error);
     } finally {
@@ -137,21 +142,40 @@ export default function BrowsePage() {
 
   // Fetch events when search or filters change
   useEffect(() => {
-    fetchEvents(true);
-  }, [searchQuery, filters]);
+    if (activeTab === "events") {
+      fetchEvents(true);
+    }
+  }, [searchQuery, filters, activeTab]);
 
   // Fetch venues when search or city filter changes
   useEffect(() => {
-    fetchVenues();
-  }, [searchQuery, filters.city]);
+    if (activeTab === "djs-venues") {
+      fetchVenues();
+    }
+  }, [searchQuery, filters.city, activeTab]);
 
   const handleLoadMore = () => {
     fetchEvents(false);
   };
 
+  // Calculate stats
+  const upcomingEventsThisWeek = allEvents.filter((event) => {
+    const eventDate = new Date(event.start_time);
+    const now = new Date();
+    const weekFromNow = new Date(now);
+    weekFromNow.setDate(now.getDate() + 7);
+    return eventDate >= now && eventDate <= weekFromNow;
+  }).length;
+
+  const uniqueCities = new Set(
+    allEvents
+      .map((e) => e.venue?.city)
+      .filter(Boolean) as string[]
+  ).size;
+
   return (
     <div className="min-h-screen bg-void">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mb-4">
@@ -177,124 +201,215 @@ export default function BrowsePage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="mb-8">
-          <BrowseFilters filters={filters} onChange={setFilters} />
-        </div>
-
-        {/* Featured Events Section */}
-        {featuredEvents.length > 0 && (
-          <section className="mb-12">
-            <h2 className="section-header mb-6">Featured</h2>
-            <FeaturedEventsCarousel events={featuredEvents} />
-          </section>
-        )}
-
-        {/* All Events Section */}
-        <section className="mb-12">
-          <h2 className="section-header mb-6">All Events</h2>
-          
-          {eventsLoading && allEvents.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
-                >
-                  <div className="aspect-[3/4] min-h-[380px] bg-raised" />
-                </div>
-              ))}
-            </div>
-          ) : allEvents.length === 0 ? (
-            <Card className="!border-dashed !p-12 text-center">
-              <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-primary mb-2">
-                No events found
-              </h3>
-              <p className="text-sm text-secondary">
-                Try adjusting your search or filters to find more events.
-              </p>
-            </Card>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {allEvents.map((event) => (
-                  <AttendeeEventCard
-                    key={event.id}
-                    event={event}
-                    variant="default"
-                  />
-                ))}
+        {/* Main Layout: Sidebar + Content */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Sidebar - Desktop Only */}
+          <aside className="lg:w-80 flex-shrink-0 space-y-6">
+            {/* Filters */}
+            <Card>
+              <div className="space-y-4">
+                <h3 className="section-header">Filters</h3>
+                <BrowseFilters filters={filters} onChange={setFilters} />
               </div>
-
-              {hasMoreEvents && (
-                <div className="mt-8 text-center">
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={eventsLoading}
-                    className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {eventsLoading ? "Loading..." : "Load More Events"}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        {/* Venues Section */}
-        <section className="mb-12">
-          <h2 className="section-header mb-6">Venues</h2>
-          
-          {venuesLoading && venues.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
-                >
-                  <div className="h-[400px] bg-raised" />
-                </div>
-              ))}
-            </div>
-          ) : venues.length === 0 ? (
-            <Card className="!border-dashed !p-12 text-center">
-              <MapPin className="h-12 w-12 text-muted mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-primary mb-2">
-                No venues found
-              </h3>
-              <p className="text-sm text-secondary">
-                Try adjusting your search or filters to find more venues.
-              </p>
             </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {venues.map((venue) => (
-                <VenueCard
-                  key={venue.id}
-                  venue={venue}
-                  showRating
-                  showTags
-                  layout="portrait"
-                />
-              ))}
-            </div>
-          )}
-        </section>
 
-        {/* DJs Coming Soon Section */}
-        <section className="mb-12">
-          <h2 className="section-header mb-6">DJs</h2>
-          <Card className="!border-dashed !p-12 text-center">
-            <Music className="h-12 w-12 text-muted mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-primary mb-2">
-              Coming Soon
-            </h3>
-            <p className="text-sm text-secondary">
-              Browse and discover DJs will be available soon.
-            </p>
-          </Card>
-        </section>
+            {/* Stats Summary */}
+            {activeTab === "events" && (
+              <Card>
+                <div className="space-y-4">
+                  <h3 className="section-header">Summary</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-accent-secondary" />
+                        <span className="text-sm text-secondary">Total Events</span>
+                      </div>
+                      <span className="text-lg font-bold text-primary">{totalEventsCount}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-accent-primary" />
+                        <span className="text-sm text-secondary">This Week</span>
+                      </div>
+                      <span className="text-lg font-bold text-primary">{upcomingEventsThisWeek}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-accent-success" />
+                        <span className="text-sm text-secondary">Cities</span>
+                      </div>
+                      <span className="text-lg font-bold text-primary">{uniqueCities}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {activeTab === "djs-venues" && (
+              <Card>
+                <div className="space-y-4">
+                  <h3 className="section-header">Summary</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-accent-secondary" />
+                        <span className="text-sm text-secondary">Total Venues</span>
+                      </div>
+                      <span className="text-lg font-bold text-primary">{totalVenuesCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </aside>
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Tabs - Design System Style */}
+            <nav className="flex gap-6 border-b border-border-subtle mb-6">
+              <button
+                onClick={() => setActiveTab("events")}
+                className={`tab-label ${activeTab === "events" ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                Events
+              </button>
+              <button
+                onClick={() => setActiveTab("djs-venues")}
+                className={`tab-label ${activeTab === "djs-venues" ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                DJs & Venues
+              </button>
+            </nav>
+
+            {/* EVENTS TAB */}
+            {activeTab === "events" && (
+              <div className="space-y-8">
+                {/* Featured Events Section */}
+                {featuredEvents.length > 0 && (
+                  <section>
+                    <h2 className="section-header mb-6">Featured</h2>
+                    <FeaturedEventsCarousel events={featuredEvents} />
+                  </section>
+                )}
+
+                {/* All Events Section */}
+                <section>
+                  <h2 className="section-header mb-6">All Events</h2>
+                  
+                  {eventsLoading && allEvents.length === 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
+                        >
+                          <div className="aspect-[3/4] min-h-[380px] bg-raised" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : allEvents.length === 0 ? (
+                    <Card className="!border-dashed !p-12 text-center">
+                      <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-primary mb-2">
+                        No events found
+                      </h3>
+                      <p className="text-sm text-secondary">
+                        Try adjusting your search or filters to find more events.
+                      </p>
+                    </Card>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {allEvents.map((event) => (
+                          <AttendeeEventCard
+                            key={event.id}
+                            event={event}
+                            variant="default"
+                          />
+                        ))}
+                      </div>
+
+                      {hasMoreEvents && (
+                        <div className="mt-8 text-center">
+                          <button
+                            onClick={handleLoadMore}
+                            disabled={eventsLoading}
+                            className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {eventsLoading ? "Loading..." : "Load More Events"}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              </div>
+            )}
+
+            {/* DJS & VENUES TAB */}
+            {activeTab === "djs-venues" && (
+              <div className="space-y-8">
+                {/* DJs Section */}
+                <section>
+                  <h2 className="section-header mb-6">DJs</h2>
+                  <Card className="!border-dashed !p-12 text-center">
+                    <Music className="h-12 w-12 text-muted mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-primary mb-2">
+                      Coming Soon
+                    </h3>
+                    <p className="text-sm text-secondary">
+                      Browse and discover DJs will be available soon.
+                    </p>
+                  </Card>
+                </section>
+
+                {/* Venues Section */}
+                <section>
+                  <h2 className="section-header mb-6">Venues</h2>
+                  
+                  {venuesLoading && venues.length === 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
+                        >
+                          <div className="h-[400px] bg-raised" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : venues.length === 0 ? (
+                    <Card className="!border-dashed !p-12 text-center">
+                      <MapPin className="h-12 w-12 text-muted mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-primary mb-2">
+                        No venues found
+                      </h3>
+                      <p className="text-sm text-secondary">
+                        Try adjusting your search or filters to find more venues.
+                      </p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {venues.map((venue) => (
+                        <VenueCard
+                          key={venue.id}
+                          venue={venue}
+                          showRating
+                          showTags
+                          layout="portrait"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

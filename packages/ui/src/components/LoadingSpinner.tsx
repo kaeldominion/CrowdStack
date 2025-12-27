@@ -72,7 +72,7 @@ export function LoadingSpinner({
     );
   }
 
-  // Full branded spinner with tricolor chevrons
+  // Full branded spinner with tricolor chevrons + white top bar
   const spinner = (
     <motion.div
       className={`flex flex-col items-center justify-center gap-3 ${className}`}
@@ -99,17 +99,16 @@ export function LoadingSpinner({
             </linearGradient>
           </defs>
           
-          {/* Top chevron (purple) - pulsing */}
-          <motion.path
-            d="M4 10L16 20L28 10"
-            stroke="url(#loadingPurpleGradient)"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
+          {/* White top bar */}
+          <motion.rect
+            x="8"
+            y="2"
+            width="16"
+            height="3"
+            rx="1.5"
+            fill="white"
             animate={{
-              opacity: [0.5, 1, 0.5],
-              strokeWidth: [3, 4, 3],
+              opacity: [0.6, 1, 0.6],
             }}
             transition={{
               duration: 1,
@@ -118,9 +117,28 @@ export function LoadingSpinner({
             }}
           />
           
+          {/* Top chevron (purple) - pulsing */}
+          <motion.path
+            d="M4 12L16 22L28 12"
+            stroke="url(#loadingPurpleGradient)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            animate={{
+              opacity: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.1,
+            }}
+          />
+          
           {/* Bottom chevron (blue) - pulsing with delay */}
           <motion.path
-            d="M4 18L16 28L28 18"
+            d="M4 20L16 30L28 20"
             stroke="url(#loadingBlueGradient)"
             strokeWidth="3.5"
             strokeLinecap="round"
@@ -128,7 +146,6 @@ export function LoadingSpinner({
             fill="none"
             animate={{
               opacity: [0.5, 1, 0.5],
-              strokeWidth: [3, 4, 3],
             }}
             transition={{
               duration: 1,
