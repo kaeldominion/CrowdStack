@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@crowdstack/ui";
+import { Badge, ConfirmModal } from "@crowdstack/ui";
 import { QrCode, Check, X, Ticket } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { useReferralUserId } from "@/components/ReferralTracker";
@@ -57,6 +57,7 @@ export function AttendeeEventCard({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const userId = useReferralUserId();
 
   const heroImage = event.flier_url || event.cover_image_url;
@@ -104,14 +105,16 @@ export function AttendeeEventCard({
     }
   };
 
-  // Handle cancel registration
-  const handleCancelRegistration = async (e: React.MouseEvent) => {
+  // Open cancel confirmation modal
+  const handleCancelClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    setShowCancelModal(true);
+  };
+
+  // Handle actual cancel registration
+  const handleConfirmCancel = async () => {
     if (!registration?.id) return;
-    
-    // Confirm before cancelling
-    if (!confirm(`Cancel your registration for ${event.name}?`)) return;
     
     setCancelling(true);
     try {
@@ -119,6 +122,7 @@ export function AttendeeEventCard({
         method: "DELETE",
       });
       if (response.ok) {
+        setShowCancelModal(false);
         // Notify parent component to refresh
         onCancelRegistration?.(registration.id);
       } else {
@@ -265,7 +269,7 @@ export function AttendeeEventCard({
                   </button>
                   <button
                     className="w-8 h-8 flex items-center justify-center rounded-md bg-accent-error/20 border border-accent-error/40 hover:bg-accent-error/30 transition-colors disabled:opacity-50"
-                    onClick={handleCancelRegistration}
+                    onClick={handleCancelClick}
                     disabled={cancelling}
                     title="Cancel registration"
                   >
@@ -302,6 +306,19 @@ export function AttendeeEventCard({
           </div>
         </div>
       </Link>
+
+      {/* Cancel Registration Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Registration"
+        message={`Are you sure you want to cancel your registration for ${event.name}? You can always register again later.`}
+        variant="danger"
+        confirmText="Cancel Registration"
+        cancelText="Keep Registration"
+        loading={cancelling}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button, Badge, Card } from "@crowdstack/ui";
+import { Button, Badge, Card, ConfirmModal } from "@crowdstack/ui";
 import { 
   Calendar, 
   MapPin, 
@@ -73,6 +73,7 @@ export function EventPageContent({
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [canEditEvent, setCanEditEvent] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   
   const dateInfo = formatEventDate(startDate);
   const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
@@ -95,10 +96,8 @@ export function EventPageContent({
   }, [params.eventSlug]);
   
   // Handle cancel registration
-  const handleCancelRegistration = async () => {
+  const handleConfirmCancel = async () => {
     if (!registrationId) return;
-    
-    if (!confirm(`Cancel your registration for ${event.name}?`)) return;
     
     setCancelling(true);
     try {
@@ -106,6 +105,7 @@ export function EventPageContent({
         method: "DELETE",
       });
       if (response.ok) {
+        setShowCancelModal(false);
         setIsRegistered(false);
         setRegistrationId(null);
       } else {
@@ -246,7 +246,7 @@ export function EventPageContent({
               <button 
                 className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors disabled:opacity-50"
                 aria-label="Cancel registration"
-                onClick={handleCancelRegistration}
+                onClick={() => setShowCancelModal(true)}
                 disabled={cancelling}
               >
                 <X className="h-5 w-5" />
@@ -640,6 +640,19 @@ export function EventPageContent({
           </div>
         </div>
       </div>
+
+      {/* Cancel Registration Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleConfirmCancel}
+        title="Cancel Registration"
+        message={`Are you sure you want to cancel your registration for ${event.name}? You can always register again later.`}
+        variant="danger"
+        confirmText="Cancel Registration"
+        cancelText="Keep Registration"
+        loading={cancelling}
+      />
     </div>
   );
 }
