@@ -705,7 +705,7 @@ export default function DoorScannerPage() {
                           variant="primary"
                           size="sm"
                           onClick={(e) => {
-                            e.stopPropagation();
+                            e?.stopPropagation();
                             handleCheckIn(result.registration_id);
                           }}
                         >
