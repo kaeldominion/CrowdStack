@@ -13,8 +13,7 @@ interface LoadingSpinnerProps {
 
 /**
  * CrowdStack branded loading spinner
- * Modern, fast-paced design with stacking bars animation
- * Conveys speed and responsiveness
+ * Uses the tricolor chevron logo with pulsing animation
  */
 export function LoadingSpinner({
   size = "md",
@@ -25,16 +24,15 @@ export function LoadingSpinner({
 }: LoadingSpinnerProps) {
   // Size configurations
   const sizeConfig = {
-    sm: { icon: 20, bar: { h: 2, gap: 2 }, orbit: 2 },
-    md: { icon: 32, bar: { h: 3, gap: 3 }, orbit: 3 },
-    lg: { icon: 48, bar: { h: 4, gap: 4 }, orbit: 4 },
-    xl: { icon: 64, bar: { h: 5, gap: 5 }, orbit: 5 },
+    sm: 24,
+    md: 40,
+    lg: 56,
+    xl: 72,
   };
 
-  const config = sizeConfig[size];
-  const iconSize = config.icon;
+  const iconSize = sizeConfig[size];
 
-  // Minimal inline spinner for buttons and small contexts - ultra-fast rotating ring
+  // Minimal inline spinner - fast spinning ring
   if (minimal) {
     const minimalSizes = {
       sm: "h-3 w-3",
@@ -50,7 +48,6 @@ export function LoadingSpinner({
         transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}
       >
         <svg viewBox="0 0 16 16" fill="none" className="w-full h-full">
-          {/* Fast spinning ring with gradient */}
           <circle
             cx="8"
             cy="8"
@@ -60,11 +57,11 @@ export function LoadingSpinner({
             strokeOpacity="0.2"
             fill="none"
           />
-          <motion.circle
+          <circle
             cx="8"
             cy="8"
             r="6"
-            stroke="#3B82F6"
+            stroke="#A855F7"
             strokeWidth="2"
             strokeLinecap="round"
             fill="none"
@@ -75,7 +72,7 @@ export function LoadingSpinner({
     );
   }
 
-  // Full branded spinner with stacking bars
+  // Full branded spinner with tricolor chevrons
   const spinner = (
     <motion.div
       className={`flex flex-col items-center justify-center gap-3 ${className}`}
@@ -83,7 +80,7 @@ export function LoadingSpinner({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Animated stacking bars logo */}
+      {/* Animated tricolor chevron logo */}
       <div className="relative" style={{ width: iconSize, height: iconSize }}>
         <svg
           viewBox="0 0 32 32"
@@ -91,130 +88,56 @@ export function LoadingSpinner({
           xmlns="http://www.w3.org/2000/svg"
           style={{ width: iconSize, height: iconSize }}
         >
-          {/* Bar 4 - Bottom (widest) */}
-          <motion.rect
-            x="4"
-            y="20"
-            width="24"
-            height="3"
-            rx="1"
-            fill="currentColor"
-            initial={{ scaleX: 0, opacity: 0 }}
+          <defs>
+            <linearGradient id="loadingPurpleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#A855F7"/>
+              <stop offset="100%" stopColor="#C084FC"/>
+            </linearGradient>
+            <linearGradient id="loadingBlueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3B82F6"/>
+              <stop offset="100%" stopColor="#60A5FA"/>
+            </linearGradient>
+          </defs>
+          
+          {/* Top chevron (purple) - pulsing */}
+          <motion.path
+            d="M4 10L16 20L28 10"
+            stroke="url(#loadingPurpleGradient)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             animate={{
-              scaleX: [0, 1, 1, 0],
-              opacity: [0, 0.4, 0.4, 0],
+              opacity: [0.5, 1, 0.5],
+              strokeWidth: [3, 4, 3],
             }}
             transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              times: [0, 0.2, 0.7, 1],
-              ease: "easeOut",
-            }}
-            style={{ transformOrigin: "center" }}
-          />
-
-          {/* Bar 3 */}
-          <motion.rect
-            x="6"
-            y="14"
-            width="20"
-            height="3"
-            rx="1"
-            fill="currentColor"
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{
-              scaleX: [0, 1, 1, 0],
-              opacity: [0, 0.6, 0.6, 0],
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: 0.1,
-              times: [0, 0.2, 0.7, 1],
-              ease: "easeOut",
-            }}
-            style={{ transformOrigin: "center" }}
-          />
-
-          {/* Bar 2 */}
-          <motion.rect
-            x="8"
-            y="8"
-            width="16"
-            height="3"
-            rx="1"
-            fill="currentColor"
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{
-              scaleX: [0, 1, 1, 0],
-              opacity: [0, 0.8, 0.8, 0],
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: 0.2,
-              times: [0, 0.2, 0.7, 1],
-              ease: "easeOut",
-            }}
-            style={{ transformOrigin: "center" }}
-          />
-
-          {/* Bar 1 - Top (accent color) */}
-          <motion.rect
-            x="10"
-            y="2"
-            width="12"
-            height="3"
-            rx="1"
-            fill="#3B82F6"
-            initial={{ scaleX: 0, opacity: 0 }}
-            animate={{
-              scaleX: [0, 1, 1, 0],
-              opacity: [0, 1, 1, 0],
-            }}
-            transition={{
-              duration: 0.8,
-              repeat: Infinity,
-              delay: 0.3,
-              times: [0, 0.2, 0.7, 1],
-              ease: "easeOut",
-            }}
-            style={{ transformOrigin: "center" }}
-          />
-        </svg>
-
-        {/* Fast orbiting dot */}
-        <motion.div
-          className="absolute inset-0"
-          animate={{ rotate: 360 }}
-          transition={{
-            duration: 1.2,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          style={{ width: iconSize, height: iconSize }}
-        >
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: config.orbit,
-              height: config.orbit,
-              top: -config.orbit / 2,
-              left: "50%",
-              marginLeft: -config.orbit / 2,
-              backgroundColor: "#3B82F6",
-            }}
-            animate={{
-              scale: [0.8, 1.2, 0.8],
-              opacity: [0.6, 1, 0.6],
-            }}
-            transition={{
-              duration: 0.6,
+              duration: 1,
               repeat: Infinity,
               ease: "easeInOut",
             }}
           />
-        </motion.div>
+          
+          {/* Bottom chevron (blue) - pulsing with delay */}
+          <motion.path
+            d="M4 18L16 28L28 18"
+            stroke="url(#loadingBlueGradient)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            animate={{
+              opacity: [0.5, 1, 0.5],
+              strokeWidth: [3, 4, 3],
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.2,
+            }}
+          />
+        </svg>
       </div>
 
       {text && (
@@ -244,7 +167,7 @@ export function LoadingSpinner({
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%)",
+              "radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.05) 0%, transparent 50%)",
           }}
         />
 

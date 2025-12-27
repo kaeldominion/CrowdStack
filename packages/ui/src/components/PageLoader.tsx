@@ -9,7 +9,7 @@ interface PageLoaderProps {
 
 /**
  * Full-page loading component with CrowdStack branding
- * Modern, fast-paced design that conveys speed and responsiveness
+ * Uses the tricolor chevron logo with animation
  */
 export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
   return (
@@ -20,13 +20,13 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Subtle ambient glow - faster pulse */}
+      {/* Subtle ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full"
           style={{
             background:
-              "radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 60%)",
+              "radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 60%)",
           }}
           animate={{
             scale: [1, 1.15, 1],
@@ -46,141 +46,67 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="relative z-10 flex flex-col items-center gap-5"
       >
-        {/* Animated stacking bars logo */}
-        <div className="relative" style={{ width: 56, height: 56 }}>
+        {/* Animated tricolor chevron logo */}
+        <div className="relative" style={{ width: 64, height: 64 }}>
           <svg
             viewBox="0 0 32 32"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ width: 56, height: 56 }}
+            style={{ width: 64, height: 64 }}
           >
-            {/* Bar 4 - Bottom (widest) */}
-            <motion.rect
-              x="4"
-              y="20"
-              width="24"
-              height="3"
-              rx="1"
-              fill="white"
-              initial={{ scaleX: 0, opacity: 0 }}
+            <defs>
+              <linearGradient id="pageLoaderPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#A855F7"/>
+                <stop offset="100%" stopColor="#C084FC"/>
+              </linearGradient>
+              <linearGradient id="pageLoaderBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3B82F6"/>
+                <stop offset="100%" stopColor="#60A5FA"/>
+              </linearGradient>
+            </defs>
+            
+            {/* Top chevron (purple) - pulsing */}
+            <motion.path
+              d="M4 10L16 20L28 10"
+              stroke="url(#pageLoaderPurple)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
               animate={{
-                scaleX: [0, 1, 1, 0],
-                opacity: [0, 0.4, 0.4, 0],
+                opacity: [0.5, 1, 0.5],
+                strokeWidth: [3, 4, 3],
               }}
               transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                times: [0, 0.2, 0.7, 1],
-                ease: "easeOut",
-              }}
-              style={{ transformOrigin: "center" }}
-            />
-
-            {/* Bar 3 */}
-            <motion.rect
-              x="6"
-              y="14"
-              width="20"
-              height="3"
-              rx="1"
-              fill="white"
-              initial={{ scaleX: 0, opacity: 0 }}
-              animate={{
-                scaleX: [0, 1, 1, 0],
-                opacity: [0, 0.6, 0.6, 0],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                delay: 0.1,
-                times: [0, 0.2, 0.7, 1],
-                ease: "easeOut",
-              }}
-              style={{ transformOrigin: "center" }}
-            />
-
-            {/* Bar 2 */}
-            <motion.rect
-              x="8"
-              y="8"
-              width="16"
-              height="3"
-              rx="1"
-              fill="white"
-              initial={{ scaleX: 0, opacity: 0 }}
-              animate={{
-                scaleX: [0, 1, 1, 0],
-                opacity: [0, 0.8, 0.8, 0],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                delay: 0.2,
-                times: [0, 0.2, 0.7, 1],
-                ease: "easeOut",
-              }}
-              style={{ transformOrigin: "center" }}
-            />
-
-            {/* Bar 1 - Top (accent color) */}
-            <motion.rect
-              x="10"
-              y="2"
-              width="12"
-              height="3"
-              rx="1"
-              fill="#3B82F6"
-              initial={{ scaleX: 0, opacity: 0 }}
-              animate={{
-                scaleX: [0, 1, 1, 0],
-                opacity: [0, 1, 1, 0],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-                delay: 0.3,
-                times: [0, 0.2, 0.7, 1],
-                ease: "easeOut",
-              }}
-              style={{ transformOrigin: "center" }}
-            />
-          </svg>
-
-          {/* Fast orbiting dot */}
-          <motion.div
-            className="absolute inset-0"
-            animate={{ rotate: 360 }}
-            transition={{
-              duration: 1.2,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            style={{ width: 56, height: 56 }}
-          >
-            <motion.div
-              className="absolute rounded-full"
-              style={{
-                width: 4,
-                height: 4,
-                top: -2,
-                left: "50%",
-                marginLeft: -2,
-                backgroundColor: "#3B82F6",
-              }}
-              animate={{
-                scale: [0.8, 1.2, 0.8],
-                opacity: [0.6, 1, 0.6],
-              }}
-              transition={{
-                duration: 0.6,
+                duration: 1,
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
             />
-          </motion.div>
+            
+            {/* Bottom chevron (blue) - pulsing with delay */}
+            <motion.path
+              d="M4 18L16 28L28 18"
+              stroke="url(#pageLoaderBlue)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              animate={{
+                opacity: [0.5, 1, 0.5],
+                strokeWidth: [3, 4, 3],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.2,
+              }}
+            />
+          </svg>
         </div>
 
-        {/* Brand name with fast fade */}
+        {/* Brand name */}
         <motion.div
           className="text-xl font-black tracking-tighter uppercase"
           animate={{
@@ -193,10 +119,10 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
           }}
         >
           <span className="text-white">CROWDSTACK</span>
-          <span className="text-[#3B82F6]">.</span>
+          <span className="text-[#A855F7]">.</span>
         </motion.div>
 
-        {/* Progress bar - faster animation */}
+        {/* Progress bar */}
         {showProgress && (
           <motion.div
             className="h-0.5 w-32 overflow-hidden rounded-full bg-white/10"
@@ -205,7 +131,10 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
             transition={{ delay: 0.1, duration: 0.2 }}
           >
             <motion.div
-              className="h-full rounded-full bg-[#3B82F6]"
+              className="h-full rounded-full"
+              style={{
+                background: "linear-gradient(90deg, #A855F7 0%, #3B82F6 100%)",
+              }}
               animate={{
                 x: ["-100%", "200%"],
               }}

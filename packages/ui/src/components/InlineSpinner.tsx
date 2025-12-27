@@ -9,7 +9,7 @@ interface InlineSpinnerProps {
 
 /**
  * CrowdStack branded inline spinner
- * Fast, modern spinning ring for inline use (buttons, inputs, etc.)
+ * Fast spinning ring with brand colors for inline use (buttons, inputs, etc.)
  * Drop-in replacement for Lucide's Loader2
  */
 export function InlineSpinner({ size = "md", className = "" }: InlineSpinnerProps) {
@@ -37,12 +37,18 @@ export function InlineSpinner({ size = "md", className = "" }: InlineSpinnerProp
           strokeOpacity="0.2"
           fill="none"
         />
-        {/* Fast spinning accent arc */}
+        {/* Gradient arc - purple to blue */}
+        <defs>
+          <linearGradient id="spinnerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#A855F7"/>
+            <stop offset="100%" stopColor="#3B82F6"/>
+          </linearGradient>
+        </defs>
         <circle
           cx="8"
           cy="8"
           r="6"
-          stroke="#3B82F6"
+          stroke="url(#spinnerGradient)"
           strokeWidth="2"
           strokeLinecap="round"
           fill="none"

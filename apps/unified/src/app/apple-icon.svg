@@ -13,7 +13,7 @@
     </linearGradient>
   </defs>
   <!-- Top chevron (purple) -->
-  <path d="M30 60L90 110L150 60" stroke="url(#purpleGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M25 65L90 120L155 65" stroke="url(#purpleGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   <!-- Bottom chevron (blue) -->
-  <path d="M30 100L90 150L150 100" stroke="url(#blueGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M25 110L90 165L155 110" stroke="url(#blueGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>
