@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { BentoCard } from "@/components/BentoCard";
-import { Badge } from "@crowdstack/ui";
-import { Users, Activity, AlertTriangle, Clock } from "lucide-react";
+import { Card, Badge, LoadingSpinner } from "@crowdstack/ui";
+import { Users, Activity, Clock } from "lucide-react";
 import type { LiveMetrics } from "@/lib/data/live-metrics";
 
 export default function VenueLiveMissionControlPage() {
@@ -35,7 +34,7 @@ export default function VenueLiveMissionControlPage() {
   if (loading || !metrics) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-secondary">Loading live metrics...</div>
+        <LoadingSpinner text="Loading live metrics..." size="lg" />
       </div>
     );
   }
@@ -44,19 +43,20 @@ export default function VenueLiveMissionControlPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Live Mission Control</h1>
+          <h1 className="page-title">Live Mission Control</h1>
           <p className="mt-2 text-sm text-secondary">Real-time event monitoring</p>
         </div>
-        <div className="flex items-center gap-2">
+        <Badge variant="success" className="flex items-center gap-2">
           <div className="h-2 w-2 bg-accent-success rounded-full animate-pulse" />
-          <span className="text-sm text-secondary">Live</span>
-        </div>
+          Live
+        </Badge>
       </div>
 
-      <BentoCard span={4}>
+      {/* Hero Metric - Live Attendance */}
+      <Card>
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">
+          <div className="flex-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
               Live Attendance
             </p>
             <div className="flex items-baseline gap-4">
@@ -73,65 +73,67 @@ export default function VenueLiveMissionControlPage() {
               )}
             </div>
             {metrics.capacity && (
-              <div className="mt-4 h-2 bg-glass rounded-full overflow-hidden max-w-md">
+              <div className="mt-4 h-2 bg-raised rounded-full overflow-hidden max-w-md">
                 <div
-                  className="h-full bg-gradient-to-r from-accent-success/80 via-accent-success/40 to-accent-success/80 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary transition-all duration-500"
                   style={{ width: `${metrics.capacity_percentage}%` }}
                 />
               </div>
             )}
           </div>
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/20 border border-accent-success/50">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/10 border border-accent-success/30">
             <Activity className="h-8 w-8 text-accent-success animate-pulse" />
           </div>
         </div>
-      </BentoCard>
+      </Card>
 
+      {/* Flow Rate Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">Last 15 Min</p>
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Last 15 Min</p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_15min}
             </p>
           </div>
-        </BentoCard>
+        </Card>
 
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">Last Hour</p>
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Last Hour</p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_hour}
             </p>
           </div>
-        </BentoCard>
+        </Card>
 
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">Peak Hour</p>
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Peak Hour</p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.peak_hour || "—"}
             </p>
           </div>
-        </BentoCard>
+        </Card>
       </div>
 
-      <BentoCard span={2}>
+      {/* Recent Activity */}
+      <Card>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-primary">Recent Activity</p>
+            <h2 className="section-header">Recent Activity</h2>
             <Clock className="h-4 w-4 text-muted" />
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {metrics.recent_checkins.slice(0, 10).map((checkin) => (
               <div
                 key={checkin.id}
-                className="flex items-center justify-between p-2 rounded-md bg-glass"
+                className="flex items-center justify-between p-2 rounded-lg bg-raised"
               >
                 <div>
                   <p className="text-sm font-medium text-primary">{checkin.attendee_name}</p>
                   {checkin.promoter_name && (
-                    <p className="text-xs text-muted">via {checkin.promoter_name}</p>
+                    <p className="text-xs text-secondary">via {checkin.promoter_name}</p>
                   )}
                 </div>
                 <p className="text-xs text-muted">
@@ -141,7 +143,7 @@ export default function VenueLiveMissionControlPage() {
             ))}
           </div>
         </div>
-      </BentoCard>
+      </Card>
     </div>
   );
 }

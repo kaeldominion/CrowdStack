@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { BentoCard } from "@/components/BentoCard";
-import { Badge, Logo, Button, Input, Modal } from "@crowdstack/ui";
+import { Card, Badge, Logo, Button, Input, Modal, LoadingSpinner } from "@crowdstack/ui";
 import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2, User, Mail, Phone, Instagram, ExternalLink } from "lucide-react";
 import type { LiveMetrics } from "@/lib/data/live-metrics";
 import { Avatar } from "@/components/Avatar";
@@ -267,43 +266,36 @@ export default function OrganizerLiveMissionControlPage() {
 
   if (loading || !metrics) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-secondary">Loading live metrics...</div>
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <LoadingSpinner text="Loading live metrics..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full">
-      <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-6 pb-24 sm:pb-6">
-        {/* Header with Branding */}
-        <div className="mb-6 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
-            <Logo variant="full" size="md" className="text-primary" animated={false} />
-          </div>
-          <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tighter text-primary">Live Mission Control</h1>
-              <div className="mt-1 sm:mt-2 space-y-0.5">
-                <p className="text-sm font-medium text-primary">{metrics.event_name}</p>
-                {metrics.venue_name && (
-                  <p className="text-sm text-secondary">{metrics.venue_name}</p>
-                )}
-              </div>
+          <h1 className="page-title">Live Mission Control</h1>
+          <div className="mt-2 space-y-0.5">
+            <p className="text-sm font-medium text-primary">{metrics.event_name}</p>
+            {metrics.venue_name && (
+              <p className="text-sm text-secondary">{metrics.venue_name}</p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <Badge variant="success" className="flex items-center gap-2">
           <div className="h-2 w-2 bg-accent-success rounded-full animate-pulse" />
-          <span className="text-sm text-secondary">Live</span>
-            </div>
-        </div>
+          Live
+        </Badge>
       </div>
 
-        <div className="space-y-4 sm:space-y-6">
       {/* Hero Metric - Live Attendance */}
-      <BentoCard span={4}>
+      <Card>
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">
+          <div className="flex-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">
               Live Attendance
             </p>
             <div className="flex items-baseline gap-4">
@@ -320,163 +312,161 @@ export default function OrganizerLiveMissionControlPage() {
               )}
             </div>
             {metrics.capacity && (
-              <div className="mt-4 h-2 bg-glass rounded-full overflow-hidden max-w-md">
+              <div className="mt-4 h-2 bg-raised rounded-full overflow-hidden max-w-md">
                 <div
-                  className="h-full bg-gradient-to-r from-accent-success/80 via-accent-success/40 to-accent-success/80 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary transition-all duration-500"
                   style={{ width: `${metrics.capacity_percentage}%` }}
                 />
               </div>
             )}
           </div>
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/20 border border-accent-success/50">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent-success/10 border border-accent-success/30">
             <Activity className="h-8 w-8 text-accent-success animate-pulse" />
           </div>
         </div>
-      </BentoCard>
+      </Card>
 
       {/* Flow Rate Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
               Total Registrations
             </p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.total_registrations}
             </p>
-            <p className="text-sm text-muted">registered</p>
           </div>
-        </BentoCard>
+        </Card>
 
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
               Last 15 Min
             </p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_15min}
             </p>
-            <p className="text-sm text-muted">check-ins</p>
           </div>
-        </BentoCard>
+        </Card>
 
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
               Last Hour
             </p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_hour}
             </p>
-            <p className="text-sm text-muted">check-ins</p>
           </div>
-        </BentoCard>
+        </Card>
 
-        <BentoCard>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-widest text-muted font-medium">
+        <Card padding="compact">
+          <div className="space-y-1">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
               Peak Hour
             </p>
             <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
               {metrics.peak_hour || "—"}
             </p>
-            <p className="text-sm text-muted">most active</p>
           </div>
-        </BentoCard>
+        </Card>
       </div>
 
-      {/* Promoter Leaderboard */}
-      <BentoCard span={2}>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-primary">Promoter Leaderboard</p>
-            <Trophy className="h-4 w-4 text-muted" />
-          </div>
-          <div className="space-y-2">
-            {metrics.promoter_stats.slice(0, 5).map((promoter, index) => (
-              <div
-                key={promoter.promoter_id}
-                className="flex items-center justify-between p-3 rounded-md bg-glass border border-border-subtle"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-secondary/20 text-primary text-sm font-bold">
-                    #{promoter.rank}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-primary">{promoter.promoter_name}</p>
-                    <p className="text-xs text-muted">{promoter.check_ins} check-ins</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </BentoCard>
-
-      {/* Recent Activity */}
-      <BentoCard span={2}>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-primary">Recent Activity</p>
-            <Clock className="h-4 w-4 text-muted" />
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {metrics.recent_activity.slice(0, 20).map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-center justify-between p-2 rounded-md bg-glass"
-              >
-                <div className="flex items-center gap-2">
-                  {activity.type === "checkin" ? (
-                    <div className="h-2 w-2 rounded-full bg-accent-success" />
-                  ) : (
-                    <div className="h-2 w-2 rounded-full bg-accent-secondary" />
-                  )}
-                  <div>
-                    {activity.attendee_id ? (
-                      <button
-                        onClick={() => handleAttendeeClick(activity.attendee_id)}
-                        className="text-sm font-medium text-primary hover:text-accent-secondary transition-colors cursor-pointer text-left"
-                      >
-                        {activity.attendee_name}
-                      </button>
-                    ) : (
-                      <p className="text-sm font-medium text-primary">{activity.attendee_name}</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted">
-                        {activity.type === "checkin" ? "Checked in" : "Registered"}
-                      </p>
-                      {activity.promoter_name && (
-                        <>
-                          <span className="text-xs text-muted">•</span>
-                          <p className="text-xs text-muted">via {activity.promoter_name}</p>
-                        </>
-                      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Promoter Leaderboard */}
+        <Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="section-header">Promoter Leaderboard</h2>
+              <Trophy className="h-4 w-4 text-muted" />
+            </div>
+            <div className="space-y-2">
+              {metrics.promoter_stats.slice(0, 5).map((promoter) => (
+                <div
+                  key={promoter.promoter_id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-raised"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-secondary/10 text-primary text-sm font-bold">
+                      #{promoter.rank}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-primary">{promoter.promoter_name}</p>
+                      <p className="text-xs text-secondary">{promoter.check_ins} check-ins</p>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-muted">
-                  {new Date(activity.timestamp).toLocaleTimeString()}
-                </p>
-              </div>
-            ))}
-            {metrics.recent_activity.length === 0 && (
-              <p className="text-sm text-muted text-center py-4">No recent activity</p>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-      </BentoCard>
+        </Card>
 
-          {/* Message Board */}
-          <BentoCard span={4}>
-            <div className="space-y-4 relative" style={{ paddingBottom: "80px" }}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-primary flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Message Board
-                </p>
-              </div>
+        {/* Recent Activity */}
+        <Card>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="section-header">Recent Activity</h2>
+              <Clock className="h-4 w-4 text-muted" />
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {metrics.recent_activity.slice(0, 20).map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between p-2 rounded-lg bg-raised"
+                >
+                  <div className="flex items-center gap-2">
+                    {activity.type === "checkin" ? (
+                      <div className="h-2 w-2 rounded-full bg-accent-success" />
+                    ) : (
+                      <div className="h-2 w-2 rounded-full bg-accent-secondary" />
+                    )}
+                    <div>
+                      {activity.attendee_id ? (
+                        <button
+                          onClick={() => handleAttendeeClick(activity.attendee_id)}
+                          className="text-sm font-medium text-primary hover:text-accent-secondary transition-colors cursor-pointer text-left"
+                        >
+                          {activity.attendee_name}
+                        </button>
+                      ) : (
+                        <p className="text-sm font-medium text-primary">{activity.attendee_name}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-secondary">
+                          {activity.type === "checkin" ? "Checked in" : "Registered"}
+                        </p>
+                        {activity.promoter_name && (
+                          <>
+                            <span className="text-xs text-secondary">•</span>
+                            <p className="text-xs text-secondary">via {activity.promoter_name}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted">
+                    {new Date(activity.timestamp).toLocaleTimeString()}
+                  </p>
+                </div>
+              ))}
+              {metrics.recent_activity.length === 0 && (
+                <p className="text-sm text-secondary text-center py-4">No recent activity</p>
+              )}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Message Board */}
+      <Card>
+        <div className="space-y-4 relative" style={{ paddingBottom: "80px" }}>
+          <div className="flex items-center justify-between">
+            <h2 className="section-header flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Board
+            </h2>
+          </div>
 
               {/* Messages List */}
               <div 
@@ -505,7 +495,7 @@ export default function OrganizerLiveMissionControlPage() {
                         )}
                         
                         <div
-                          className={`p-3 rounded-md bg-glass border border-border-subtle ${
+                          className={`p-3 rounded-lg bg-raised ${
                             swipingId === msg.id ? "" : "transition-transform duration-200"
                           } ${
                             editingId === msg.id ? "" : "flex gap-3"
@@ -631,9 +621,7 @@ export default function OrganizerLiveMissionControlPage() {
                 </Button>
               </div>
             </div>
-          </BentoCard>
-        </div>
-      </div>
+          </Card>
 
       {/* Attendee Profile Modal */}
       <Modal
@@ -673,7 +661,7 @@ export default function OrganizerLiveMissionControlPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="space-y-3 border-t border-border pt-4">
+            <div className="space-y-3 border-t border-border-subtle pt-4">
               {attendeeDetails.attendee.email && (
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-secondary" />
@@ -718,9 +706,10 @@ export default function OrganizerLiveMissionControlPage() {
                 <h4 className="text-sm font-semibold text-primary mb-3">Previous Events</h4>
                 <div className="space-y-2">
                   {attendeeDetails.previous_events.map((event: any) => (
-                    <div
+                    <Card
                       key={event.id}
-                      className="flex items-center justify-between p-2 rounded-md bg-glass border border-border"
+                      padding="compact"
+                      className="flex items-center justify-between"
                     >
                       <div>
                         <p className="text-sm font-medium text-primary">{event.name}</p>
