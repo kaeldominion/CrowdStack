@@ -1690,55 +1690,68 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {config.canViewAttendees && (
             <TabsContent value="attendees" className="space-y-4">
-              {/* Invite Codes Section (for organizers) */}
-              {config.role === "organizer" && inviteCodes.length > 0 && (
+              {/* Invite/Tracking QR Codes Section (for organizers) */}
+              {config.role === "organizer" && (
                 <Card>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-primary">Invite QR Codes</h2>
+                    <div>
+                      <h2 className="text-xl font-semibold text-primary">Tracking QR Codes</h2>
+                      <p className="text-sm text-secondary mt-1">Create QR codes with unique tracking links for promoters, flyers, or campaigns</p>
+                    </div>
                     <Link href={`/app/organizer/events/${eventId}/invites`}>
                       <Button variant="secondary" size="sm">
                         <QrCode className="h-4 w-4 mr-2" />
-                        Manage Invites
+                        {inviteCodes.length > 0 ? "Manage QR Codes" : "Create QR Code"}
                       </Button>
                     </Link>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {inviteCodes.slice(0, 3).map((invite) => (
-                      <div key={invite.id} className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <code className="text-sm font-mono font-semibold">{invite.invite_code}</code>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyInviteLink(invite.invite_code)}
-                          >
-                            {copiedInviteId === invite.invite_code ? (
-                              <CheckCircle2 className="h-4 w-4 text-success" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                        <div className="text-xs text-secondary space-y-1">
-                          {invite.max_uses ? (
-                            <p>Uses: {invite.used_count} / {invite.max_uses}</p>
-                          ) : (
-                            <p>Uses: {invite.used_count} (unlimited)</p>
-                          )}
-                          {invite.expires_at && (
-                            <p>Expires: {new Date(invite.expires_at).toLocaleDateString()}</p>
-                          )}
-                        </div>
+                  {inviteCodes.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {inviteCodes.slice(0, 3).map((invite) => (
+                          <div key={invite.id} className="p-4 border border-border rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <code className="text-sm font-mono font-semibold">{invite.invite_code}</code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyInviteLink(invite.invite_code)}
+                              >
+                                {copiedInviteId === invite.invite_code ? (
+                                  <CheckCircle2 className="h-4 w-4 text-success" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                            <div className="text-xs text-secondary space-y-1">
+                              {invite.max_uses ? (
+                                <p>Uses: {invite.used_count} / {invite.max_uses}</p>
+                              ) : (
+                                <p>Uses: {invite.used_count} (unlimited)</p>
+                              )}
+                              {invite.expires_at && (
+                                <p>Expires: {new Date(invite.expires_at).toLocaleDateString()}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  {inviteCodes.length > 3 && (
-                    <div className="mt-4 text-center">
-                      <Link href={`/app/organizer/events/${eventId}/invites`}>
-                        <Button variant="ghost" size="sm">
-                          View all {inviteCodes.length} invite codes
-                        </Button>
-                      </Link>
+                      {inviteCodes.length > 3 && (
+                        <div className="mt-4 text-center">
+                          <Link href={`/app/organizer/events/${eventId}/invites`}>
+                            <Button variant="ghost" size="sm">
+                              View all {inviteCodes.length} QR codes
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 border border-dashed border-border rounded-lg">
+                      <QrCode className="h-8 w-8 text-muted mx-auto mb-2" />
+                      <p className="text-sm text-secondary">No tracking QR codes yet</p>
+                      <p className="text-xs text-muted mt-1">Create QR codes to track registrations from different sources</p>
                     </div>
                   )}
                 </Card>
