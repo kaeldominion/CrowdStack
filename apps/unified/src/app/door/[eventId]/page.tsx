@@ -437,29 +437,30 @@ export default function DoorScannerPage() {
           <div className="p-6">
             <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
             <h1 className="page-title mb-4">Access Denied</h1>
-          <p className="text-secondary mb-2">
-            {error || "You don't have permission to access the door scanner for this event."}
-          </p>
-          <p className="text-sm text-muted mb-6">
-            Only event organizers, venue admins, and assigned door staff can access this scanner.
-          </p>
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              size="lg"
-              className="flex-1"
-              onClick={() => router.push("/door")}
-            >
-              Back to Events
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="flex-1"
-              onClick={() => router.push("/me")}
-            >
-              My Dashboard
-            </Button>
+            <p className="text-secondary mb-2">
+              {error || "You don't have permission to access the door scanner for this event."}
+            </p>
+            <p className="text-sm text-muted mb-6">
+              Only event organizers, venue admins, and assigned door staff can access this scanner.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
+                onClick={() => router.push("/door")}
+              >
+                Back to Events
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
+                onClick={() => router.push("/me")}
+              >
+                My Dashboard
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
@@ -473,15 +474,16 @@ export default function DoorScannerPage() {
           <div className="p-6">
             <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
             <h1 className="page-title mb-4">Unable to Load Event</h1>
-          <p className="text-secondary mb-6">{error}</p>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full"
-            onClick={() => router.push("/door")}
-          >
-            Back to Events
-          </Button>
+            <p className="text-secondary mb-6">{error}</p>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              onClick={() => router.push("/door")}
+            >
+              Back to Events
+            </Button>
+          </div>
         </Card>
       </div>
     );
