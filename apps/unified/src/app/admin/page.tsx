@@ -127,6 +127,12 @@ export default function AdminDashboardPage() {
 
   const brandTools = [
     {
+      name: "Design System",
+      href: "/design-playground",
+      description: "View design system components and patterns",
+      icon: <Palette className="h-6 w-6" />,
+    },
+    {
       name: "Download Brand Assets",
       href: "/admin/tools/brand-assets",
       description: "Download logos, icons, and brand materials",
