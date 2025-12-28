@@ -250,7 +250,7 @@ export function DockNav() {
 
   // Profile menu items
   const profileMenuItems = [
-    { href: "/me", label: "Profile", icon: User },
+    { href: "/me/profile", label: "Profile", icon: User },
     { href: "/me/settings", label: "Settings", icon: Settings },
     { href: "/me/billing", label: "Billing", icon: CreditCard },
   ];
