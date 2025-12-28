@@ -214,6 +214,8 @@ export function PhotoUploader({
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       handleFiles(e.target.files);
+      // Reset input so the same file can be selected again if needed
+      e.target.value = "";
     }
   };
 
@@ -256,13 +258,24 @@ export function PhotoUploader({
         </p>
         <Button
           variant="secondary"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            // Reset input to ensure onChange fires even if same files are selected
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+              fileInputRef.current.click();
+            }
+          }}
           disabled={pendingCount > 0 || isUnpublishing}
         >
           {isUnpublishing ? (
             <>
               <InlineSpinner size="sm" className="mr-2" />
               Unpublishing...
+            </>
+          ) : successCount > 0 && pendingCount === 0 ? (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload More Photos
             </>
           ) : (
             <>
