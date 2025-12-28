@@ -13,8 +13,9 @@ export interface ImageTransformOptions {
   width?: number;
   height?: number;
   quality?: number; // 20-100, default 80
-  format?: "origin" | "webp" | "avif";
   resize?: "cover" | "contain" | "fill";
+  // Note: Format optimization (WebP/AVIF) is automatic in Supabase Storage
+  // and cannot be explicitly set via the transform API
 }
 
 /**
@@ -32,7 +33,6 @@ export function getOptimizedImageUrl(
     width,
     height,
     quality = 80,
-    format,
     resize = "cover",
   } = options;
 
@@ -42,8 +42,10 @@ export function getOptimizedImageUrl(
   if (width) params.set("width", width.toString());
   if (height) params.set("height", height.toString());
   if (quality !== undefined) params.set("quality", quality.toString());
-  if (format && format !== "origin") params.set("format", format);
   if (resize) params.set("resize", resize);
+  
+  // Note: Format optimization (WebP/AVIF) is automatic in Supabase Storage
+  // based on browser capabilities - no need to set it explicitly
 
   // Append params to existing query string or create new one
   const existingParams = url.search;

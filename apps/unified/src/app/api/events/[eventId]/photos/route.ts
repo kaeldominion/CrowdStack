@@ -79,7 +79,6 @@ export async function GET(
             width: 1920,
             height: 1920,
             quality: 90,
-            format: "webp",
             resize: "contain",
           },
         });
@@ -92,7 +91,6 @@ export async function GET(
             width: 400,
             height: 400,
             quality: 75,
-            format: "webp",
             resize: "cover",
           },
         });
@@ -317,7 +315,6 @@ export async function POST(
             width: 1920,
             height: 1920,
             quality: 90,
-            format: "webp",
             resize: "contain",
           },
         });
@@ -329,7 +326,6 @@ export async function POST(
             width: 400,
             height: 400,
             quality: 75,
-            format: "webp",
             resize: "cover",
           },
         });
