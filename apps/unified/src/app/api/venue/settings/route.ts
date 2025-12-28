@@ -3,6 +3,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 /**
  * Extract address components from Google Maps URL using Geocoding API
  */

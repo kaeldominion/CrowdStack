@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { UserRole } from "@crowdstack/shared";
 
+// Force dynamic rendering since we use cookies for authentication
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
