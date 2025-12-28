@@ -273,11 +273,15 @@ export async function POST(
       .eq("id", album.id);
 
     // Log to message_logs for audit trail
+    const logSubject = venueName 
+      ? `Photos from ${event.name} @ ${venueName} are now available!`
+      : `Photos from ${event.name} are now available!`;
+    
     await serviceSupabase
       .from("message_logs")
       .insert({
         recipient: `${result.sent} attendees`,
-        subject: `Photos from ${event.name} are now available!`,
+        subject: logSubject,
         status: result.failed === 0 ? "sent" : "sent",
         sent_at: new Date().toISOString(),
         error_message: result.errors.length > 0 ? result.errors.slice(0, 5).join("; ") : null,

@@ -29,7 +29,9 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
   } = options;
 
   const locationText = venueName ? ` at ${venueName}` : "";
-  const subject = `Photos from ${eventName} are now available!`;
+  const subject = venueName 
+    ? `Photos from ${eventName} @ ${venueName} are now available!`
+    : `Photos from ${eventName} are now available!`;
 
   // Generate thumbnail grid HTML (3-6 images in a row)
   const thumbnailsHtml = thumbnailUrls.length > 0
@@ -205,7 +207,11 @@ export async function sendPhotosNotificationBatch(
   };
 
   const serviceSupabase = createServiceRoleClient();
-  const subject = `Photos from ${eventDetails.eventName} are now available!`;
+  
+  // Generate subject with venue name if available
+  const subject = eventDetails.venueName 
+    ? `Photos from ${eventDetails.eventName} @ ${eventDetails.venueName} are now available!`
+    : `Photos from ${eventDetails.eventName} are now available!`;
 
   // Process in batches to avoid overwhelming the email service
   for (let i = 0; i < recipients.length; i += batchSize) {
