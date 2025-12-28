@@ -95,11 +95,37 @@ export function PhotoUploader({
         body: formData,
       });
 
-      const data = await response.json();
-
+      // Check if response is OK before parsing
       if (!response.ok) {
-        throw new Error(data.error || "Upload failed");
+        // Try to parse JSON error, but handle non-JSON responses
+        let errorMessage = "Upload failed";
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || `Upload failed: ${response.status} ${response.statusText}`;
+          } catch {
+            errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+          }
+        } else {
+          // For non-JSON responses (like 413 Request Entity Too Large), use status text
+          if (response.status === 413) {
+            errorMessage = "File too large. Maximum size is 10MB.";
+          } else {
+            errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+          }
+        }
+        throw new Error(errorMessage);
       }
+
+      // Parse JSON only if response is OK
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid response from server");
+      }
+
+      const data = await response.json();
 
       // Check for errors in response
       if (data.errors && data.errors.length > 0) {
@@ -124,7 +150,7 @@ export function PhotoUploader({
           ...updated[index],
           status: "error",
           progress: 0,
-          error: error.message,
+          error: error.message || "Upload failed",
         };
         return updated;
       });

@@ -180,8 +180,24 @@ export async function POST(
       );
     }
 
-    // Parse form data
-    const formData = await request.formData();
+    // Parse form data - handle large file errors gracefully
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (error: any) {
+      // Handle cases where request body is too large or malformed
+      if (error.message?.includes("too large") || error.message?.includes("413")) {
+        return NextResponse.json(
+          { error: "File too large. Maximum size is 10MB per file." },
+          { status: 413 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Failed to parse request. Please ensure files are valid images under 10MB." },
+        { status: 400 }
+      );
+    }
+
     const files = formData.getAll("files") as File[];
 
     if (files.length === 0) {

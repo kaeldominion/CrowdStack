@@ -2,6 +2,18 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@crowdstack/ui", "@crowdstack/shared", "framer-motion"],
+  // Increase body size limit for photo uploads (10MB per file)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+    responseLimit: false,
+  },
   images: {
     remotePatterns: [
       {
