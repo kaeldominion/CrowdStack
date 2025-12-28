@@ -23,8 +23,11 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
 
   // Extract coordinates from Google Maps URL if not provided
   const extractCoordinatesFromUrl = (url: string): { lat: number; lng: number } | null => {
-    // Try to extract coordinates from URL patterns like: @lat,lng (most common)
-    const coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (!url) return null;
+    
+    // Try multiple URL patterns
+    // Pattern 1: @lat,lng (most common in Google Maps URLs)
+    let coordsMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
     if (coordsMatch) {
       const lat = parseFloat(coordsMatch[1]);
       const lng = parseFloat(coordsMatch[2]);
@@ -32,6 +35,27 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
         return { lat, lng };
       }
     }
+    
+    // Pattern 2: ?q=lat,lng
+    coordsMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (coordsMatch) {
+      const lat = parseFloat(coordsMatch[1]);
+      const lng = parseFloat(coordsMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+    
+    // Pattern 3: ll=lat,lng
+    coordsMatch = url.match(/[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (coordsMatch) {
+      const lat = parseFloat(coordsMatch[1]);
+      const lng = parseFloat(coordsMatch[2]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+    
     return null;
   };
 
@@ -44,6 +68,9 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
     if (extracted) {
       finalLat = extracted.lat;
       finalLng = extracted.lng;
+      console.log("[MapPreview] Extracted coordinates from URL:", { lat: finalLat, lng: finalLng });
+    } else {
+      console.warn("[MapPreview] Could not extract coordinates from URL:", mapsUrl);
     }
   }
 
@@ -51,26 +78,56 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
   
   // Generate static map image URL
   const getStaticMapUrl = () => {
-    if (!hasCoordinates) return null;
+    if (!hasCoordinates) {
+      console.warn("[MapPreview] No coordinates available", { lat: finalLat, lng: finalLng, mapsUrl });
+      return null;
+    }
     
     const zoom = 15;
     const width = 600; // Higher resolution for better quality
     const height = 300;
+    // Note: Client components can only access NEXT_PUBLIC_ prefixed env vars
+    // For server-side components, use GOOGLE_MAPS_API_KEY
     const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    
+    if (!googleMapsApiKey) {
+      console.warn("[MapPreview] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not found, using OpenStreetMap fallback");
+    }
     
     // Use Google Maps Static API if API key is available (better quality)
     if (googleMapsApiKey) {
       // Google Maps Static API with marker
       const marker = `${finalLat},${finalLng}`;
-      return `https://maps.googleapis.com/maps/api/staticmap?center=${finalLat},${finalLng}&zoom=${zoom}&size=${width}x${height}&markers=color:red%7C${marker}&key=${googleMapsApiKey}`;
+      const url = `https://maps.googleapis.com/maps/api/staticmap?center=${finalLat},${finalLng}&zoom=${zoom}&size=${width}x${height}&markers=color:red%7C${marker}&key=${googleMapsApiKey}`;
+      console.log("[MapPreview] Generated Google Maps Static API URL:", url.substring(0, 100) + "...");
+      return url;
     }
     
     // Fallback to OpenStreetMap static map service (free, no API key needed)
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${finalLat},${finalLng}&zoom=${zoom}&size=${width}x${height}&maptype=osmarenderer&markers=${finalLat},${finalLng},red-pushpin`;
+    const osmUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${finalLat},${finalLng}&zoom=${zoom}&size=${width}x${height}&maptype=osmarenderer&markers=${finalLat},${finalLng},red-pushpin`;
+    console.log("[MapPreview] Using OpenStreetMap fallback:", osmUrl);
+    return osmUrl;
   };
 
   const staticMapUrl = getStaticMapUrl();
   const showImage = staticMapUrl && !imageError;
+
+  // Debug info (only in development)
+  const isDev = process.env.NODE_ENV === "development";
+  if (isDev) {
+    console.log("[MapPreview] Debug info:", {
+      hasCoordinates,
+      finalLat,
+      finalLng,
+      mapsUrl,
+      hasApiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+      apiKeyPrefix: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.substring(0, 10) + "...",
+      staticMapUrl: staticMapUrl?.substring(0, 100),
+      showImage,
+      imageLoaded,
+      imageError,
+    });
+  }
 
   return (
     <a
@@ -92,8 +149,13 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
                   imageLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={() => setImageLoaded(true)}
-                onError={() => {
-                  console.error("Failed to load map image:", staticMapUrl);
+                onError={(e) => {
+                  console.error("[MapPreview] Failed to load map image:", {
+                    url: staticMapUrl?.substring(0, 100),
+                    error: e,
+                    hasApiKey: !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+                    coordinates: { lat: finalLat, lng: finalLng },
+                  });
                   setImageError(true);
                 }}
                 loading="lazy"
