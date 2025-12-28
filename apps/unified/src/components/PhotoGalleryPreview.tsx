@@ -68,24 +68,26 @@ export function PhotoGalleryPreview({
   }
 
   return (
-    <div className="p-3 lg:p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10">
+    <div className="p-3 lg:p-4 rounded-xl bg-glass backdrop-blur-md border border-border-subtle">
       <div className="space-y-3 lg:space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 lg:gap-3">
             <div className="p-1.5 lg:p-2 rounded-lg bg-accent-secondary/10">
-              <ImageIcon className="h-4 w-4 lg:h-5 lg:w-5 text-primary" />
+              <ImageIcon className="h-4 w-4 lg:h-5 lg:w-5 text-accent-secondary" />
             </div>
             <div>
-              <h2 className="text-lg lg:text-xl font-semibold text-primary">Event Photos</h2>
-              <p className="text-xs lg:text-sm text-secondary mt-0.5">
+              <h2 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                Event Photos
+              </h2>
+              <p className="font-sans text-xs text-muted mt-0.5">
                 {photos.length} {photos.length === 1 ? "photo" : "photos"} available
               </p>
             </div>
           </div>
           <Link href={`/p/${eventSlug}`}>
-            <Button variant="primary" size="sm" className="text-xs lg:text-sm">
+            <Button variant="primary" size="sm" className="text-[10px] font-mono uppercase tracking-wider">
               View Gallery
-              <ArrowRight className="h-3 w-3 lg:h-4 lg:w-4 ml-1.5 lg:ml-2" />
+              <ArrowRight className="h-3 w-3 ml-1.5" />
             </Button>
           </Link>
         </div>
@@ -96,7 +98,7 @@ export function PhotoGalleryPreview({
             <Link
               key={photo.id}
               href={`/p/${eventSlug}`}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-glass"
+              className="group relative aspect-square overflow-hidden rounded-lg bg-raised"
             >
               <Image
                 src={photo.thumbnail_url}
@@ -107,7 +109,7 @@ export function PhotoGalleryPreview({
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               {index === 5 && photos.length > 6 && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs lg:text-sm font-semibold">
+                <div className="absolute inset-0 flex items-center justify-center bg-void/70 text-primary font-mono text-[10px] font-bold uppercase tracking-wider">
                   +{photos.length - 6} more
                 </div>
               )}

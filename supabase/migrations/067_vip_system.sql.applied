@@ -68,6 +68,14 @@ COMMENT ON TABLE public.organizer_vips IS 'Organizer-specific VIP status - benef
 ALTER TABLE public.venue_vips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.organizer_vips ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotency)
+DROP POLICY IF EXISTS "venue_vips_read_authenticated" ON public.venue_vips;
+DROP POLICY IF EXISTS "venue_vips_insert_venue_admin" ON public.venue_vips;
+DROP POLICY IF EXISTS "venue_vips_delete_venue_admin" ON public.venue_vips;
+DROP POLICY IF EXISTS "organizer_vips_read_authenticated" ON public.organizer_vips;
+DROP POLICY IF EXISTS "organizer_vips_insert_organizer_user" ON public.organizer_vips;
+DROP POLICY IF EXISTS "organizer_vips_delete_organizer_user" ON public.organizer_vips;
+
 -- Venue VIPs: Venue admins can manage, all authenticated can read
 CREATE POLICY "venue_vips_read_authenticated" ON public.venue_vips
   FOR SELECT TO authenticated

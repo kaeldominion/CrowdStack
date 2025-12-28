@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Share2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Share2, Image as ImageIcon, Camera, Clock, CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
-import { Logo, LoadingSpinner } from "@crowdstack/ui";
+import { Logo, LoadingSpinner, Button } from "@crowdstack/ui";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 
 interface Photo {
@@ -30,6 +30,7 @@ interface Event {
   name: string;
   slug: string;
   start_time: string;
+  cover_image_url?: string | null;
   venue?: {
     name: string;
     city: string | null;
@@ -70,16 +71,10 @@ export default function PhotosPage() {
 
       if (photosResponse.ok) {
         setAlbum(photosData.album);
-        console.log("Album data:", photosData.album);
-        console.log("Photos data:", photosData.photos);
         // Only show photos if album is published
         if (photosData.album?.status === "published") {
           setPhotos(photosData.photos || []);
-        } else {
-          console.log("Album status is not published:", photosData.album?.status);
         }
-      } else {
-        console.error("Failed to fetch photos:", photosData);
       }
     } catch (error) {
       console.error("Error loading photos:", error);
@@ -106,82 +101,13 @@ export default function PhotosPage() {
           url,
         });
       } catch (err) {
-        // User cancelled or error
         console.log("Share cancelled");
       }
     } else {
-      // Fallback: copy to clipboard
       await navigator.clipboard.writeText(url);
       alert("Link copied to clipboard!");
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <LoadingSpinner text="Loading photos..." size="lg" />
-      </div>
-    );
-  }
-
-  if (!event) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <div className="text-center">
-          <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
-          <h1 className="text-2xl font-bold text-white mb-2">Event Not Found</h1>
-          <p className="text-white/60">
-            The event you're looking for doesn't exist.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!album) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <div className="text-center">
-          <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
-          <h1 className="text-2xl font-bold text-white mb-2">No Photo Album</h1>
-          <p className="text-white/60">
-            This event doesn't have a photo album yet.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (album.status !== "published") {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <div className="text-center">
-          <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
-          <h1 className="text-2xl font-bold text-white mb-2">Photos Not Available</h1>
-          <p className="text-white/60">
-            This photo album hasn't been published yet. The organizer needs to publish it first.
-          </p>
-          <p className="text-white/40 text-sm mt-2">
-            Album status: {album.status}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (photos.length === 0) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <div className="text-center">
-          <ImageIcon className="h-16 w-16 mx-auto mb-4 text-white/20" />
-          <h1 className="text-2xl font-bold text-white mb-2">No Photos Yet</h1>
-          <p className="text-white/60">
-            Photos will appear here once they're uploaded.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -192,22 +118,183 @@ export default function PhotosPage() {
     });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-void)] flex items-center justify-center">
+        <LoadingSpinner text="Loading photos..." size="lg" />
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-void)] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--bg-glass)] border border-[var(--border-subtle)] flex items-center justify-center">
+            <ImageIcon className="h-10 w-10 text-[var(--text-muted)]" />
+          </div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-3">Event Not Found</h1>
+          <p className="text-[var(--text-secondary)] mb-6">
+            The event you're looking for doesn't exist or may have been removed.
+          </p>
+          <Link href="/">
+            <Button variant="secondary">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Photos coming soon state (no album or unpublished)
+  if (!album || album.status !== "published") {
+    return (
+      <div className="min-h-screen bg-[var(--bg-void)]">
+        {/* Header */}
+        <div className="pt-24 pb-8 px-4">
+          <div className="mx-auto max-w-2xl text-center">
+            <Link
+              href={`/e/${eventSlug}`}
+              className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Event
+            </Link>
+          </div>
+        </div>
+
+        {/* Coming Soon Card */}
+        <div className="px-4">
+          <div className="mx-auto max-w-lg">
+            <div className="relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--bg-glass)] border border-[var(--border-strong)]">
+              {/* Event cover image or gradient background */}
+              {event.cover_image_url ? (
+                <div className="relative h-48">
+                  <img
+                    src={event.cover_image_url}
+                    alt={event.name}
+                    className="w-full h-full object-cover opacity-50"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-void)] to-transparent" />
+                </div>
+              ) : (
+                <div className="h-48 bg-gradient-to-br from-[var(--accent-secondary)]/20 to-[var(--accent-primary)]/20" />
+              )}
+
+              <div className="relative p-8 -mt-16">
+                {/* Camera icon */}
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--bg-void)] border-4 border-[var(--border-strong)] flex items-center justify-center">
+                  <Camera className="h-8 w-8 text-[var(--accent-secondary)]" />
+                </div>
+
+                <h1 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-2">
+                  Photos Coming Soon
+                </h1>
+
+                <p className="text-[var(--text-secondary)] text-center mb-6">
+                  The photos from <span className="text-[var(--text-primary)] font-medium">{event.name}</span> are being prepared and will be available here soon.
+                </p>
+
+                {/* Event info */}
+                <div className="flex items-center justify-center gap-4 text-sm text-[var(--text-muted)]">
+                  {event.start_time && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>{formatDate(event.start_time)}</span>
+                    </div>
+                  )}
+                  {event.venue?.name && (
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4" />
+                      <span>{event.venue.name}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Check back message */}
+                <div className="mt-8 pt-6 border-t border-[var(--border-subtle)]">
+                  <div className="flex items-center justify-center gap-2 text-[var(--text-muted)] text-sm">
+                    <Clock className="h-4 w-4" />
+                    <span>Check back in a few days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-auto pt-16 pb-8">
+          <div className="flex flex-col items-center justify-center">
+            <Logo variant="tricolor" size="sm" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Published but no photos yet
+  if (photos.length === 0) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-void)] flex flex-col">
+        {/* Header */}
+        <div className="pt-24 px-4">
+          <div className="mx-auto max-w-7xl">
+            <Link
+              href={`/e/${eventSlug}`}
+              className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Event
+            </Link>
+          </div>
+        </div>
+
+        {/* Empty state */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--bg-glass)] border border-[var(--border-subtle)] flex items-center justify-center">
+              <Camera className="h-10 w-10 text-[var(--text-muted)]" />
+            </div>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-3">{event.name}</h1>
+            <p className="text-[var(--text-secondary)] mb-2">
+              The photo album is ready, but no photos have been uploaded yet.
+            </p>
+            <p className="text-[var(--text-muted)] text-sm">
+              Check back soon for event photos!
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="py-8">
+          <div className="flex flex-col items-center justify-center">
+            <Logo variant="tricolor" size="sm" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full gallery view
   return (
-    <div className="min-h-screen bg-void pt-20">
+    <div className="min-h-screen bg-[var(--bg-void)] pt-20">
       {/* Header - positioned below the global floating nav */}
-      <div className="sticky top-20 z-10 bg-void/80 backdrop-blur-md border-b border-white/10">
+      <div className="sticky top-20 z-10 bg-[var(--bg-void)]/80 backdrop-blur-md border-b border-[var(--border-subtle)]">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href={`/e/${eventSlug}`}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-white">{event.name}</h1>
-                <p className="text-sm text-white/60">
+                <h1 className="text-xl font-bold text-[var(--text-primary)]">{event.name}</h1>
+                <p className="text-sm text-[var(--text-secondary)]">
                   {event.venue?.name}
                   {event.venue?.city && ` • ${event.venue.city}`}
                   {event.start_time && ` • ${formatDate(event.start_time)}`}
@@ -216,9 +303,9 @@ export default function PhotosPage() {
             </div>
             <button
               onClick={handleShare}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="p-2 rounded-full bg-[var(--bg-glass)] border border-[var(--border-subtle)] hover:bg-[var(--bg-active)] transition-colors"
             >
-              <Share2 className="h-5 w-5 text-white" />
+              <Share2 className="h-5 w-5 text-[var(--text-primary)]" />
             </button>
           </div>
         </div>
@@ -226,7 +313,7 @@ export default function PhotosPage() {
 
       {/* Photo Count */}
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        <p className="text-white/60 text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {photos.length} {photos.length === 1 ? "photo" : "photos"}
         </p>
       </div>
@@ -247,7 +334,7 @@ export default function PhotosPage() {
                 className="mb-4 break-inside-avoid cursor-pointer group"
                 onClick={() => handlePhotoClick(index)}
               >
-                <div className="relative overflow-hidden rounded-lg bg-white/5">
+                <div className="relative overflow-hidden rounded-[var(--radius-md)] bg-[var(--bg-glass)] border border-[var(--border-subtle)]">
                   <img
                     src={photo.thumbnail_url}
                     alt={photo.caption || `Photo ${index + 1}`}
@@ -275,12 +362,9 @@ export default function PhotosPage() {
       )}
 
       {/* Footer */}
-      <div className="border-t border-white/10 py-8 mt-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <Logo size="sm" />
-          <p className="mt-4 text-white/40 text-sm">
-            Powered by CrowdStack
-          </p>
+      <div className="border-t border-[var(--border-subtle)] py-8 mt-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+          <Logo variant="tricolor" size="sm" />
         </div>
       </div>
     </div>

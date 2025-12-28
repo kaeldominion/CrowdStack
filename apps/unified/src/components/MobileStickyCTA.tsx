@@ -18,6 +18,7 @@ interface MobileStickyCTAProps {
   shareVideoUrl?: string;
   userId?: string;
   isRegistered?: boolean;
+  isPast?: boolean;
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -47,6 +48,7 @@ export function MobileStickyCTA({
   shareVideoUrl,
   userId: userIdProp,
   isRegistered = false,
+  isPast = false,
 }: MobileStickyCTAProps) {
   // Automatically fetch userId if not provided
   const [currentUserId, setCurrentUserId] = useState<string | null>(userIdProp || null);
@@ -362,33 +364,48 @@ export function MobileStickyCTA({
         )}
 
         {/* Register / View Pass Button */}
-        <Link 
-          href={href} 
-          className={`flex items-center gap-2 px-5 py-3.5 rounded-full 
-                     font-mono text-[11px] font-bold uppercase tracking-wider
-                     border
-                     backdrop-blur-sm
-                     whitespace-nowrap
-                     hover:scale-105 
-                     active:scale-95
-                     transition-all duration-200
-                     ${isRegistered 
-                       ? 'bg-gradient-to-r from-accent-success to-emerald-500 border-accent-success/50 text-void shadow-lg shadow-accent-success/30' 
-                       : 'bg-gradient-to-r from-accent-secondary to-accent-primary border-accent-primary/50 text-void shadow-lg shadow-accent-primary/30'
-                     }`}
-        >
-          {isRegistered ? (
-            <>
-              <QrCode className="h-4 w-4 flex-shrink-0" />
-              {label}
-            </>
-          ) : (
-            <>
-              <Ticket className="h-4 w-4 flex-shrink-0" />
-              {label}
-            </>
-          )}
-        </Link>
+        {isPast ? (
+          <div 
+            className="flex items-center gap-2 px-5 py-3.5 rounded-full 
+                       font-mono text-[11px] font-bold uppercase tracking-wider
+                       border
+                       backdrop-blur-sm
+                       whitespace-nowrap
+                       bg-void/80 border-border-subtle text-muted
+                       opacity-60 cursor-not-allowed"
+          >
+            <Ticket className="h-4 w-4 flex-shrink-0" />
+            {label}
+          </div>
+        ) : (
+          <Link 
+            href={href} 
+            className={`flex items-center gap-2 px-5 py-3.5 rounded-full 
+                       font-mono text-[11px] font-bold uppercase tracking-wider
+                       border
+                       backdrop-blur-sm
+                       whitespace-nowrap
+                       hover:scale-105 
+                       active:scale-95
+                       transition-all duration-200
+                       ${isRegistered 
+                         ? 'bg-gradient-to-r from-accent-success to-emerald-500 border-accent-success/50 text-void shadow-lg shadow-accent-success/30' 
+                         : 'bg-gradient-to-r from-accent-secondary to-accent-primary border-accent-primary/50 text-void shadow-lg shadow-accent-primary/30'
+                       }`}
+          >
+            {isRegistered ? (
+              <>
+                <QrCode className="h-4 w-4 flex-shrink-0" />
+                {label}
+              </>
+            ) : (
+              <>
+                <Ticket className="h-4 w-4 flex-shrink-0" />
+                {label}
+              </>
+            )}
+          </Link>
+        )}
       </div>
     </div>
   );

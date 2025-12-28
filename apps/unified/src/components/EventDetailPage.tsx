@@ -23,6 +23,7 @@ import {
   Select,
   InlineSpinner,
   LoadingSpinner,
+  useToast,
 } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import {
@@ -65,6 +66,7 @@ import {
   Play,
   X,
   Trophy,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -272,6 +274,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [inviteCodes, setInviteCodes] = useState<InviteQRCode[]>([]);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
   const [publishingPhotos, setPublishingPhotos] = useState(false);
+  const [unpublishingPhotos, setUnpublishingPhotos] = useState(false);
+  const [showUnpublishForUploadModal, setShowUnpublishForUploadModal] = useState(false);
+  const [pendingUploadResolver, setPendingUploadResolver] = useState<((value: boolean) => void) | null>(null);
+  const [showRepublishPrompt, setShowRepublishPrompt] = useState(false);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [organizers, setOrganizers] = useState<any[]>([]);
   const [promoterRequests, setPromoterRequests] = useState<Array<{
@@ -283,6 +289,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     created_at: string;
   }>>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  
+  // Photo confirmation modals
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
+  const [showDeletePhotoConfirm, setShowDeletePhotoConfirm] = useState<string | null>(null);
+  
+  // Toast notifications
+  const toast = useToast();
   
   // Referral state (for promoters and organizers)
   const [promoterId, setPromoterId] = useState<string | null>(null);
@@ -806,12 +820,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   };
 
   const handleDeletePhoto = async (photoId: string) => {
-    if (!confirm("Are you sure you want to delete this photo?")) {
-      return;
-    }
-
+    setShowDeletePhotoConfirm(null);
+    setDeletingPhoto(photoId);
     try {
-      setDeletingPhoto(photoId);
       const response = await fetch(`/api/events/${eventId}/photos/${photoId}`, {
         method: "DELETE",
       });
@@ -821,12 +832,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         if (album?.cover_photo_id === photoId) {
           setAlbum((prev) => (prev ? { ...prev, cover_photo_id: null } : null));
         }
+        toast.success("Photo Deleted", "The photo has been removed");
       } else {
-        alert("Failed to delete photo");
+        toast.error("Delete Failed", "Could not delete the photo");
       }
     } catch (error) {
       console.error("Error deleting photo:", error);
-      alert("Failed to delete photo");
+      toast.error("Delete Failed", "An unexpected error occurred");
     } finally {
       setDeletingPhoto(null);
     }
@@ -844,18 +856,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         setAlbum((prev) =>
           prev ? { ...prev, cover_photo_id: photoId } : null
         );
+        toast.success("Cover Photo Set", "Album cover updated");
+      } else {
+        toast.error("Failed", "Could not set cover photo");
       }
     } catch (error) {
       console.error("Error setting cover photo:", error);
-      alert("Failed to set cover photo");
+      toast.error("Failed", "Could not set cover photo");
     }
   };
 
   const handlePublishPhotos = async () => {
     if (!album) return;
-    if (!confirm("Publish this photo album? Attendees will be notified.")) {
-      return;
-    }
+    setShowPublishConfirm(false);
 
     setPublishingPhotos(true);
     try {
@@ -866,16 +879,106 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (response.ok) {
         const data = await response.json();
         await loadPhotos();
-        alert(`Photos published! ${data.emails_sent || 0} attendees notified.`);
+        
+        // Show success toast with details
+        if (data.auto_email_enabled) {
+          if (data.emails_skipped && data.skip_reason) {
+            toast.warning("Photos Published", data.skip_reason);
+          } else if (data.emails_sent > 0) {
+            const failedMsg = data.emails_failed > 0 ? ` (${data.emails_failed} failed)` : "";
+            toast.success("Photos Published", `${data.emails_sent} attendees notified${failedMsg}`);
+          } else {
+            toast.success("Photos Published", "No attendees to notify");
+          }
+        } else {
+          toast.success("Photos Published", "Album is now visible to attendees");
+        }
       } else {
         const data = await response.json();
-        alert(data.error || "Failed to publish photos");
+        toast.error("Failed to Publish", data.error || "An error occurred");
       }
     } catch (error) {
       console.error("Error publishing photos:", error);
-      alert("Failed to publish photos");
+      toast.error("Failed to Publish", "An unexpected error occurred");
     } finally {
       setPublishingPhotos(false);
+    }
+  };
+
+  const handleUnpublishPhotos = async () => {
+    if (!album) return;
+    setShowUnpublishConfirm(false);
+
+    setUnpublishingPhotos(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/photos/publish`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await loadPhotos();
+        toast.success("Photos Unpublished", "The gallery is now hidden from public view");
+      } else {
+        const data = await response.json();
+        toast.error("Failed to Unpublish", data.error || "An error occurred");
+      }
+    } catch (error) {
+      console.error("Error unpublishing photos:", error);
+      toast.error("Failed to Unpublish", "An unexpected error occurred");
+    } finally {
+      setUnpublishingPhotos(false);
+    }
+  };
+
+  // Called by PhotoUploader when album is published and user tries to upload
+  const handleNeedUnpublishForUpload = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setPendingUploadResolver(() => resolve);
+      setShowUnpublishForUploadModal(true);
+    });
+  };
+
+  const handleConfirmUnpublishForUpload = async () => {
+    setUnpublishingPhotos(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/photos/publish`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await loadPhotos();
+        setShowUnpublishForUploadModal(false);
+        setShowRepublishPrompt(true); // Show republish prompt after uploads complete
+        if (pendingUploadResolver) {
+          pendingUploadResolver(true);
+          setPendingUploadResolver(null);
+        }
+        toast.info("Album Unpublished", "You can now add photos");
+      } else {
+        const data = await response.json();
+        toast.error("Failed to Unpublish", data.error || "An error occurred");
+        if (pendingUploadResolver) {
+          pendingUploadResolver(false);
+          setPendingUploadResolver(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error unpublishing photos:", error);
+      toast.error("Failed to Unpublish", "An unexpected error occurred");
+      if (pendingUploadResolver) {
+        pendingUploadResolver(false);
+        setPendingUploadResolver(null);
+      }
+    } finally {
+      setUnpublishingPhotos(false);
+    }
+  };
+
+  const handleCancelUnpublishForUpload = () => {
+    setShowUnpublishForUploadModal(false);
+    if (pendingUploadResolver) {
+      pendingUploadResolver(false);
+      setPendingUploadResolver(null);
     }
   };
 
@@ -2287,33 +2390,93 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-primary">Photo Album</h2>
-                    {(config.role === "organizer" || config.role === "admin") && album && album.status !== "published" && photos.length > 0 && (
-                      <Button 
-                        variant="primary" 
-                        onClick={handlePublishPhotos}
-                        loading={publishingPhotos}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Publish Album
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {/* Publish Button */}
+                      {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && album && album.status !== "published" && photos.length > 0 && (
+                        <Button 
+                          variant="primary" 
+                          onClick={() => setShowPublishConfirm(true)}
+                          loading={publishingPhotos}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Publish Album
+                        </Button>
+                      )}
+                      {/* Unpublish Button */}
+                      {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && album && album.status === "published" && (
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => setShowUnpublishConfirm(true)}
+                          loading={unpublishingPhotos}
+                          className="text-accent-error hover:bg-accent-error/10"
+                        >
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          Unpublish
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
-                  {(config.role === "organizer" || config.role === "admin") && (
+                  {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && (
                     <div className="space-y-4">
                       <PhotoUploader 
                         eventId={eventId} 
-                        onUploadComplete={loadPhotos}
+                        onUploadComplete={() => {
+                          loadPhotos();
+                          // If we unpublished for upload, remind to republish
+                          if (showRepublishPrompt) {
+                            // The prompt will be shown via the state
+                          }
+                        }}
+                        albumStatus={album?.status as "draft" | "published" | undefined}
+                        onNeedUnpublish={handleNeedUnpublishForUpload}
                       />
                       
+                      {/* Republish prompt after adding photos to unpublished album */}
+                      {showRepublishPrompt && album?.status === "draft" && (
+                        <div className="p-3 bg-accent-secondary/10 border border-accent-secondary rounded-lg flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-accent-secondary" />
+                            <span className="text-sm">Photos added! Ready to publish?</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setShowRepublishPrompt(false)}
+                            >
+                              Later
+                            </Button>
+                            <Button 
+                              variant="primary" 
+                              size="sm" 
+                              onClick={() => {
+                                setShowRepublishPrompt(false);
+                                handlePublishPhotos();
+                              }}
+                            >
+                              Publish Now
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
                       {album && (
-                        <div className="flex items-center gap-2">
-                          <Badge variant={album.status === "published" ? "success" : "secondary"}>
-                            {album.status === "published" ? "Published" : "Draft"}
-                          </Badge>
-                          {album.published_at && (
-                            <span className="text-sm text-secondary">
-                              Published {new Date(album.published_at).toLocaleDateString()}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={album.status === "published" ? "success" : "secondary"}>
+                              {album.status === "published" ? "Published" : "Draft"}
+                            </Badge>
+                            {album.published_at && (
+                              <span className="text-sm text-secondary">
+                                Published {new Date(album.published_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          {(album as any).photo_last_notified_at && (
+                            <span className="text-xs text-secondary flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              Last notified: {new Date((album as any).photo_last_notified_at).toLocaleString()}
                             </span>
                           )}
                         </div>
@@ -2332,7 +2495,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          {(config.role === "organizer" || config.role === "admin") && (
+                          {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && (
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                               {album?.cover_photo_id !== photo.id && (
                                 <Button
@@ -2347,7 +2510,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeletePhoto(photo.id)}
+                                onClick={() => setShowDeletePhotoConfirm(photo.id)}
                                 loading={deletingPhoto === photo.id}
                                 className="text-white hover:bg-white/20"
                               >
@@ -2368,7 +2531,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-secondary">
-                      {(config.role === "organizer" || config.role === "admin")
+                      {(config.role === "organizer" || config.role === "admin" || config.role === "venue")
                         ? "No photos yet. Upload photos to create your event album."
                         : "No photos available yet."}
                     </div>
@@ -2547,6 +2710,76 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           </Card>
         </div>
       )}
+
+      {/* Unpublish for Upload Confirmation Modal */}
+      <Modal
+        isOpen={showUnpublishForUploadModal}
+        onClose={handleCancelUnpublishForUpload}
+        title="Album is Published"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-secondary">
+            This photo album is currently published. To add new photos, you&apos;ll need to unpublish it first.
+          </p>
+          <p className="text-secondary text-sm">
+            After adding your photos, you can republish the album.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={handleCancelUnpublishForUpload}>
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={handleConfirmUnpublishForUpload}
+              loading={unpublishingPhotos}
+            >
+              Unpublish & Add Photos
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Publish Photos Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showPublishConfirm}
+        onClose={() => setShowPublishConfirm(false)}
+        onConfirm={handlePublishPhotos}
+        title="Publish Photo Album"
+        message={
+          <span>
+            Make these photos visible to attendees?
+            <br /><br />
+            <strong className="text-accent-success">✉️ Email notifications will be sent to all registered attendees.</strong>
+          </span>
+        }
+        confirmText="Publish & Notify"
+        loading={publishingPhotos}
+      />
+
+      {/* Unpublish Photos Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showUnpublishConfirm}
+        onClose={() => setShowUnpublishConfirm(false)}
+        onConfirm={handleUnpublishPhotos}
+        title="Unpublish Photo Album"
+        message="Hide these photos from public view? The gallery will no longer be accessible to attendees."
+        variant="warning"
+        confirmText="Unpublish"
+        loading={unpublishingPhotos}
+      />
+
+      {/* Delete Photo Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeletePhotoConfirm !== null}
+        onClose={() => setShowDeletePhotoConfirm(null)}
+        onConfirm={() => showDeletePhotoConfirm && handleDeletePhoto(showDeletePhotoConfirm)}
+        title="Delete Photo"
+        message="Are you sure you want to delete this photo? This action cannot be undone."
+        variant="danger"
+        confirmText="Delete"
+        loading={deletingPhoto !== null}
+      />
 
       {/* Edit Modal */}
       {config.canEdit && (

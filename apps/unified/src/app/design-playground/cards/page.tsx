@@ -111,6 +111,15 @@ const MOCK_EVENT_NO_IMAGE = {
   cover_image_url: null,
 };
 
+const MOCK_EVENT_PAST = {
+  ...MOCK_EVENT,
+  id: "event-4",
+  name: "Last Week's Vibes",
+  slug: "last-weeks-vibes",
+  start_time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+  end_time: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(),
+};
+
 const MOCK_REGISTRATION = {
   id: "reg-1",
   checkins: [],
@@ -417,6 +426,63 @@ export default function DesignCardsPage() {
                 </div>
               </div>
             </CardGrid>
+          </div>
+
+          {/* Past Events State */}
+          <div className="mb-8">
+            <CardLabel>Past Events - Guestlist Closed State</CardLabel>
+            <p className="text-sm text-muted mb-4">
+              When events have ended, guestlist should show as &quot;Closed&quot; with disabled CTA buttons.
+            </p>
+            <CardGrid columns={3}>
+              <AttendeeEventCard event={MOCK_EVENT_PAST} variant="default" badgeText="ENDED" />
+              <EventCardCompact event={MOCK_EVENT_PAST} />
+              <EventCardRow event={MOCK_EVENT_PAST} />
+            </CardGrid>
+            
+            {/* Guestlist Card - Past State Reference */}
+            <div className="mt-6">
+              <CardLabel>Guestlist Card - Closed State (Public Event Page)</CardLabel>
+              <div className="max-w-sm">
+                <Card padding="compact">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                      Guestlist
+                    </h3>
+                    <Badge color="slate" variant="solid" size="sm">
+                      Closed
+                    </Badge>
+                  </div>
+                  
+                  {/* Entry Option */}
+                  <div className="flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle opacity-50">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-primary">Standard Entry</p>
+                      <p className="text-[11px] text-muted">Event Ended</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-sm font-bold text-primary">Free</span>
+                    </div>
+                  </div>
+                  
+                  {/* Disclaimer */}
+                  <p className="text-[10px] text-muted text-center mt-3 mb-4">
+                    This event has ended.
+                  </p>
+                  
+                  {/* CTA - Disabled */}
+                  <button 
+                    disabled
+                    className="w-full py-3 px-4 rounded-xl bg-raised border border-border-subtle text-muted font-mono uppercase tracking-wider text-sm opacity-60 cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                    Guestlist Closed
+                  </button>
+                </Card>
+              </div>
+            </div>
           </div>
 
           {/* Skeleton States */}

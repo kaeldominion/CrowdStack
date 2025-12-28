@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
+type ManageRole = "admin" | "organizer" | "venue" | null;
+
 export async function GET(
   request: Request,
   { params }: { params: { eventId: string } }
@@ -12,7 +14,7 @@ export async function GET(
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ canEdit: false });
+      return NextResponse.json({ canEdit: false, role: null });
     }
 
     const serviceSupabase = createServiceRoleClient();
@@ -25,7 +27,7 @@ export async function GET(
       .single();
 
     if (!event) {
-      return NextResponse.json({ canEdit: false });
+      return NextResponse.json({ canEdit: false, role: null });
     }
 
     // Check if user is superadmin
@@ -36,7 +38,7 @@ export async function GET(
     
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin");
     if (isSuperadmin) {
-      return NextResponse.json({ canEdit: true });
+      return NextResponse.json({ canEdit: true, role: "admin" as ManageRole });
     }
 
     // Check if user is the organizer creator
@@ -48,7 +50,7 @@ export async function GET(
       .single();
 
     if (organizerCreator) {
-      return NextResponse.json({ canEdit: true });
+      return NextResponse.json({ canEdit: true, role: "organizer" as ManageRole });
     }
 
     // Check if user is an organizer team member
@@ -60,7 +62,7 @@ export async function GET(
       .single();
 
     if (organizerUser) {
-      return NextResponse.json({ canEdit: true });
+      return NextResponse.json({ canEdit: true, role: "organizer" as ManageRole });
     }
 
     // Check if user is venue admin (can also edit)
@@ -73,7 +75,7 @@ export async function GET(
         .single();
 
       if (venueUser) {
-        return NextResponse.json({ canEdit: true });
+        return NextResponse.json({ canEdit: true, role: "venue" as ManageRole });
       }
 
       const { data: venueCreator } = await serviceSupabase
@@ -84,14 +86,14 @@ export async function GET(
         .single();
 
       if (venueCreator) {
-        return NextResponse.json({ canEdit: true });
+        return NextResponse.json({ canEdit: true, role: "venue" as ManageRole });
       }
     }
 
-    return NextResponse.json({ canEdit: false });
+    return NextResponse.json({ canEdit: false, role: null });
   } catch (error) {
     console.error("Error checking edit permission:", error);
-    return NextResponse.json({ canEdit: false });
+    return NextResponse.json({ canEdit: false, role: null });
   }
 }
 

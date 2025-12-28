@@ -10,6 +10,7 @@ export function MobileStickyCTAWrapper({
   eventName,
   shareUrl,
   startDate,
+  endDate,
   venue,
   description,
   flierUrl,
@@ -19,6 +20,7 @@ export function MobileStickyCTAWrapper({
   eventName: string;
   shareUrl: string;
   startDate: Date;
+  endDate?: Date | null;
   venue?: { name: string } | null;
   description?: string | null;
   flierUrl?: string | null;
@@ -28,6 +30,12 @@ export function MobileStickyCTAWrapper({
   const searchParams = useSearchParams();
   const [isRegistered, setIsRegistered] = useState(false);
   const [passUrl, setPassUrl] = useState<string | null>(null);
+  
+  // Calculate if event has ended
+  const now = new Date();
+  const isUpcoming = now < startDate;
+  const isLive = now >= startDate && (!endDate || now < endDate);
+  const isPast = !isUpcoming && !isLive;
   
   // Check if user is already registered
   useEffect(() => {
@@ -59,8 +67,9 @@ export function MobileStickyCTAWrapper({
   return (
     <MobileStickyCTA
       href={isRegistered && passUrl ? passUrl : getRegisterUrl()}
-      label={isRegistered ? "View Pass" : "Register Now"}
+      label={isPast ? "Guestlist Closed" : isRegistered ? "View Pass" : "Register Now"}
       isRegistered={isRegistered}
+      isPast={isPast}
       eventName={eventName}
       shareUrl={shareUrl}
       shareTitle={eventName}

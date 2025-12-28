@@ -475,7 +475,6 @@ export function DockNav() {
                     {getUserInitial()}
                   </div>
                 )}
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-accent-success rounded-full border-2 border-raised" />
               </div>
             </button>
 

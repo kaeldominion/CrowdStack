@@ -13,7 +13,7 @@ import {
   Ticket,
   CheckCircle2,
   X,
-  Pencil
+  Settings
 } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
@@ -72,11 +72,13 @@ export function EventPageContent({
   const [isRegistered, setIsRegistered] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [canEditEvent, setCanEditEvent] = useState(false);
+  const [manageRole, setManageRole] = useState<"admin" | "organizer" | "venue" | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   
   const dateInfo = formatEventDate(startDate);
   const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
+  const isPast = !isUpcoming && !isLive;
   
   // Check if user is already registered
   useEffect(() => {
@@ -120,7 +122,7 @@ export function EventPageContent({
     }
   };
   
-  // Check if user can edit this event
+  // Check if user can manage this event
   useEffect(() => {
     const checkEditPermission = async () => {
       try {
@@ -128,6 +130,7 @@ export function EventPageContent({
         if (res.ok) {
           const data = await res.json();
           setCanEditEvent(data.canEdit === true);
+          setManageRole(data.role || null);
         }
       } catch (error) {
         // Silently fail - user can't edit
@@ -135,6 +138,17 @@ export function EventPageContent({
     };
     checkEditPermission();
   }, [event.id]);
+
+  // Get the correct manage URL based on user's role
+  const getManageUrl = () => {
+    if (manageRole === "admin") {
+      return `/admin/events/${event.id}`;
+    } else if (manageRole === "venue") {
+      return `/app/venue/events/${event.id}`;
+    } else {
+      return `/app/organizer/events/${event.id}`;
+    }
+  };
   
   const getRegisterUrl = () => {
     const ref = searchParams?.get("ref");
@@ -152,10 +166,10 @@ export function EventPageContent({
   // ===========================================
   if (isMobileFlierView) {
   return (
-      <div className="bg-black/95 rounded-t-3xl">
+      <div className="bg-[var(--bg-void)]/95 rounded-t-3xl">
         {/* Drag indicator */}
         <div className="flex justify-center pt-3 pb-3">
-          <div className="w-12 h-1 bg-border-strong rounded-full" />
+          <div className="w-12 h-1 bg-[var(--border-strong)] rounded-full" />
                     </div>
         
         {/* Main content area */}
@@ -176,21 +190,21 @@ export function EventPageContent({
                           alt={attendee.name || "Attendee"}
                           width={32}
                           height={32}
-                          className="w-8 h-8 rounded-full border-2 border-black object-cover"
+                          className="w-8 h-8 rounded-full border-2 border-[var(--bg-void)] object-cover"
                         />
                       ) : (
                         <div 
                           key={attendee?.id || i}
-                          className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary border-2 border-black flex items-center justify-center"
+                          className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-secondary)] to-[var(--accent-primary)] border-2 border-[var(--bg-void)] flex items-center justify-center"
                         >
-                          <span className="text-xs font-bold text-black">
+                          <span className="text-xs font-bold text-[var(--text-inverse)]">
                             {attendee?.name?.charAt(0)?.toUpperCase() || "?"}
                           </span>
                         </div>
                       )
                     ))}
                     {(event.registration_count || 0) > 4 && (
-                      <div className="w-8 h-8 rounded-full bg-raised border-2 border-black flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-[var(--bg-raised)] border-2 border-[var(--bg-void)] flex items-center justify-center">
                         <span className="text-xs font-bold text-primary">
                           +{((event.registration_count || 0) - 4).toLocaleString()}
                         </span>
@@ -216,7 +230,7 @@ export function EventPageContent({
                 </p>
                 <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all"
+                    className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all"
                     style={{ 
                       width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
                     }}
@@ -228,29 +242,43 @@ export function EventPageContent({
           
           {/* CTA Button Row */}
           <div className="flex items-center gap-3">
-            <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="flex-1">
+            {isPast ? (
               <Button 
-                variant={isRegistered ? "secondary" : "primary"}
+                variant="secondary"
                 size="lg"
-                className={`w-full font-mono uppercase tracking-wider ${
-                  isRegistered 
-                    ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
-                    : ""
-                }`}
+                disabled
+                className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
               >
                 <Ticket className="h-4 w-4 mr-2" />
-                {isRegistered ? "View Entry Pass" : "Join Guestlist"}
+                Guestlist Closed
               </Button>
-            </Link>
-            {isRegistered && (
-              <button 
-                className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors disabled:opacity-50"
-                aria-label="Cancel registration"
-                onClick={() => setShowCancelModal(true)}
-                disabled={cancelling}
-              >
-                <X className="h-5 w-5" />
-              </button>
+            ) : (
+              <>
+                <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="flex-1">
+                  <Button 
+                    variant={isRegistered ? "secondary" : "primary"}
+                    size="lg"
+                    className={`w-full font-mono uppercase tracking-wider ${
+                      isRegistered 
+                        ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
+                        : ""
+                    }`}
+                  >
+                    <Ticket className="h-4 w-4 mr-2" />
+                    {isRegistered ? "View Entry Pass" : "Join Guestlist"}
+                  </Button>
+                </Link>
+                {isRegistered && (
+                  <button 
+                    className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors disabled:opacity-50"
+                    aria-label="Cancel registration"
+                    onClick={() => setShowCancelModal(true)}
+                    disabled={cancelling}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </>
             )}
                   </div>
                   
@@ -421,21 +449,21 @@ export function EventPageContent({
                               alt={attendee.name || "Attendee"}
                               width={32}
                               height={32}
-                              className="w-8 h-8 rounded-full border-2 border-void object-cover"
+                              className="w-8 h-8 rounded-full border-2 border-[var(--bg-void)] object-cover"
                             />
                           ) : (
                             <div 
                               key={attendee?.id || i}
-                              className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary border-2 border-void flex items-center justify-center"
+                              className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-secondary)] to-[var(--accent-primary)] border-2 border-[var(--bg-void)] flex items-center justify-center"
                             >
-                              <span className="text-[10px] font-bold text-void">
+                              <span className="text-[10px] font-bold text-[var(--text-inverse)]">
                                 {attendee?.name?.charAt(0)?.toUpperCase() || "?"}
                               </span>
                             </div>
                           )
                         ))}
                         {(event.registration_count || 0) > 5 && (
-                          <div className="w-8 h-8 rounded-full bg-raised border-2 border-void flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-[var(--bg-raised)] border-2 border-[var(--bg-void)] flex items-center justify-center">
                             <span className="text-[10px] font-bold text-primary">
                               +{((event.registration_count || 0) - 5).toLocaleString()}
                             </span>
@@ -458,7 +486,7 @@ export function EventPageContent({
                   {event.capacity && (
                     <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all duration-500"
                         style={{ 
                           width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
                         }}
@@ -546,59 +574,71 @@ export function EventPageContent({
           <div className="lg:col-span-3">
             <div className="sticky top-24 space-y-4">
               {/* Guestlist Card */}
-              <div className="rounded-xl bg-black/90 border border-border-subtle backdrop-blur-xl shadow-soft overflow-hidden">
+              <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
                 <div className="p-4">
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
                       Guestlist
                     </h3>
-                    <Badge color="green" variant="solid" size="sm">
-                      Open
+                    <Badge color={isPast ? "slate" : "green"} variant="solid" size="sm">
+                      {isPast ? "Closed" : "Open"}
                     </Badge>
                   </div>
                   
                   {/* Entry Option */}
-                  <div className="flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle">
+                  <div className={`flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle ${isPast ? "opacity-50" : ""}`}>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-primary">Standard Entry</p>
-                      <p className="text-[11px] text-muted">Approval Required</p>
+                      <p className="text-[11px] text-muted">{isPast ? "Event Ended" : "Approval Required"}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span className="text-sm font-bold text-primary">Free</span>
-                      <CheckCircle2 className="h-4 w-4 text-accent-success" />
+                      <CheckCircle2 className={`h-4 w-4 ${isPast ? "text-muted" : "text-accent-success"}`} />
                     </div>
                   </div>
                   
                   {/* Disclaimer */}
                   <p className="text-[10px] text-muted text-center mt-3 mb-4">
-                    Guestlist does not guarantee entry.
+                    {isPast ? "This event has ended." : "Guestlist does not guarantee entry."}
                   </p>
                   
                   {/* CTA */}
-                  <Link href={isRegistered ? getPassUrl() : getRegisterUrl()}>
+                  {isPast ? (
                     <Button 
-                      variant={isRegistered ? "secondary" : "primary"}
+                      variant="secondary"
                       size="lg"
-                      className={`w-full font-mono uppercase tracking-wider ${
-                        isRegistered 
-                          ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
-                          : ""
-                      }`}
+                      disabled
+                      className="w-full font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
                     >
-                      {isRegistered ? (
-                        <>
-                          <QrCode className="h-4 w-4 mr-2" />
-                          View Pass
-                        </>
-                      ) : (
-                        <>
-                          Request Entry
-                          <ChevronRight className="h-4 w-4 ml-1" />
-                        </>
-                      )}
+                      <Ticket className="h-4 w-4 mr-2" />
+                      Guestlist Closed
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link href={isRegistered ? getPassUrl() : getRegisterUrl()}>
+                      <Button 
+                        variant={isRegistered ? "secondary" : "primary"}
+                        size="lg"
+                        className={`w-full font-mono uppercase tracking-wider ${
+                          isRegistered 
+                            ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
+                            : ""
+                        }`}
+                      >
+                        {isRegistered ? (
+                          <>
+                            <QrCode className="h-4 w-4 mr-2" />
+                            View Pass
+                          </>
+                        ) : (
+                          <>
+                            Request Entry
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </>
+                        )}
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
               
@@ -621,14 +661,14 @@ export function EventPageContent({
                   url={shareUrl}
                 />
                 {canEditEvent && (
-                  <Link href={`/app/organizer/events/${event.id}/edit`}>
+                  <Link href={getManageUrl()}>
                     <Button
                       variant="secondary"
-                      size="lg"
-                      className="h-12 w-12 p-0"
-                      aria-label="Edit event"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      aria-label="Manage event"
                     >
-                      <Pencil className="h-5 w-5" />
+                      <Settings className="h-4 w-4" />
                     </Button>
                   </Link>
                 )}

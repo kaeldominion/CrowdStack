@@ -8,6 +8,8 @@ interface PhotoUploaderProps {
   eventId: string;
   onUploadComplete?: () => void;
   maxFiles?: number;
+  albumStatus?: "draft" | "published";
+  onNeedUnpublish?: () => Promise<boolean>; // Returns true if unpublished successfully
 }
 
 interface UploadProgress {
@@ -21,13 +23,26 @@ export function PhotoUploader({
   eventId,
   onUploadComplete,
   maxFiles = 50,
+  albumStatus,
+  onNeedUnpublish,
 }: PhotoUploaderProps) {
   const [files, setFiles] = useState<UploadProgress[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback(
     async (selectedFiles: FileList | File[]) => {
+      // Check if album is published and needs to be unpublished first
+      if (albumStatus === "published" && onNeedUnpublish) {
+        setIsUnpublishing(true);
+        const unpublished = await onNeedUnpublish();
+        setIsUnpublishing(false);
+        if (!unpublished) {
+          return; // User cancelled or unpublish failed
+        }
+      }
+
       const fileArray = Array.from(selectedFiles);
       const validFiles = fileArray.filter((file) => {
         const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -61,7 +76,7 @@ export function PhotoUploader({
         await uploadFile(validFiles[i], fileIndex);
       }
     },
-    [eventId, files.length]
+    [eventId, files.length, albumStatus, onNeedUnpublish]
   );
 
   const uploadFile = async (file: File, index: number) => {
@@ -180,10 +195,19 @@ export function PhotoUploader({
         <Button
           variant="secondary"
           onClick={() => fileInputRef.current?.click()}
-          disabled={pendingCount > 0}
+          disabled={pendingCount > 0 || isUnpublishing}
         >
-          <Upload className="h-4 w-4 mr-2" />
-          Select Photos
+          {isUnpublishing ? (
+            <>
+              <InlineSpinner size="sm" className="mr-2" />
+              Unpublishing...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4 mr-2" />
+              Select Photos
+            </>
+          )}
         </Button>
       </div>
 

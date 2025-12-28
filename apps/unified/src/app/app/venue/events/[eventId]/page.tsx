@@ -22,7 +22,7 @@ export default function VenueEventDetailPage() {
         canManageDoorStaff: true,
         canViewAttendees: true,
         canViewPromoters: true,
-        canViewPhotos: false,
+        canViewPhotos: true,
         canViewSettings: false,
         canViewStats: true,
         canApprove: false,

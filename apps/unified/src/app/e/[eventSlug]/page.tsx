@@ -288,6 +288,7 @@ export default async function EventPage({
               eventName={event.name}
               shareUrl={shareUrl}
               startDate={startDate}
+              endDate={endDate}
               venue={event.venue}
               description={event.description}
               flierUrl={event.flier_url}
