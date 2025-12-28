@@ -23,6 +23,7 @@ import {
   Mic2,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface NavItem {
   href: string;
@@ -456,11 +457,14 @@ export function DockNav() {
           )}
         </nav>
 
-        {/* Separator + User Profile Section - OUTSIDE the pill */}
+        {/* Separator + Notifications + User Profile Section - OUTSIDE the pill */}
         {isAuthenticated && (
           <>
             {/* Separator line matching the one inside the pill */}
             <div className="h-6 w-px bg-border-strong" />
+            
+            {/* Notification Bell */}
+            <NotificationBell />
             
             <div className="relative" ref={profileRef}>
               <button 

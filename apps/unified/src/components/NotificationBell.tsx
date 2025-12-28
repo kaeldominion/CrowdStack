@@ -141,11 +141,11 @@ export function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-md text-secondary hover:text-primary hover:bg-glass transition-colors"
+        className="relative p-2 rounded-full text-secondary hover:text-primary hover:bg-raised/50 transition-colors"
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent-secondary text-xs font-bold text-primary-foreground">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent-error text-[10px] font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -157,60 +157,60 @@ export function NotificationBell() {
             className="fixed inset-0 z-[60]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 z-[70] mt-2 w-80 sm:w-96 rounded-lg bg-glass border border-border shadow-card overflow-hidden">
+          <div className="absolute right-0 z-[70] mt-3 w-80 sm:w-96 rounded-2xl bg-glass border border-border-strong shadow-2xl shadow-void/50 ring-1 ring-border-subtle overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-void/50">
-              <h3 className="font-semibold text-primary">Notifications</h3>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle bg-void/50">
+              <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Notifications</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-xs text-primary hover:underline"
+                  className="text-[10px] font-mono uppercase tracking-wider text-accent-secondary hover:text-primary transition-colors"
                 >
-                  Mark all as read
+                  Mark all read
                 </button>
               )}
             </div>
 
             {/* Notifications List */}
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-8 text-center text-secondary">
-                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No notifications yet</p>
+                <div className="p-8 text-center">
+                  <Bell className="h-8 w-8 mx-auto mb-2 text-muted opacity-50" />
+                  <p className="text-sm text-muted">No notifications yet</p>
                 </div>
               ) : (
                 notifications.map((notification) => (
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left p-4 border-b border-border last:border-b-0 hover:bg-void transition-colors ${
+                    className={`w-full text-left p-3 border-b border-border-subtle last:border-b-0 hover:bg-active/50 transition-colors ${
                       !notification.read_at ? "bg-accent-secondary/5" : ""
                     }`}
                   >
                     <div className="flex gap-3">
-                      <span className="text-lg flex-shrink-0">
+                      <span className="text-base flex-shrink-0">
                         {getNotificationIcon(notification.type)}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <p className={`text-sm font-medium ${
+                          <p className={`text-xs font-medium ${
                             !notification.read_at ? "text-primary" : "text-secondary"
                           }`}>
                             {notification.title}
                           </p>
                           {!notification.read_at && (
-                            <span className="flex-shrink-0 h-2 w-2 rounded-full bg-accent-secondary" />
+                            <span className="flex-shrink-0 h-1.5 w-1.5 rounded-full bg-accent-error mt-1" />
                           )}
                         </div>
-                        <p className="text-sm text-secondary line-clamp-2 mt-0.5">
+                        <p className="text-xs text-muted line-clamp-2 mt-0.5">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-primary-subtle mt-1">
+                        <p className="text-[10px] font-mono text-muted mt-1">
                           {formatTime(notification.created_at)}
                         </p>
                       </div>
                       {notification.link && (
-                        <ExternalLink className="h-4 w-4 text-secondary flex-shrink-0" />
+                        <ExternalLink className="h-3 w-3 text-muted flex-shrink-0" />
                       )}
                     </div>
                   </button>
