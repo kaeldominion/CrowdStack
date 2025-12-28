@@ -83,8 +83,10 @@ export function PhotoGrid({
     }
   };
 
-  const featuredPhotos = photos.filter((p) => p.is_featured);
-  const regularPhotos = photos.filter((p) => !p.is_featured);
+  // Filter out photos without valid URLs
+  const validPhotos = photos.filter((p) => p.thumbnail_url || p.url);
+  const featuredPhotos = validPhotos.filter((p) => p.is_featured);
+  const regularPhotos = validPhotos.filter((p) => !p.is_featured);
 
   return (
     <div className="space-y-6">
@@ -235,17 +237,41 @@ function PhotoItem({
   onToggleSelect: () => void;
   onDelete?: (photoId: string) => void;
 }) {
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = photo.thumbnail_url || photo.url;
+
+  // Don't render if no valid URL
+  if (!imageUrl) {
+    return (
+      <div className="relative group">
+        <div className="aspect-square rounded-lg overflow-hidden bg-raised border border-border-subtle flex items-center justify-center">
+          <p className="text-xs text-secondary">No preview</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative group">
       <div className="aspect-square rounded-lg overflow-hidden bg-raised border border-border-subtle">
-        <Image
-          src={photo.thumbnail_url || photo.url}
-          alt={photo.caption || "Photo"}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          loading="lazy"
-        />
+        {!imageError ? (
+          <Image
+            src={imageUrl}
+            alt={photo.caption || "Photo"}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            loading="lazy"
+            onError={() => {
+              console.error("Failed to load image:", imageUrl);
+              setImageError(true);
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-raised">
+            <p className="text-xs text-secondary">Failed to load</p>
+          </div>
+        )}
       </div>
 
       {/* Selection Checkbox */}

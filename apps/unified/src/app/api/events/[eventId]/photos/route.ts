@@ -73,39 +73,42 @@ export async function GET(
     }
 
     // Get public URLs for photos with Supabase transformations
-    const photosWithUrls = (photos || []).map((photo) => {
-      // Full-size image with optimization
-      const publicUrl = serviceSupabase.storage
-        .from("event-photos")
-        .getPublicUrl(photo.storage_path, {
-          transform: {
-            width: 1920,
-            height: 1920,
-            quality: 90,
-            resize: "contain",
-          },
-        });
+    // Filter out photos without valid storage paths
+    const photosWithUrls = (photos || [])
+      .filter((photo) => photo.storage_path) // Only include photos with storage paths
+      .map((photo) => {
+        // Full-size image with optimization
+        const publicUrl = serviceSupabase.storage
+          .from("event-photos")
+          .getPublicUrl(photo.storage_path, {
+            transform: {
+              width: 1920,
+              height: 1920,
+              quality: 90,
+              resize: "contain",
+            },
+          });
 
-      // Thumbnail with aggressive optimization
-      const thumbnailUrl = serviceSupabase.storage
-        .from("event-photos")
-        .getPublicUrl(photo.storage_path, {
-          transform: {
-            width: 400,
-            height: 400,
-            quality: 75,
-            resize: "cover",
-          },
-        });
+        // Thumbnail with aggressive optimization
+        const thumbnailUrl = serviceSupabase.storage
+          .from("event-photos")
+          .getPublicUrl(photo.storage_path, {
+            transform: {
+              width: 400,
+              height: 400,
+              quality: 75,
+              resize: "cover",
+            },
+          });
 
-      return {
-        ...photo,
-        url: publicUrl.data.publicUrl,
-        thumbnail_url: thumbnailUrl.data.publicUrl,
-        // Store original path for generating other sizes on demand
-        original_path: photo.storage_path,
-      };
-    });
+        return {
+          ...photo,
+          url: publicUrl.data.publicUrl,
+          thumbnail_url: thumbnailUrl.data.publicUrl,
+          // Store original path for generating other sizes on demand
+          original_path: photo.storage_path,
+        };
+      });
 
     return NextResponse.json({
       album,
