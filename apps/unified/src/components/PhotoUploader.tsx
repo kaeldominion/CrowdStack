@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Button, InlineSpinner } from "@crowdstack/ui";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
+import imageCompression from "browser-image-compression";
 
 interface PhotoUploaderProps {
   eventId: string;
@@ -87,8 +88,43 @@ export function PhotoUploader({
     });
 
     try {
+      // Compress image before upload for faster uploads and smaller storage
+      let fileToUpload = file;
+      const maxSizeMB = 2; // Compress to max 2MB (will be further optimized by Supabase)
+      const maxWidthOrHeight = 1920; // Max dimension for web display
+      
+      // Only compress if file is larger than 1MB or dimensions are too large
+      if (file.size > 1024 * 1024 || file.type.startsWith("image/")) {
+        try {
+          setFiles((prev) => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], progress: 20 };
+            return updated;
+          });
+
+          const compressionOptions = {
+            maxSizeMB,
+            maxWidthOrHeight,
+            useWebWorker: true,
+            fileType: file.type,
+            initialQuality: 0.85, // High quality but smaller file
+          };
+
+          fileToUpload = await imageCompression(file, compressionOptions);
+          
+          setFiles((prev) => {
+            const updated = [...prev];
+            updated[index] = { ...updated[index], progress: 40 };
+            return updated;
+          });
+        } catch (compressionError) {
+          console.warn("Image compression failed, uploading original:", compressionError);
+          // Continue with original file if compression fails
+        }
+      }
+
       const formData = new FormData();
-      formData.append("files", file);
+      formData.append("files", fileToUpload);
 
       const response = await fetch(`/api/events/${eventId}/photos`, {
         method: "POST",

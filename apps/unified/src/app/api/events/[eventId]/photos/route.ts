@@ -69,22 +69,40 @@ export async function GET(
       throw error;
     }
 
-    // Get public URLs for photos
+    // Get public URLs for photos with Supabase transformations
     const photosWithUrls = (photos || []).map((photo) => {
+      // Full-size image with optimization
       const publicUrl = serviceSupabase.storage
         .from("event-photos")
-        .getPublicUrl(photo.storage_path);
+        .getPublicUrl(photo.storage_path, {
+          transform: {
+            width: 1920,
+            height: 1920,
+            quality: 90,
+            format: "webp",
+            resize: "contain",
+          },
+        });
 
-      const thumbnailUrl = photo.thumbnail_path
-        ? serviceSupabase.storage
-            .from("event-photos")
-            .getPublicUrl(photo.thumbnail_path)
-        : publicUrl;
+      // Thumbnail with aggressive optimization
+      const thumbnailUrl = serviceSupabase.storage
+        .from("event-photos")
+        .getPublicUrl(photo.storage_path, {
+          transform: {
+            width: 400,
+            height: 400,
+            quality: 75,
+            format: "webp",
+            resize: "cover",
+          },
+        });
 
       return {
         ...photo,
         url: publicUrl.data.publicUrl,
         thumbnail_url: thumbnailUrl.data.publicUrl,
+        // Store original path for generating other sizes on demand
+        original_path: photo.storage_path,
       };
     });
 
@@ -291,15 +309,36 @@ export async function POST(
         continue;
       }
 
-      // Get public URLs
+      // Get public URLs with Supabase transformations
       const photoUrl = serviceSupabase.storage
         .from("event-photos")
-        .getPublicUrl(storagePath);
+        .getPublicUrl(storagePath, {
+          transform: {
+            width: 1920,
+            height: 1920,
+            quality: 90,
+            format: "webp",
+            resize: "contain",
+          },
+        });
+
+      const thumbnailUrl = serviceSupabase.storage
+        .from("event-photos")
+        .getPublicUrl(storagePath, {
+          transform: {
+            width: 400,
+            height: 400,
+            quality: 75,
+            format: "webp",
+            resize: "cover",
+          },
+        });
 
       uploadedPhotos.push({
         ...photo,
         url: photoUrl.data.publicUrl,
-        thumbnail_url: photoUrl.data.publicUrl + "?width=400&quality=80",
+        thumbnail_url: thumbnailUrl.data.publicUrl,
+        original_path: storagePath,
       });
     }
 

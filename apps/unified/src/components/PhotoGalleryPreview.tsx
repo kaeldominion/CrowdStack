@@ -106,6 +106,8 @@ export function PhotoGalleryPreview({
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
                 sizes="(max-width: 640px) 33vw, 33vw"
+                loading="lazy"
+                quality={75}
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
               {index === 5 && photos.length > 6 && (
