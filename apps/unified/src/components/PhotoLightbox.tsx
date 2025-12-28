@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Download, Share2, Instagram, Heart, MessageCircle } from "lucide-react";
 import { InlineSpinner } from "@crowdstack/ui";
 import { PhotoComments } from "./PhotoComments";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface Photo {
   id: string;
@@ -315,13 +316,19 @@ export function PhotoLightbox({
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/p/${eventSlug}`;
+    // Build URL with referral tracking
+    const urlObj = new URL(`${window.location.origin}/p/${eventSlug}`);
+    if (userId) {
+      urlObj.searchParams.set("ref", userId);
+    }
+    const shareUrl = urlObj.toString();
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: `${eventName} - Photos`,
           text: `Check out photos from ${eventName}!`,
-          url,
+          url: shareUrl,
         });
       } catch (err) {
         // User cancelled
@@ -329,7 +336,7 @@ export function PhotoLightbox({
       }
     } else {
       // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       alert("Link copied to clipboard!");
     }
   };

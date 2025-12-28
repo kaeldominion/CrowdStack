@@ -6,6 +6,7 @@ import { ArrowLeft, Share2, Image as ImageIcon, Camera, Clock, CalendarDays, Map
 import Link from "next/link";
 import { Logo, LoadingSpinner, Button } from "@crowdstack/ui";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
 interface Photo {
   id: string;
@@ -46,10 +47,27 @@ export default function PhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, [eventSlug]);
+
+  // Fetch current user ID for referral tracking
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+        }
+      } catch (error) {
+        console.error("Error fetching user ID:", error);
+      }
+    };
+    fetchUserId();
+  }, []);
 
   const loadData = async () => {
     try {
@@ -92,19 +110,25 @@ export default function PhotosPage() {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    // Build URL with referral tracking
+    const urlObj = new URL(window.location.href);
+    if (userId) {
+      urlObj.searchParams.set("ref", userId);
+    }
+    const shareUrl = urlObj.toString();
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: `${event?.name} - Photos`,
           text: `Check out photos from ${event?.name}!`,
-          url,
+          url: shareUrl,
         });
       } catch (err) {
         console.log("Share cancelled");
       }
     } else {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       alert("Link copied to clipboard!");
     }
   };
