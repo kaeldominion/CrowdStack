@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permissions";
 import { uploadToStorage } from "@crowdstack/shared/storage/upload";
+import { getOptimizedImageUrl } from "@/lib/image-optimization";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -77,37 +78,37 @@ export async function GET(
     const photosWithUrls = (photos || [])
       .filter((photo) => photo.storage_path) // Only include photos with storage paths
       .map((photo) => {
-        // Full-size image with optimization
-        const publicUrl = serviceSupabase.storage
+        // Get base public URL (use base URL for now to ensure images load)
+        const baseUrl = serviceSupabase.storage
           .from("event-photos")
-          .getPublicUrl(photo.storage_path, {
-            transform: {
-              width: 1920,
-              height: 1920,
-              quality: 90,
-              resize: "contain",
-            },
-          });
+          .getPublicUrl(photo.storage_path);
 
-        // Thumbnail with aggressive optimization
-        const thumbnailUrl = serviceSupabase.storage
-          .from("event-photos")
-          .getPublicUrl(photo.storage_path, {
-            transform: {
-              width: 400,
-              height: 400,
-              quality: 75,
-              resize: "cover",
-            },
-          });
+        const basePublicUrl = baseUrl.data.publicUrl;
 
-        return {
+        // For now, use base URL for both (we can add transformations later once we confirm images load)
+        // This ensures images display correctly
+        const fullUrl = basePublicUrl;
+        const thumbnailUrl = basePublicUrl;
+
+        const photoData = {
           ...photo,
-          url: publicUrl.data.publicUrl,
-          thumbnail_url: thumbnailUrl.data.publicUrl,
+          url: fullUrl,
+          thumbnail_url: thumbnailUrl,
           // Store original path for generating other sizes on demand
           original_path: photo.storage_path,
         };
+
+        // Debug logging (remove in production if not needed)
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[Photos API] Generated URLs for photo ${photo.id}:`, {
+            storage_path: photo.storage_path,
+            base_url: basePublicUrl,
+            thumbnail_url: thumbnailUrl,
+            full_url: fullUrl,
+          });
+        }
+
+        return photoData;
       });
 
     return NextResponse.json({
