@@ -66,7 +66,7 @@ export async function POST(
     switch (action) {
       case "delete":
         // Delete photos from storage
-        const storagePaths = photos.map((p) => p.storage_path);
+        const storagePaths = photos.map((p: { storage_path: string }) => p.storage_path);
         await serviceSupabase.storage.from("event-photos").remove(storagePaths);
 
         // Delete from database (cascade will handle comments/likes)

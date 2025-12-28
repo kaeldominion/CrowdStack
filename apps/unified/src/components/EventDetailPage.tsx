@@ -2552,7 +2552,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       eventId={eventId}
                       canManage={config.role === "organizer" || config.role === "admin" || config.role === "venue"}
                       onPhotosChange={loadPhotos}
-                      onDelete={(photoId) => setShowDeletePhotoConfirm(photoId)}
+                      onDelete={(photoId: string) => setShowDeletePhotoConfirm(photoId)}
                     />
                   ) : (
                     <div className="text-center py-8 text-secondary">

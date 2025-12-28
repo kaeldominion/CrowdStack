@@ -206,22 +206,22 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {email.delivered_at && (
-                          <Badge color="success" variant="solid" size="sm" title="Delivered">
+                          <Badge color="green" variant="solid" size="sm" title="Delivered">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                           </Badge>
                         )}
                         {email.opened_at && (
-                          <Badge color="secondary" variant="solid" size="sm" title="Opened">
+                          <Badge color="blue" variant="solid" size="sm" title="Opened">
                             <Eye className="h-3 w-3 mr-1" />
                           </Badge>
                         )}
                         {email.clicked_at && (
-                          <Badge color="primary" variant="solid" size="sm" title="Clicked">
+                          <Badge color="purple" variant="solid" size="sm" title="Clicked">
                             <MousePointerClick className="h-3 w-3 mr-1" />
                           </Badge>
                         )}
                         {email.bounced_at && (
-                          <Badge color="error" variant="solid" size="sm" title={`Bounced: ${email.bounce_reason || "Unknown"}`}>
+                          <Badge color="red" variant="solid" size="sm" title={`Bounced: ${email.bounce_reason || "Unknown"}`}>
                             <AlertCircle className="h-3 w-3 mr-1" />
                           </Badge>
                         )}
