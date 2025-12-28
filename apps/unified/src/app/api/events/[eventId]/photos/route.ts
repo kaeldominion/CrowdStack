@@ -50,10 +50,13 @@ export async function GET(
     }
 
     // Get all photos for this album
+    // Order: featured photos first (by featured_order), then by display_order, then by created_at
     const { data: photos, error } = await serviceSupabase
       .from("photos")
       .select("*")
       .eq("album_id", album.id)
+      .order("is_featured", { ascending: false }) // Featured photos first
+      .order("featured_order", { ascending: true, nullsFirst: false })
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
 

@@ -72,6 +72,8 @@ import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { PhotoUploader } from "@/components/PhotoUploader";
+import { PhotoGrid } from "@/components/PhotoGrid";
+import { EmailStats } from "@/components/EmailStats";
 import { EventImageUpload } from "@/components/EventImageUpload";
 import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -1142,6 +1144,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     tabs.push({ value: "media", label: "Media" });
     tabs.push({ value: "photos", label: "Photos" });
   }
+  // Email Stats tab - show for organizers, venues, and admins
+  if (config.role === "organizer" || config.role === "venue" || config.role === "admin") {
+    tabs.push({ value: "email-stats", label: "Email Stats" });
+  }
   if (config.canViewSettings) {
     tabs.push({ value: "settings", label: "Settings" });
   }
@@ -1549,6 +1555,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <TabsTrigger key={tab.value} value={tab.value}>
                 {tab.value === "media" && <Video className="h-4 w-4 mr-1" />}
                 {tab.value === "photos" && <ImageIcon className="h-4 w-4 mr-1" />}
+                {tab.value === "email-stats" && <Mail className="h-4 w-4 mr-1" />}
                 {tab.value === "leaderboard" && <Trophy className="h-4 w-4 mr-1" />}
                 {tab.label}
               </TabsTrigger>
@@ -2485,50 +2492,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
 
                   {photos.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {photos.map((photo, index) => (
-                        <div key={photo.id} className="relative group">
-                          <div className="aspect-square rounded-lg overflow-hidden bg-raised">
-                            <img
-                              src={photo.thumbnail_url || photo.url}
-                              alt={photo.caption || `Photo ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && (
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              {album?.cover_photo_id !== photo.id && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleSetCoverPhoto(photo.id)}
-                                  className="text-white hover:bg-white/20"
-                                >
-                                  <Star className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowDeletePhotoConfirm(photo.id)}
-                                loading={deletingPhoto === photo.id}
-                                className="text-white hover:bg-white/20"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                          {album?.cover_photo_id === photo.id && (
-                            <div className="absolute top-2 right-2">
-                              <Badge variant="warning" className="flex items-center gap-1">
-                                <Star className="h-3 w-3" />
-                                Cover
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <PhotoGrid
+                      photos={photos}
+                      eventId={eventId}
+                      canManage={config.role === "organizer" || config.role === "admin" || config.role === "venue"}
+                      onPhotosChange={loadPhotos}
+                      onDelete={(photoId) => setShowDeletePhotoConfirm(photoId)}
+                    />
                   ) : (
                     <div className="text-center py-8 text-secondary">
                       {(config.role === "organizer" || config.role === "admin" || config.role === "venue")
@@ -2552,6 +2522,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
                 </div>
               </Card>
+            </TabsContent>
+          )}
+
+          {/* Email Stats Tab */}
+          {(config.role === "organizer" || config.role === "venue" || config.role === "admin") && (
+            <TabsContent value="email-stats" className="space-y-4">
+              <EmailStats eventId={eventId} />
             </TabsContent>
           )}
 
