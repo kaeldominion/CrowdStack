@@ -256,6 +256,7 @@ export async function POST(
     const result = await sendPhotosNotificationBatch(
       uniqueRecipients,
       {
+        eventId: params.eventId,
         eventName: event.name,
         eventDate,
         venueName,

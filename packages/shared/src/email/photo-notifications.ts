@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sendEmail } from "./postmark";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 interface PhotosLiveEmailOptions {
   to: string;
@@ -14,8 +15,9 @@ interface PhotosLiveEmailOptions {
 
 /**
  * Send "Photos are live" notification email to an attendee
+ * Returns the Postmark MessageID for tracking
  */
-export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Promise<void> {
+export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Promise<string> {
   const {
     to,
     eventName,
@@ -158,7 +160,7 @@ You're receiving this because you attended ${eventName}.
 Powered by CrowdStack - https://crowdstack.app
   `.trim();
 
-  await sendEmail({
+  const response = await sendEmail({
     from: "notifications@crowdstack.app",
     to,
     subject,
@@ -166,6 +168,8 @@ Powered by CrowdStack - https://crowdstack.app
     textBody,
     tag: "photos-live",
   });
+
+  return response.MessageID;
 }
 
 interface BatchNotificationResult {
@@ -178,10 +182,12 @@ interface BatchNotificationResult {
 /**
  * Send photos notification emails in batches
  * Handles rate limiting and error collection
+ * Logs each email individually to message_logs for tracking
  */
 export async function sendPhotosNotificationBatch(
   recipients: Array<{ email: string; name?: string }>,
   eventDetails: {
+    eventId: string;
     eventName: string;
     eventDate: string;
     venueName: string | null;
@@ -198,21 +204,65 @@ export async function sendPhotosNotificationBatch(
     errors: [],
   };
 
+  const serviceSupabase = createServiceRoleClient();
+  const subject = `Photos from ${eventDetails.eventName} are now available!`;
+
   // Process in batches to avoid overwhelming the email service
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
     
     const promises = batch.map(async (recipient) => {
       try {
-        await sendPhotosLiveEmail({
+        // Send email and get MessageID
+        const messageId = await sendPhotosLiveEmail({
           to: recipient.email,
-          ...eventDetails,
+          eventName: eventDetails.eventName,
+          eventDate: eventDetails.eventDate,
+          venueName: eventDetails.venueName,
+          galleryUrl: eventDetails.galleryUrl,
+          customMessage: eventDetails.customMessage,
+          thumbnailUrls: eventDetails.thumbnailUrls,
         });
+
+        // Log email to message_logs with tracking fields
+        await serviceSupabase
+          .from("message_logs")
+          .insert({
+            event_id: eventDetails.eventId,
+            recipient: recipient.name || recipient.email,
+            recipient_email: recipient.email,
+            subject,
+            email_subject: subject,
+            email_message_type: "photo_notification",
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            // Store Postmark MessageID in a metadata field or use recipient_email for webhook matching
+            // We'll match webhook events by recipient_email + subject + event_id
+          });
+
         result.sent++;
       } catch (error: any) {
         result.failed++;
         result.errors.push(`${recipient.email}: ${error.message || "Unknown error"}`);
         console.error(`Failed to send photo notification to ${recipient.email}:`, error);
+
+        // Log failed email attempt
+        try {
+          await serviceSupabase
+            .from("message_logs")
+            .insert({
+              event_id: eventDetails.eventId,
+              recipient: recipient.name || recipient.email,
+              recipient_email: recipient.email,
+              subject,
+              email_subject: subject,
+              email_message_type: "photo_notification",
+              status: "failed",
+              error_message: error.message || "Unknown error",
+            });
+        } catch (logError) {
+          console.error("Failed to log email error:", logError);
+        }
       }
     });
 

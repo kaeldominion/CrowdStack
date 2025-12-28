@@ -296,6 +296,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
   const [showDeletePhotoConfirm, setShowDeletePhotoConfirm] = useState<string | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [deletingAllPhotos, setDeletingAllPhotos] = useState(false);
   
   // Toast notifications
   const toast = useToast();
@@ -843,6 +845,40 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       toast.error("Delete Failed", "An unexpected error occurred");
     } finally {
       setDeletingPhoto(null);
+    }
+  };
+
+  const handleDeleteAllPhotos = async () => {
+    if (photos.length === 0) return;
+    
+    setDeletingAllPhotos(true);
+    try {
+      const photoIds = photos.map((p) => p.id);
+      const response = await fetch(`/api/events/${eventId}/photos/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          photoIds,
+        }),
+      });
+
+      if (response.ok) {
+        setPhotos([]);
+        if (album?.cover_photo_id) {
+          setAlbum((prev) => (prev ? { ...prev, cover_photo_id: null } : null));
+        }
+        toast.success("All Photos Deleted", `${photoIds.length} photos have been removed`);
+        setShowDeleteAllConfirm(false);
+      } else {
+        const data = await response.json();
+        toast.error("Delete Failed", data.error || "Could not delete all photos");
+      }
+    } catch (error) {
+      console.error("Error deleting all photos:", error);
+      toast.error("Delete Failed", "An unexpected error occurred");
+    } finally {
+      setDeletingAllPhotos(false);
     }
   };
 
@@ -2491,6 +2527,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     </div>
                   )}
 
+                  {/* Delete All Button - Only show for unpublished albums */}
+                  {photos.length > 0 && 
+                   (config.role === "organizer" || config.role === "admin" || config.role === "venue") &&
+                   album && 
+                   album.status !== "published" && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setShowDeleteAllConfirm(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete All Photos
+                      </Button>
+                    </div>
+                  )}
+
                   {photos.length > 0 ? (
                     <PhotoGrid
                       photos={photos}
@@ -2756,6 +2811,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         variant="danger"
         confirmText="Delete"
         loading={deletingPhoto !== null}
+      />
+
+      {/* Delete All Photos Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteAllConfirm}
+        onClose={() => setShowDeleteAllConfirm(false)}
+        onConfirm={handleDeleteAllPhotos}
+        title="Delete All Photos"
+        message={`Are you sure you want to delete all ${photos.length} photos? This action cannot be undone and will permanently remove all photos from this album.`}
+        variant="danger"
+        confirmText="Delete All"
+        loading={deletingAllPhotos}
       />
 
       {/* Edit Modal */}

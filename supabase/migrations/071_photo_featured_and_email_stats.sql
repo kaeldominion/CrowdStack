@@ -39,8 +39,27 @@ BEGIN
     ADD COLUMN email_bounce_reason TEXT,
     ADD COLUMN email_recipient_email TEXT,
     ADD COLUMN email_subject TEXT,
-    ADD COLUMN email_message_type TEXT; -- 'photo_notification', 'event_invite', etc.
+    ADD COLUMN email_message_type TEXT, -- 'photo_notification', 'event_invite', etc.
+    ADD COLUMN event_id UUID REFERENCES public.events(id) ON DELETE CASCADE;
   END IF;
+END $$;
+
+-- Update status constraint to include new statuses
+DO $$
+BEGIN
+  -- Drop existing constraint if it exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'message_logs_status_check' 
+    AND table_schema = 'public'
+  ) THEN
+    ALTER TABLE public.message_logs DROP CONSTRAINT message_logs_status_check;
+  END IF;
+  
+  -- Add new constraint with additional statuses
+  ALTER TABLE public.message_logs
+  ADD CONSTRAINT message_logs_status_check 
+  CHECK (status IN ('pending', 'sent', 'failed', 'delivered', 'bounced', 'spam_complaint'));
 END $$;
 
 -- Indexes for email stats queries

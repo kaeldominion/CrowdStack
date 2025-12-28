@@ -236,6 +236,7 @@ export async function POST(
         const result = await sendPhotosNotificationBatch(
           uniqueRecipients,
           {
+            eventId: params.eventId,
             eventName: event.name,
             eventDate,
             venueName,
@@ -252,17 +253,6 @@ export async function POST(
           .from("photo_albums")
           .update({ photo_last_notified_at: new Date().toISOString() })
           .eq("id", album.id);
-
-        // Log notification
-        await serviceSupabase
-          .from("message_logs")
-          .insert({
-            recipient: `${result.sent} attendees`,
-            subject: `Photos from ${event.name} are now available! (auto on publish)`,
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            error_message: result.errors.length > 0 ? result.errors.slice(0, 5).join("; ") : null,
-          });
       }
     } // end if (!emailsSkipped)
     } // end if (photo_auto_email_on_publish)
