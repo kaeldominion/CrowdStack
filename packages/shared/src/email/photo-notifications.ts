@@ -230,14 +230,14 @@ export async function sendPhotosNotificationBatch(
           .insert({
             event_id: eventDetails.eventId,
             recipient: recipient.name || recipient.email,
-            recipient_email: recipient.email,
+            email_recipient_email: recipient.email,
             subject,
             email_subject: subject,
             email_message_type: "photo_notification",
             status: "sent",
             sent_at: new Date().toISOString(),
-            // Store Postmark MessageID in a metadata field or use recipient_email for webhook matching
-            // We'll match webhook events by recipient_email + subject + event_id
+            // Store Postmark MessageID for webhook matching (if column exists)
+            // We'll match webhook events by email_recipient_email + email_message_type
           });
 
         result.sent++;
@@ -253,7 +253,7 @@ export async function sendPhotosNotificationBatch(
             .insert({
               event_id: eventDetails.eventId,
               recipient: recipient.name || recipient.email,
-              recipient_email: recipient.email,
+              email_recipient_email: recipient.email,
               subject,
               email_subject: subject,
               email_message_type: "photo_notification",
