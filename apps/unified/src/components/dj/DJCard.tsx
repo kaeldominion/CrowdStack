@@ -149,9 +149,9 @@ export function DJCard({
               </div>
             )}
 
-            {/* Bio snippet */}
+            {/* Bio snippet - 1 line max */}
             {showBio && dj.bio && (
-              <p className="text-xs text-muted line-clamp-1 hidden sm:block">
+              <p className="text-xs text-muted hidden sm:line-clamp-1">
                 {dj.bio}
               </p>
             )}

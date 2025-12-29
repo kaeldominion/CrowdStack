@@ -43,6 +43,10 @@ interface AttendeeEventCardProps {
   capacityPercent?: number;
   /** Callback when registration is cancelled */
   onCancelRegistration?: (registrationId: string) => void;
+  /** Guestlist is closed (full or registration ended) */
+  isGuestlistClosed?: boolean;
+  /** Show as past event */
+  isPast?: boolean;
   className?: string;
 }
 
@@ -56,6 +60,8 @@ export function AttendeeEventCard({
   showVip = false,
   capacityPercent,
   onCancelRegistration,
+  isGuestlistClosed = false,
+  isPast = false,
   className = "",
 }: AttendeeEventCardProps) {
   const router = useRouter();
@@ -154,8 +160,14 @@ export function AttendeeEventCard({
     if (isLive) {
       return { text: "LIVE", color: "green" as const, showDot: true };
     }
+    if (isPast) {
+      return { text: "ENDED", color: "slate" as const, showDot: false };
+    }
     if (isAttending || registration) {
       return { text: "ATTENDING", color: "green" as const, showDot: false };
+    }
+    if (isGuestlistClosed) {
+      return { text: "CLOSED", color: "amber" as const, showDot: false };
     }
     if (badgeText) {
       return { text: badgeText.toUpperCase(), color: "purple" as const, showDot: false };
@@ -468,6 +480,14 @@ export function AttendeeEventCard({
                     Status
                   </button>
                 </>
+              ) : isPast ? (
+                <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
+                  Event Ended
+                </span>
+              ) : isGuestlistClosed ? (
+                <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
+                  Guestlist Closed
+                </span>
               ) : (
                 <button
                   onClick={(e) => {

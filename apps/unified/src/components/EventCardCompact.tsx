@@ -33,6 +33,10 @@ interface EventCardCompactProps {
   badgeText?: string;
   /** Optional onMore handler for the ... button */
   onMore?: () => void;
+  /** Guestlist is closed (full or registration ended) */
+  isGuestlistClosed?: boolean;
+  /** Show as past event */
+  isPast?: boolean;
   className?: string;
 }
 
@@ -46,6 +50,8 @@ export function EventCardCompact({
   showVip = false,
   badgeText,
   onMore,
+  isGuestlistClosed = false,
+  isPast = false,
   className = "",
 }: EventCardCompactProps) {
   const router = useRouter();
@@ -193,6 +199,14 @@ export function EventCardCompact({
                 <QrCode className="h-3 w-3" />
                 View Entry
               </button>
+            ) : isPast ? (
+              <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
+                Event Ended
+              </span>
+            ) : isGuestlistClosed ? (
+              <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
+                Guestlist Closed
+              </span>
             ) : (
               <button
                 onClick={(e) => {

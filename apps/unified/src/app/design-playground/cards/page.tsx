@@ -544,11 +544,30 @@ export default function DesignCardsPage() {
             </CardGrid>
           </div>
 
+          {/* Guestlist Closed State */}
+          <div className="mb-8">
+            <CardLabel>Guestlist Closed (Upcoming Event, Full Capacity)</CardLabel>
+            <p className="text-sm text-muted mb-4">
+              When guestlist is closed but event hasn&apos;t started yet. 
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">isGuestlistClosed=true</code> prop.
+            </p>
+            
+            <div className="space-y-3 max-w-3xl mb-6">
+              <EventCardRow event={MOCK_EVENT} isGuestlistClosed />
+              <EventCardRow event={MOCK_EVENT_NO_IMAGE} isGuestlistClosed />
+            </div>
+
+            <CardGrid columns={3}>
+              <AttendeeEventCard event={MOCK_EVENT} isGuestlistClosed />
+              <EventCardCompact event={MOCK_EVENT} isGuestlistClosed />
+            </CardGrid>
+          </div>
+
           {/* Past Events State */}
           <div className="mb-8">
-            <CardLabel>Past Events - Guestlist Closed State</CardLabel>
+            <CardLabel>Past Events (Event Ended)</CardLabel>
             <p className="text-sm text-muted mb-4">
-              When events have ended, guestlist should show as &quot;Closed&quot; with disabled CTA buttons.
+              When events have ended.
               Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">isPast=true</code> prop.
             </p>
             
@@ -559,10 +578,10 @@ export default function DesignCardsPage() {
               <EventCardRow event={MOCK_EVENT_NO_IMAGE} isPast />
             </div>
 
-            {/* Full Cards - with ENDED badge */}
+            {/* Full Cards - with isPast prop */}
             <CardGrid columns={3}>
-              <AttendeeEventCard event={MOCK_EVENT_PAST} variant="default" badgeText="ENDED" />
-              <EventCardCompact event={MOCK_EVENT_PAST} badgeText="ENDED" />
+              <AttendeeEventCard event={MOCK_EVENT_PAST} isPast />
+              <EventCardCompact event={MOCK_EVENT_PAST} isPast />
             </CardGrid>
             
             {/* Guestlist Card - Past State Reference */}

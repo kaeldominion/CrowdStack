@@ -45,6 +45,8 @@ interface EventCardRowProps {
   isPast?: boolean;
   /** For past events: whether user attended (checked in) */
   didAttend?: boolean;
+  /** Guestlist is closed (full or registration ended) */
+  isGuestlistClosed?: boolean;
   className?: string;
 }
 
@@ -56,6 +58,7 @@ export function EventCardRow({
   isUpcoming = true,
   isPast = false,
   didAttend,
+  isGuestlistClosed = false,
   className = "",
 }: EventCardRowProps) {
   const router = useRouter();
@@ -115,6 +118,13 @@ export function EventCardRow({
       return (
         <Badge color={didAttend ? "green" : "slate"} variant="ghost" size="sm" className="!text-[10px]">
           {didAttend ? "ATTENDED" : "ENDED"}
+        </Badge>
+      );
+    }
+    if (isGuestlistClosed && !isAttending) {
+      return (
+        <Badge color="amber" variant="ghost" size="sm" className="!text-[10px]">
+          CLOSED
         </Badge>
       );
     }
@@ -201,6 +211,10 @@ export function EventCardRow({
                     <Check className="h-3 w-3" />
                     View Entry
                   </button>
+                ) : isGuestlistClosed ? (
+                  <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
+                    Guestlist Closed
+                  </span>
                 ) : (
                   <button
                     onClick={(e) => {
