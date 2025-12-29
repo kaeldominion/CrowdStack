@@ -377,14 +377,13 @@ export function EventPageContent({
                   country: event.venue.country,
                   cover_image_url: event.venue.cover_image_url,
                   logo_url: event.venue.logo_url,
-                  rating: event.venue.rating,
                   tags: event.venue.venue_tags?.map((t: any) => ({ 
                     tag_type: t.tag_type, 
                     tag_value: t.tag_value 
                   })),
                 }}
                 layout="landscape"
-                showRating={!!event.venue.rating}
+                showRating={false}
                 showTags={true}
               />
                       )}

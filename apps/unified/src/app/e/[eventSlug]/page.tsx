@@ -34,12 +34,11 @@ async function getEvent(slug: string) {
     const supabase = createServiceRoleClient();
 
     // Get published event by slug
-    // Explicitly specify foreign key to ensure correct organizer join
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select(`
         *,
-        organizer:organizers!events_organizer_id_fkey(id, name),
+        organizer:organizers(id, name),
         venue:venues(
           id, 
           name, 
@@ -50,17 +49,25 @@ async function getEvent(slug: string) {
           country, 
           google_maps_url, 
           cover_image_url, 
-          logo_url,
-          rating,
-          venue_tags(tag_type, tag_value)
+          logo_url
         )
       `)
       .eq("slug", slug)
       .eq("status", "published")
       .single();
-
+      
     if (eventError || !event) {
       return null;
+    }
+    
+    // Fetch venue tags separately if venue exists
+    let venueTags: { tag_type: string; tag_value: string }[] = [];
+    if (event.venue?.id) {
+      const { data: tags } = await supabase
+        .from("venue_tags")
+        .select("tag_type, tag_value")
+        .eq("venue_id", event.venue.id);
+      venueTags = tags || [];
     }
 
     // Get registration count
@@ -88,6 +95,10 @@ async function getEvent(slug: string) {
       ...event,
       registration_count: registrationCount || 0,
       recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
+      venue: event.venue ? {
+        ...event.venue,
+        venue_tags: venueTags,
+      } : null,
     };
   } catch (error) {
     console.error("Failed to fetch event:", error);

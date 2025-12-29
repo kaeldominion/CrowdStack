@@ -540,8 +540,13 @@ export default function HomePage() {
         const data = await res.json();
         
         if (data.events && data.events.length > 0) {
+          // Filter out external_link events - only show guestlist events on landing page
+          const guestlistEvents = data.events.filter(
+            (event: any) => !event.registration_type || event.registration_type === "guestlist"
+          );
+          
           // Transform API data to match component format
-          const transformed = data.events.map((event: any) => {
+          const transformed = guestlistEvents.map((event: any) => {
             const startDate = new Date(event.start_time);
             const day = startDate.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
             const dayNum = startDate.getDate();

@@ -100,6 +100,8 @@ export async function GET(request: NextRequest) {
         end_time,
         venue_approval_status,
         capacity,
+        registration_type,
+        external_ticket_url,
         venue:venues(
           id,
           name,
@@ -242,6 +244,7 @@ export async function GET(request: NextRequest) {
       const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
       
       // Build fallback query - same as base query but without is_featured filter
+      // Also filter out external_link events for featured/landing page display
       const { data: fallbackEvents, error: fallbackError } = await supabase
         .from("events")
         .select(`
@@ -254,6 +257,8 @@ export async function GET(request: NextRequest) {
           end_time,
           venue_approval_status,
           capacity,
+          registration_type,
+          external_ticket_url,
           venue:venues(
             id,
             name,
@@ -265,6 +270,7 @@ export async function GET(request: NextRequest) {
         .eq("status", "published")
         .in("venue_approval_status", ["approved", "not_required"])
         .gte("start_time", twelveHoursAgo.toISOString())
+        .or("registration_type.is.null,registration_type.eq.guestlist")
         .order("start_time", { ascending: true })
         .limit(limit);
 
