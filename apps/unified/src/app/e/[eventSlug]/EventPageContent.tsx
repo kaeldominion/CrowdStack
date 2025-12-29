@@ -225,8 +225,8 @@ export function EventPageContent({
               )}
         </div>
             
-            {/* Right: Spots Left + Progress Bar */}
-            {event.capacity && spotsLeft !== null && (
+            {/* Right: Spots Left + Progress Bar (only for guestlist events) */}
+            {event.registration_type !== "external_link" && event.registration_type !== "display_only" && event.capacity && spotsLeft !== null && (
               <div className="flex-1 max-w-32">
                 <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-primary text-right mb-1">
                   {spotsLeft} Left
@@ -240,6 +240,13 @@ export function EventPageContent({
                   />
                 </div>
               </div>
+            )}
+            {/* External Ticket Badge (mobile) */}
+            {event.registration_type === "external_link" && (
+              <Badge color="blue" variant="solid" className="font-mono uppercase">
+                <ExternalLink className="h-3 w-3 mr-1" />
+                External Tickets
+              </Badge>
                 )}
               </div>
           
@@ -465,76 +472,95 @@ export function EventPageContent({
                 </div>
               )}
               
-              {/* Registration Stats */}
-              <Card className="mt-6">
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                      Registered
-                    </p>
-                    {spotsLeft !== null && (
-                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-primary">
-                        {spotsLeft} Left
-                      </p>
-                    )}
-                  </div>
-                  {(event.registration_count || 0) > 0 ? (
+              {/* Registration Stats - only for guestlist events */}
+              {event.registration_type !== "external_link" && event.registration_type !== "display_only" && (
+                <Card className="mt-6">
+                  <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex -space-x-2">
-                        {(event.recent_attendees || []).slice(0, 5).map((attendee: any, i: number) => (
-                          attendee?.profile_picture_url ? (
-                            <Image
-                              key={attendee.id || i}
-                              src={attendee.profile_picture_url}
-                              alt={attendee.name || "Attendee"}
-                              width={32}
-                              height={32}
-                              className="w-8 h-8 rounded-full border-2 border-[var(--bg-void)] object-cover"
-                            />
-                          ) : (
-                            <div 
-                              key={attendee?.id || i}
-                              className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-secondary)] to-[var(--accent-primary)] border-2 border-[var(--bg-void)] flex items-center justify-center"
-                            >
-                              <span className="text-[10px] font-bold text-[var(--text-inverse)]">
-                                {attendee?.name?.charAt(0)?.toUpperCase() || "?"}
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                        Registered
+                      </p>
+                      {spotsLeft !== null && (
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-primary">
+                          {spotsLeft} Left
+                        </p>
+                      )}
+                    </div>
+                    {(event.registration_count || 0) > 0 ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex -space-x-2">
+                          {(event.recent_attendees || []).slice(0, 5).map((attendee: any, i: number) => (
+                            attendee?.profile_picture_url ? (
+                              <Image
+                                key={attendee.id || i}
+                                src={attendee.profile_picture_url}
+                                alt={attendee.name || "Attendee"}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 rounded-full border-2 border-[var(--bg-void)] object-cover"
+                              />
+                            ) : (
+                              <div 
+                                key={attendee?.id || i}
+                                className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-secondary)] to-[var(--accent-primary)] border-2 border-[var(--bg-void)] flex items-center justify-center"
+                              >
+                                <span className="text-[10px] font-bold text-[var(--text-inverse)]">
+                                  {attendee?.name?.charAt(0)?.toUpperCase() || "?"}
+                                </span>
+                              </div>
+                            )
+                          ))}
+                          {(event.registration_count || 0) > 5 && (
+                            <div className="w-8 h-8 rounded-full bg-[var(--bg-raised)] border-2 border-[var(--bg-void)] flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-primary">
+                                +{((event.registration_count || 0) - 5).toLocaleString()}
                               </span>
                             </div>
-                          )
-                        ))}
-                        {(event.registration_count || 0) > 5 && (
-                          <div className="w-8 h-8 rounded-full bg-[var(--bg-raised)] border-2 border-[var(--bg-void)] flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-primary">
-                              +{((event.registration_count || 0) - 5).toLocaleString()}
-                            </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-primary">
+                            {(event.registration_count || 0).toLocaleString()}
+                          </p>
+                          <p className="font-mono text-[9px] uppercase tracking-wider text-muted">Going</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-primary">
-                          {(event.registration_count || 0).toLocaleString()}
-                        </p>
-                        <p className="font-mono text-[9px] uppercase tracking-wider text-muted">Going</p>
+                    ) : (
+                      <p className="font-mono text-xs font-bold uppercase tracking-widest text-accent-secondary">
+                        Be first to register for XP ✨
+                      </p>
+                    )}
+                    {/* Progress bar */}
+                    {event.capacity && (
+                      <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
+                          }}
+                        />
                       </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+              
+              {/* External Ticket Card - for external ticket events */}
+              {event.registration_type === "external_link" && (
+                <Card className="mt-6">
+                  <div className="p-4 text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <ExternalLink className="h-5 w-5 text-blue-400" />
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                        External Tickets
+                      </p>
                     </div>
-                  ) : (
-                    <p className="font-mono text-xs font-bold uppercase tracking-widest text-accent-secondary">
-                      Be first to register for XP ✨
+                    <p className="text-sm text-muted">
+                      Tickets for this event are sold through an external platform
                     </p>
-                  )}
-                  {/* Progress bar */}
-                  {event.capacity && (
-                    <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </Card>
+                  </div>
+                </Card>
+              )}
             </div>
           </div>
           
@@ -545,7 +571,15 @@ export function EventPageContent({
               <Badge color="purple" variant="solid" className="font-mono uppercase">
                 {dateInfo.month} {dateInfo.day}
               </Badge>
-              {spotsLeft !== null && spotsLeft <= 50 && (
+              {/* External Ticket Badge */}
+              {event.registration_type === "external_link" && (
+                <Badge color="blue" variant="solid" className="font-mono uppercase flex items-center gap-1">
+                  <ExternalLink className="h-3 w-3" />
+                  External Tickets
+                </Badge>
+              )}
+              {/* Spots Left Badge - only for guestlist events */}
+              {event.registration_type !== "external_link" && event.registration_type !== "display_only" && spotsLeft !== null && spotsLeft <= 50 && (
                 <Badge color="green" variant="solid" className="font-mono uppercase">
                   Only {spotsLeft} Spots Left
                 </Badge>
