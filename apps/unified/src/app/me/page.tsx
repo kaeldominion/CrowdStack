@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@crowdstack/shared";
-import { LoadingSpinner, Button, Card, Badge } from "@crowdstack/ui";
-import Link from "next/link";
+import { LoadingSpinner, Button, Card } from "@crowdstack/ui";
 import Image from "next/image";
 import {
   Calendar,
@@ -14,11 +13,11 @@ import {
   Users,
   X,
   Radio,
-  ChevronRight,
 } from "lucide-react";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
+import { DJCard } from "@/components/dj/DJCard";
 
 interface Registration {
   id: string;
@@ -494,43 +493,21 @@ export default function MePage() {
             <div className="space-y-3">
               {followedDJs.length > 0 ? (
                 followedDJs.slice(0, 10).map((dj) => (
-                  <Link key={dj.id} href={`/dj/${dj.handle}`}>
-                    <Card className="p-4 hover:bg-white/5 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0">
-                          {dj.profile_image_url ? (
-                            <Image
-                              src={dj.profile_image_url}
-                              alt={dj.name}
-                              width={56}
-                              height={56}
-                              className="object-cover w-full h-full"
-                            />
-                          ) : (
-                            <div className="h-full w-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                              <span className="text-xl font-bold text-white">
-                                {dj.name?.[0]?.toUpperCase() || "?"}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-primary truncate">{dj.name}</h3>
-                          {dj.location && (
-                            <p className="text-sm text-secondary truncate">{dj.location}</p>
-                          )}
-                          {dj.genres && dj.genres.length > 0 && (
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              {dj.genres.slice(0, 2).map((genre: string) => (
-                                <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-secondary flex-shrink-0" />
-                      </div>
-                    </Card>
-                  </Link>
+                  <DJCard
+                    key={dj.id}
+                    dj={{
+                      id: dj.id,
+                      name: dj.name,
+                      handle: dj.handle,
+                      genres: dj.genres,
+                      location: dj.location,
+                      profile_image_url: dj.profile_image_url,
+                    }}
+                    layout="row"
+                    showGenres={true}
+                    showLocation={true}
+                    maxGenres={2}
+                  />
                 ))
               ) : (
                 <Card className="!p-6 text-center !border-dashed">
@@ -760,43 +737,21 @@ export default function MePage() {
                 {followedDJs.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {followedDJs.map((dj) => (
-                      <Link key={dj.id} href={`/dj/${dj.handle}`}>
-                        <Card className="p-4 hover:bg-white/5 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="h-16 w-16 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0">
-                              {dj.profile_image_url ? (
-                                <Image
-                                  src={dj.profile_image_url}
-                                  alt={dj.name}
-                                  width={64}
-                                  height={64}
-                                  className="object-cover w-full h-full"
-                                />
-                              ) : (
-                                <div className="h-full w-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                                  <span className="text-2xl font-bold text-white">
-                                    {dj.name?.[0]?.toUpperCase() || "?"}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-primary truncate">{dj.name}</h3>
-                              {dj.location && (
-                                <p className="text-sm text-secondary truncate">{dj.location}</p>
-                              )}
-                              {dj.genres && dj.genres.length > 0 && (
-                                <div className="flex gap-1 mt-2 flex-wrap">
-                                  {dj.genres.slice(0, 3).map((genre: string) => (
-                                    <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-secondary flex-shrink-0" />
-                          </div>
-                        </Card>
-                      </Link>
+                      <DJCard
+                        key={dj.id}
+                        dj={{
+                          id: dj.id,
+                          name: dj.name,
+                          handle: dj.handle,
+                          genres: dj.genres,
+                          location: dj.location,
+                          profile_image_url: dj.profile_image_url,
+                        }}
+                        layout="row"
+                        showGenres={true}
+                        showLocation={true}
+                        maxGenres={3}
+                      />
                     ))}
                   </div>
                 ) : (

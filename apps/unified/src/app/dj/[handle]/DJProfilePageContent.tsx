@@ -979,20 +979,6 @@ export function DJProfilePageContent({
                               soundcloudUrl={mix.soundcloud_url} 
                               title={mix.title}
                             />
-                            <div className="mt-3 flex items-start justify-between">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold text-white">{mix.title}</h3>
-                                  {mix.is_featured && (
-                                    <Badge color="purple" variant="ghost" size="sm">Featured</Badge>
-                                  )}
-                                </div>
-                                {mix.description && (
-                                  <p className="text-sm text-white/60 mt-1 line-clamp-2">{mix.description}</p>
-                                )}
-                              </div>
-                              <span className="text-xs text-white/40 flex-shrink-0">{mix.plays_count || 0} plays</span>
-                            </div>
                           </div>
                         ))}
                       </div>
@@ -1079,20 +1065,6 @@ export function DJProfilePageContent({
                             soundcloudUrl={mix.soundcloud_url} 
                             title={mix.title}
                           />
-                          <div className="mt-3">
-                            <h3 className="font-medium text-white mb-1 truncate">{mix.title}</h3>
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs text-white/40">{mix.plays_count || 0} plays</p>
-                              <a
-                                href={mix.soundcloud_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-secondary hover:text-primary transition-colors"
-                              >
-                                Open in SoundCloud →
-                              </a>
-                            </div>
-                          </div>
                         </div>
                       ))}
                     </div>
@@ -1396,12 +1368,6 @@ export function DJProfilePageContent({
                                   <div className="w-full h-full flex items-center justify-center">
                                     <Video className="h-12 w-12 text-white/20" />
                                   </div>
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center gap-2">
-                                <h3 className="font-semibold text-white text-sm">{video.title}</h3>
-                                {video.is_featured && (
-                                  <Badge color="purple" variant="ghost" size="sm">Featured</Badge>
                                 )}
                               </div>
                             </div>
