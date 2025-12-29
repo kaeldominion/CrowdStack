@@ -31,34 +31,34 @@ export function AttendeeNavigation() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
+  const [djProfiles, setDjProfiles] = useState<Array<{ id: string; name: string; handle: string; profile_image_url: string | null }>>([]);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadUser();
   }, []);
 
-  // Check if user has DJ profile
+  // Fetch user's DJ profiles
   useEffect(() => {
-    const checkDJProfile = async () => {
+    const fetchDJProfiles = async () => {
       if (!user?.id) {
-        setHasDJProfile(false);
+        setDjProfiles([]);
         return;
       }
       try {
-        const response = await fetch("/api/dj/profile/check");
+        const response = await fetch("/api/dj/profiles");
         if (response.ok) {
           const data = await response.json();
-          setHasDJProfile(data.hasProfile === true);
+          setDjProfiles(data.profiles || []);
         } else {
-          setHasDJProfile(false);
+          setDjProfiles([]);
         }
       } catch (error) {
-        console.error("Error checking DJ profile:", error);
-        setHasDJProfile(false);
+        console.error("Error fetching DJ profiles:", error);
+        setDjProfiles([]);
       }
     };
-    checkDJProfile();
+    fetchDJProfiles();
   }, [user?.id]);
 
   useEffect(() => {
@@ -111,10 +111,15 @@ export function AttendeeNavigation() {
       { href: "/me/settings", label: "Settings", icon: Settings },
     ];
 
-    // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
-    if (hasDJProfile !== true) {
-      items.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+    // Add DJ profiles to menu
+    if (djProfiles.length > 0) {
+      djProfiles.forEach(dj => {
+        items.push({ href: `/dj/${dj.handle}`, label: `DJ: ${dj.name}`, icon: Radio });
+      });
     }
+    
+    // Always show "Create DJ Profile" option (users can have multiple)
+    items.push({ href: "/dj/create", label: djProfiles.length > 0 ? "Add DJ Profile" : "Create DJ Profile", icon: Radio });
 
     return items;
   };

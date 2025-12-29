@@ -115,8 +115,54 @@ export async function getUserPromoterId(): Promise<string | null> {
 }
 
 /**
- * Get the current user's DJ ID
- * Returns the DJ profile linked to the user via user_id (one-to-one)
+ * Get all DJ profile IDs for the current user
+ * Users can have multiple DJ profiles
+ */
+export async function getUserDJIds(): Promise<string[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data: djs } = await supabase
+    .from("djs")
+    .select("id")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  return djs?.map(dj => dj.id) || [];
+}
+
+/**
+ * Get all DJ profiles for the current user (with details)
+ * Users can have multiple DJ profiles
+ */
+export async function getUserDJProfiles(): Promise<Array<{ id: string; name: string; handle: string; profile_image_url: string | null }>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const { data: djs } = await supabase
+    .from("djs")
+    .select("id, name, handle, profile_image_url")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  return djs || [];
+}
+
+/**
+ * Get the current user's first DJ ID (for backwards compatibility)
+ * Returns the first DJ profile linked to the user via user_id
  */
 export async function getUserDJId(): Promise<string | null> {
   const supabase = await createClient();
@@ -128,11 +174,13 @@ export async function getUserDJId(): Promise<string | null> {
     return null;
   }
 
-  // DJs are linked one-to-one via user_id
+  // Get first DJ profile for this user
   const { data: dj } = await supabase
     .from("djs")
     .select("id")
     .eq("user_id", user.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .single();
 
   return dj?.id || null;

@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Input, Textarea, Container, Section } from "@crowdstack/ui";
-import { Save, Loader2, ArrowLeft, Upload, X } from "lucide-react";
+import { Save, Loader2, ArrowLeft, Upload, X, Search, UserPlus, UserMinus } from "lucide-react";
 import Image from "next/image";
 import type { DJ } from "@crowdstack/shared/types";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
+
+interface UserOption {
+  id: string;
+  email: string;
+  name?: string;
+}
 
 export default function AdminDJProfileEditPage() {
   const router = useRouter();
@@ -35,6 +41,13 @@ export default function AdminDJProfileEditPage() {
   const [youtube_url, setYoutube_url] = useState("");
   const [website_url, setWebsite_url] = useState("");
 
+  // User assignment state
+  const [assignedUser, setAssignedUser] = useState<UserOption | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<UserOption[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+
   useEffect(() => {
     if (djId) {
       loadProfile();
@@ -60,11 +73,75 @@ export default function AdminDJProfileEditPage() {
       setSpotify_url(data.dj.spotify_url || "");
       setYoutube_url(data.dj.youtube_url || "");
       setWebsite_url(data.dj.website_url || "");
+
+      // If DJ has a user assigned, fetch their details
+      if (data.dj.user_id) {
+        try {
+          const usersResponse = await fetch(`/api/admin/users?search=${encodeURIComponent(data.dj.user_id)}`);
+          if (usersResponse.ok) {
+            const usersData = await usersResponse.json();
+            const matchedUser = usersData.users?.find((u: UserOption) => u.id === data.dj.user_id);
+            if (matchedUser) {
+              setAssignedUser(matchedUser);
+            } else {
+              // User exists but not found in search - just show ID
+              setAssignedUser({ id: data.dj.user_id, email: data.dj.user_id });
+            }
+          }
+        } catch (e) {
+          // Fallback - just show the user ID
+          setAssignedUser({ id: data.dj.user_id, email: data.dj.user_id });
+        }
+      }
     } catch (error) {
       console.error("Failed to load profile:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Search users for assignment
+  const searchUsers = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+
+    setSearchingUsers(true);
+    try {
+      const response = await fetch(`/api/admin/users?search=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserSearchResults(data.users || []);
+      }
+    } catch (error) {
+      console.error("Error searching users:", error);
+    } finally {
+      setSearchingUsers(false);
+    }
+  }, []);
+
+  // Debounced user search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (userSearch) {
+        searchUsers(userSearch);
+      } else {
+        setUserSearchResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearch, searchUsers]);
+
+  const handleAssignUser = (user: UserOption) => {
+    setAssignedUser(user);
+    setShowUserSearch(false);
+    setUserSearch("");
+    setUserSearchResults([]);
+  };
+
+  const handleUnassignUser = () => {
+    setAssignedUser(null);
   };
 
   const addGenre = () => {
@@ -167,6 +244,7 @@ export default function AdminDJProfileEditPage() {
           spotify_url: normalizedSpotify,
           youtube_url: normalizedYoutube,
           website_url: normalizedWebsite,
+          user_id: assignedUser?.id || "", // Empty string to unassign
         }),
       });
 
@@ -233,7 +311,93 @@ export default function AdminDJProfileEditPage() {
       )}
 
       <Card className="p-6 space-y-6">
+        {/* User Assignment Section */}
         <div>
+          <h2 className="text-lg font-semibold text-white mb-4">Assigned User</h2>
+          <p className="text-sm text-secondary mb-4">
+            Link this DJ profile to a user account. The user will be able to manage this profile.
+          </p>
+
+          {assignedUser ? (
+            <div className="flex items-center gap-4 p-4 bg-glass border border-border-subtle rounded-lg">
+              <div className="flex-1">
+                <p className="font-medium text-primary">{assignedUser.name || assignedUser.email}</p>
+                {assignedUser.name && (
+                  <p className="text-sm text-secondary">{assignedUser.email}</p>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUnassignUser}
+                className="text-red-400 hover:text-red-300"
+              >
+                <UserMinus className="h-4 w-4 mr-2" />
+                Unassign
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {!showUserSearch ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowUserSearch(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Assign User
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary" />
+                    <Input
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Search users by email..."
+                      className="pl-10"
+                      autoFocus
+                    />
+                  </div>
+                  {searchingUsers && (
+                    <p className="text-sm text-secondary">Searching...</p>
+                  )}
+                  {userSearchResults.length > 0 && (
+                    <div className="bg-glass border border-border-subtle rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                      {userSearchResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => handleAssignUser(user)}
+                          className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-border-subtle last:border-b-0"
+                        >
+                          <p className="font-medium text-primary">{user.name || user.email}</p>
+                          {user.name && (
+                            <p className="text-sm text-secondary">{user.email}</p>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {userSearch.length >= 2 && !searchingUsers && userSearchResults.length === 0 && (
+                    <p className="text-sm text-secondary">No users found</p>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowUserSearch(false);
+                      setUserSearch("");
+                      setUserSearchResults([]);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-border-subtle pt-6">
           <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
           
           <div className="space-y-4">

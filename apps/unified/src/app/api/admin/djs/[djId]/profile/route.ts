@@ -141,23 +141,41 @@ export async function PATCH(
     const normalizedSpotify = normalizeSpotifyUrl(body.spotify_url);
     const normalizedYoutube = normalizeYoutubeUrl(body.youtube_url);
 
+    // Get current DJ to check if user_id is changing
+    const { data: currentDj } = await serviceSupabase
+      .from("djs")
+      .select("user_id")
+      .eq("id", djId)
+      .single();
+
+    const oldUserId = currentDj?.user_id;
+    const newUserId = body.user_id !== undefined ? body.user_id : oldUserId;
+
+    // Build update object
+    const updateData: Record<string, any> = {
+      name: body.name,
+      handle: body.handle,
+      bio: body.bio,
+      location: body.location,
+      genres: body.genres,
+      instagram_url: normalizedInstagram,
+      soundcloud_url: body.soundcloud_url,
+      mixcloud_url: normalizedMixcloud,
+      spotify_url: normalizedSpotify,
+      youtube_url: normalizedYoutube,
+      website_url: normalizedWebsite,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only include user_id if it was explicitly provided
+    if (body.user_id !== undefined) {
+      updateData.user_id = body.user_id || null; // Allow unsetting with empty string
+    }
+
     // Update DJ profile
     const { data: dj, error } = await serviceSupabase
       .from("djs")
-      .update({
-        name: body.name,
-        handle: body.handle,
-        bio: body.bio,
-        location: body.location,
-        genres: body.genres,
-        instagram_url: normalizedInstagram,
-        soundcloud_url: body.soundcloud_url,
-        mixcloud_url: normalizedMixcloud,
-        spotify_url: normalizedSpotify,
-        youtube_url: normalizedYoutube,
-        website_url: normalizedWebsite,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", djId)
       .select()
       .single();
@@ -168,6 +186,44 @@ export async function PATCH(
         { error: error.message || "Failed to update DJ profile" },
         { status: 400 }
       );
+    }
+
+    // Handle DJ role assignment
+    if (body.user_id !== undefined && newUserId !== oldUserId) {
+      // Remove DJ role from old user if they had one and no longer have any DJ profiles
+      if (oldUserId) {
+        const { data: otherDjProfiles } = await serviceSupabase
+          .from("djs")
+          .select("id")
+          .eq("user_id", oldUserId)
+          .neq("id", djId);
+        
+        if (!otherDjProfiles || otherDjProfiles.length === 0) {
+          // Remove DJ role from old user
+          await serviceSupabase
+            .from("user_roles")
+            .delete()
+            .eq("user_id", oldUserId)
+            .eq("role", "dj");
+        }
+      }
+
+      // Add DJ role to new user if assigned
+      if (newUserId) {
+        // Check if user already has DJ role
+        const { data: existingRole } = await serviceSupabase
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", newUserId)
+          .eq("role", "dj")
+          .single();
+
+        if (!existingRole) {
+          await serviceSupabase
+            .from("user_roles")
+            .insert({ user_id: newUserId, role: "dj" });
+        }
+      }
     }
 
     return NextResponse.json({ dj });

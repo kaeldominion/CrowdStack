@@ -258,7 +258,7 @@ function PublicNavigationWithAuth() {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
+  const [djProfiles, setDjProfiles] = useState<Array<{ id: string; name: string; handle: string; profile_image_url: string | null }>>([]);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -336,27 +336,27 @@ function PublicNavigationWithAuth() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Check if user has DJ profile
+  // Fetch user's DJ profiles
   useEffect(() => {
-    const checkDJProfile = async () => {
+    const fetchDJProfiles = async () => {
       if (!user?.id) {
-        setHasDJProfile(false);
+        setDjProfiles([]);
         return;
       }
       try {
-        const response = await fetch("/api/dj/profile/check");
+        const response = await fetch("/api/dj/profiles");
         if (response.ok) {
           const data = await response.json();
-          setHasDJProfile(data.hasProfile === true);
+          setDjProfiles(data.profiles || []);
         } else {
-          setHasDJProfile(false);
+          setDjProfiles([]);
         }
       } catch (error) {
-        console.error("Error checking DJ profile:", error);
-        setHasDJProfile(false);
+        console.error("Error fetching DJ profiles:", error);
+        setDjProfiles([]);
       }
     };
-    checkDJProfile();
+    fetchDJProfiles();
   }, [user?.id]);
 
   const handleLogout = async () => {
@@ -392,10 +392,15 @@ function PublicNavigationWithAuth() {
     { href: "/me/profile", label: "Profile", icon: Settings }
   );
 
-  // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
-  if (hasDJProfile !== true) {
-    profileItems.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+  // Add DJ profiles to menu
+  if (djProfiles.length > 0) {
+    djProfiles.forEach(dj => {
+      profileItems.push({ href: `/dj/${dj.handle}`, label: `DJ: ${dj.name}`, icon: Radio });
+    });
   }
+  
+  // Always show "Create DJ Profile" option (users can have multiple)
+  profileItems.push({ href: "/dj/create", label: djProfiles.length > 0 ? "Add DJ Profile" : "Create DJ Profile", icon: Radio });
 
   // Show loading state (simple "Log in" link while checking)
   if (loading) {
@@ -484,7 +489,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
   const [user, setUser] = useState<{ id: string; email: string; name?: string } | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
+  const [djProfiles, setDjProfiles] = useState<Array<{ id: string; name: string; handle: string; profile_image_url: string | null }>>([]);
 
   useEffect(() => {
     // Shared user loading logic
@@ -551,27 +556,27 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
-  // Check if user has DJ profile
+  // Fetch user's DJ profiles
   useEffect(() => {
-    const checkDJProfile = async () => {
+    const fetchDJProfiles = async () => {
       if (!user?.id) {
-        setHasDJProfile(false);
+        setDjProfiles([]);
         return;
       }
       try {
-        const response = await fetch("/api/dj/profile/check");
+        const response = await fetch("/api/dj/profiles");
         if (response.ok) {
           const data = await response.json();
-          setHasDJProfile(data.hasProfile === true);
+          setDjProfiles(data.profiles || []);
         } else {
-          setHasDJProfile(false);
+          setDjProfiles([]);
         }
       } catch (error) {
-        console.error("Error checking DJ profile:", error);
-        setHasDJProfile(false);
+        console.error("Error fetching DJ profiles:", error);
+        setDjProfiles([]);
       }
     };
-    checkDJProfile();
+    fetchDJProfiles();
   }, [user?.id]);
 
   const handleLogout = async () => {
@@ -601,10 +606,15 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     { href: "/me/profile", label: "Profile", icon: Settings }
   );
 
-  // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
-  if (hasDJProfile !== true) {
-    profileItems.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+  // Add DJ profiles to menu
+  if (djProfiles.length > 0) {
+    djProfiles.forEach(dj => {
+      profileItems.push({ href: `/dj/${dj.handle}`, label: `DJ: ${dj.name}`, icon: Radio });
+    });
   }
+  
+  // Always show "Create DJ Profile" option (users can have multiple)
+  profileItems.push({ href: "/dj/create", label: djProfiles.length > 0 ? "Add DJ Profile" : "Create DJ Profile", icon: Radio });
 
   if (loading) {
     return (
