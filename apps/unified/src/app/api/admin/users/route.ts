@@ -22,22 +22,25 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get all auth users
-    const { data: authUsersData, error: authError } = await serviceSupabase.auth.admin.listUsers();
+    // Get all auth users - fetch with a larger page size to get more users
+    const { data: authUsersData, error: authError } = await serviceSupabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
 
     if (authError) {
+      console.error("[Admin Users] Error listing users:", authError);
       throw authError;
     }
+
+    console.log("[Admin Users] Total users fetched:", authUsersData?.users?.length || 0);
 
     // Filter by search query if provided
     let authUsers = authUsersData?.users || [];
     if (searchQuery && searchQuery.trim().length > 0) {
       const searchLower = searchQuery.toLowerCase();
       authUsers = authUsers.filter((u) => u.email?.toLowerCase().includes(searchLower));
-    }
-
-    if (authError) {
-      throw authError;
+      console.log("[Admin Users] After filtering for:", searchQuery, "Found:", authUsers.length);
     }
 
     // Get roles and profile for each user
