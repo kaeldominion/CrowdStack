@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Modal, Button, Input, Textarea } from "@crowdstack/ui";
 import { Radio, Loader2, X } from "lucide-react";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
+import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 
 interface CreateDJModalProps {
   isOpen: boolean;
@@ -271,16 +272,14 @@ export function CreateDJModal({ isOpen, onClose, onSuccess }: CreateDJModalProps
         </div>
 
         {/* Location */}
-        <div>
-          <label className="block text-sm font-medium text-primary mb-2">Location</label>
-          <Input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="City, Country"
-            disabled={loading}
-          />
-        </div>
+        <LocationAutocomplete
+          value={location}
+          onChange={setLocation}
+          label="Location"
+          placeholder="Start typing a city..."
+          helperText="Search for a city"
+          disabled={loading}
+        />
 
         {/* Genres */}
         <div>

@@ -8,6 +8,7 @@ import { Save, Loader2, ArrowLeft, Upload, X, Search, UserPlus, UserMinus } from
 import Image from "next/image";
 import type { DJ } from "@crowdstack/shared/types";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
+import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 
 interface UserOption {
   id: string;
@@ -436,14 +437,13 @@ export default function AdminDJProfileEditPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">Location</label>
-              <Input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="City, Country"
-              />
-            </div>
+            <LocationAutocomplete
+              value={location}
+              onChange={setLocation}
+              label="Location"
+              placeholder="Start typing a city..."
+              helperText="Search for a city"
+            />
 
             <div>
               <label className="block text-sm font-medium text-primary mb-2">Genres</label>

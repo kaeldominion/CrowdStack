@@ -6,6 +6,7 @@ import { Card, Button, Input, Textarea } from "@crowdstack/ui";
 import { Radio, Upload, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
+import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 
 export default function CreateDJProfilePage() {
   const router = useRouter();
@@ -225,14 +226,13 @@ export default function CreateDJProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">Location</label>
-                <Input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City, Country"
-                />
-              </div>
+              <LocationAutocomplete
+                value={location}
+                onChange={setLocation}
+                label="Location"
+                placeholder="Start typing your city..."
+                helperText="Search for your city"
+              />
 
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">Genres</label>
