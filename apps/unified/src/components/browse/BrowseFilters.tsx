@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Select } from "@crowdstack/ui";
 import { X, Filter, ChevronDown } from "lucide-react";
 import { Badge } from "@crowdstack/ui";
+import { GENRES } from "@/lib/constants/genres";
 
 export interface BrowseFilters {
   search?: string;
@@ -18,40 +19,10 @@ interface BrowseFiltersProps {
 }
 
 export function BrowseFilters({ filters, onChange, variant = "sidebar" }: BrowseFiltersProps) {
-  const [genres, setGenres] = useState<{ value: string; label: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use shared genre constants instead of fetching
+  const genres = GENRES.map((genre) => ({ value: genre, label: genre }));
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Fetch filter options
-  useEffect(() => {
-    async function fetchFilterOptions() {
-      try {
-        // Fetch venues to extract genres
-        const venuesRes = await fetch("/api/browse/venues?limit=1000");
-        const venuesData = await venuesRes.json();
-
-        // Extract unique genres from venue tags
-        const allTags = venuesData.venues?.flatMap((v: any) => 
-          v.tags?.filter((t: any) => t.tag_type === "music") || []
-        ) || [];
-        
-        const uniqueGenres = Array.from(
-          new Set(allTags.map((t: any) => t.tag_value))
-        ).sort() as string[];
-
-        setGenres(
-          uniqueGenres.map((genre) => ({ value: genre, label: genre }))
-        );
-      } catch (error) {
-        console.error("Error fetching filter options:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchFilterOptions();
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -136,7 +107,6 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
                   { value: "", label: "All Genres" },
                   ...genres,
                 ]}
-                disabled={loading}
               />
 
               {hasActiveFilters && (
@@ -179,7 +149,6 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
             { value: "", label: "All Genres" },
             ...genres,
           ]}
-          disabled={loading}
         />
       </div>
 

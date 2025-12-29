@@ -7,6 +7,7 @@ import { Radio, Upload, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
 import { LocationAutocomplete } from "@/components/LocationAutocomplete";
+import { GenreSelector } from "@/components/GenreSelector";
 
 export default function CreateDJProfilePage() {
   const router = useRouter();
@@ -20,7 +21,6 @@ export default function CreateDJProfilePage() {
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [genres, setGenres] = useState<string[]>([]);
-  const [genreInput, setGenreInput] = useState("");
   
   // Social links
   const [instagram_url, setInstagram_url] = useState("");
@@ -50,17 +50,6 @@ export default function CreateDJProfilePage() {
     checkExistingProfile();
   }, [router]);
 
-  const addGenre = () => {
-    const trimmed = genreInput.trim();
-    if (trimmed && !genres.includes(trimmed)) {
-      setGenres([...genres, trimmed]);
-      setGenreInput("");
-    }
-  };
-
-  const removeGenre = (genreToRemove: string) => {
-    setGenres(genres.filter((g) => g !== genreToRemove));
-  };
 
   const validateStep = (stepNum: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -234,43 +223,14 @@ export default function CreateDJProfilePage() {
                 helperText="Search for your city"
               />
 
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">Genres</label>
-                <div className="flex gap-2 mb-2">
-                  <Input
-                    value={genreInput}
-                    onChange={(e) => setGenreInput(e.target.value)}
-                    placeholder="Add a genre (e.g., House, Techno)"
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addGenre();
-                      }
-                    }}
-                  />
-                  <Button onClick={addGenre} variant="secondary">
-                    Add
-                  </Button>
-                </div>
-                {genres.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {genres.map((genre) => (
-                      <span
-                        key={genre}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-glass border border-border-subtle rounded-full text-sm"
-                      >
-                        {genre}
-                        <button
-                          onClick={() => removeGenre(genre)}
-                          className="text-secondary hover:text-primary"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <GenreSelector
+                value={genres}
+                onChange={setGenres}
+                label="Genres"
+                placeholder="Select your genres..."
+                helperText="Choose the genres you play"
+                maxSelections={5}
+              />
 
               <div className="flex justify-end">
                 <Button onClick={handleNext} disabled={!name.trim()}>

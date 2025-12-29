@@ -5,6 +5,7 @@ import { Modal, Button, Input, Textarea } from "@crowdstack/ui";
 import { Radio, Loader2, X } from "lucide-react";
 import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, normalizeSpotifyUrl, normalizeYoutubeUrl } from "@/lib/utils/url-normalization";
 import { LocationAutocomplete } from "@/components/LocationAutocomplete";
+import { GenreSelector } from "@/components/GenreSelector";
 
 interface CreateDJModalProps {
   isOpen: boolean;
@@ -26,7 +27,6 @@ export function CreateDJModal({ isOpen, onClose, onSuccess }: CreateDJModalProps
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [genres, setGenres] = useState<string[]>([]);
-  const [genreInput, setGenreInput] = useState("");
   const [instagram_url, setInstagram_url] = useState("");
   const [soundcloud_url, setSoundcloud_url] = useState("");
   const [mixcloud_url, setMixcloud_url] = useState("");
@@ -42,7 +42,6 @@ export function CreateDJModal({ isOpen, onClose, onSuccess }: CreateDJModalProps
       setBio("");
       setLocation("");
       setGenres([]);
-      setGenreInput("");
       setInstagram_url("");
       setSoundcloud_url("");
       setMixcloud_url("");
@@ -84,17 +83,6 @@ export function CreateDJModal({ isOpen, onClose, onSuccess }: CreateDJModalProps
     return () => clearTimeout(timeoutId);
   }, [userSearchQuery]);
 
-  const addGenre = () => {
-    const trimmed = genreInput.trim();
-    if (trimmed && !genres.includes(trimmed)) {
-      setGenres([...genres, trimmed]);
-      setGenreInput("");
-    }
-  };
-
-  const removeGenre = (genreToRemove: string) => {
-    setGenres(genres.filter((g) => g !== genreToRemove));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,46 +270,15 @@ export function CreateDJModal({ isOpen, onClose, onSuccess }: CreateDJModalProps
         />
 
         {/* Genres */}
-        <div>
-          <label className="block text-sm font-medium text-primary mb-2">Genres</label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              value={genreInput}
-              onChange={(e) => setGenreInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addGenre();
-                }
-              }}
-              placeholder="Add genre..."
-              disabled={loading}
-            />
-            <Button type="button" onClick={addGenre} disabled={loading}>
-              Add
-            </Button>
-          </div>
-          {genres.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {genres.map((genre) => (
-                <span
-                  key={genre}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-active rounded text-sm"
-                >
-                  {genre}
-                  <button
-                    type="button"
-                    onClick={() => removeGenre(genre)}
-                    className="hover:text-accent-error"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        <GenreSelector
+          value={genres}
+          onChange={setGenres}
+          label="Genres"
+          placeholder="Select genres..."
+          helperText="Choose genres this DJ plays"
+          maxSelections={5}
+          disabled={loading}
+        />
 
         {/* Social Links */}
         <div className="grid grid-cols-2 gap-4">
