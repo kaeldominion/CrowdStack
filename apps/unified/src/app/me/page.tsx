@@ -504,9 +504,6 @@ export default function MePage() {
                       profile_image_url: dj.profile_image_url,
                     }}
                     layout="row"
-                    showGenres={true}
-                    showLocation={true}
-                    maxGenres={2}
                   />
                 ))
               ) : (
@@ -735,7 +732,7 @@ export default function MePage() {
               <section>
                 <h2 className="section-header">Followed DJs</h2>
                 {followedDJs.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
                     {followedDJs.map((dj) => (
                       <DJCard
                         key={dj.id}
@@ -748,9 +745,6 @@ export default function MePage() {
                           profile_image_url: dj.profile_image_url,
                         }}
                         layout="row"
-                        showGenres={true}
-                        showLocation={true}
-                        maxGenres={3}
                       />
                     ))}
                   </div>
