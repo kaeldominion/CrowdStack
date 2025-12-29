@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRole } from "@crowdstack/shared/auth/roles";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const searchQuery = searchParams.get("search");
   try {
     const supabase = await createClient();
     const {
@@ -21,7 +23,18 @@ export async function GET() {
     const serviceSupabase = createServiceRoleClient();
 
     // Get all auth users
-    const { data: authUsers, error: authError } = await serviceSupabase.auth.admin.listUsers();
+    const { data: authUsersData, error: authError } = await serviceSupabase.auth.admin.listUsers();
+
+    if (authError) {
+      throw authError;
+    }
+
+    // Filter by search query if provided
+    let authUsers = authUsersData?.users || [];
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const searchLower = searchQuery.toLowerCase();
+      authUsers = authUsers.filter((u) => u.email?.toLowerCase().includes(searchLower));
+    }
 
     if (authError) {
       throw authError;
@@ -29,7 +42,7 @@ export async function GET() {
 
     // Get roles and profile for each user
     const usersWithRoles = await Promise.all(
-      (authUsers?.users || []).map(async (authUser) => {
+      authUsers.map(async (authUser) => {
         // Get roles
         const { data: roles } = await serviceSupabase
           .from("user_roles")

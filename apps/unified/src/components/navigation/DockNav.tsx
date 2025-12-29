@@ -21,6 +21,7 @@ import {
   Layers,
   Building2,
   Mic2,
+  Radio,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -85,6 +86,7 @@ export function DockNav() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isModeOpen, setIsModeOpen] = useState(false);
   const [user, setUser] = useState<{ name?: string; email?: string; avatar_url?: string } | null>(null);
+  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -151,6 +153,29 @@ export function DockNav() {
 
     return () => subscription.unsubscribe();
   }, [supabase]);
+
+  // Check if user has DJ profile
+  useEffect(() => {
+    const checkDJProfile = async () => {
+      if (!user?.email) {
+        setHasDJProfile(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/dj/profile/check");
+        if (response.ok) {
+          const data = await response.json();
+          setHasDJProfile(data.hasProfile === true);
+        } else {
+          setHasDJProfile(false);
+        }
+      } catch (error) {
+        console.error("Error checking DJ profile:", error);
+        setHasDJProfile(false);
+      }
+    };
+    checkDJProfile();
+  }, [user?.email]);
 
   // Build nav items based on roles (for /app routes)
   const getAuthNavItems = (): NavItem[] => {
@@ -254,6 +279,11 @@ export function DockNav() {
     { href: "/me/settings", label: "Settings", icon: Settings },
     { href: "/me/billing", label: "Billing", icon: CreditCard },
   ];
+
+  // Add "Create DJ Profile" if user doesn't have one
+  if (hasDJProfile !== true) {
+    profileMenuItems.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+  }
 
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4 font-sans">

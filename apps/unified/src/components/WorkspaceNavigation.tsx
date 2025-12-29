@@ -19,6 +19,7 @@ import {
   Building2,
   Users,
   Megaphone,
+  Radio,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -46,6 +47,7 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
   const [user, setUser] = useState<{ name?: string; avatar_url?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [envBadge, setEnvBadge] = useState<{ label: string; color: string } | null>(null);
+  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const supabase = createBrowserClient();
 
@@ -96,6 +98,29 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
   useEffect(() => {
     loadUser();
   }, []);
+
+  // Check if user has DJ profile
+  useEffect(() => {
+    const checkDJProfile = async () => {
+      if (!userId) {
+        setHasDJProfile(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/dj/profile/check");
+        if (response.ok) {
+          const data = await response.json();
+          setHasDJProfile(data.hasProfile === true);
+        } else {
+          setHasDJProfile(false);
+        }
+      } catch (error) {
+        console.error("Error checking DJ profile:", error);
+        setHasDJProfile(false);
+      }
+    };
+    checkDJProfile();
+  }, [userId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -151,12 +176,24 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
     return "U";
   };
 
-  const profileItems = [
-    { href: "/me", label: "Me", icon: Calendar },
-    { href: "/me/profile", label: "Profile", icon: User },
-    { href: "/me/settings", label: "Settings", icon: Settings },
-    { href: "/me/billing", label: "Billing", icon: CreditCard },
-  ];
+  // Build profile items
+  const getProfileItems = () => {
+    const items = [
+      { href: "/me", label: "Me", icon: Calendar },
+      { href: "/me/profile", label: "Profile", icon: User },
+      { href: "/me/settings", label: "Settings", icon: Settings },
+      { href: "/me/billing", label: "Billing", icon: CreditCard },
+    ];
+
+    // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
+    if (hasDJProfile !== true) {
+      items.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+    }
+
+    return items;
+  };
+
+  const profileItems = getProfileItems();
 
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-fit max-w-[95vw] mx-auto">

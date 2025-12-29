@@ -27,7 +27,8 @@ export type UserRole =
   | "event_organizer"
   | "promoter"
   | "door_staff"
-  | "attendee";
+  | "attendee"
+  | "dj";
 
 // ============================================
 // Database Table Types
@@ -209,6 +210,92 @@ export interface Promoter {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface DJ {
+  id: string;
+  user_id: string | null;
+  handle: string;
+  name: string;
+  bio: string | null;
+  genres: string[];
+  location: string | null;
+  profile_image_url: string | null;
+  cover_image_url: string | null;
+  instagram_url: string | null;
+  soundcloud_url: string | null;
+  mixcloud_url: string | null;
+  spotify_url: string | null;
+  youtube_url: string | null;
+  website_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DJGallery {
+  id: string;
+  dj_id: string;
+  storage_path: string;
+  thumbnail_path: string | null;
+  caption: string | null;
+  is_hero: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface DJVideo {
+  id: string;
+  dj_id: string;
+  youtube_url: string;
+  title: string | null;
+  description: string | null;
+  thumbnail_url: string | null;
+  is_featured: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type MixStatus = "draft" | "published";
+
+export interface Mix {
+  id: string;
+  dj_id: string;
+  title: string;
+  description: string | null;
+  cover_image_url: string | null;
+  soundcloud_url: string;
+  soundcloud_embed_url: string | null;
+  status: MixStatus;
+  is_featured: boolean;
+  display_order: number;
+  plays_count: number;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DJFollow {
+  id: string;
+  user_id: string;
+  dj_id: string;
+  created_at: string;
+}
+
+export interface EventLineup {
+  id: string;
+  event_id: string;
+  dj_id: string;
+  display_order: number;
+  set_time: string | null;
+  created_at: string;
+}
+
+export interface MixPlay {
+  id: string;
+  mix_id: string;
+  user_id: string | null;
+  played_at: string;
 }
 
 export interface Attendee {

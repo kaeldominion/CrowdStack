@@ -75,6 +75,7 @@ import { PhotoUploader } from "@/components/PhotoUploader";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { EmailStats } from "@/components/EmailStats";
 import { EventImageUpload } from "@/components/EventImageUpload";
+import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
@@ -1186,6 +1187,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   }
   if (config.canViewSettings) {
     tabs.push({ value: "settings", label: "Settings" });
+  }
+  // Lineup tab - show for organizers, venues, and admins who can edit
+  if (config.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
+    tabs.push({ value: "lineup", label: "Lineup" });
   }
 
   return (
@@ -2669,6 +2674,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
           </TabsContent>
 
+          {(config.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") && (
+            <TabsContent value="lineup" className="space-y-4">
+              <EventLineupManagement eventId={eventId} />
+            </TabsContent>
+          )}
           {config.canViewSettings && (
             <TabsContent value="settings" className="space-y-4">
               <Card>

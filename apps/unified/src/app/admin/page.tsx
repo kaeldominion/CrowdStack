@@ -91,6 +91,12 @@ export default function AdminDashboardPage() {
       icon: <Users className="h-6 w-6" />,
     },
     {
+      name: "DJs",
+      href: "/admin/djs",
+      description: "View and manage DJ profiles",
+      icon: <Radio className="h-6 w-6" />,
+    },
+    {
       name: "Users",
       href: "/admin/users",
       description: "Manage users and roles",

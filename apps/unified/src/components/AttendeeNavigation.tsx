@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Bell,
   QrCode,
+  Radio,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 
@@ -30,11 +31,35 @@ export function AttendeeNavigation() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadUser();
   }, []);
+
+  // Check if user has DJ profile
+  useEffect(() => {
+    const checkDJProfile = async () => {
+      if (!user?.id) {
+        setHasDJProfile(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/dj/profile/check");
+        if (response.ok) {
+          const data = await response.json();
+          setHasDJProfile(data.hasProfile === true);
+        } else {
+          setHasDJProfile(false);
+        }
+      } catch (error) {
+        console.error("Error checking DJ profile:", error);
+        setHasDJProfile(false);
+      }
+    };
+    checkDJProfile();
+  }, [user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,10 +105,21 @@ export function AttendeeNavigation() {
 
   const navItems: Array<{ href: string; label: string; icon: any }> = [];
 
-  const profileItems = [
-    { href: "/me/profile", label: "Edit Profile", icon: User },
-    { href: "/me/settings", label: "Settings", icon: Settings },
-  ];
+  const getProfileItems = () => {
+    const items = [
+      { href: "/me/profile", label: "Edit Profile", icon: User },
+      { href: "/me/settings", label: "Settings", icon: Settings },
+    ];
+
+    // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
+    if (hasDJProfile !== true) {
+      items.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+    }
+
+    return items;
+  };
+
+  const profileItems = getProfileItems();
 
   const getUserInitial = () => {
     if (user?.name) return user.name[0].toUpperCase();

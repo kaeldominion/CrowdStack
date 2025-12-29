@@ -110,20 +110,27 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [pendingPromoterRequests, setPendingPromoterRequests] = useState(0);
+  const [djStats, setDJStats] = useState({
+    mixesCount: 0,
+    totalPlays: 0,
+    followerCount: 0,
+    upcomingEventsCount: 0,
+  });
 
   const isVenue = userRoles.includes("venue_admin");
   const isOrganizer = userRoles.includes("event_organizer");
   const isPromoter = userRoles.includes("promoter");
+  const isDJ = userRoles.includes("dj");
   const isSuperadmin = userRoles.includes("superadmin");
 
-  useEffect(() => {
+    useEffect(() => {
     loadAllStats();
     loadLiveEvents();
 
     // Refresh live events every 30 seconds
     const interval = setInterval(loadLiveEvents, 30000);
     return () => clearInterval(interval);
-  }, [userRoles, isPromoter, isVenue, isOrganizer]);
+  }, [userRoles, isPromoter, isVenue, isOrganizer, isDJ]);
 
   const loadLiveEvents = async () => {
     try {
@@ -227,6 +234,17 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             });
           })
           .catch((e) => console.error("Failed to load promoter events:", e))
+      );
+    }
+
+    if (isDJ) {
+      promises.push(
+        fetch("/api/dj/dashboard-stats")
+          .then((r) => r.json())
+          .then((data) => {
+            setDJStats(data.stats || djStats);
+          })
+          .catch((e) => console.error("Failed to load DJ stats:", e))
       );
     }
 
@@ -1142,6 +1160,114 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </div>
             </BentoCard>
           )}
+        </section>
+      )}
+
+      {/* DJ Section */}
+      {isDJ && (
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Radio className="h-5 w-5" />
+              DJ Dashboard
+            </h2>
+            <div className="flex gap-2">
+              <Link href="/app/dj/mixes">
+                <Button variant="secondary" size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Mix
+                </Button>
+              </Link>
+              <Link href="/app/dj/profile">
+                <Button variant="secondary" size="sm">
+                  Edit Profile
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Published Mixes</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.mixesCount}</p>
+                </div>
+                <Radio className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Plays</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.totalPlays.toLocaleString()}</p>
+                </div>
+                <Eye className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Followers</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.followerCount}</p>
+                </div>
+                <Users className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Upcoming Events</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.upcomingEventsCount}</p>
+                </div>
+                <Calendar className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Link href="/app/dj/profile">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/10">
+                    <Users className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Edit Profile</p>
+                    <p className="text-xs text-white/60">Update your bio, links, and images</p>
+                  </div>
+                </div>
+              </BentoCard>
+            </Link>
+            <Link href="/app/dj/mixes">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/10">
+                    <Radio className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Manage Mixes</p>
+                    <p className="text-xs text-white/60">Add, edit, and feature your mixes</p>
+                  </div>
+                </div>
+              </BentoCard>
+            </Link>
+            <Link href="/app/dj/events">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/10">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Your Events</p>
+                    <p className="text-xs text-white/60">View upcoming and past events</p>
+                  </div>
+                </div>
+              </BentoCard>
+            </Link>
+          </div>
         </section>
       )}
 

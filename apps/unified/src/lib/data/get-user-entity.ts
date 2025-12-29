@@ -114,3 +114,27 @@ export async function getUserPromoterId(): Promise<string | null> {
   return promoterLegacy?.id || null;
 }
 
+/**
+ * Get the current user's DJ ID
+ * Returns the DJ profile linked to the user via user_id (one-to-one)
+ */
+export async function getUserDJId(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  // DJs are linked one-to-one via user_id
+  const { data: dj } = await supabase
+    .from("djs")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  return dj?.id || null;
+}
+

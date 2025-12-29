@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Footer, Logo } from "@crowdstack/ui";
 import Link from "next/link";
-import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutGrid } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutGrid, Radio } from "lucide-react";
 import { AttendeeNavigation } from "@/components/AttendeeNavigation";
 import { DockNav } from "@/components/navigation/DockNav";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -258,6 +258,7 @@ function PublicNavigationWithAuth() {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -335,6 +336,29 @@ function PublicNavigationWithAuth() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Check if user has DJ profile
+  useEffect(() => {
+    const checkDJProfile = async () => {
+      if (!user?.id) {
+        setHasDJProfile(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/dj/profile/check");
+        if (response.ok) {
+          const data = await response.json();
+          setHasDJProfile(data.hasProfile === true);
+        } else {
+          setHasDJProfile(false);
+        }
+      } catch (error) {
+        console.error("Error checking DJ profile:", error);
+        setHasDJProfile(false);
+      }
+    };
+    checkDJProfile();
+  }, [user?.id]);
+
   const handleLogout = async () => {
     const supabase = createBrowserClient();
     await supabase.auth.signOut();
@@ -367,6 +391,11 @@ function PublicNavigationWithAuth() {
     { href: "/me", label: "Me", icon: User },
     { href: "/me/profile", label: "Profile", icon: Settings }
   );
+
+  // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
+  if (hasDJProfile !== true) {
+    profileItems.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+  }
 
   // Show loading state (simple "Log in" link while checking)
   if (loading) {
@@ -455,6 +484,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
   const [user, setUser] = useState<{ id: string; email: string; name?: string } | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasDJProfile, setHasDJProfile] = useState<boolean | null>(null);
 
   useEffect(() => {
     // Shared user loading logic
@@ -521,6 +551,29 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
+  // Check if user has DJ profile
+  useEffect(() => {
+    const checkDJProfile = async () => {
+      if (!user?.id) {
+        setHasDJProfile(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/dj/profile/check");
+        if (response.ok) {
+          const data = await response.json();
+          setHasDJProfile(data.hasProfile === true);
+        } else {
+          setHasDJProfile(false);
+        }
+      } catch (error) {
+        console.error("Error checking DJ profile:", error);
+        setHasDJProfile(false);
+      }
+    };
+    checkDJProfile();
+  }, [user?.id]);
+
   const handleLogout = async () => {
     const supabase = createBrowserClient();
     await supabase.auth.signOut();
@@ -547,6 +600,11 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     { href: "/me", label: "Me", icon: User },
     { href: "/me/profile", label: "Profile", icon: Settings }
   );
+
+  // Add "Create DJ Profile" if user doesn't have one (show if not true, allowing null to show during initial load)
+  if (hasDJProfile !== true) {
+    profileItems.push({ href: "/dj/create", label: "Create DJ Profile", icon: Radio });
+  }
 
   if (loading) {
     return (

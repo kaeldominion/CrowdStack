@@ -22,6 +22,7 @@ import { VenueCard } from "@/components/venue/VenueCard";
 import { CalendarButtons } from "@/components/CalendarButtons";
 import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
 import { useReferralUserId } from "@/components/ReferralTracker";
+import { EventLineup } from "@/components/EventLineup";
 
 // Helper to construct Google Maps URL from address
 function getGoogleMapsUrl(venue: any): string | null {
@@ -374,6 +375,9 @@ export function EventPageContent({
               </p>
             </div>
           )}
+
+          {/* Event Lineup */}
+          <EventLineup eventId={event.id} />
           
           {/* Photo Gallery */}
           <PhotoGalleryPreview
@@ -561,6 +565,9 @@ export function EventPageContent({
                 </p>
               </div>
             )}
+
+            {/* Event Lineup */}
+            <EventLineup eventId={event.id} />
             
             {/* Photo Gallery */}
             <PhotoGalleryPreview

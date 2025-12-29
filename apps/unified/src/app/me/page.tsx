@@ -13,6 +13,8 @@ import {
   UserPlus,
   Users,
   X,
+  Radio,
+  ChevronRight,
 } from "lucide-react";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardRow } from "@/components/EventCardRow";
@@ -52,8 +54,8 @@ interface UserProfile {
 
 
 
-type TabId = "events" | "djs-venues" | "history";
-type MobileEventsTab = "upcoming" | "past" | "djs-venues";
+type TabId = "events" | "djs" | "venues" | "history";
+type MobileEventsTab = "upcoming" | "past" | "djs" | "venues";
 
 export default function MePage() {
   const router = useRouter();
@@ -63,6 +65,7 @@ export default function MePage() {
   const [upcomingEvents, setUpcomingEvents] = useState<Registration[]>([]);
   const [pastEvents, setPastEvents] = useState<Registration[]>([]);
   const [favoriteVenues, setFavoriteVenues] = useState<any[]>([]);
+  const [followedDJs, setFollowedDJs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileCta, setShowProfileCta] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("events");
@@ -190,12 +193,19 @@ export default function MePage() {
         setPastEvents(past);
         }
 
-        // Load favorite venues
+        // Load favorite venues and followed DJs
         try {
-          const favoritesResponse = await fetch("/api/me/favorite-venues");
+          const [favoritesResponse, followingResponse] = await Promise.all([
+            fetch("/api/me/favorite-venues"),
+            fetch("/api/me/following"),
+          ]);
           if (favoritesResponse.ok) {
             const favoritesData = await favoritesResponse.json();
             setFavoriteVenues(favoritesData.venues || []);
+          }
+          if (followingResponse.ok) {
+            const followingData = await followingResponse.json();
+            setFollowedDJs(followingData.djs || []);
           }
         } catch {}
       }
@@ -393,10 +403,16 @@ export default function MePage() {
               Past
             </button>
             <button 
-              onClick={() => setMobileEventsTab("djs-venues")}
-              className={`tab-label ${mobileEventsTab === "djs-venues" ? "tab-label-active" : "tab-label-inactive"}`}
+              onClick={() => setMobileEventsTab("djs")}
+              className={`tab-label ${mobileEventsTab === "djs" ? "tab-label-active" : "tab-label-inactive"}`}
             >
-              DJs & Venues
+              DJs
+            </button>
+            <button 
+              onClick={() => setMobileEventsTab("venues")}
+              className={`tab-label ${mobileEventsTab === "venues" ? "tab-label-active" : "tab-label-inactive"}`}
+            >
+              Venues
             </button>
           </nav>
 
@@ -473,55 +489,88 @@ export default function MePage() {
             </>
           )}
 
-          {/* DJs & Venues Tab */}
-          {mobileEventsTab === "djs-venues" && (
-            <div className="space-y-6">
-              {/* Favorite Venues */}
-              <section>
-                <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-3">
-                  Favorite Venues
-                </h3>
-                {favoriteVenues.length > 0 ? (
-                  <div className="space-y-3">
-                    {favoriteVenues.slice(0, 4).map((venue) => (
-                      <VenueCard
-                        key={venue.id}
-                        venue={{
-                          id: venue.id,
-                          name: venue.name,
-                          slug: venue.slug,
-                          logo_url: venue.logo_url,
-                          cover_image_url: venue.cover_image_url,
-                          city: venue.city,
-                          state: venue.state,
-                          tags: venue.tags,
-                        }}
-                        layout="landscape"
-                        showRating={false}
-                        showTags={false}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <Card className="!p-6 text-center !border-dashed">
-                    <Heart className="h-10 w-10 text-muted mx-auto mb-3" />
-                    <h3 className="font-sans text-base font-bold text-primary mb-1">No favorite venues</h3>
-                    <p className="text-sm text-secondary">Follow venues to see them here.</p>
-                  </Card>
-                )}
-              </section>
-
-              {/* Favorite DJs - Coming Soon */}
-              <section>
-                <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-3">
-                  Favorite DJs
-                </h3>
+          {/* DJs Tab */}
+          {mobileEventsTab === "djs" && (
+            <div className="space-y-3">
+              {followedDJs.length > 0 ? (
+                followedDJs.slice(0, 10).map((dj) => (
+                  <Link key={dj.id} href={`/dj/${dj.handle}`}>
+                    <Card className="p-4 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0">
+                          {dj.profile_image_url ? (
+                            <Image
+                              src={dj.profile_image_url}
+                              alt={dj.name}
+                              width={56}
+                              height={56}
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                              <span className="text-xl font-bold text-white">
+                                {dj.name?.[0]?.toUpperCase() || "?"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-primary truncate">{dj.name}</h3>
+                          {dj.location && (
+                            <p className="text-sm text-secondary truncate">{dj.location}</p>
+                          )}
+                          {dj.genres && dj.genres.length > 0 && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {dj.genres.slice(0, 2).map((genre: string) => (
+                                <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-secondary flex-shrink-0" />
+                      </div>
+                    </Card>
+                  </Link>
+                ))
+              ) : (
                 <Card className="!p-6 text-center !border-dashed">
-                  <Users className="h-10 w-10 text-muted mx-auto mb-3" />
-                  <h3 className="font-sans text-base font-bold text-primary mb-1">Coming Soon</h3>
-                  <p className="text-sm text-secondary">Follow your favorite DJs and get notified.</p>
+                  <Radio className="h-10 w-10 text-muted mx-auto mb-3" />
+                  <h3 className="font-sans text-base font-bold text-primary mb-1">No DJs followed yet</h3>
+                  <p className="text-sm text-secondary">Follow your favorite DJs to see them here.</p>
                 </Card>
-              </section>
+              )}
+            </div>
+          )}
+
+          {/* Venues Tab */}
+          {mobileEventsTab === "venues" && (
+            <div className="space-y-3">
+              {favoriteVenues.length > 0 ? (
+                favoriteVenues.slice(0, 10).map((venue) => (
+                  <VenueCard
+                    key={venue.id}
+                    venue={{
+                      id: venue.id,
+                      name: venue.name,
+                      slug: venue.slug,
+                      logo_url: venue.logo_url,
+                      cover_image_url: venue.cover_image_url,
+                      city: venue.city,
+                      state: venue.state,
+                      tags: venue.tags,
+                    }}
+                    layout="landscape"
+                    showRating={false}
+                    showTags={false}
+                  />
+                ))
+              ) : (
+                <Card className="!p-6 text-center !border-dashed">
+                  <Heart className="h-10 w-10 text-muted mx-auto mb-3" />
+                  <h3 className="font-sans text-base font-bold text-primary mb-1">No favorite venues</h3>
+                  <p className="text-sm text-secondary">Follow venues to see them here.</p>
+                </Card>
+              )}
             </div>
           )}
         </div>
@@ -618,10 +667,16 @@ export default function MePage() {
                 My Events
               </button>
               <button 
-                onClick={() => setActiveTab("djs-venues")}
-                className={`tab-label ${activeTab === "djs-venues" ? "tab-label-active" : "tab-label-inactive"}`}
+                onClick={() => setActiveTab("djs")}
+                className={`tab-label ${activeTab === "djs" ? "tab-label-active" : "tab-label-inactive"}`}
               >
-                DJs & Venues
+                DJs
+              </button>
+              <button 
+                onClick={() => setActiveTab("venues")}
+                className={`tab-label ${activeTab === "venues" ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                Venues
               </button>
               <button 
                 onClick={() => setActiveTab("history")}
@@ -698,52 +753,96 @@ export default function MePage() {
               </>
             )}
 
-            {/* DJs & VENUES Tab */}
-            {activeTab === "djs-venues" && (
-              <>
-                {/* Favorite Venues - Landscape cards */}
-                <section className="mb-8">
-                  <h2 className="section-header">Favorite Venues</h2>
-                  {favoriteVenues.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {favoriteVenues.map((venue) => (
-                        <VenueCard
-                          key={venue.id}
-                          venue={{
-                            id: venue.id,
-                            name: venue.name,
-                            slug: venue.slug,
-                            logo_url: venue.logo_url,
-                            cover_image_url: venue.cover_image_url,
-                            city: venue.city,
-                            state: venue.state,
-                            tags: venue.tags,
-                          }}
-                          layout="landscape"
-                          showTags={false}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <Card className="!p-8 text-center !border-dashed">
-                      <Heart className="h-12 w-12 text-muted mx-auto mb-4" />
-                      <h3 className="font-sans text-lg font-bold text-primary mb-2">No favorite venues yet</h3>
-                      <p className="text-sm text-secondary mb-4">Explore and save your favorite spots!</p>
-                      <Button href="/">Browse Venues</Button>
-                    </Card>
-                  )}
-                </section>
-
-                {/* DJs - Coming Soon */}
-                <section>
-                  <h2 className="section-header">Favorite DJs</h2>
+            {/* DJs Tab */}
+            {activeTab === "djs" && (
+              <section>
+                <h2 className="section-header">Followed DJs</h2>
+                {followedDJs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {followedDJs.map((dj) => (
+                      <Link key={dj.id} href={`/dj/${dj.handle}`}>
+                        <Card className="p-4 hover:bg-white/5 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="h-16 w-16 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0">
+                              {dj.profile_image_url ? (
+                                <Image
+                                  src={dj.profile_image_url}
+                                  alt={dj.name}
+                                  width={64}
+                                  height={64}
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <div className="h-full w-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                                  <span className="text-2xl font-bold text-white">
+                                    {dj.name?.[0]?.toUpperCase() || "?"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-primary truncate">{dj.name}</h3>
+                              {dj.location && (
+                                <p className="text-sm text-secondary truncate">{dj.location}</p>
+                              )}
+                              {dj.genres && dj.genres.length > 0 && (
+                                <div className="flex gap-1 mt-2 flex-wrap">
+                                  {dj.genres.slice(0, 3).map((genre: string) => (
+                                    <Badge key={genre} variant="secondary" className="text-xs">{genre}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-secondary flex-shrink-0" />
+                          </div>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
                   <Card className="!p-8 text-center !border-dashed">
-                    <Users className="h-12 w-12 text-muted mx-auto mb-4" />
-                    <h3 className="font-sans text-lg font-bold text-primary mb-2">Coming Soon</h3>
-                    <p className="text-sm text-secondary">Follow your favorite DJs and get notified when they perform.</p>
+                    <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
+                    <h3 className="font-sans text-lg font-bold text-primary mb-2">No DJs followed yet</h3>
+                    <p className="text-sm text-secondary mb-4">Follow your favorite DJs to see them here!</p>
+                    <Button href="/browse">Browse Events</Button>
                   </Card>
-                </section>
-              </>
+                )}
+              </section>
+            )}
+
+            {/* VENUES Tab */}
+            {activeTab === "venues" && (
+              <section>
+                <h2 className="section-header">Favorite Venues</h2>
+                {favoriteVenues.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {favoriteVenues.map((venue) => (
+                      <VenueCard
+                        key={venue.id}
+                        venue={{
+                          id: venue.id,
+                          name: venue.name,
+                          slug: venue.slug,
+                          logo_url: venue.logo_url,
+                          cover_image_url: venue.cover_image_url,
+                          city: venue.city,
+                          state: venue.state,
+                          tags: venue.tags,
+                        }}
+                        layout="landscape"
+                        showTags={false}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="!p-8 text-center !border-dashed">
+                    <Heart className="h-12 w-12 text-muted mx-auto mb-4" />
+                    <h3 className="font-sans text-lg font-bold text-primary mb-2">No favorite venues yet</h3>
+                    <p className="text-sm text-secondary mb-4">Explore and save your favorite spots!</p>
+                    <Button href="/">Browse Venues</Button>
+                  </Card>
+                )}
+              </section>
             )}
 
             {/* HISTORY Tab */}
