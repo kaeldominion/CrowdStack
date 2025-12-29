@@ -13,6 +13,7 @@ import {
   TrendingDown,
   Briefcase,
   Megaphone,
+  Radio,
 } from "lucide-react";
 import {
   LineChart,
@@ -42,6 +43,7 @@ interface AnalyticsData {
     totalVenues: number;
     totalOrganizers: number;
     totalPromoters: number;
+    totalDJs: number;
     registrationGrowth: number;
   };
   roleDistribution: { role: string; count: number }[];
@@ -51,6 +53,7 @@ interface AnalyticsData {
   topEvents: { id: string; name: string; slug: string; registrations: number }[];
   topPromoters: { id: string; name: string; referrals: number }[];
   topOrganizers: { id: string; name: string; eventCount: number }[];
+  topDJs: { id: string; name: string; handle: string; profileImageUrl: string | null; verified: boolean; eventCount: number }[];
   topReferrers: { userId: string; name: string; referrals: number }[];
   recentEvents: { id: string; name: string; status: string; createdAt: string }[];
 }
@@ -182,7 +185,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Secondary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <StatCard
             title="Venues"
             value={formatNumber(data.overview.totalVenues)}
@@ -202,6 +205,13 @@ export default function AnalyticsPage() {
             value={formatNumber(data.overview.totalPromoters)}
             icon={<Megaphone className="h-5 w-5" />}
             color="danger"
+            size="sm"
+          />
+          <StatCard
+            title="DJs"
+            value={formatNumber(data.overview.totalDJs)}
+            icon={<Radio className="h-5 w-5" />}
+            color="secondary"
             size="sm"
           />
           <StatCard
@@ -545,6 +555,56 @@ export default function AnalyticsPage() {
                     </div>
                     <span className="text-sm font-medium text-secondary">
                       {formatNumber(organizer.eventCount)} events
+                    </span>
+                  </Link>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Top DJs */}
+          <Card>
+            <h3 className="text-sm font-semibold text-primary mb-4">
+              Top DJs by Events
+            </h3>
+            <div className="space-y-1">
+              {data.topDJs && data.topDJs.length === 0 ? (
+                <p className="text-sm text-secondary">No DJs yet</p>
+              ) : (
+                (data.topDJs || []).map((dj, index) => (
+                  <Link
+                    key={dj.id}
+                    href={`/admin/djs/${dj.id}`}
+                    className="flex items-center justify-between py-2 px-2 -mx-2 rounded-md border-b border-border last:border-0 hover:bg-raised transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10 text-xs font-medium text-purple-500">
+                        {index + 1}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {dj.profileImageUrl ? (
+                          <img
+                            src={dj.profileImageUrl}
+                            alt={dj.name}
+                            className="w-5 h-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center">
+                            <Radio className="w-3 h-3 text-purple-500" />
+                          </div>
+                        )}
+                        <span className="text-sm text-primary truncate max-w-[120px] group-hover:text-purple-500 transition-colors">
+                          {dj.name}
+                        </span>
+                        {dj.verified && (
+                          <span className="text-[10px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded-full font-medium">
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-secondary">
+                      {formatNumber(dj.eventCount)} events
                     </span>
                   </Link>
                 ))

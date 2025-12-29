@@ -6,15 +6,11 @@ import Link from "next/link";
 import { Logo, cn } from "@crowdstack/ui";
 import { 
   Calendar, 
-  LayoutGrid, 
-  Users,
-  Megaphone,
-  CreditCard,
-  Settings,
   User,
   Shield,
   LogOut,
-  Sparkles,
+  CreditCard,
+  Settings,
   ChevronDown,
   MoreHorizontal,
   Compass,
@@ -60,15 +56,15 @@ const MODE_ITEMS: ModeItem[] = [
   { href: "/app/venue/events", label: "Venue", icon: Building2, role: "venue_admin" },
   { href: "/app/organizer/events", label: "Organizer", icon: Calendar, role: "event_organizer" },
   { href: "/app/promoter/events", label: "Promoter", icon: Mic2, role: "promoter" },
+  { href: "/app/dj", label: "DJ", icon: Radio, role: "dj" },
   { href: "/admin", label: "Admin", icon: Shield, role: "superadmin" },
 ];
 
-// Admin nav items
-const ADMIN_NAV_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutGrid, exact: true },
-  { href: "/admin/events", label: "Events", icon: Calendar },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/app", label: "App", icon: Sparkles },
+// Dashboard nav items - simplified for pill (details in sidebar)
+// All dashboard routes (admin, venue, organizer, promoter, dj) use ME | BROWSE | MODE
+const DASHBOARD_NAV_ITEMS: NavItem[] = [
+  { href: "/me", label: "Me", icon: User, exact: true },
+  { href: "/browse", label: "Browse", icon: Compass },
 ];
 
 export function DockNav() {
@@ -177,43 +173,27 @@ export function DockNav() {
     fetchDJProfiles();
   }, [user?.email]);
 
-  // Build nav items based on roles (for /app routes)
-  const getAuthNavItems = (): NavItem[] => {
-    const items: NavItem[] = [
-      { href: "/app", label: "Dashboard", icon: LayoutGrid, exact: true },
-    ];
 
-    if (userRoles.includes("venue_admin") || userRoles.includes("superadmin")) {
-      items.push({ href: "/app/venue/events", label: "Events", icon: Calendar });
-      items.push({ href: "/app/venue/attendees", label: "Attendees", icon: Users });
-      items.push({ href: "/app/venue/promoters", label: "Promoters", icon: Megaphone });
-    } else if (userRoles.includes("event_organizer")) {
-      items.push({ href: "/app/organizer/events", label: "Events", icon: Calendar });
-      items.push({ href: "/app/organizer/attendees", label: "Attendees", icon: Users });
-      items.push({ href: "/app/organizer/promoters", label: "Promoters", icon: Megaphone });
-    } else if (userRoles.includes("promoter")) {
-      items.push({ href: "/app/promoter/events", label: "Events", icon: Calendar });
-      items.push({ href: "/app/promoter/earnings", label: "Earnings", icon: CreditCard });
-    }
-
-    if (userRoles.includes("superadmin")) {
-      items.push({ href: "/admin", label: "Admin", icon: Shield });
-    }
-
-    return items;
-  };
-
-  // Get available mode items based on user roles
+  // Get available mode items based on user roles and DJ profiles
   const getAvailableModeItems = (): ModeItem[] => {
-    return MODE_ITEMS.filter(item => 
-      userRoles.includes(item.role) || userRoles.includes("superadmin")
-    );
+    return MODE_ITEMS.filter(item => {
+      // Superadmin can access all dashboards
+      if (userRoles.includes("superadmin")) return true;
+      // User has the required role
+      if (userRoles.includes(item.role)) return true;
+      // Special case: show DJ mode if user has DJ profiles (even if dj role not yet synced)
+      if (item.role === "dj" && djProfiles.length > 0) return true;
+      return false;
+    });
   };
 
   // Determine which nav items to show based on pathname
+  // Dashboard routes (/admin, /app) use simplified nav - details are in sidebar
   const getNavItems = (): NavItem[] => {
-    if (pathname?.startsWith("/admin")) return ADMIN_NAV_ITEMS;
-    if (pathname?.startsWith("/app")) return getAuthNavItems();
+    // Dashboard routes: show ME | BROWSE (Mode dropdown provides dashboard switching)
+    if (pathname?.startsWith("/admin") || pathname?.startsWith("/app")) {
+      return DASHBOARD_NAV_ITEMS;
+    }
     
     // For authenticated users: always show ME | BROWSE (no Home)
     if (isAuthenticated) {
@@ -230,9 +210,8 @@ export function DockNav() {
 
   const navItems = getNavItems();
   const availableModeItems = getAvailableModeItems();
-  const showModeDropdown = isAuthenticated && availableModeItems.length > 0 && 
-    (pathname?.startsWith("/me") || pathname?.startsWith("/browse") || 
-     (!pathname?.startsWith("/admin") && !pathname?.startsWith("/app")));
+  // Show MODE dropdown for authenticated users with dashboard roles on any route
+  const showModeDropdown = isAuthenticated && availableModeItems.length > 0;
   
   // Split items for mobile overflow (show 3 primary, rest in "More")
   const primaryItems = navItems.slice(0, 3);

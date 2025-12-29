@@ -44,6 +44,7 @@ export async function GET() {
       totalVenuesResult,
       totalOrganizersResult,
       totalPromotersResult,
+      totalDJsResult,
       roleDistributionResult,
       recentRegistrationsResult,
       eventsByStatusResult,
@@ -53,6 +54,7 @@ export async function GET() {
       recentEventsResult,
       topOrganizersResult,
       topReferrersResult,
+      topDJsResult,
     ] = await Promise.all([
       // Total auth users
       serviceClient.from("user_roles").select("user_id", { count: "exact", head: true }),
@@ -70,6 +72,8 @@ export async function GET() {
       serviceClient.from("organizers").select("*", { count: "exact", head: true }),
       // Total promoters
       serviceClient.from("promoters").select("*", { count: "exact", head: true }),
+      // Total DJs
+      serviceClient.from("dj_profiles").select("*", { count: "exact", head: true }),
       // Role distribution
       serviceClient.from("user_roles").select("role"),
       // Recent registrations (last 30 days, grouped by day)
@@ -139,6 +143,18 @@ export async function GET() {
           id
         `)
         .not("referred_by_user_id", "is", null),
+      // Top DJs by event appearances
+      serviceClient
+        .from("dj_profiles")
+        .select(`
+          id,
+          name,
+          handle,
+          profile_image_url,
+          verified,
+          event_djs:event_djs(count)
+        `)
+        .limit(10),
     ]);
 
     // Process role distribution
@@ -230,6 +246,19 @@ export async function GET() {
       .sort((a: any, b: any) => b.eventCount - a.eventCount)
       .slice(0, 5);
 
+    // Process top DJs
+    const topDJs = (topDJsResult.data || [])
+      .map((dj: any) => ({
+        id: dj.id,
+        name: dj.name,
+        handle: dj.handle,
+        profileImageUrl: dj.profile_image_url,
+        verified: dj.verified,
+        eventCount: dj.event_djs?.[0]?.count || 0,
+      }))
+      .sort((a: any, b: any) => b.eventCount - a.eventCount)
+      .slice(0, 5);
+
     // Process top referrers - aggregate by referred_by_user_id
     const referrerCounts: Record<string, number> = {};
     (topReferrersResult.data || []).forEach((reg: any) => {
@@ -300,6 +329,7 @@ export async function GET() {
         totalVenues: totalVenuesResult.count || 0,
         totalOrganizers: totalOrganizersResult.count || 0,
         totalPromoters: totalPromotersResult.count || 0,
+        totalDJs: totalDJsResult.count || 0,
         registrationGrowth,
       },
       roleDistribution: Object.entries(roleDistribution).map(([role, count]) => ({
@@ -315,6 +345,7 @@ export async function GET() {
       topEvents,
       topPromoters,
       topOrganizers,
+      topDJs,
       topReferrers,
       recentEvents: (recentEventsResult.data || []).map((event: any) => ({
         id: event.id,

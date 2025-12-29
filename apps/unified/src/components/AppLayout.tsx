@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared";
 import type { UserRole } from "@crowdstack/shared";
-// Legacy navigation removed - DockNav is now the primary navigation
-// import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import { DockNav } from "./navigation/DockNav";
+import { DashboardSidebar } from "./navigation/DashboardSidebar";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -50,14 +49,24 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
     }
   }, [roles, supabase]);
 
+  // Check if we're on a dashboard route that needs sidebar
+  const isDashboardRoute = currentPathname.startsWith("/app") || currentPathname.startsWith("/admin");
+
   return (
     <div className="min-h-screen bg-void font-sans">
       {/* AI Studio atmosphere layers */}
       <div className="atmosphere-gradient" aria-hidden="true" />
       <div className="atmosphere-noise" aria-hidden="true" />
       
-      {/* Page content - top padding for DockNav clearance */}
-      <main className="min-h-screen relative z-10 pt-24 pb-8 px-4 lg:px-8">
+      {/* Dashboard Sidebar - only shown on dashboard routes */}
+      {isDashboardRoute && <DashboardSidebar />}
+      
+      {/* Page content - top padding for DockNav clearance, left padding for sidebar */}
+      <main className={cn(
+        "min-h-screen relative z-10 pt-24 pb-8 px-4 lg:px-8",
+        "transition-all duration-300",
+        isDashboardRoute && "lg:pl-60" // Account for sidebar width (w-56 + some padding)
+      )}>
         <div className="mx-auto max-w-7xl">
           {children}
         </div>
