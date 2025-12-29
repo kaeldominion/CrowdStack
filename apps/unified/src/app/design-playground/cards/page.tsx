@@ -45,7 +45,7 @@ import { EventCard as VenueEventCard } from "@/components/venue/EventCard";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardCompact } from "@/components/EventCardCompact";
 import { EventCardRow } from "@/components/EventCardRow";
-import { MapPin, Calendar, Radio } from "lucide-react";
+import { MapPin, Calendar, Radio, ExternalLink, Eye } from "lucide-react";
 
 // ============================================
 // MOCK DATA
@@ -125,6 +125,30 @@ const MOCK_EVENT_PAST = {
 const MOCK_REGISTRATION = {
   id: "reg-1",
   checkins: [],
+};
+
+// External ticket event
+const MOCK_EVENT_EXTERNAL = {
+  ...MOCK_EVENT,
+  id: "event-external",
+  name: "External Ticket Event",
+  slug: "external-ticket-event",
+  registration_type: "external_link" as const,
+  external_ticket_url: "https://ra.co/events/example",
+  capacity: null, // No capacity tracking for external
+  registration_count: 0,
+};
+
+// Display only event
+const MOCK_EVENT_DISPLAY_ONLY = {
+  ...MOCK_EVENT,
+  id: "event-display",
+  name: "Display Only Event",
+  slug: "display-only-event",
+  registration_type: "display_only" as const,
+  external_ticket_url: null,
+  capacity: null,
+  registration_count: 0,
 };
 
 // DJ Mock Data
@@ -541,6 +565,42 @@ export default function DesignCardsPage() {
                   />
                 </div>
               </div>
+            </CardGrid>
+          </div>
+
+          {/* External Ticket Events */}
+          <div className="mb-8">
+            <CardLabel>External Ticket Events</CardLabel>
+            <p className="text-sm text-muted mb-4">
+              Events where tickets are sold externally (RA, Eventbrite, etc.).
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">registration_type=&quot;external_link&quot;</code> prop.
+            </p>
+            
+            <div className="space-y-3 max-w-3xl mb-6">
+              <EventCardRow event={MOCK_EVENT_EXTERNAL} />
+            </div>
+
+            <CardGrid columns={3}>
+              <AttendeeEventCard event={MOCK_EVENT_EXTERNAL} />
+              <EventCardCompact event={MOCK_EVENT_EXTERNAL} />
+            </CardGrid>
+          </div>
+
+          {/* Display Only Events */}
+          <div className="mb-8">
+            <CardLabel>Display Only Events</CardLabel>
+            <p className="text-sm text-muted mb-4">
+              Events shown for info only, no registration.
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">registration_type=&quot;display_only&quot;</code> prop.
+            </p>
+            
+            <div className="space-y-3 max-w-3xl mb-6">
+              <EventCardRow event={MOCK_EVENT_DISPLAY_ONLY} />
+            </div>
+
+            <CardGrid columns={3}>
+              <AttendeeEventCard event={MOCK_EVENT_DISPLAY_ONLY} />
+              <EventCardCompact event={MOCK_EVENT_DISPLAY_ONLY} />
             </CardGrid>
           </div>
 

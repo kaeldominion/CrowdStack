@@ -125,6 +125,15 @@ export function EventCardRow({
         </Badge>
       );
     }
+    // External ticket events - show "EXTERNAL" badge
+    if (event.registration_type === "external_link") {
+      return (
+        <Badge color="blue" variant="solid" size="sm" className="!text-[10px] !font-bold flex items-center gap-1">
+          <ExternalLink className="h-2.5 w-2.5" />
+          EXTERNAL
+        </Badge>
+      );
+    }
     if (isGuestlistClosed && !isAttending) {
       return (
         <Badge color="amber" variant="ghost" size="sm" className="!text-[10px]">
@@ -219,6 +228,17 @@ export function EventCardRow({
                   <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
                     Guestlist Closed
                   </span>
+                ) : event.registration_type === "external_link" ? (
+                  <a
+                    href={event.external_ticket_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1.5 bg-blue-500 text-white font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    Get Tickets
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
                 ) : (
                   <button
                     onClick={(e) => {

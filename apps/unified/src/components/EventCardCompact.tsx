@@ -167,8 +167,8 @@ export function EventCardCompact({
             </div>
           )}
           
-          {/* Registration count & spots left with progress bar */}
-          {capacity > 0 && (
+          {/* Registration count & spots left with progress bar - only for guestlist events */}
+          {event.registration_type !== "external_link" && event.registration_type !== "display_only" && capacity > 0 && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="text-secondary font-medium">
@@ -192,6 +192,22 @@ export function EventCardCompact({
             </div>
           )}
           
+          {/* External ticket indicator */}
+          {event.registration_type === "external_link" && (
+            <span className="flex items-center gap-1.5 text-xs text-blue-400">
+              <ExternalLink className="h-3 w-3" />
+              <span className="font-semibold">External Tickets</span>
+            </span>
+          )}
+          
+          {/* Display only indicator */}
+          {event.registration_type === "display_only" && (
+            <span className="flex items-center gap-1.5 text-xs text-muted">
+              <Eye className="h-3 w-3" />
+              <span>Info Only</span>
+            </span>
+          )}
+          
           {/* Action buttons */}
           <div className="flex items-center gap-2 mt-auto pt-2">
             {registration ? (
@@ -210,6 +226,22 @@ export function EventCardCompact({
             ) : isGuestlistClosed ? (
               <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
                 Guestlist Closed
+              </span>
+            ) : event.registration_type === "external_link" ? (
+              <a
+                href={event.external_ticket_url || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 bg-blue-500 text-white font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Get Tickets
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : event.registration_type === "display_only" ? (
+              <span className="flex items-center gap-1.5 bg-raised text-muted font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
+                <Eye className="h-3 w-3" />
+                Info Only
               </span>
             ) : (
               <button
