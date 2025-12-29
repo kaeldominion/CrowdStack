@@ -22,6 +22,43 @@ interface PlacePrediction {
   };
 }
 
+// Country name abbreviations
+const COUNTRY_ABBREVIATIONS: Record<string, string> = {
+  "United States": "USA",
+  "United States of America": "USA",
+  "United Kingdom": "UK",
+  "United Arab Emirates": "UAE",
+  "Republic of Korea": "South Korea",
+  "Democratic Republic of the Congo": "DR Congo",
+  "Central African Republic": "CAR",
+  "Papua New Guinea": "PNG",
+  "Dominican Republic": "Dom. Rep.",
+  "Czech Republic": "Czechia",
+  "Bosnia and Herzegovina": "Bosnia",
+  "Trinidad and Tobago": "Trinidad",
+  "Saint Vincent and the Grenadines": "St. Vincent",
+  "Antigua and Barbuda": "Antigua",
+  "Saint Kitts and Nevis": "St. Kitts",
+  "São Tomé and Príncipe": "São Tomé",
+  "Equatorial Guinea": "Eq. Guinea",
+  "New Zealand": "NZ",
+  "South Africa": "SA",
+  "Saudi Arabia": "KSA",
+  "Hong Kong SAR China": "Hong Kong",
+  "Macao SAR China": "Macau",
+};
+
+// Apply abbreviations to location string
+function abbreviateCountry(location: string): string {
+  let result = location;
+  for (const [full, abbr] of Object.entries(COUNTRY_ABBREVIATIONS)) {
+    // Replace at end of string or before comma
+    result = result.replace(new RegExp(`${full}$`, "i"), abbr);
+    result = result.replace(new RegExp(`${full},`, "gi"), `${abbr},`);
+  }
+  return result;
+}
+
 export function LocationAutocomplete({
   value,
   onChange,
@@ -89,9 +126,12 @@ export function LocationAutocomplete({
   // Handle selection
   const handleSelect = (prediction: PlacePrediction) => {
     // Format as "City, Country" or use description
-    const formattedLocation = prediction.structured_formatting
+    let formattedLocation = prediction.structured_formatting
       ? `${prediction.structured_formatting.main_text}, ${prediction.structured_formatting.secondary_text}`
       : prediction.description;
+    
+    // Apply country abbreviations
+    formattedLocation = abbreviateCountry(formattedLocation);
     
     setInputValue(formattedLocation);
     onChange(formattedLocation);
