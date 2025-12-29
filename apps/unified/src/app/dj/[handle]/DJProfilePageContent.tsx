@@ -810,54 +810,7 @@ export function DJProfilePageContent({
               {/* EVENTS Tab */}
               {activeTab === "events" && (
                 <div className="space-y-8">
-                  {/* Upcoming Events */}
-                  {upcomingEvents.length > 0 && (
-                <div>
-                  <h2 className="section-header">Upcoming Events</h2>
-                  <div className="space-y-3">
-                    {upcomingEvents.map((event) => (
-                      event.isLive ? (
-                        // Live event with glowing edges from design system
-                        <div key={event.id} className="relative">
-                          <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
-                          <div className="relative">
-                            <EventCardRow
-                              event={{
-                                id: event.id,
-                                name: event.name,
-                                slug: event.slug,
-                                start_time: event.start_time,
-                                end_time: event.end_time,
-                                flier_url: event.flier_url,
-                                venue: event.venues ? { name: event.venues.name, city: event.venues.city } : null,
-                              }}
-                              isLive
-                              isUpcoming={false}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        // Regular upcoming event
-                        <EventCardRow
-                          key={event.id}
-                          event={{
-                            id: event.id,
-                            name: event.name,
-                            slug: event.slug,
-                            start_time: event.start_time,
-                            end_time: event.end_time,
-                            flier_url: event.flier_url,
-                            venue: event.venues ? { name: event.venues.name, city: event.venues.city } : null,
-                          }}
-                          isUpcoming
-                        />
-                      )
-                    ))}
-                  </div>
-                </div>
-              )}
-
-                  {/* Featured Content Row - Mix + Video side by side on desktop */}
+                  {/* Featured Content Row - Mix + Video side by side on desktop (at top) */}
                   {(featuredMix || featuredVideo) && (
                     <div>
                       <h2 className="section-header">Featured</h2>
@@ -869,9 +822,6 @@ export function DJProfilePageContent({
                               soundcloudUrl={featuredMix.soundcloud_url} 
                               title={featuredMix.title}
                             />
-                            <div className="mt-2">
-                              <h3 className="font-semibold text-white text-sm truncate">{featuredMix.title}</h3>
-                            </div>
                           </div>
                         )}
 
@@ -897,12 +847,56 @@ export function DJProfilePageContent({
                                   )}
                                 </div>
                               </Card>
-                              {featuredVideo.title && (
-                                <h3 className="font-semibold text-white text-sm mt-2 truncate">{featuredVideo.title}</h3>
-                              )}
                             </div>
                           );
                         })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upcoming Events */}
+                  {upcomingEvents.length > 0 && (
+                    <div>
+                      <h2 className="section-header">Upcoming Events</h2>
+                      <div className="space-y-3">
+                        {upcomingEvents.map((event) => (
+                          event.isLive ? (
+                            // Live event with glowing edges from design system
+                            <div key={event.id} className="relative">
+                              <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
+                              <div className="relative">
+                                <EventCardRow
+                                  event={{
+                                    id: event.id,
+                                    name: event.name,
+                                    slug: event.slug,
+                                    start_time: event.start_time,
+                                    end_time: event.end_time,
+                                    flier_url: event.flier_url,
+                                    venue: event.venues ? { name: event.venues.name, city: event.venues.city } : null,
+                                  }}
+                                  isLive
+                                  isUpcoming={false}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            // Regular upcoming event
+                            <EventCardRow
+                              key={event.id}
+                              event={{
+                                id: event.id,
+                                name: event.name,
+                                slug: event.slug,
+                                start_time: event.start_time,
+                                end_time: event.end_time,
+                                flier_url: event.flier_url,
+                                venue: event.venues ? { name: event.venues.name, city: event.venues.city } : null,
+                              }}
+                              isUpcoming
+                            />
+                          )
+                        ))}
                       </div>
                     </div>
                   )}
