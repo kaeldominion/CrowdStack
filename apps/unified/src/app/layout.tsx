@@ -37,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className} antialiased`}>
+    <html lang="en" className="dark bg-void">
+      <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className} antialiased bg-void`}>
         <ToastProvider>
           <Suspense fallback={null}>
             <NavigationProgress />
