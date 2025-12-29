@@ -111,28 +111,18 @@ export default function BrowsePage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch available cities (from events + DJ profiles)
+  // Fetch available cities (from events only - DJs are global)
   useEffect(() => {
     async function fetchCities() {
       try {
-        // Fetch cities from events (venue cities) and DJs (locations) in parallel
-        const [eventsRes, djsRes] = await Promise.all([
-          fetch("/api/browse/events?limit=1000"),
-          fetch("/api/browse/djs?limit=1000")
-        ]);
-        
-        const eventsData = await eventsRes.json();
-        const djsData = await djsRes.json();
+        const res = await fetch("/api/browse/events?limit=1000");
+        const data = await res.json();
         
         // Get venue cities from events
-        const venueCities = eventsData.events?.map((e: any) => e.venue?.city).filter(Boolean) || [];
-        
-        // Get locations from DJs
-        const djLocations = djsData.djs?.map((dj: any) => dj.location).filter(Boolean) || [];
-        
-        // Combine and deduplicate
         const uniqueCities = Array.from(
-          new Set([...venueCities, ...djLocations])
+          new Set(
+            data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
+          )
         ).sort() as string[];
         
         setAvailableCities(
@@ -220,7 +210,7 @@ export default function BrowsePage() {
 
       if (debouncedSearch) params.append("search", debouncedSearch);
       if (djsFilters.genre) params.append("genre", djsFilters.genre);
-      if (selectedLocation) params.append("city", selectedLocation);
+      // Note: DJs are not filtered by location - they perform globally
 
       const res = await fetch(`/api/browse/djs?${params}`);
       const data = await res.json();
@@ -239,7 +229,7 @@ export default function BrowsePage() {
     } finally {
       setDjsLoading(false);
     }
-  }, [debouncedSearch, djsFilters, selectedLocation, djsOffset]);
+  }, [debouncedSearch, djsFilters, djsOffset]);
 
   // Fetch venues
   const fetchVenues = useCallback(async (reset = false) => {
@@ -356,15 +346,17 @@ export default function BrowsePage() {
             Discover events, DJs, and venues near you
           </p>
           
-          {/* Location Selector */}
-          <div className="flex justify-center">
-            <LocationSelector
-              value={selectedLocation}
-              onChange={setSelectedLocation}
-              cities={availableCities}
-              loading={citiesLoading}
-            />
-          </div>
+          {/* Location Selector - only show for Events, Venues, History (not DJs - they're global) */}
+          {activeTab !== "djs" && (
+            <div className="flex justify-center">
+              <LocationSelector
+                value={selectedLocation}
+                onChange={setSelectedLocation}
+                cities={availableCities}
+                loading={citiesLoading}
+              />
+            </div>
+          )}
         </div>
 
         {/* Global Search Bar */}
