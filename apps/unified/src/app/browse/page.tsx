@@ -111,17 +111,30 @@ export default function BrowsePage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch available cities
+  // Fetch available cities (from events + DJ profiles)
   useEffect(() => {
     async function fetchCities() {
       try {
-        const res = await fetch("/api/browse/events?limit=1000");
-        const data = await res.json();
+        // Fetch cities from events (venue cities) and DJs (locations) in parallel
+        const [eventsRes, djsRes] = await Promise.all([
+          fetch("/api/browse/events?limit=1000"),
+          fetch("/api/browse/djs?limit=1000")
+        ]);
+        
+        const eventsData = await eventsRes.json();
+        const djsData = await djsRes.json();
+        
+        // Get venue cities from events
+        const venueCities = eventsData.events?.map((e: any) => e.venue?.city).filter(Boolean) || [];
+        
+        // Get locations from DJs
+        const djLocations = djsData.djs?.map((dj: any) => dj.location).filter(Boolean) || [];
+        
+        // Combine and deduplicate
         const uniqueCities = Array.from(
-          new Set(
-            data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
-          )
+          new Set([...venueCities, ...djLocations])
         ).sort() as string[];
+        
         setAvailableCities(
           uniqueCities.map((city) => ({ value: city, label: city }))
         );
