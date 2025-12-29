@@ -22,6 +22,8 @@ interface Event {
   flier_url: string | null;
   registration_count: number;
   requires_approval?: boolean;
+  registration_type?: "guestlist" | "display_only" | "external_link";
+  external_ticket_url?: string | null;
   organizer?: { id: string; name: string } | null;
   venue?: { name: string; city?: string | null } | null;
 }

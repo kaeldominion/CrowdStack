@@ -28,6 +28,8 @@ interface VenueEvent {
   registration_count: number;
   organizer: { id: string; name: string } | null;
   requires_approval?: boolean;
+  registration_type?: "guestlist" | "display_only" | "external_link";
+  external_ticket_url?: string | null;
 }
 
 async function getVenue(slug: string) {

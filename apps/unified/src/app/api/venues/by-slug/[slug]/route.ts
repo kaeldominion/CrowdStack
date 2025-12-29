@@ -64,6 +64,8 @@ export async function GET(
         cover_image_url,
         flier_url,
         capacity,
+        registration_type,
+        external_ticket_url,
         organizer:organizers(id, name)
       `)
       .eq("venue_id", venue.id)
