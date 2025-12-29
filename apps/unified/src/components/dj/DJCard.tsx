@@ -22,7 +22,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card, Badge } from "@crowdstack/ui";
-import { MapPin, Music } from "lucide-react";
+import { MapPin, Music, Users, Calendar } from "lucide-react";
 
 export interface DJCardProps {
   dj: {
@@ -34,10 +34,14 @@ export interface DJCardProps {
     location?: string | null;
     profile_image_url?: string | null;
     cover_image_url?: string | null;
+    follower_count?: number | null;
+    event_count?: number | null;
   };
   layout?: "portrait" | "row" | "compact";
   showGenres?: boolean;
   showLocation?: boolean;
+  showBio?: boolean;
+  showStats?: boolean;
   maxGenres?: number;
 }
 
@@ -46,9 +50,12 @@ export function DJCard({
   layout = "portrait",
   showGenres = true,
   showLocation = true,
+  showBio = true,
+  showStats = true,
   maxGenres = 3,
 }: DJCardProps) {
   const imageUrl = dj.profile_image_url || dj.cover_image_url;
+  const hasStats = showStats && (dj.follower_count || dj.event_count);
 
   // Compact layout - minimal horizontal
   if (layout === "compact") {
@@ -90,42 +97,68 @@ export function DJCard({
   if (layout === "row") {
     return (
       <Link href={`/dj/${dj.handle}`} className="block group">
-        <Card padding="none" hover className="flex gap-3 p-2.5">
+        <Card padding="none" hover className="flex gap-4 p-3">
           {/* Avatar - rounded corners like DJ public profile */}
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-raised border border-border-subtle group-hover:border-accent-primary/50 transition-all">
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-raised border border-border-subtle group-hover:border-accent-primary/50 transition-all">
             {imageUrl ? (
               <Image
                 src={imageUrl}
                 alt={dj.name}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="64px"
+                sizes="80px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-accent-primary/20 to-accent-secondary/20">
-                <Music className="w-6 h-6 text-muted" />
+                <Music className="w-8 h-8 text-muted" />
               </div>
             )}
           </div>
 
           {/* Info */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-            {/* Name - uppercase, bold */}
-            <h3 className="font-sans text-sm sm:text-base font-black uppercase tracking-tight text-primary group-hover:text-accent-primary transition-colors truncate">
-              {dj.name}
-            </h3>
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+            {/* Top row: Name + Stats */}
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-sans text-sm sm:text-base font-black uppercase tracking-tight text-primary group-hover:text-accent-primary transition-colors truncate">
+                {dj.name}
+              </h3>
+              {/* Stats - right aligned */}
+              {hasStats && (
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {dj.follower_count !== undefined && dj.follower_count !== null && (
+                    <div className="flex items-center gap-1 text-secondary">
+                      <Users className="w-3 h-3" />
+                      <span className="text-[10px] font-medium">{dj.follower_count}</span>
+                    </div>
+                  )}
+                  {dj.event_count !== undefined && dj.event_count !== null && (
+                    <div className="flex items-center gap-1 text-secondary">
+                      <Calendar className="w-3 h-3" />
+                      <span className="text-[10px] font-medium">{dj.event_count}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             
             {/* Location */}
             {showLocation && dj.location && (
               <div className="flex items-center gap-1 text-secondary">
-                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
-                <span className="text-[10px] truncate">{dj.location}</span>
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <span className="text-xs truncate">{dj.location}</span>
               </div>
+            )}
+
+            {/* Bio snippet */}
+            {showBio && dj.bio && (
+              <p className="text-xs text-muted line-clamp-1 hidden sm:block">
+                {dj.bio}
+              </p>
             )}
 
             {/* Genres */}
             {showGenres && dj.genres && dj.genres.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1">
+              <div className="flex flex-wrap gap-1 mt-0.5">
                 {dj.genres.slice(0, maxGenres).map((genre) => (
                   <Badge key={genre} color="purple" variant="ghost" size="sm" className="!text-[9px] !py-0.5 !px-1.5">
                     {genre}
@@ -164,7 +197,25 @@ export function DJCard({
             </div>
           )}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/30 to-transparent" />
+          
+          {/* Stats overlay - top right */}
+          {hasStats && (
+            <div className="absolute top-3 right-3 flex items-center gap-2">
+              {dj.follower_count !== undefined && dj.follower_count !== null && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-void/60 backdrop-blur-sm">
+                  <Users className="w-3 h-3 text-white/80" />
+                  <span className="text-[10px] font-medium text-white/80">{dj.follower_count}</span>
+                </div>
+              )}
+              {dj.event_count !== undefined && dj.event_count !== null && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-void/60 backdrop-blur-sm">
+                  <Calendar className="w-3 h-3 text-white/80" />
+                  <span className="text-[10px] font-medium text-white/80">{dj.event_count}</span>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Name overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -180,9 +231,17 @@ export function DJCard({
           </div>
         </div>
 
-        {/* Genres */}
-        {showGenres && dj.genres && dj.genres.length > 0 && (
-          <div className="p-4 pt-3">
+        {/* Content section */}
+        <div className="p-4 pt-3 space-y-2">
+          {/* Bio snippet */}
+          {showBio && dj.bio && (
+            <p className="text-xs text-secondary line-clamp-2">
+              {dj.bio}
+            </p>
+          )}
+
+          {/* Genres */}
+          {showGenres && dj.genres && dj.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {dj.genres.slice(0, maxGenres).map((genre) => (
                 <Badge key={genre} color="purple" variant="ghost" size="sm">
@@ -195,8 +254,8 @@ export function DJCard({
                 </Badge>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </Card>
     </Link>
   );

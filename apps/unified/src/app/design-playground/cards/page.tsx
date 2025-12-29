@@ -132,11 +132,13 @@ const MOCK_DJ = {
   id: "dj-1",
   name: "DJ Kadian",
   handle: "kadian",
-  bio: "House and techno DJ based in Dubai. Resident at the best clubs in the city.",
+  bio: "House and techno DJ based in Dubai. Resident at the best clubs in the city. Playing underground sounds since 2015.",
   genres: ["House", "Techno", "Deep House", "Tech House"],
   location: "Dubai, UAE",
   profile_image_url: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=400&h=400&fit=crop",
   cover_image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=400&fit=crop",
+  follower_count: 1247,
+  event_count: 42,
 };
 
 const MOCK_DJ_NO_IMAGE = {
@@ -144,8 +146,11 @@ const MOCK_DJ_NO_IMAGE = {
   id: "dj-2",
   name: "Underground Selector",
   handle: "underground-selector",
+  bio: "Curating the finest underground selections from around the world.",
   profile_image_url: null,
   cover_image_url: null,
+  follower_count: 856,
+  event_count: 28,
 };
 
 const MOCK_DJ_MINIMAL = {
@@ -157,6 +162,8 @@ const MOCK_DJ_MINIMAL = {
   location: null,
   profile_image_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop",
   cover_image_url: null,
+  follower_count: null,
+  event_count: null,
 };
 
 // ============================================
@@ -342,22 +349,39 @@ export default function DesignCardsPage() {
 
           {/* Portrait Layout */}
           <div className="mb-8">
-            <CardLabel>Portrait / Full Card</CardLabel>
+            <CardLabel>Portrait / Full Card (with bio, stats, genres)</CardLabel>
             <CardGrid columns={3}>
               <DJCard dj={MOCK_DJ} layout="portrait" />
-              <DJCard dj={MOCK_DJ} layout="portrait" showGenres={false} />
               <DJCard dj={MOCK_DJ_NO_IMAGE} layout="portrait" />
+              <DJCard dj={MOCK_DJ_MINIMAL} layout="portrait" />
+            </CardGrid>
+          </div>
+
+          {/* Portrait without extras */}
+          <div className="mb-8">
+            <CardLabel>Portrait / Minimal (no bio, no stats)</CardLabel>
+            <CardGrid columns={3}>
+              <DJCard dj={MOCK_DJ} layout="portrait" showBio={false} showStats={false} />
+              <DJCard dj={MOCK_DJ} layout="portrait" showGenres={false} showBio={false} />
             </CardGrid>
           </div>
 
           {/* Row Layout */}
           <div className="mb-8">
-            <CardLabel>Row / List Format</CardLabel>
+            <CardLabel>Row / List Format (with bio, stats, genres)</CardLabel>
             <div className="space-y-3 max-w-3xl">
               <DJCard dj={MOCK_DJ} layout="row" />
-              <DJCard dj={MOCK_DJ} layout="row" maxGenres={2} />
               <DJCard dj={MOCK_DJ_NO_IMAGE} layout="row" />
               <DJCard dj={MOCK_DJ_MINIMAL} layout="row" />
+            </div>
+          </div>
+
+          {/* Row without extras */}
+          <div className="mb-8">
+            <CardLabel>Row / Minimal (no bio, no stats)</CardLabel>
+            <div className="space-y-3 max-w-3xl">
+              <DJCard dj={MOCK_DJ} layout="row" showBio={false} showStats={false} />
+              <DJCard dj={MOCK_DJ} layout="row" showBio={false} showStats={false} maxGenres={2} />
             </div>
           </div>
 
