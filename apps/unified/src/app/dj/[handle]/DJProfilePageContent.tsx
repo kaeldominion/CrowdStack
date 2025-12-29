@@ -559,9 +559,11 @@ export function DJProfilePageContent({
     return count.toString();
   };
 
+  const totalEvents = upcomingEvents.length + pastEvents.length;
   const stats = {
     followers: formatCount(followerCount),
     mixes: mixes.length.toString(),
+    events: formatCount(totalEvents),
   };
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000");
@@ -671,10 +673,14 @@ export function DJProfilePageContent({
               
               {/* Stats Card */}
               <Card padding="none">
-                <div className="grid grid-cols-2 divide-x divide-border-subtle">
+                <div className="grid grid-cols-3 divide-x divide-border-subtle">
                   <div className="p-4 text-center">
                     <p className="text-2xl font-bold text-primary">{stats.followers}</p>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Followers</p>
+                  </div>
+                  <div className="p-4 text-center">
+                    <p className="text-2xl font-bold text-primary">{stats.events}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-accent-primary">Events</p>
                   </div>
                   <div className="p-4 text-center">
                     <p className="text-2xl font-bold text-primary">{stats.mixes}</p>

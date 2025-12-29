@@ -18,6 +18,7 @@
  * 
  * MASTER COMPONENTS:
  * - VenueCard:         /apps/unified/src/components/venue/VenueCard.tsx
+ * - DJCard:            /apps/unified/src/components/dj/DJCard.tsx
  * - AttendeeEventCard: /apps/unified/src/components/AttendeeEventCard.tsx
  * - EventCardCompact:  /apps/unified/src/components/EventCardCompact.tsx
  * - EventCardRow:      /apps/unified/src/components/EventCardRow.tsx
@@ -39,11 +40,12 @@
 import { useState } from "react";
 import { Card, Badge } from "@crowdstack/ui";
 import { VenueCard } from "@/components/venue/VenueCard";
+import { DJCard, DJCardSkeleton } from "@/components/dj/DJCard";
 import { EventCard as VenueEventCard } from "@/components/venue/EventCard";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardCompact } from "@/components/EventCardCompact";
 import { EventCardRow } from "@/components/EventCardRow";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Radio } from "lucide-react";
 
 // ============================================
 // MOCK DATA
@@ -123,6 +125,38 @@ const MOCK_EVENT_PAST = {
 const MOCK_REGISTRATION = {
   id: "reg-1",
   checkins: [],
+};
+
+// DJ Mock Data
+const MOCK_DJ = {
+  id: "dj-1",
+  name: "DJ Kadian",
+  handle: "kadian",
+  bio: "House and techno DJ based in Dubai. Resident at the best clubs in the city.",
+  genres: ["House", "Techno", "Deep House", "Tech House"],
+  location: "Dubai, UAE",
+  profile_image_url: "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=400&h=400&fit=crop",
+  cover_image_url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&h=400&fit=crop",
+};
+
+const MOCK_DJ_NO_IMAGE = {
+  ...MOCK_DJ,
+  id: "dj-2",
+  name: "Underground Selector",
+  handle: "underground-selector",
+  profile_image_url: null,
+  cover_image_url: null,
+};
+
+const MOCK_DJ_MINIMAL = {
+  id: "dj-3",
+  name: "Beatmaster",
+  handle: "beatmaster",
+  bio: null,
+  genres: ["Hip-Hop"],
+  location: null,
+  profile_image_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop",
+  cover_image_url: null,
 };
 
 // ============================================
@@ -298,6 +332,64 @@ export default function DesignCardsPage() {
         </section>
 
         {/* ============================================ */}
+        {/* DJ CARDS */}
+        {/* ============================================ */}
+        <section>
+          <SectionHeader 
+            title="DJ Cards" 
+            subtitle="DJCard component with portrait, row, and compact variants"
+          />
+
+          {/* Portrait Layout */}
+          <div className="mb-8">
+            <CardLabel>Portrait / Full Card</CardLabel>
+            <CardGrid columns={3}>
+              <DJCard dj={MOCK_DJ} layout="portrait" />
+              <DJCard dj={MOCK_DJ} layout="portrait" showGenres={false} />
+              <DJCard dj={MOCK_DJ_NO_IMAGE} layout="portrait" />
+            </CardGrid>
+          </div>
+
+          {/* Row Layout */}
+          <div className="mb-8">
+            <CardLabel>Row / List Format</CardLabel>
+            <div className="space-y-3 max-w-3xl">
+              <DJCard dj={MOCK_DJ} layout="row" />
+              <DJCard dj={MOCK_DJ} layout="row" maxGenres={2} />
+              <DJCard dj={MOCK_DJ_NO_IMAGE} layout="row" />
+              <DJCard dj={MOCK_DJ_MINIMAL} layout="row" />
+            </div>
+          </div>
+
+          {/* Compact Layout */}
+          <div className="mb-8">
+            <CardLabel>Compact / Minimal (for lineups, lists)</CardLabel>
+            <div className="max-w-md space-y-1 bg-glass rounded-xl p-2 border border-border-subtle">
+              <DJCard dj={MOCK_DJ} layout="compact" />
+              <DJCard dj={MOCK_DJ_MINIMAL} layout="compact" />
+              <DJCard dj={MOCK_DJ_NO_IMAGE} layout="compact" />
+            </div>
+          </div>
+
+          {/* Skeleton States */}
+          <div className="mb-8">
+            <CardLabel>Skeleton / Loading State</CardLabel>
+            <CardGrid columns={3}>
+              <DJCardSkeleton layout="portrait" />
+              <DJCardSkeleton layout="portrait" />
+            </CardGrid>
+            <div className="space-y-3 max-w-3xl mt-6">
+              <DJCardSkeleton layout="row" />
+              <DJCardSkeleton layout="row" />
+            </div>
+            <div className="max-w-md space-y-1 bg-glass rounded-xl p-2 border border-border-subtle mt-6">
+              <DJCardSkeleton layout="compact" />
+              <DJCardSkeleton layout="compact" />
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================ */}
         {/* EVENT CARDS */}
         {/* ============================================ */}
         <section>
@@ -433,11 +525,20 @@ export default function DesignCardsPage() {
             <CardLabel>Past Events - Guestlist Closed State</CardLabel>
             <p className="text-sm text-muted mb-4">
               When events have ended, guestlist should show as &quot;Closed&quot; with disabled CTA buttons.
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">isPast=true</code> prop.
             </p>
+            
+            {/* Row Cards - Past State (recommended for history views) */}
+            <div className="space-y-3 max-w-3xl mb-6">
+              <EventCardRow event={MOCK_EVENT_PAST} isPast />
+              <EventCardRow event={MOCK_EVENT_PAST} isPast didAttend />
+              <EventCardRow event={MOCK_EVENT_NO_IMAGE} isPast />
+            </div>
+
+            {/* Full Cards - with ENDED badge */}
             <CardGrid columns={3}>
               <AttendeeEventCard event={MOCK_EVENT_PAST} variant="default" badgeText="ENDED" />
-              <EventCardCompact event={MOCK_EVENT_PAST} />
-              <EventCardRow event={MOCK_EVENT_PAST} />
+              <EventCardCompact event={MOCK_EVENT_PAST} badgeText="ENDED" />
             </CardGrid>
             
             {/* Guestlist Card - Past State Reference */}
@@ -575,11 +676,17 @@ export default function DesignCardsPage() {
             subtitle="When there's no data to display"
           />
           
-          <CardGrid columns={2}>
+          <CardGrid columns={3}>
             <Card className="!p-8 text-center border-dashed">
               <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-primary mb-2">No upcoming events</h3>
               <p className="text-sm text-secondary">Check back soon for new events!</p>
+            </Card>
+            
+            <Card className="!p-8 text-center border-dashed">
+              <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-primary mb-2">No DJs found</h3>
+              <p className="text-sm text-secondary">Try adjusting your search or filters.</p>
             </Card>
             
             <Card className="!p-8 text-center border-dashed">

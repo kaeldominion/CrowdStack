@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
-import { Modal } from "@crowdstack/ui";
-import { Compass, Search, Music, Calendar, MapPin, TrendingUp, Filter } from "lucide-react";
+import { Compass, Search, Music, Calendar, MapPin, Radio } from "lucide-react";
 import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
+import { DJCard, DJCardSkeleton } from "@/components/dj/DJCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
 import { FeaturedEventsCarousel } from "@/components/browse/FeaturedEventsCarousel";
 import { LocationSelector } from "@/components/browse/LocationSelector";
@@ -41,49 +41,87 @@ interface Venue {
   tags?: { tag_type: string; tag_value: string }[];
 }
 
+interface DJ {
+  id: string;
+  name: string;
+  handle: string;
+  bio?: string | null;
+  genres?: string[] | null;
+  location?: string | null;
+  profile_image_url?: string | null;
+  cover_image_url?: string | null;
+}
+
+type TabType = "events" | "djs" | "venues" | "history";
+
 export default function BrowsePage() {
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState<TabType>("events");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState<BrowseFiltersType>({});
-  const [showFiltersModal, setShowFiltersModal] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  
+  // Filters per tab
+  const [eventsFilters, setEventsFilters] = useState<BrowseFiltersType>({});
+  const [djsFilters, setDjsFilters] = useState<BrowseFiltersType>({});
+  const [venuesFilters, setVenuesFilters] = useState<BrowseFiltersType>({});
+  const [historyFilters, setHistoryFilters] = useState<BrowseFiltersType>({});
+  
+  // Data states
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [liveEvents, setLiveEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [djs, setDjs] = useState<DJ[]>([]);
+  
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [pastEventsLoading, setPastEventsLoading] = useState(false);
+  const [djsLoading, setDjsLoading] = useState(false);
   const [venuesLoading, setVenuesLoading] = useState(false);
-  const [hasMorePastEvents, setHasMorePastEvents] = useState(true);
+  const [pastEventsLoading, setPastEventsLoading] = useState(false);
+  
+  // Pagination states
   const [eventsOffset, setEventsOffset] = useState(0);
+  const [djsOffset, setDjsOffset] = useState(0);
+  const [venuesOffset, setVenuesOffset] = useState(0);
   const [pastEventsOffset, setPastEventsOffset] = useState(0);
+  
   const [totalEventsCount, setTotalEventsCount] = useState(0);
-  const [totalPastEventsCount, setTotalPastEventsCount] = useState(0);
+  const [totalDjsCount, setTotalDjsCount] = useState(0);
   const [totalVenuesCount, setTotalVenuesCount] = useState(0);
-  const [allEventsTotalCount, setAllEventsTotalCount] = useState(0);
+  const [totalPastEventsCount, setTotalPastEventsCount] = useState(0);
+  
+  const [hasMoreEvents, setHasMoreEvents] = useState(true);
+  const [hasMoreDjs, setHasMoreDjs] = useState(true);
+  const [hasMoreVenues, setHasMoreVenues] = useState(true);
+  const [hasMorePastEvents, setHasMorePastEvents] = useState(true);
+  
+  // Location
   const [selectedLocation, setSelectedLocation] = useState("");
   const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(true);
 
-  const EVENTS_PER_PAGE = 12;
-  const INITIAL_EVENTS_LIMIT = 10;
+  const ITEMS_PER_PAGE = 12;
 
-  // Fetch available cities from upcoming events only
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch available cities
   useEffect(() => {
     async function fetchCities() {
       try {
-        // Fetch all upcoming events to get cities with active events
         const res = await fetch("/api/browse/events?limit=1000");
         const data = await res.json();
-        
-        // Extract unique cities from events that have venue cities
         const uniqueCities = Array.from(
           new Set(
             data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
           )
         ).sort() as string[];
-
         setAvailableCities(
           uniqueCities.map((city) => ({ value: city, label: city }))
         );
@@ -100,8 +138,7 @@ export default function BrowsePage() {
   useEffect(() => {
     async function fetchFeaturedEvents() {
       try {
-        const params = new URLSearchParams({ featured: "true", limit: "6" });
-        const res = await fetch(`/api/browse/events?${params}`);
+        const res = await fetch("/api/browse/events?featured=true&limit=6");
         const data = await res.json();
         setFeaturedEvents(data.events || []);
       } catch (error) {
@@ -115,8 +152,7 @@ export default function BrowsePage() {
   useEffect(() => {
     async function fetchLiveEvents() {
       try {
-        const params = new URLSearchParams({ live: "true", limit: "10" });
-        const res = await fetch(`/api/browse/events?${params}`);
+        const res = await fetch("/api/browse/events?live=true&limit=10");
         const data = await res.json();
         setLiveEvents(data.events || []);
       } catch (error) {
@@ -126,168 +162,173 @@ export default function BrowsePage() {
     fetchLiveEvents();
   }, []);
 
-  // Fetch all events
-  const fetchEvents = async (reset = false, useInitialLimit = false) => {
+  // Fetch events
+  const fetchEvents = useCallback(async (reset = false) => {
     setEventsLoading(true);
     try {
-      const limit = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
       const params = new URLSearchParams({
-        limit: String(limit),
+        limit: String(ITEMS_PER_PAGE),
         offset: String(reset ? 0 : eventsOffset),
       });
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-      if (filters.date) {
-        params.append("date", filters.date);
-      }
-      if (selectedLocation) {
-        params.append("city", selectedLocation);
-      }
-      if (filters.genre) {
-        params.append("genre", filters.genre);
-      }
-      if (filters.venue_id) {
-        params.append("venue_id", filters.venue_id);
-      }
+      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (eventsFilters.date) params.append("date", eventsFilters.date);
+      if (selectedLocation) params.append("city", selectedLocation);
+      if (eventsFilters.genre) params.append("genre", eventsFilters.genre);
 
       const res = await fetch(`/api/browse/events?${params}`);
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Error fetching events:", res.status, errorData);
-        throw new Error(errorData.error || "Failed to fetch events");
-      }
-      
       const data = await res.json();
-      console.log("[Browse] Fetched events:", data.events?.length || 0, "events");
-      
+
       if (reset) {
         setAllEvents(data.events || []);
-        const limitUsed = useInitialLimit ? INITIAL_EVENTS_LIMIT : EVENTS_PER_PAGE;
-        setEventsOffset(limitUsed);
-        setTotalEventsCount(data.count || data.events?.length || 0);
-        setAllEventsTotalCount(data.totalCount || data.count || 0);
+        setEventsOffset(ITEMS_PER_PAGE);
+        setTotalEventsCount(data.totalCount || data.count || 0);
+      } else {
+        setAllEvents((prev) => [...prev, ...(data.events || [])]);
+        setEventsOffset((prev) => prev + ITEMS_PER_PAGE);
       }
+      setHasMoreEvents((data.events || []).length === ITEMS_PER_PAGE);
     } catch (error) {
       console.error("Error fetching events:", error);
     } finally {
       setEventsLoading(false);
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, eventsFilters, selectedLocation, eventsOffset]);
 
-  // Fetch past events (history)
-  const fetchPastEvents = async (reset = false) => {
-    setPastEventsLoading(true);
+  // Fetch DJs
+  const fetchDjs = useCallback(async (reset = false) => {
+    setDjsLoading(true);
     try {
       const params = new URLSearchParams({
-        past: "true",
-        limit: String(EVENTS_PER_PAGE),
-        offset: String(reset ? 0 : pastEventsOffset),
+        limit: String(ITEMS_PER_PAGE),
+        offset: String(reset ? 0 : djsOffset),
       });
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-      if (selectedLocation) {
-        params.append("city", selectedLocation);
-      }
+      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (djsFilters.genre) params.append("genre", djsFilters.genre);
+      if (selectedLocation) params.append("city", selectedLocation);
 
-      const res = await fetch(`/api/browse/events?${params}`);
-      
-      if (!res.ok) {
-        throw new Error("Failed to fetch past events");
-      }
-      
+      const res = await fetch(`/api/browse/djs?${params}`);
       const data = await res.json();
-      
+
       if (reset) {
-        setPastEvents(data.events || []);
-        setPastEventsOffset(EVENTS_PER_PAGE);
-        setTotalPastEventsCount(data.totalCount || data.count || 0);
+        setDjs(data.djs || []);
+        setDjsOffset(ITEMS_PER_PAGE);
+        setTotalDjsCount(data.totalCount || data.count || 0);
       } else {
-        setPastEvents((prev) => [...prev, ...(data.events || [])]);
-        setPastEventsOffset((prev) => prev + EVENTS_PER_PAGE);
+        setDjs((prev) => [...prev, ...(data.djs || [])]);
+        setDjsOffset((prev) => prev + ITEMS_PER_PAGE);
       }
-      
-      setHasMorePastEvents((data.events || []).length === EVENTS_PER_PAGE);
+      setHasMoreDjs((data.djs || []).length === ITEMS_PER_PAGE);
     } catch (error) {
-      console.error("Error fetching past events:", error);
+      console.error("Error fetching DJs:", error);
     } finally {
-      setPastEventsLoading(false);
+      setDjsLoading(false);
     }
-  };
+  }, [debouncedSearch, djsFilters, selectedLocation, djsOffset]);
 
   // Fetch venues
-  const fetchVenues = async () => {
+  const fetchVenues = useCallback(async (reset = false) => {
     setVenuesLoading(true);
     try {
       const params = new URLSearchParams({
-        limit: "12",
+        limit: String(ITEMS_PER_PAGE),
+        offset: String(reset ? 0 : venuesOffset),
       });
 
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-      if (selectedLocation) {
-        params.append("city", selectedLocation);
-      }
+      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (selectedLocation) params.append("city", selectedLocation);
 
       const res = await fetch(`/api/browse/venues?${params}`);
       const data = await res.json();
-      setVenues(data.venues || []);
-      setTotalVenuesCount(data.count || data.venues?.length || 0);
+
+      if (reset) {
+        setVenues(data.venues || []);
+        setVenuesOffset(ITEMS_PER_PAGE);
+        setTotalVenuesCount(data.totalCount || data.count || 0);
+      } else {
+        setVenues((prev) => [...prev, ...(data.venues || [])]);
+        setVenuesOffset((prev) => prev + ITEMS_PER_PAGE);
+      }
+      setHasMoreVenues((data.venues || []).length === ITEMS_PER_PAGE);
     } catch (error) {
       console.error("Error fetching venues:", error);
     } finally {
       setVenuesLoading(false);
     }
+  }, [debouncedSearch, selectedLocation, venuesOffset]);
+
+  // Fetch past events
+  const fetchPastEvents = useCallback(async (reset = false) => {
+    setPastEventsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        past: "true",
+        limit: String(ITEMS_PER_PAGE),
+        offset: String(reset ? 0 : pastEventsOffset),
+      });
+
+      if (debouncedSearch) params.append("search", debouncedSearch);
+      if (selectedLocation) params.append("city", selectedLocation);
+      if (historyFilters.genre) params.append("genre", historyFilters.genre);
+
+      const res = await fetch(`/api/browse/events?${params}`);
+      const data = await res.json();
+
+      if (reset) {
+        setPastEvents(data.events || []);
+        setPastEventsOffset(ITEMS_PER_PAGE);
+        setTotalPastEventsCount(data.totalCount || data.count || 0);
+      } else {
+        setPastEvents((prev) => [...prev, ...(data.events || [])]);
+        setPastEventsOffset((prev) => prev + ITEMS_PER_PAGE);
+      }
+      setHasMorePastEvents((data.events || []).length === ITEMS_PER_PAGE);
+    } catch (error) {
+      console.error("Error fetching past events:", error);
+    } finally {
+      setPastEventsLoading(false);
+    }
+  }, [debouncedSearch, selectedLocation, historyFilters, pastEventsOffset]);
+
+  // Fetch all data on search/location change (global search)
+  useEffect(() => {
+    fetchEvents(true);
+    fetchDjs(true);
+    fetchVenues(true);
+    fetchPastEvents(true);
+  }, [debouncedSearch, selectedLocation]);
+
+  // Refetch tab data when filters change
+  useEffect(() => {
+    fetchEvents(true);
+  }, [eventsFilters]);
+
+  useEffect(() => {
+    fetchDjs(true);
+  }, [djsFilters]);
+
+  useEffect(() => {
+    fetchPastEvents(true);
+  }, [historyFilters]);
+
+  // Get active filter count for a tab
+  const getFilterCount = (filters: BrowseFiltersType) => {
+    return Object.keys(filters).filter(k => k !== 'search').length;
   };
 
-  // Fetch events when search, filters, or location changes
-  useEffect(() => {
-    if (activeTab === "events") {
-      fetchEvents(true, true); // Use initial limit
+  // Tab badge counts
+  const getTabBadge = (tab: TabType) => {
+    if (!debouncedSearch) return null;
+    switch (tab) {
+      case "events": return totalEventsCount > 0 ? totalEventsCount : null;
+      case "djs": return totalDjsCount > 0 ? totalDjsCount : null;
+      case "venues": return totalVenuesCount > 0 ? totalVenuesCount : null;
+      case "history": return totalPastEventsCount > 0 ? totalPastEventsCount : null;
+      default: return null;
     }
-  }, [searchQuery, filters, selectedLocation, activeTab]);
-
-  // Fetch venues when search or location changes
-  useEffect(() => {
-    if (activeTab === "djs-venues") {
-      fetchVenues();
-    }
-  }, [searchQuery, selectedLocation, activeTab]);
-
-  // Fetch past events when history tab is active
-  useEffect(() => {
-    if (activeTab === "history") {
-      fetchPastEvents(true);
-    }
-  }, [searchQuery, selectedLocation, activeTab]);
-
-  const handleLoadMorePastEvents = () => {
-    fetchPastEvents(false);
   };
-
-  // Calculate stats from loaded events (approximate)
-  const upcomingEventsThisWeek = allEvents.filter((event) => {
-    const eventDate = new Date(event.start_time);
-    const now = new Date();
-    const weekFromNow = new Date(now);
-    weekFromNow.setDate(now.getDate() + 7);
-    return eventDate >= now && eventDate <= weekFromNow;
-  }).length;
-
-  const uniqueCities = new Set(
-    allEvents
-      .map((e) => e.venue?.city)
-      .filter(Boolean) as string[]
-  ).size;
-
-  // Use total count from API for accurate total
-  const displayTotalCount = allEventsTotalCount || totalEventsCount;
 
   return (
     <div className="min-h-screen bg-void">
@@ -297,12 +338,12 @@ export default function BrowsePage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mb-4">
             <Compass className="w-8 h-8 text-white" />
           </div>
-          <h1 className="page-title mb-2">Browse Events</h1>
+          <h1 className="page-title mb-2">Browse</h1>
           <p className="text-secondary text-sm md:text-base max-w-md mx-auto mb-4">
-            Discover upcoming events, parties, and experiences near you
+            Discover events, DJs, and venues near you
           </p>
           
-          {/* Prominent Location Selector */}
+          {/* Location Selector */}
           <div className="flex justify-center">
             <LocationSelector
               value={selectedLocation}
@@ -313,232 +354,99 @@ export default function BrowsePage() {
           </div>
         </div>
 
-        {/* Search Bar with Mobile Filter Button */}
-        <div className="mb-6 flex gap-3">
-          <div className="relative flex-1">
+        {/* Global Search Bar */}
+        <div className="mb-6 max-w-2xl mx-auto">
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
             <Input
               type="text"
-              placeholder="Search events, venues..."
+              placeholder="Search events, DJs, venues..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11"
+              className="pl-11 text-center"
             />
           </div>
-          {/* Mobile Filter Button */}
-          <button
-            onClick={() => setShowFiltersModal(true)}
-            className="lg:hidden relative flex items-center justify-center w-12 h-12 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/50 transition-all"
-            aria-label="Open filters"
-          >
-            <Filter className="h-5 w-5 text-primary" />
-            {Object.keys(filters).length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-primary text-white text-[10px] font-bold flex items-center justify-center">
-                {Object.keys(filters).length}
-              </span>
-            )}
-          </button>
+          {debouncedSearch && (
+            <p className="text-center text-sm text-secondary mt-2">
+              Found results in {[
+                totalEventsCount > 0 && `${totalEventsCount} events`,
+                totalDjsCount > 0 && `${totalDjsCount} DJs`,
+                totalVenuesCount > 0 && `${totalVenuesCount} venues`,
+                totalPastEventsCount > 0 && `${totalPastEventsCount} past events`,
+              ].filter(Boolean).join(", ") || "no categories"}
+            </p>
+          )}
         </div>
 
-        {/* Main Layout: Sidebar + Content */}
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Left Sidebar - Desktop Only */}
-          <aside className="lg:w-80 flex-shrink-0 space-y-6">
-            {/* Filters */}
-            <Card>
-              <div className="space-y-4">
-                <h3 className="section-header">Filters</h3>
-                <BrowseFilters filters={filters} onChange={setFilters} />
+        {/* Tabs */}
+        <nav className="flex justify-center gap-6 border-b border-border-subtle mb-6">
+          {(["events", "djs", "venues", "history"] as TabType[]).map((tab) => {
+            const badge = getTabBadge(tab);
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`tab-label relative ${activeTab === tab ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                {tab.toUpperCase()}
+                {badge && (
+                  <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-accent-primary text-white">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Tab Content */}
+        <div className="max-w-6xl mx-auto">
+          {/* EVENTS TAB */}
+          {activeTab === "events" && (
+            <div className="space-y-8">
+              {/* Filter Button */}
+              <div className="flex items-center justify-between">
+                <h2 className="section-header">
+                  {debouncedSearch ? `Events matching "${debouncedSearch}"` : "Upcoming Events"}
+                </h2>
+                <BrowseFilters 
+                  filters={eventsFilters} 
+                  onChange={setEventsFilters}
+                  variant="compact"
+                />
               </div>
-            </Card>
 
-            {/* Stats Summary - Desktop Only */}
-            {activeTab === "events" && (
-              <Card className="hidden lg:block">
-                <div className="space-y-4">
-                  <h3 className="section-header">Summary</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-accent-secondary" />
-                        <span className="text-sm text-secondary">Total Events</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">{displayTotalCount}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-accent-primary" />
-                        <span className="text-sm text-secondary">This Week</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">{upcomingEventsThisWeek}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-accent-success" />
-                        <span className="text-sm text-secondary">Cities</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">{uniqueCities}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {activeTab === "djs-venues" && (
-              <Card className="hidden lg:block">
-                <div className="space-y-4">
-                  <h3 className="section-header">Summary</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-raised border border-border-subtle">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-accent-secondary" />
-                        <span className="text-sm text-secondary">Total Venues</span>
-                      </div>
-                      <span className="text-lg font-bold text-primary">{totalVenuesCount}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-          </aside>
-
-          {/* Main Content Area */}
-          <div className="flex-1 min-w-0">
-            {/* Tabs - Design System Style */}
-            <nav className="flex gap-6 border-b border-border-subtle mb-6">
-              <button
-                onClick={() => setActiveTab("events")}
-                className={`tab-label ${activeTab === "events" ? "tab-label-active" : "tab-label-inactive"}`}
-              >
-                Events
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                className={`tab-label ${activeTab === "history" ? "tab-label-active" : "tab-label-inactive"}`}
-              >
-                History
-              </button>
-              <button
-                onClick={() => setActiveTab("djs-venues")}
-                className={`tab-label ${activeTab === "djs-venues" ? "tab-label-active" : "tab-label-inactive"}`}
-              >
-                DJs & Venues
-              </button>
-            </nav>
-
-            {/* EVENTS TAB */}
-            {activeTab === "events" && (
-              <div className="space-y-8">
-                {/* Featured Events Section */}
-                {featuredEvents.length > 0 && (
-                  <section>
-                    <h2 className="section-header mb-6">Featured</h2>
-                    <FeaturedEventsCarousel events={featuredEvents} />
-                  </section>
-                )}
-
-                {/* Live Events Section */}
-                {liveEvents.length > 0 && (
-                  <section>
-                    <h2 className="section-header mb-6">Live Now</h2>
-                    <div className="space-y-3">
-                      {liveEvents.map((event) => (
-                        <div key={event.id} className="relative">
-                          {/* Glowing pulsing background */}
-                          <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
-                          <div className="relative">
-                            <EventCardRow
-                              event={event}
-                              isLive
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* All Events Section */}
+              {/* Featured Events */}
+              {!debouncedSearch && featuredEvents.length > 0 && (
                 <section>
-                  <h2 className="section-header mb-6">All Events</h2>
-                  
-                  {eventsLoading && allEvents.length === 0 ? (
-                    <div className="space-y-3">
-                      {[...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse"
-                        >
-                          <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
-                          <div className="flex-1 space-y-2 py-1">
-                            <div className="h-3 w-24 bg-raised rounded" />
-                            <div className="h-5 w-3/4 bg-raised rounded" />
-                            <div className="h-3 w-1/2 bg-raised rounded" />
-                            <div className="h-8 w-28 bg-raised rounded-md mt-auto" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : allEvents.length === 0 ? (
-                    <Card className="!border-dashed !p-12 text-center">
-                      <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-primary mb-2">
-                        No events found
-                      </h3>
-                      <p className="text-sm text-secondary">
-                        Try adjusting your search or filters to find more events.
-                      </p>
-                    </Card>
-                  ) : (
-                    <>
-                      <div className="space-y-3">
-                        {allEvents.slice(0, INITIAL_EVENTS_LIMIT).map((event) => (
-                          <EventCardRow
-                            key={event.id}
-                            event={event}
-                          />
-                        ))}
-                      </div>
-
-                      {allEventsTotalCount > INITIAL_EVENTS_LIMIT && (
-                        <div className="mt-8 text-center">
-                          <Link
-                            href={`/browse/events${selectedLocation ? `?city=${encodeURIComponent(selectedLocation)}` : ""}${searchQuery ? `${selectedLocation ? "&" : "?"}search=${encodeURIComponent(searchQuery)}` : ""}`}
-                            className="inline-block px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all"
-                          >
-                            See All Events ({allEventsTotalCount} total)
-                          </Link>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <h3 className="section-header mb-4">Featured</h3>
+                  <FeaturedEventsCarousel events={featuredEvents} />
                 </section>
-              </div>
-            )}
+              )}
 
-            {/* HISTORY TAB */}
-            {activeTab === "history" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="section-header">Past Events</h2>
-                  {totalPastEventsCount > 0 && (
-                    <span className="text-sm text-secondary">
-                      {pastEvents.length} of {totalPastEventsCount} events
-                    </span>
-                  )}
-                </div>
-                
-                {pastEventsLoading && pastEvents.length === 0 ? (
+              {/* Live Events */}
+              {liveEvents.length > 0 && (
+                <section>
+                  <h3 className="section-header mb-4">Live Now</h3>
+                  <div className="space-y-3">
+                    {liveEvents.map((event) => (
+                      <div key={event.id} className="relative">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-xl blur-sm opacity-40 animate-pulse" />
+                        <div className="relative">
+                          <EventCardRow event={event} isLive />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* All Events */}
+              <section>
+                {eventsLoading && allEvents.length === 0 ? (
                   <div className="space-y-3">
                     {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse"
-                      >
+                      <div key={i} className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse">
                         <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
                         <div className="flex-1 space-y-2 py-1">
                           <div className="h-3 w-24 bg-raised rounded" />
@@ -548,125 +456,190 @@ export default function BrowsePage() {
                       </div>
                     ))}
                   </div>
-                ) : pastEvents.length === 0 ? (
+                ) : allEvents.length === 0 ? (
                   <Card className="!border-dashed !p-12 text-center">
                     <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-primary mb-2">
-                      No past events found
-                    </h3>
-                    <p className="text-sm text-secondary">
-                      Past events will appear here once they&apos;ve ended.
-                    </p>
+                    <h3 className="text-lg font-semibold text-primary mb-2">No events found</h3>
+                    <p className="text-sm text-secondary">Try adjusting your search or filters.</p>
                   </Card>
                 ) : (
                   <>
                     <div className="space-y-3">
-                      {pastEvents.map((event) => (
-                        <EventCardRow
-                          key={event.id}
-                          event={event}
-                          isPast
-                        />
+                      {allEvents.map((event) => (
+                        <EventCardRow key={event.id} event={event} />
                       ))}
                     </div>
-
-                    {hasMorePastEvents && (
+                    {hasMoreEvents && (
                       <div className="mt-8 text-center">
                         <button
-                          onClick={handleLoadMorePastEvents}
-                          disabled={pastEventsLoading}
-                          className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 hover:bg-glass/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => fetchEvents(false)}
+                          disabled={eventsLoading}
+                          className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 transition-all disabled:opacity-50"
                         >
-                          {pastEventsLoading ? "Loading..." : "Load More"}
+                          {eventsLoading ? "Loading..." : "Load More"}
                         </button>
                       </div>
                     )}
                   </>
                 )}
+              </section>
+            </div>
+          )}
+
+          {/* DJS TAB */}
+          {activeTab === "djs" && (
+            <div className="space-y-6">
+              {/* Filter Button */}
+              <div className="flex items-center justify-between">
+                <h2 className="section-header">
+                  {debouncedSearch ? `DJs matching "${debouncedSearch}"` : "DJs"}
+                </h2>
+                <BrowseFilters 
+                  filters={djsFilters} 
+                  onChange={setDjsFilters}
+                  variant="compact"
+                />
               </div>
-            )}
 
-            {/* DJS & VENUES TAB */}
-            {activeTab === "djs-venues" && (
-              <div className="space-y-8">
-                {/* DJs Section */}
-                <section>
-                  <h2 className="section-header mb-6">DJs</h2>
-                  <Card className="!border-dashed !p-12 text-center">
-                    <Music className="h-12 w-12 text-muted mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-primary mb-2">
-                      Coming Soon
-                    </h3>
-                    <p className="text-sm text-secondary">
-                      Browse and discover DJs will be available soon.
-                    </p>
-                  </Card>
-                </section>
-
-                {/* Venues Section */}
-                <section>
-                  <h2 className="section-header mb-6">Venues</h2>
-                  
-                  {venuesLoading && venues.length === 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="relative rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse"
-                        >
-                          <div className="h-[400px] bg-raised" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : venues.length === 0 ? (
-                    <Card className="!border-dashed !p-12 text-center">
-                      <MapPin className="h-12 w-12 text-muted mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-primary mb-2">
-                        No venues found
-                      </h3>
-                      <p className="text-sm text-secondary">
-                        Try adjusting your search or filters to find more venues.
-                      </p>
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {venues.map((venue) => (
-                        <VenueCard
-                          key={venue.id}
-                          venue={venue}
-                          showRating
-                          showTags
-                          layout="portrait"
-                        />
-                      ))}
+              {djsLoading && djs.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <DJCardSkeleton key={i} layout="portrait" />
+                  ))}
+                </div>
+              ) : djs.length === 0 ? (
+                <Card className="!border-dashed !p-12 text-center">
+                  <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-primary mb-2">No DJs found</h3>
+                  <p className="text-sm text-secondary">Try adjusting your search or filters.</p>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {djs.map((dj) => (
+                      <DJCard key={dj.id} dj={dj} layout="portrait" />
+                    ))}
+                  </div>
+                  {hasMoreDjs && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={() => fetchDjs(false)}
+                        disabled={djsLoading}
+                        className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 transition-all disabled:opacity-50"
+                      >
+                        {djsLoading ? "Loading..." : "Load More"}
+                      </button>
                     </div>
                   )}
-                </section>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* VENUES TAB */}
+          {activeTab === "venues" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="section-header">
+                  {debouncedSearch ? `Venues matching "${debouncedSearch}"` : "Venues"}
+                </h2>
               </div>
-            )}
-          </div>
+
+              {venuesLoading && venues.length === 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="rounded-2xl overflow-hidden border border-border-subtle bg-void animate-pulse">
+                      <div className="h-[400px] bg-raised" />
+                    </div>
+                  ))}
+                </div>
+              ) : venues.length === 0 ? (
+                <Card className="!border-dashed !p-12 text-center">
+                  <MapPin className="h-12 w-12 text-muted mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-primary mb-2">No venues found</h3>
+                  <p className="text-sm text-secondary">Try adjusting your search or filters.</p>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {venues.map((venue) => (
+                      <VenueCard key={venue.id} venue={venue} showRating showTags layout="portrait" />
+                    ))}
+                  </div>
+                  {hasMoreVenues && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={() => fetchVenues(false)}
+                        disabled={venuesLoading}
+                        className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 transition-all disabled:opacity-50"
+                      >
+                        {venuesLoading ? "Loading..." : "Load More"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* HISTORY TAB */}
+          {activeTab === "history" && (
+            <div className="space-y-6">
+              {/* Filter Button */}
+              <div className="flex items-center justify-between">
+                <h2 className="section-header">
+                  {debouncedSearch ? `Past events matching "${debouncedSearch}"` : "Past Events"}
+                </h2>
+                <BrowseFilters 
+                  filters={historyFilters} 
+                  onChange={setHistoryFilters}
+                  variant="compact"
+                />
+              </div>
+
+              {pastEventsLoading && pastEvents.length === 0 ? (
+                <div className="space-y-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="flex gap-3 p-2.5 rounded-xl bg-glass border border-border-subtle animate-pulse">
+                      <div className="w-16 sm:w-20 aspect-square rounded-lg bg-raised" />
+                      <div className="flex-1 space-y-2 py-1">
+                        <div className="h-3 w-24 bg-raised rounded" />
+                        <div className="h-5 w-3/4 bg-raised rounded" />
+                        <div className="h-3 w-1/2 bg-raised rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : pastEvents.length === 0 ? (
+                <Card className="!border-dashed !p-12 text-center">
+                  <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-primary mb-2">No past events found</h3>
+                  <p className="text-sm text-secondary">Past events will appear here once they&apos;ve ended.</p>
+                </Card>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {pastEvents.map((event) => (
+                      <EventCardRow key={event.id} event={event} isPast />
+                    ))}
+                  </div>
+                  {hasMorePastEvents && (
+                    <div className="mt-8 text-center">
+                      <button
+                        onClick={() => fetchPastEvents(false)}
+                        disabled={pastEventsLoading}
+                        className="px-6 py-3 rounded-xl bg-glass border border-border-subtle text-primary font-medium hover:border-accent-primary/50 transition-all disabled:opacity-50"
+                      >
+                        {pastEventsLoading ? "Loading..." : "Load More"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Mobile Filters Modal */}
-      <Modal
-        isOpen={showFiltersModal}
-        onClose={() => setShowFiltersModal(false)}
-        title="Filters"
-        size="md"
-      >
-        <div className="space-y-4">
-          <BrowseFilters filters={filters} onChange={setFilters} />
-          <div className="flex justify-end pt-4 border-t border-border-subtle">
-            <button
-              onClick={() => setShowFiltersModal(false)}
-              className="px-6 py-2 rounded-xl bg-accent-primary text-white font-medium hover:bg-accent-primary/90 transition-colors"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }
