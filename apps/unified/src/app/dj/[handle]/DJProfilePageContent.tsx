@@ -783,6 +783,50 @@ export function DJProfilePageContent({
 
             {/* Main Content */}
             <main className="flex-1 min-w-0 space-y-8">
+              {/* Featured Content Row - Above tabs, Mix + Video side by side on desktop */}
+              {(featuredMix || featuredVideo) && (
+                <div>
+                  <h2 className="section-header">Featured</h2>
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Featured Mix - flexible width */}
+                    {featuredMix && (
+                      <div className="flex-1 min-w-0">
+                        <MixEmbed 
+                          soundcloudUrl={featuredMix.soundcloud_url} 
+                          title={featuredMix.title}
+                        />
+                      </div>
+                    )}
+
+                    {/* Featured Video - fixed width based on 166px height at 16:9 */}
+                    {featuredVideo && (() => {
+                      const videoId = featuredVideo.youtube_url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
+                      return (
+                        <div className="w-full lg:w-[295px] flex-shrink-0">
+                          <Card className="p-0 overflow-hidden">
+                            <div className="relative w-full h-[166px] bg-black">
+                              {videoId ? (
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${videoId}`}
+                                  title={featuredVideo.title || "DJ Video"}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="w-full h-full"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Video className="h-12 w-12 text-white/20" />
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
               {/* Tab Navigation */}
               <nav className="flex gap-4 sm:gap-6 border-b border-border-subtle overflow-x-auto pb-px">
                 {[
@@ -810,50 +854,6 @@ export function DJProfilePageContent({
               {/* EVENTS Tab */}
               {activeTab === "events" && (
                 <div className="space-y-8">
-                  {/* Featured Content Row - Mix + Video side by side on desktop (at top) */}
-                  {(featuredMix || featuredVideo) && (
-                    <div>
-                      <h2 className="section-header">Featured</h2>
-                      <div className="flex flex-col lg:flex-row gap-4">
-                        {/* Featured Mix - flexible width */}
-                        {featuredMix && (
-                          <div className="flex-1 min-w-0">
-                            <MixEmbed 
-                              soundcloudUrl={featuredMix.soundcloud_url} 
-                              title={featuredMix.title}
-                            />
-                          </div>
-                        )}
-
-                        {/* Featured Video - fixed width based on 166px height at 16:9 */}
-                        {featuredVideo && (() => {
-                          const videoId = featuredVideo.youtube_url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/)?.[1];
-                          return (
-                            <div className="w-full lg:w-[295px] flex-shrink-0">
-                              <Card className="p-0 overflow-hidden">
-                                <div className="relative w-full h-[166px] bg-black">
-                                  {videoId ? (
-                                    <iframe
-                                      src={`https://www.youtube.com/embed/${videoId}`}
-                                      title={featuredVideo.title || "DJ Video"}
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                      className="w-full h-full"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <Video className="h-12 w-12 text-white/20" />
-                                    </div>
-                                  )}
-                                </div>
-                              </Card>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Upcoming Events */}
                   {upcomingEvents.length > 0 && (
                     <div>
