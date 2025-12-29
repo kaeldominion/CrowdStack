@@ -237,6 +237,8 @@ export async function POST(request: NextRequest) {
         venue_approval_status: venueApprovalStatus,
         venue_approval_at: autoApproved ? new Date().toISOString() : null,
         show_photo_email_notice: body.show_photo_email_notice || false,
+        registration_type: body.registration_type || "guestlist",
+        external_ticket_url: body.external_ticket_url || null,
       })
       .select()
       .single();

@@ -13,7 +13,9 @@ import {
   Ticket,
   CheckCircle2,
   X,
-  Settings
+  Settings,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
@@ -241,9 +243,42 @@ export function EventPageContent({
                 )}
               </div>
           
-          {/* CTA Button Row */}
+          {/* CTA Button Row - handles different registration types */}
           <div className="flex items-center gap-3">
-            {isPast ? (
+            {event.registration_type === "display_only" ? (
+              /* Display only - info message */
+              <div className="flex-1 py-3 px-4 rounded-xl bg-raised/50 border border-border-subtle text-center">
+                <p className="text-sm text-muted">
+                  <Eye className="h-4 w-4 inline mr-2" />
+                  Event info only – no registration
+                </p>
+              </div>
+            ) : event.registration_type === "external_link" ? (
+              /* External link */
+              isPast ? (
+                <Button 
+                  variant="secondary"
+                  size="lg"
+                  disabled
+                  className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
+                >
+                  <Ticket className="h-4 w-4 mr-2" />
+                  Event Ended
+                </Button>
+              ) : (
+                <a href={event.external_ticket_url} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Button 
+                    variant="primary"
+                    size="lg"
+                    className="w-full font-mono uppercase tracking-wider"
+                  >
+                    <Ticket className="h-4 w-4 mr-2" />
+                    Get Tickets
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </a>
+              )
+            ) : isPast ? (
               <Button 
                 variant="secondary"
                 size="lg"
@@ -254,6 +289,7 @@ export function EventPageContent({
                 Guestlist Closed
               </Button>
             ) : (
+              /* Guestlist - default */
               <>
                 <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="flex-1">
                   <Button 
@@ -580,74 +616,148 @@ export function EventPageContent({
           {/* Right Column - Actions */}
           <div className="lg:col-span-3">
             <div className="sticky top-24 space-y-4">
-              {/* Guestlist Card */}
-              <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
-                <div className="p-4">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                      Guestlist
-                    </h3>
-                    <Badge color={isPast ? "slate" : "green"} variant="solid" size="sm">
-                      {isPast ? "Closed" : "Open"}
-                    </Badge>
-                  </div>
-                  
-                  {/* Entry Option */}
-                  <div className={`flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle ${isPast ? "opacity-50" : ""}`}>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-primary">Standard Entry</p>
-                      <p className="text-[11px] text-muted">{isPast ? "Event Ended" : "Approval Required"}</p>
+              {/* Registration Card - handles guestlist, display_only, and external_link types */}
+              {event.registration_type === "display_only" ? (
+                /* Display Only - No registration */
+                <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                        Event Info
+                      </h3>
+                      <Badge color="slate" variant="solid" size="sm">
+                        <Eye className="h-3 w-3 mr-1" />
+                        Display Only
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span className="text-sm font-bold text-primary">Free</span>
-                      <CheckCircle2 className={`h-4 w-4 ${isPast ? "text-muted" : "text-accent-success"}`} />
-                    </div>
+                    <p className="text-sm text-muted text-center mt-4 mb-2">
+                      This event is for display purposes only.
+                    </p>
+                    <p className="text-[10px] text-muted text-center">
+                      Registration is not available through CrowdStack.
+                    </p>
                   </div>
-                  
-                  {/* Disclaimer */}
-                  <p className="text-[10px] text-muted text-center mt-3 mb-4">
-                    {isPast ? "This event has ended." : "Guestlist does not guarantee entry."}
-                  </p>
-                  
-                  {/* CTA */}
-                  {isPast ? (
-                    <Button 
-                      variant="secondary"
-                      size="lg"
-                      disabled
-                      className="w-full font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
-                    >
-                      <Ticket className="h-4 w-4 mr-2" />
-                      Guestlist Closed
-                    </Button>
-                  ) : (
-                    <Link href={isRegistered ? getPassUrl() : getRegisterUrl()}>
-                      <Button 
-                        variant={isRegistered ? "secondary" : "primary"}
-                        size="lg"
-                        className={`w-full font-mono uppercase tracking-wider ${
-                          isRegistered 
-                            ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
-                            : ""
-                        }`}
-                      >
-                        {isRegistered ? (
-                          <>
-                            <QrCode className="h-4 w-4 mr-2" />
-                            View Pass
-                          </>
-                        ) : (
-                          <>
-                            Request Entry
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </>
-                        )}
-                      </Button>
-                    </Link>
-                  )}
                 </div>
-              </div>
+              ) : event.registration_type === "external_link" ? (
+                /* External Link - Redirect to external ticketing */
+                <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                        Tickets
+                      </h3>
+                      <Badge color={isPast ? "slate" : "blue"} variant="solid" size="sm">
+                        {isPast ? "Event Ended" : "External"}
+                      </Badge>
+                    </div>
+                    
+                    <div className={`flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle ${isPast ? "opacity-50" : ""}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-primary">Get Tickets</p>
+                        <p className="text-[11px] text-muted">{isPast ? "Event Ended" : "External ticketing"}</p>
+                      </div>
+                      <ExternalLink className={`h-4 w-4 ${isPast ? "text-muted" : "text-accent-primary"}`} />
+                    </div>
+                    
+                    <p className="text-[10px] text-muted text-center mt-3 mb-4">
+                      {isPast ? "This event has ended." : "You'll be redirected to an external site."}
+                    </p>
+                    
+                    {isPast ? (
+                      <Button 
+                        variant="secondary"
+                        size="lg"
+                        disabled
+                        className="w-full font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        Event Ended
+                      </Button>
+                    ) : (
+                      <a 
+                        href={event.external_ticket_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        <Button 
+                          variant="primary"
+                          size="lg"
+                          className="w-full font-mono uppercase tracking-wider"
+                        >
+                          <Ticket className="h-4 w-4 mr-2" />
+                          Get Tickets
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Guestlist - Default CrowdStack registration */
+                <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                        Guestlist
+                      </h3>
+                      <Badge color={isPast ? "slate" : "green"} variant="solid" size="sm">
+                        {isPast ? "Closed" : "Open"}
+                      </Badge>
+                    </div>
+                    
+                    <div className={`flex items-center justify-between p-3 mt-3 rounded-lg bg-raised/80 border border-border-subtle ${isPast ? "opacity-50" : ""}`}>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-primary">Standard Entry</p>
+                        <p className="text-[11px] text-muted">{isPast ? "Event Ended" : "Approval Required"}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-sm font-bold text-primary">Free</span>
+                        <CheckCircle2 className={`h-4 w-4 ${isPast ? "text-muted" : "text-accent-success"}`} />
+                      </div>
+                    </div>
+                    
+                    <p className="text-[10px] text-muted text-center mt-3 mb-4">
+                      {isPast ? "This event has ended." : "Guestlist does not guarantee entry."}
+                    </p>
+                    
+                    {isPast ? (
+                      <Button 
+                        variant="secondary"
+                        size="lg"
+                        disabled
+                        className="w-full font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        Guestlist Closed
+                      </Button>
+                    ) : (
+                      <Link href={isRegistered ? getPassUrl() : getRegisterUrl()}>
+                        <Button 
+                          variant={isRegistered ? "secondary" : "primary"}
+                          size="lg"
+                          className={`w-full font-mono uppercase tracking-wider ${
+                            isRegistered 
+                              ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
+                              : ""
+                          }`}
+                        >
+                          {isRegistered ? (
+                            <>
+                              <QrCode className="h-4 w-4 mr-2" />
+                              View Pass
+                            </>
+                          ) : (
+                            <>
+                              Request Entry
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </>
+                          )}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {/* Actions Row */}
               <div className="flex gap-2">

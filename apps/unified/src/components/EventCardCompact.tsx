@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@crowdstack/ui";
-import { QrCode, MapPin, MoreHorizontal, Ticket } from "lucide-react";
+import { QrCode, MapPin, MoreHorizontal, Ticket, ExternalLink, Eye } from "lucide-react";
 
 interface EventCardCompactProps {
   event: {
@@ -22,6 +22,10 @@ interface EventCardCompactProps {
     capacity?: number | null;
     /** Number of registrations */
     registration_count?: number;
+    /** Registration type: guestlist, display_only, or external_link */
+    registration_type?: "guestlist" | "display_only" | "external_link";
+    /** External ticket URL for external_link type */
+    external_ticket_url?: string | null;
   };
   registration?: {
     id: string;

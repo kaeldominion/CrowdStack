@@ -15,6 +15,8 @@ export function MobileStickyCTAWrapper({
   description,
   flierUrl,
   flierVideoUrl,
+  registrationType = "guestlist",
+  externalTicketUrl,
 }: {
   eventSlug: string;
   eventName: string;
@@ -25,6 +27,8 @@ export function MobileStickyCTAWrapper({
   description?: string | null;
   flierUrl?: string | null;
   flierVideoUrl?: string | null;
+  registrationType?: "guestlist" | "display_only" | "external_link";
+  externalTicketUrl?: string | null;
 }) {
   const userId = useReferralUserId();
   const searchParams = useSearchParams();
@@ -64,12 +68,43 @@ export function MobileStickyCTAWrapper({
     return baseUrl;
   };
   
+  // Determine CTA based on registration type
+  const getCTAProps = () => {
+    // Display only - hide the main CTA (only show share)
+    if (registrationType === "display_only") {
+      return {
+        href: "#",
+        label: "Info Only",
+        disabled: true,
+      };
+    }
+    
+    // External link - redirect to external ticketing
+    if (registrationType === "external_link" && externalTicketUrl) {
+      return {
+        href: externalTicketUrl,
+        label: isPast ? "Event Ended" : "Get Tickets",
+        isExternal: true,
+      };
+    }
+    
+    // Default: guestlist registration
+    return {
+      href: isRegistered && passUrl ? passUrl : getRegisterUrl(),
+      label: isPast ? "Guestlist Closed" : isRegistered ? "View Pass" : "Register Now",
+    };
+  };
+  
+  const ctaProps = getCTAProps();
+  
   return (
     <MobileStickyCTA
-      href={isRegistered && passUrl ? passUrl : getRegisterUrl()}
-      label={isPast ? "Guestlist Closed" : isRegistered ? "View Pass" : "Register Now"}
-      isRegistered={isRegistered}
+      href={ctaProps.href}
+      label={ctaProps.label}
+      isRegistered={registrationType === "guestlist" ? isRegistered : false}
       isPast={isPast}
+      isExternal={registrationType === "external_link"}
+      isDisplayOnly={registrationType === "display_only"}
       eventName={eventName}
       shareUrl={shareUrl}
       shareTitle={eventName}

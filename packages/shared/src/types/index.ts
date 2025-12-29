@@ -649,6 +649,8 @@ export interface CheckinResponse {
 
 export type PromoterAccessType = "public" | "invite_only";
 
+export type RegistrationType = "guestlist" | "display_only" | "external_link";
+
 export interface CreateEventRequest {
   name: string;
   slug: string;
@@ -663,6 +665,8 @@ export interface CreateEventRequest {
   promoter_access_type?: PromoterAccessType;
   self_promote?: boolean;
   show_photo_email_notice?: boolean;
+  registration_type?: RegistrationType;
+  external_ticket_url?: string;
   promoters?: Array<{
     promoter_id: string;
     commission_type: CommissionType;

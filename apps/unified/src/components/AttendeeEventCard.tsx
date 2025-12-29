@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge, ConfirmModal, InlineSpinner } from "@crowdstack/ui";
-import { QrCode, Check, X, Ticket } from "lucide-react";
+import { QrCode, Check, X, Ticket, ExternalLink, Eye } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { useReferralUserId } from "@/components/ReferralTracker";
 
@@ -24,6 +24,10 @@ interface AttendeeEventCardProps {
     capacity?: number | null;
     /** Number of registrations */
     registration_count?: number;
+    /** Registration type: guestlist, display_only, or external_link */
+    registration_type?: "guestlist" | "display_only" | "external_link";
+    /** External ticket URL for external_link type */
+    external_ticket_url?: string | null;
   };
   registration?: {
     id: string;
@@ -168,6 +172,13 @@ export function AttendeeEventCard({
     }
     if (isGuestlistClosed) {
       return { text: "CLOSED", color: "amber" as const, showDot: false };
+    }
+    // Show registration type badges
+    if (event.registration_type === "display_only") {
+      return { text: "INFO", color: "slate" as const, showDot: false, icon: Eye };
+    }
+    if (event.registration_type === "external_link") {
+      return { text: "EXTERNAL", color: "blue" as const, showDot: false, icon: ExternalLink };
     }
     if (badgeText) {
       return { text: badgeText.toUpperCase(), color: "purple" as const, showDot: false };

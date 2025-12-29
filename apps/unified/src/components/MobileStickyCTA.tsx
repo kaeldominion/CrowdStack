@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video, QrCode, Ticket } from "lucide-react";
+import { ArrowRight, Image as ImageIcon, FileText, Share2, Link2, Check, X, Video, QrCode, Ticket, ExternalLink } from "lucide-react";
 import { InlineSpinner } from "@crowdstack/ui";
 import { useFlierToggle } from "./MobileFlierExperience";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -19,6 +19,8 @@ interface MobileStickyCTAProps {
   userId?: string;
   isRegistered?: boolean;
   isPast?: boolean;
+  isExternal?: boolean;
+  isDisplayOnly?: boolean;
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -49,6 +51,8 @@ export function MobileStickyCTA({
   userId: userIdProp,
   isRegistered = false,
   isPast = false,
+  isExternal = false,
+  isDisplayOnly = false,
 }: MobileStickyCTAProps) {
   // Automatically fetch userId if not provided
   const [currentUserId, setCurrentUserId] = useState<string | null>(userIdProp || null);
@@ -363,8 +367,11 @@ export function MobileStickyCTA({
           </button>
         )}
 
-        {/* Register / View Pass Button */}
-        {isPast ? (
+        {/* Register / View Pass / Get Tickets Button */}
+        {isDisplayOnly ? (
+          /* Display only - no CTA button, just share */
+          null
+        ) : isPast ? (
           <div 
             className="flex items-center gap-2 px-5 py-3.5 rounded-full 
                        font-mono text-[11px] font-bold uppercase tracking-wider
@@ -377,6 +384,26 @@ export function MobileStickyCTA({
             <Ticket className="h-4 w-4 flex-shrink-0" />
             {label}
           </div>
+        ) : isExternal ? (
+          /* External ticketing link */
+          <a 
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-5 py-3.5 rounded-full 
+                       font-mono text-[11px] font-bold uppercase tracking-wider
+                       border
+                       backdrop-blur-sm
+                       whitespace-nowrap
+                       hover:scale-105 
+                       active:scale-95
+                       transition-all duration-200
+                       bg-gradient-to-r from-blue-600 to-blue-500 border-blue-500/50 text-white shadow-lg shadow-blue-500/30"
+          >
+            <Ticket className="h-4 w-4 flex-shrink-0" />
+            {label}
+            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+          </a>
         ) : (
           <Link 
             href={href} 

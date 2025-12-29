@@ -168,6 +168,8 @@ export async function POST(request: NextRequest) {
         status: "draft",
         promoter_access_type: "public", // Default for venue-created events
         show_photo_email_notice: body.show_photo_email_notice || false,
+        registration_type: body.registration_type || "guestlist",
+        external_ticket_url: body.external_ticket_url || null,
       })
       .select()
       .single();

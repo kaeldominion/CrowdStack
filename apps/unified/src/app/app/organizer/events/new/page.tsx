@@ -25,6 +25,8 @@ export default function NewEventPage() {
     self_promote: true,
     selected_promoters: [] as string[],
     show_photo_email_notice: false,
+    registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
+    external_ticket_url: "",
   });
   const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
   const [flierVideoFile, setFlierVideoFile] = useState<File | null>(null);
@@ -160,6 +162,8 @@ export default function NewEventPage() {
         promoter_access_type: formData.promoter_access_type,
         self_promote: formData.self_promote,
         show_photo_email_notice: formData.show_photo_email_notice,
+        registration_type: formData.registration_type,
+        external_ticket_url: formData.registration_type === "external_link" ? formData.external_ticket_url : undefined,
       };
 
       // Add promoters if selected
@@ -342,6 +346,46 @@ export default function NewEventPage() {
               onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
               placeholder="500"
             />
+          </div>
+
+          {/* Registration Type */}
+          <div className="space-y-4 border-t border-border pt-6">
+            <h3 className="text-lg font-semibold text-white">Registration Settings</h3>
+            
+            <div>
+              <label className="block text-sm font-medium text-primary mb-2">Registration Type</label>
+              <select
+                value={formData.registration_type}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    registration_type: e.target.value as "guestlist" | "display_only" | "external_link",
+                  })
+                }
+                className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
+              >
+                <option value="guestlist">Guestlist - Attendees register through CrowdStack</option>
+                <option value="display_only">Display Only - Show event info, no registration</option>
+                <option value="external_link">External Tickets - Link to external ticketing (RA, Eventbrite, etc.)</option>
+              </select>
+              <p className="mt-1 text-xs text-secondary">
+                {formData.registration_type === "guestlist" && "Attendees can register directly through CrowdStack with QR check-in."}
+                {formData.registration_type === "display_only" && "Event will be visible but no registration button will be shown."}
+                {formData.registration_type === "external_link" && "A \"Get Tickets\" button will link to your external ticketing page."}
+              </p>
+            </div>
+
+            {formData.registration_type === "external_link" && (
+              <Input
+                label="External Ticket URL"
+                type="url"
+                required
+                value={formData.external_ticket_url}
+                onChange={(e) => setFormData({ ...formData, external_ticket_url: e.target.value })}
+                placeholder="https://ra.co/events/..."
+                helperText="Full URL to your external ticketing page"
+              />
+            )}
           </div>
 
           {/* Flier Upload */}

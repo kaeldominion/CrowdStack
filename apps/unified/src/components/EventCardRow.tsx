@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Ticket, MapPin, Check } from "lucide-react";
+import { Ticket, MapPin, Check, ExternalLink, Eye } from "lucide-react";
 import { Card, Badge } from "@crowdstack/ui";
 import { ShareButton } from "@/components/ShareButton";
 
@@ -29,6 +29,10 @@ interface EventCardRowProps {
       name: string;
       city?: string | null;
     } | null;
+    /** Registration type: guestlist, display_only, or external_link */
+    registration_type?: "guestlist" | "display_only" | "external_link";
+    /** External ticket URL for external_link type */
+    external_ticket_url?: string | null;
   };
   /** Recent attendees for avatar display */
   recentAttendees?: Attendee[];

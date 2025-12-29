@@ -21,6 +21,10 @@ import {
   Download,
   ChevronRight,
   Loader2,
+  Ticket,
+  QrCode,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -169,6 +173,148 @@ export default function ButtonsPage() {
               </div>
               <div className="mt-4">
                 <CodeBlock>className="w-full"</CodeBlock>
+              </div>
+            </Card>
+          </div>
+        </section>
+
+        {/* ============================================ */}
+        {/* REGISTRATION TYPE BUTTONS */}
+        {/* ============================================ */}
+        <section>
+          <SectionHeader 
+            title="Registration Type CTAs" 
+            subtitle="Different button states based on event registration type"
+          />
+          
+          <div className="space-y-6">
+            {/* Guestlist - Default */}
+            <Card padding="compact">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">
+                Guestlist (Default)
+              </p>
+              <p className="text-sm text-muted mb-4">Standard CrowdStack registration - users join the guestlist</p>
+              <div className="space-y-3 max-w-sm">
+                {/* Open state */}
+                <Button variant="primary" size="lg" className="w-full font-mono uppercase tracking-wider">
+                  <Ticket className="h-4 w-4 mr-2" />
+                  Join Guestlist
+                </Button>
+                {/* Registered state */}
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  className="w-full font-mono uppercase tracking-wider bg-accent-success/20 border-accent-success/50 text-accent-success"
+                >
+                  <QrCode className="h-4 w-4 mr-2" />
+                  View Entry Pass
+                </Button>
+                {/* Closed state */}
+                <Button 
+                  variant="secondary" 
+                  size="lg" 
+                  disabled
+                  className="w-full font-mono uppercase tracking-wider opacity-60"
+                >
+                  <Ticket className="h-4 w-4 mr-2" />
+                  Guestlist Closed
+                </Button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <CodeBlock>registration_type="guestlist"</CodeBlock>
+              </div>
+            </Card>
+
+            {/* External Link */}
+            <Card padding="compact">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">
+                External Tickets
+              </p>
+              <p className="text-sm text-muted mb-4">Links to external ticketing (RA, Eventbrite, etc.)</p>
+              <div className="space-y-3 max-w-sm">
+                {/* Active state */}
+                <Button variant="primary" size="lg" className="w-full font-mono uppercase tracking-wider">
+                  <Ticket className="h-4 w-4 mr-2" />
+                  Get Tickets
+                  <ExternalLink className="h-4 w-4 ml-2" />
+                </Button>
+                {/* Badge example */}
+                <div className="flex items-center gap-2">
+                  <Badge color="blue" variant="solid" size="sm">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    External
+                  </Badge>
+                  <span className="text-xs text-muted">Shows in event cards</span>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <CodeBlock>registration_type="external_link"</CodeBlock>
+              </div>
+            </Card>
+
+            {/* Display Only */}
+            <Card padding="compact">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">
+                Display Only
+              </p>
+              <p className="text-sm text-muted mb-4">Event info only - no registration or ticketing</p>
+              <div className="space-y-3 max-w-sm">
+                {/* Info message */}
+                <div className="py-3 px-4 rounded-xl bg-raised/50 border border-border-subtle text-center">
+                  <p className="text-sm text-muted">
+                    <Eye className="h-4 w-4 inline mr-2" />
+                    Event info only – no registration
+                  </p>
+                </div>
+                {/* Badge example */}
+                <div className="flex items-center gap-2">
+                  <Badge color="slate" variant="solid" size="sm">
+                    <Eye className="h-3 w-3 mr-1" />
+                    Info
+                  </Badge>
+                  <span className="text-xs text-muted">Shows in event cards</span>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <CodeBlock>registration_type="display_only"</CodeBlock>
+              </div>
+            </Card>
+
+            {/* Mobile CTA Variants */}
+            <Card padding="compact">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">
+                Mobile Sticky CTA Variants
+              </p>
+              <p className="text-sm text-muted mb-4">How the mobile bottom bar changes per registration type</p>
+              <div className="space-y-4 max-w-md">
+                {/* Guestlist */}
+                <div className="flex items-center gap-2 p-3 bg-void rounded-xl border border-border-subtle">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-mono text-muted uppercase">Guestlist:</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-5 py-3 rounded-full font-mono text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-accent-secondary to-accent-primary border-accent-primary/50 text-void shadow-lg">
+                    <Ticket className="h-4 w-4" />
+                    Register Now
+                  </div>
+                </div>
+                {/* External */}
+                <div className="flex items-center gap-2 p-3 bg-void rounded-xl border border-border-subtle">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-mono text-muted uppercase">External:</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-5 py-3 rounded-full font-mono text-[11px] font-bold uppercase tracking-wider bg-gradient-to-r from-blue-600 to-blue-500 border-blue-500/50 text-white shadow-lg">
+                    <Ticket className="h-4 w-4" />
+                    Get Tickets
+                    <ExternalLink className="h-3 w-3" />
+                  </div>
+                </div>
+                {/* Display only - no CTA */}
+                <div className="flex items-center gap-2 p-3 bg-void rounded-xl border border-border-subtle">
+                  <div className="flex-1">
+                    <span className="text-[10px] font-mono text-muted uppercase">Display Only:</span>
+                  </div>
+                  <span className="text-xs text-muted italic">No CTA button (share only)</span>
+                </div>
               </div>
             </Card>
           </div>

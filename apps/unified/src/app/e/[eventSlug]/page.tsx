@@ -293,6 +293,8 @@ export default async function EventPage({
               description={event.description}
               flierUrl={event.flier_url}
               flierVideoUrl={event.flier_video_url}
+              registrationType={event.registration_type || "guestlist"}
+              externalTicketUrl={event.external_ticket_url}
             />
           </Suspense>
         </>
