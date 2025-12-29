@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button, Badge, Modal, Input, Textarea, ConfirmModal } from "@crowdstack/ui";
-import { Radio, MapPin, Calendar, Users, ExternalLink, Instagram, Music, Globe, Image as ImageIcon, Video, Settings, Plus, Edit, Trash2, Loader2, Circle, X } from "lucide-react";
+import { Radio, MapPin, Calendar, Users, Instagram, Globe, Image as ImageIcon, Video, Settings, Plus, Edit, Trash2, Loader2, Circle, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { DJFollowButton } from "@/components/DJFollowButton";
@@ -699,21 +699,20 @@ export function DJProfilePageContent({
                 </div>
               )}
 
-              {/* Social Links */}
+              {/* Social Links - Icon Only */}
               {(dj.instagram_url || dj.soundcloud_url || dj.mixcloud_url || dj.spotify_url || dj.youtube_url || dj.website_url) && (
                 <div>
                   <h3 className="font-sans text-xs font-bold uppercase tracking-wider text-primary mb-3">Links</h3>
-                  <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
                     {dj.instagram_url && (
                       <a
                         href={dj.instagram_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-accent-primary/50 transition-all text-secondary hover:text-primary"
+                        title="Instagram"
                       >
-                        <Instagram className="h-4 w-4" />
-                        <span>Instagram</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <Instagram className="h-5 w-5" />
                       </a>
                     )}
                     {dj.soundcloud_url && (
@@ -721,11 +720,12 @@ export function DJProfilePageContent({
                         href={dj.soundcloud_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-[#ff5500]/50 transition-all text-secondary hover:text-[#ff5500]"
+                        title="SoundCloud"
                       >
-                        <Music className="h-4 w-4" />
-                        <span>SoundCloud</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M1.175 12.225c-.051 0-.094.046-.101.1l-.233 2.154.233 2.105c.007.058.05.098.101.098.05 0 .09-.04.099-.098l.255-2.105-.27-2.154c-.006-.057-.048-.1-.084-.1zm-.899.828c-.06 0-.091.037-.104.094L0 14.479l.165 1.308c.014.057.045.094.09.094s.089-.037.099-.094l.19-1.308-.19-1.334c-.01-.057-.044-.094-.09-.094l.012.002zm1.83-1.229c-.06 0-.12.037-.12.1l-.21 2.563.225 2.458c0 .06.045.09.105.09.061 0 .09-.03.105-.09l.239-2.458-.239-2.553c-.015-.074-.044-.11-.105-.11zm.945-.089c-.075 0-.135.06-.15.135l-.193 2.64.21 2.544c.016.077.075.138.149.138.075 0 .135-.061.15-.138l.24-2.544-.24-2.64c-.015-.075-.075-.135-.15-.135l-.016-.005zm1.155.36c-.005-.09-.075-.149-.159-.149-.09 0-.158.06-.164.149l-.217 2.43.2 2.563c.005.09.074.149.163.149.09 0 .16-.06.165-.149l.226-2.563-.214-2.43zm.809-1.709c-.101 0-.18.09-.18.181l-.21 3.957.187 2.563c0 .09.08.164.18.164.09 0 .18-.075.18-.165l.209-2.563-.209-3.956c-.015-.104-.089-.181-.18-.181h.023zm.944-.914c-.105 0-.195.09-.21.194l-.179 4.872.179 2.549c.015.104.105.179.21.179.104 0 .194-.075.209-.18l.194-2.549-.194-4.871c-.015-.105-.105-.195-.209-.195v.001zm.93-.12c-.12 0-.21.09-.225.21l-.164 4.992.165 2.518c.015.12.105.21.225.21.119 0 .209-.09.224-.21l.18-2.518-.18-4.992c-.015-.12-.105-.21-.225-.21l.01.001-.01-.001zm1.155-2.018c-.135 0-.24.105-.255.24l-.15 7.005.15 2.459c.015.135.12.24.256.24.135 0 .239-.105.254-.24l.166-2.459-.165-7.005c-.016-.135-.12-.24-.256-.24zm.809 0c-.15 0-.27.119-.27.27l-.134 6.974.134 2.459c0 .149.12.269.27.269.15 0 .27-.12.27-.27l.149-2.458-.149-6.974c0-.15-.12-.27-.27-.27zm.81 0c-.15 0-.27.12-.286.27l-.119 6.974.12 2.459c.014.149.134.269.284.269.15 0 .27-.12.285-.27l.135-2.458-.135-6.974c-.015-.15-.135-.27-.285-.27zm2.115-1.904c-.165 0-.3.135-.314.299l-.12 8.879.12 2.413c.014.165.149.3.314.3.164 0 .299-.135.314-.3l.135-2.413-.135-8.879c-.015-.165-.15-.3-.314-.3zm-.855.584c-.165 0-.3.12-.3.285l-.105 8.295.105 2.429c0 .165.135.285.3.285.164 0 .299-.12.299-.285l.12-2.429-.12-8.295c0-.165-.134-.285-.299-.285zm1.739-1.454c-.18 0-.33.15-.345.33l-.105 9.644.105 2.399c.015.18.165.33.345.33.18 0 .33-.15.345-.33l.12-2.399-.12-9.644c-.015-.18-.165-.33-.345-.33zm.84-.105c-.195 0-.345.15-.36.345l-.09 9.749.09 2.385c.015.194.165.344.36.344.194 0 .345-.15.359-.345l.105-2.384-.105-9.75c-.014-.194-.164-.344-.359-.344zm.855-.239c-.21 0-.375.166-.39.376l-.075 9.988.075 2.37c.015.21.18.376.39.376.21 0 .375-.166.39-.375l.09-2.371-.09-9.988c-.015-.21-.18-.376-.39-.376zm2.955-.764c-.074 0-.149.03-.209.075-.314-.18-.674-.284-1.049-.284-.105 0-.21.014-.3.029-.21.015-.374.195-.374.405l-.001 12.389c0 .21.165.39.375.42.029.006.029.006.044.006h1.514c1.125 0 2.04-.914 2.04-2.04V9.62c0-1.124-.914-2.039-2.04-2.039z"/>
+                        </svg>
                       </a>
                     )}
                     {dj.mixcloud_url && (
@@ -733,11 +733,12 @@ export function DJProfilePageContent({
                         href={dj.mixcloud_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-[#5000ff]/50 transition-all text-secondary hover:text-[#5000ff]"
+                        title="Mixcloud"
                       >
-                        <Music className="h-4 w-4" />
-                        <span>Mixcloud</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M1.57 12.569c0 2.327 1.751 4.262 4.07 4.508v-1.27c-1.604-.24-2.84-1.62-2.84-3.248 0-1.814 1.47-3.283 3.283-3.283.753 0 1.447.256 2.002.684v-1.484C7.29 8.097 6.416 7.9 5.493 7.9c-2.579 0-4.672 2.093-4.672 4.672l.75-.003zm5.55 4.615v-1.27c1.464-.21 2.593-1.469 2.593-2.987 0-1.666-1.35-3.016-3.016-3.016-.372 0-.73.07-1.062.195v1.485c.315-.172.678-.268 1.062-.268.906 0 1.64.735 1.64 1.64 0 .906-.735 1.64-1.64 1.64l-.328-.03v1.27c.11.008.218.016.329.016 1.93 0 3.508-1.507 3.608-3.405l1.242-.008c.11 1.868 1.66 3.35 3.574 3.35.11 0 .218-.008.328-.016v-1.27l-.328.03c-.906 0-1.64-.734-1.64-1.64 0-.905.734-1.64 1.64-1.64.384 0 .746.096 1.062.268v-1.485c-.332-.125-.69-.195-1.062-.195-1.666 0-3.016 1.35-3.016 3.016 0 1.518 1.13 2.777 2.593 2.987v1.27h-1.115c.165-.378.264-.79.264-1.226 0-1.814-1.47-3.283-3.283-3.283-.753 0-1.447.255-2.002.683v1.485c.398-.341.916-.55 1.482-.55.906 0 1.64.735 1.64 1.64 0 .437-.099.848-.264 1.226H7.12zm10.44-4.615c0 2.579-2.093 4.672-4.672 4.672-.923 0-1.797-.197-2.591-.577v-1.484c.555.428 1.249.684 2.002.684 1.814 0 3.283-1.469 3.283-3.283 0-1.63-1.236-3.008-2.84-3.248v-1.27c2.319.245 4.07 2.18 4.07 4.508l-.251-.002z"/>
+                        </svg>
                       </a>
                     )}
                     {dj.spotify_url && (
@@ -745,11 +746,12 @@ export function DJProfilePageContent({
                         href={dj.spotify_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-[#1db954]/50 transition-all text-secondary hover:text-[#1db954]"
+                        title="Spotify"
                       >
-                        <Music className="h-4 w-4" />
-                        <span>Spotify</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                        </svg>
                       </a>
                     )}
                     {dj.youtube_url && (
@@ -757,11 +759,12 @@ export function DJProfilePageContent({
                         href={dj.youtube_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-[#ff0000]/50 transition-all text-secondary hover:text-[#ff0000]"
+                        title="YouTube"
                       >
-                        <Video className="h-4 w-4" />
-                        <span>YouTube</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
                       </a>
                     )}
                     {dj.website_url && (
@@ -769,11 +772,10 @@ export function DJProfilePageContent({
                         href={dj.website_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 bg-glass border border-border-subtle rounded-lg hover:bg-white/10 transition-colors text-sm text-primary"
+                        className="flex items-center justify-center w-10 h-10 bg-glass border border-border-subtle rounded-xl hover:bg-white/10 hover:border-accent-primary/50 transition-all text-secondary hover:text-primary"
+                        title="Website"
                       >
-                        <Globe className="h-4 w-4" />
-                        <span>Website</span>
-                        <ExternalLink className="h-3 w-3 text-secondary ml-auto" />
+                        <Globe className="h-5 w-5" />
                       </a>
                     )}
                   </div>
