@@ -62,9 +62,9 @@ export function VenueCard({
         href={venueUrl} 
         className={`block group relative rounded-xl overflow-hidden border border-border-subtle hover:border-accent-primary/50 transition-all shadow-soft hover:shadow-lg bg-void ${className}`}
       >
-        <div className="flex h-24">
+        <div className="flex min-h-[96px]">
         {/* Image */}
-          <div className="relative w-24 h-24 flex-shrink-0">
+          <div className="relative w-24 h-auto min-h-[96px] flex-shrink-0">
             {heroImage ? (
               <img
                 src={heroImage}
@@ -79,18 +79,34 @@ export function VenueCard({
           </div>
           
           {/* Content */}
-          <div className="flex-1 min-w-0 p-3 flex flex-col justify-center">
+          <div className="flex-1 min-w-0 p-3 flex flex-col justify-center gap-1.5">
             <h3 className="font-sans text-sm font-bold text-primary group-hover:text-accent-secondary transition-colors truncate">
               {venue.name}
             </h3>
             {location && (
-              <div className="flex items-center gap-1 mt-1 text-secondary">
+              <div className="flex items-center gap-1 text-secondary">
                 <MapPin className="h-3 w-3 flex-shrink-0" />
                 <span className="text-xs truncate">{location}</span>
               </div>
             )}
+            {/* Tags row */}
+            {showTags && categoryTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {categoryTags.map((tag, i) => (
+                  <Badge 
+                    key={i}
+                    color="purple" 
+                    variant="ghost"
+                    size="sm"
+                    className="!text-[9px] !px-1.5 !py-0.5"
+                  >
+                    {tag.tag_value}
+                  </Badge>
+                ))}
+              </div>
+            )}
             {showRating && (
-              <div className="flex items-center gap-1 mt-1.5">
+              <div className="flex items-center gap-1">
                 <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                 <span className="text-xs font-medium text-secondary">{rating.toFixed(1)}</span>
               </div>

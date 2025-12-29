@@ -40,7 +40,20 @@ async function getEvent(slug: string) {
       .select(`
         *,
         organizer:organizers!events_organizer_id_fkey(id, name),
-        venue:venues(id, name, slug, address, city, state, country, google_maps_url, cover_image_url, logo_url)
+        venue:venues(
+          id, 
+          name, 
+          slug, 
+          address, 
+          city, 
+          state, 
+          country, 
+          google_maps_url, 
+          cover_image_url, 
+          logo_url,
+          rating,
+          venue_tags(tag_type, tag_value)
+        )
       `)
       .eq("slug", slug)
       .eq("status", "published")
