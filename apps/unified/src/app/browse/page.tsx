@@ -50,6 +50,8 @@ interface DJ {
   location?: string | null;
   profile_image_url?: string | null;
   cover_image_url?: string | null;
+  follower_count?: number | null;
+  event_count?: number | null;
 }
 
 type TabType = "events" | "djs" | "venues" | "history";
@@ -508,11 +510,20 @@ export default function BrowsePage() {
               </div>
 
               {djsLoading && djs.length === 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(6)].map((_, i) => (
-                    <DJCardSkeleton key={i} layout="portrait" />
-                  ))}
-                </div>
+                <>
+                  {/* Skeleton for portrait cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                      <DJCardSkeleton key={i} layout="portrait" />
+                    ))}
+                  </div>
+                  {/* Skeleton for row cards */}
+                  <div className="space-y-3">
+                    {[...Array(3)].map((_, i) => (
+                      <DJCardSkeleton key={`row-${i}`} layout="row" />
+                    ))}
+                  </div>
+                </>
               ) : djs.length === 0 ? (
                 <Card className="!border-dashed !p-12 text-center">
                   <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
@@ -521,11 +532,24 @@ export default function BrowsePage() {
                 </Card>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {djs.map((dj) => (
-                      <DJCard key={dj.id} dj={dj} layout="portrait" />
-                    ))}
-                  </div>
+                  {/* First row: Portrait/Full cards (first 3 DJs) */}
+                  {djs.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {djs.slice(0, 3).map((dj) => (
+                        <DJCard key={dj.id} dj={dj} layout="portrait" showStats />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Remaining DJs: Row/List format */}
+                  {djs.length > 3 && (
+                    <div className="space-y-3">
+                      {djs.slice(3).map((dj) => (
+                        <DJCard key={dj.id} dj={dj} layout="row" showStats />
+                      ))}
+                    </div>
+                  )}
+
                   {hasMoreDjs && (
                     <div className="mt-8 text-center">
                       <button

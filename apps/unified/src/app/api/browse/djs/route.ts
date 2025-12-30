@@ -31,27 +31,26 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceRoleClient();
 
     // Get all DJ IDs with their follower counts (for sorting by popularity)
-    const { data: djFollowCounts } = await supabase
+    const { data: allFollows } = await supabase
       .from("dj_follows")
-      .select("dj_id")
-      .then(async (result) => {
-        if (result.error) return { data: null };
-        
-        // Count follows per DJ
-        const counts: Record<string, number> = {};
-        result.data?.forEach((follow) => {
-          counts[follow.dj_id] = (counts[follow.dj_id] || 0) + 1;
-        });
-        return { data: counts };
-      });
+      .select("dj_id");
+    
+    const djFollowCounts: Record<string, number> = {};
+    allFollows?.forEach((follow) => {
+      djFollowCounts[follow.dj_id] = (djFollowCounts[follow.dj_id] || 0) + 1;
+    });
 
-    // Get DJ IDs that have at least one event in lineup
-    // This prevents spam/empty profiles from appearing in browse
-    const { data: djsWithEvents } = await supabase
+    // Get DJ IDs with their event counts from lineups
+    const { data: allLineups } = await supabase
       .from("event_lineups")
       .select("dj_id");
     
-    const djIdsWithEvents = new Set(djsWithEvents?.map(l => l.dj_id) || []);
+    const djEventCounts: Record<string, number> = {};
+    allLineups?.forEach((lineup) => {
+      djEventCounts[lineup.dj_id] = (djEventCounts[lineup.dj_id] || 0) + 1;
+    });
+    
+    const djIdsWithEvents = new Set(Object.keys(djEventCounts));
 
     // Build the base query - only show DJs with profile images (completed profiles)
     // Filter out both null AND empty string values
@@ -98,8 +97,8 @@ export async function GET(request: NextRequest) {
 
     // Sort by follower count (most popular first), then by name
     const sortedDjs = filteredDjs.sort((a, b) => {
-      const aFollowers = djFollowCounts?.[a.id] || 0;
-      const bFollowers = djFollowCounts?.[b.id] || 0;
+      const aFollowers = djFollowCounts[a.id] || 0;
+      const bFollowers = djFollowCounts[b.id] || 0;
       
       // Sort by followers descending, then by name ascending
       if (bFollowers !== aFollowers) {
@@ -111,9 +110,16 @@ export async function GET(request: NextRequest) {
     // Apply pagination after sorting
     const paginatedDjs = sortedDjs.slice(offset, offset + limit);
 
+    // Add follower_count and event_count to each DJ for display
+    const djsWithStats = paginatedDjs.map(dj => ({
+      ...dj,
+      follower_count: djFollowCounts[dj.id] || 0,
+      event_count: djEventCounts[dj.id] || 0,
+    }));
+
     return NextResponse.json({
-      djs: paginatedDjs,
-      count: paginatedDjs.length,
+      djs: djsWithStats,
+      count: djsWithStats.length,
       totalCount: sortedDjs.length, // Use filtered count, not raw count
       offset,
       limit,
