@@ -72,53 +72,64 @@ export default function AdminDJsPage() {
           <div className="flex justify-center items-center min-h-[400px]">
             <LoadingSpinner size="lg" />
           </div>
-        </Section>
-      </Container>
+        </Container>
+      </Section>
+    </div>
     );
   }
 
   return (
-    <Container>
-      <Section>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tighter text-white mb-2">DJs</h1>
-            <p className="text-white/60">Manage all DJ profiles</p>
-          </div>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create DJ Profile
-          </Button>
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-            <Input
-              type="text"
-              placeholder="Search by name, handle, location, or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {/* DJs Table */}
-        <Card className="overflow-hidden">
-          {filteredDJs.length === 0 ? (
-            <div className="p-12 text-center">
-              <Radio className="h-12 w-12 text-white/20 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">
-                {search ? "No DJs found" : "No DJs yet"}
-              </h3>
-              <p className="text-white/60">
-                {search ? "Try adjusting your search" : "DJ profiles will appear here once created"}
+    <div className="min-h-screen">
+      <Section spacing="lg">
+        <Container>
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">DJ Management</h1>
+              <p className="text-sm text-secondary">
+                Manage all DJ profiles
               </p>
             </div>
-          ) : (
-            <Table>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create DJ Profile
+            </Button>
+          </div>
+
+          {/* Search */}
+          <Card className="!p-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+              <Input
+                type="text"
+                placeholder="Search by name, handle, location, or email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </Card>
+
+          <div className="mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredDJs.length} of {djs.length} DJs
+            </p>
+          </div>
+
+          {/* DJs Table */}
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              {filteredDJs.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-primary mb-2">
+                    {search ? "No DJs found" : "No DJs yet"}
+                  </h3>
+                  <p className="text-secondary">
+                    {search ? "Try adjusting your search" : "DJ profiles will appear here once created"}
+                  </p>
+                </div>
+              ) : (
+                <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>DJ</TableHead>
@@ -151,24 +162,24 @@ export default function AdminDJsPage() {
                           </div>
                         )}
                         <div>
-                          <div className="font-medium text-white">{dj.name}</div>
+                          <div className="font-medium text-primary">{dj.name}</div>
                           {dj.email && (
-                            <div className="text-sm text-white/60">{dj.email}</div>
+                            <div className="text-sm text-secondary">{dj.email}</div>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm text-white/80">{dj.handle}</code>
+                      <code className="text-sm text-primary font-mono">{dj.handle}</code>
                     </TableCell>
                     <TableCell>
                       {dj.location ? (
-                        <div className="flex items-center gap-1 text-white/60">
+                        <div className="flex items-center gap-1 text-secondary">
                           <MapPin className="h-3 w-3" />
                           <span>{dj.location}</span>
                         </div>
                       ) : (
-                        <span className="text-white/40">—</span>
+                        <span className="text-muted">—</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -186,17 +197,17 @@ export default function AdminDJsPage() {
                           )}
                         </div>
                       ) : (
-                        <span className="text-white/40">—</span>
+                        <span className="text-muted">—</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className="text-white/80">{dj.mixes_count || 0}</span>
+                      <span className="text-primary">{dj.mixes_count || 0}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-white/80">{dj.follower_count || 0}</span>
+                      <span className="text-primary">{dj.follower_count || 0}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-white/60 text-sm">
+                      <span className="text-secondary text-sm">
                         {new Date(dj.created_at).toLocaleDateString()}
                       </span>
                     </TableCell>
@@ -219,54 +230,56 @@ export default function AdminDJsPage() {
                 ))}
               </TableBody>
             </Table>
+              )}
+            </div>
+          </Card>
+
+          {/* Stats Summary */}
+          {djs.length > 0 && (
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-4">
+              <Card className="!p-4">
+                <div className="text-center">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">Total DJs</p>
+                  <p className="text-2xl font-bold text-primary">{djs.length}</p>
+                </div>
+              </Card>
+              <Card className="!p-4">
+                <div className="text-center">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">Total Mixes</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {djs.reduce((sum, dj) => sum + (dj.mixes_count || 0), 0)}
+                  </p>
+                </div>
+              </Card>
+              <Card className="!p-4">
+                <div className="text-center">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">Total Followers</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {djs.reduce((sum, dj) => sum + (dj.follower_count || 0), 0)}
+                  </p>
+                </div>
+              </Card>
+              <Card className="!p-4">
+                <div className="text-center">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">DJs with Mixes</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {djs.filter((dj) => dj.mixes_count > 0).length}
+                  </p>
+                </div>
+              </Card>
+            </div>
           )}
-        </Card>
 
-        {/* Stats Summary */}
-        {djs.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">{djs.length}</div>
-                <div className="text-sm text-white/60">Total DJs</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">
-                  {djs.reduce((sum, dj) => sum + (dj.mixes_count || 0), 0)}
-                </div>
-                <div className="text-sm text-white/60">Total Mixes</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">
-                  {djs.reduce((sum, dj) => sum + (dj.follower_count || 0), 0)}
-                </div>
-                <div className="text-sm text-white/60">Total Followers</div>
-              </div>
-            </Card>
-            <Card>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white mb-1">
-                  {djs.filter((dj) => dj.mixes_count > 0).length}
-                </div>
-                <div className="text-sm text-white/60">DJs with Mixes</div>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        <CreateDJModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => {
-            loadDJs();
-          }}
-        />
+          <CreateDJModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              loadDJs();
+            }}
+          />
+        </Container>
       </Section>
-    </Container>
+    </div>
   );
 }
 

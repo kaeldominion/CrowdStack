@@ -96,11 +96,11 @@ export default function OrganizerEventsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Your Events</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Your Events</h1>
+          <p className="text-sm text-secondary">
             Manage and track all events you've created
           </p>
         </div>
@@ -114,32 +114,36 @@ export default function OrganizerEventsPage() {
 
       {/* Pending Approval Alert */}
       {pendingEvents.length > 0 && (
-        <div className="bg-accent-warning/10 border border-accent-warning/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-accent-warning flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-accent-warning">
-              {pendingEvents.length} event{pendingEvents.length > 1 ? "s" : ""} pending venue approval
-            </p>
-            <p className="text-sm text-secondary mt-1">
-              These events are waiting to be approved by their respective venues before they can go live.
-            </p>
+        <Card className="border-accent-warning/30 bg-accent-warning/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-accent-warning flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-accent-warning">
+                {pendingEvents.length} event{pendingEvents.length > 1 ? "s" : ""} pending venue approval
+              </p>
+              <p className="text-sm text-secondary mt-1">
+                These events are waiting to be approved by their respective venues before they can go live.
+              </p>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Rejected Events Alert */}
       {rejectedEvents.length > 0 && (
-        <div className="bg-accent-error/10 border border-accent-error/30 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-accent-error flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-medium text-accent-error">
-              {rejectedEvents.length} event{rejectedEvents.length > 1 ? "s" : ""} rejected
-            </p>
-            <p className="text-sm text-secondary mt-1">
-              These events were not approved by the venue. You can edit and try a different venue.
-            </p>
+        <Card className="border-accent-error/30 bg-accent-error/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-accent-error flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-accent-error">
+                {rejectedEvents.length} event{rejectedEvents.length > 1 ? "s" : ""} rejected
+              </p>
+              <p className="text-sm text-secondary mt-1">
+                These events were not approved by the venue. You can edit and try a different venue.
+              </p>
+            </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {events.length === 0 ? (
@@ -153,16 +157,18 @@ export default function OrganizerEventsPage() {
           }}
         />
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-4">
           {/* Live Events Section */}
           {liveEvents.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 bg-accent-error rounded-full animate-pulse" />
-                <h2 className="text-xl font-semibold text-primary">Live Now</h2>
-                <Badge variant="danger" className="text-xs">{liveEvents.length} Active</Badge>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-accent-error rounded-full animate-pulse flex-shrink-0 mt-0.5" />
+                  <h2 className="section-header !mb-0">Live Now</h2>
+                </div>
+                <Badge variant="danger" className="!text-[10px]">{liveEvents.length} Active</Badge>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {liveEvents.map((event) => (
                   <div key={event.id} className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
@@ -180,13 +186,17 @@ export default function OrganizerEventsPage() {
 
           {/* Upcoming Events Section */}
           {upcomingEvents.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-accent-secondary" />
-                <h2 className="text-xl font-semibold text-primary">Upcoming Events</h2>
-                <span className="text-sm text-secondary">({upcomingEvents.length})</span>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-accent-secondary flex-shrink-0 mt-0.5" />
+                  <h2 className="section-header !mb-0">Upcoming Events</h2>
+                </div>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                  ({upcomingEvents.length})
+                </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {upcomingEvents.map((event) => (
                   <EventCard
                     key={event.id}
@@ -201,12 +211,16 @@ export default function OrganizerEventsPage() {
           {/* Past Events Section - Row View */}
           {pastEvents.length > 0 && (
             <section className="space-y-3">
-              <div className="flex items-center gap-3">
-                <History className="h-5 w-5 text-secondary" />
-                <h2 className="text-xl font-semibold text-primary">Event History</h2>
-                <span className="text-sm text-secondary">({pastEvents.length})</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
+                  <h2 className="section-header !mb-0">Event History</h2>
+                </div>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                  ({pastEvents.length})
+                </span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {pastEvents.map((event) => {
                   const eventDate = new Date(event.start_time);
                   const conversionRate = event.registrations > 0 
@@ -219,50 +233,53 @@ export default function OrganizerEventsPage() {
                       href={`/app/organizer/events/${event.id}`}
                       className="block"
                     >
-                      <div className="bg-glass border border-border-subtle rounded-2xl p-4 hover:border-accent-primary/30 hover:shadow-soft transition-all cursor-pointer group">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 min-w-0 flex-1">
-                            {event.flier_url && (
-                              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-border-subtle">
-                                <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
-                              </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="font-sans font-semibold text-primary truncate group-hover:text-accent-primary transition-colors">
-                                {event.name}
-                              </p>
-                              <div className="flex items-center gap-3 text-sm text-secondary mt-1">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3 text-muted" />
-                                  {eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                </span>
-                                {event.venue && (
-                                  <span className="flex items-center gap-1 truncate">
-                                    <MapPin className="h-3 w-3 text-muted" />
-                                    {event.venue.name}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                      <div className="flex items-center gap-4 p-4 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/30 hover:bg-active/50 transition-all cursor-pointer group">
+                        {/* Thumbnail */}
+                        {event.flier_url && (
+                          <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
+                            <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
                           </div>
-                          <div className="flex items-center gap-6 text-sm">
-                            <div className="text-center min-w-[60px]">
-                              <p className="font-semibold text-primary">{event.registrations}</p>
-                              <p className="text-xs text-secondary">Registered</p>
+                        )}
+                        
+                        {/* Event Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-primary line-clamp-1 group-hover:text-accent-secondary transition-colors">
+                            {event.name}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
+                            <Calendar className="h-3 w-3 text-muted flex-shrink-0" />
+                            <span>{eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                            <span className="text-muted">•</span>
+                            <span>{eventDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                          </div>
+                          {event.venue && (
+                            <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
+                              <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
+                              <span className="line-clamp-1">{event.venue.name}</span>
                             </div>
-                            <div className="text-center min-w-[60px]">
-                              <p className="font-semibold text-primary">{event.checkins}</p>
-                              <p className="text-xs text-secondary">Checked In</p>
-                            </div>
-                            <div className="text-center min-w-[60px]">
-                              <p className={`font-semibold ${conversionRate >= 70 ? 'text-accent-success' : conversionRate >= 40 ? 'text-accent-warning' : 'text-secondary'}`}>
-                                {conversionRate}%
-                              </p>
-                              <p className="text-xs text-secondary">Conversion</p>
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 text-secondary group-hover:text-primary transition-colors" />
+                          )}
+                        </div>
+                        
+                        {/* Stats */}
+                        <div className="hidden sm:flex items-center gap-4 lg:gap-6">
+                          <div className="text-center min-w-[45px]">
+                            <span className="text-sm font-bold text-primary">{event.registrations}</span>
+                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Reg.</p>
+                          </div>
+                          <div className="text-center min-w-[45px]">
+                            <span className="text-sm font-bold text-accent-success">{event.checkins}</span>
+                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">In</p>
+                          </div>
+                          <div className="text-center min-w-[45px]">
+                            <span className={`text-sm font-bold ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
+                              {conversionRate}%
+                            </span>
+                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Conv.</p>
                           </div>
                         </div>
+                        
+                        {/* Arrow */}
+                        <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors flex-shrink-0" />
                       </div>
                     </Link>
                   );

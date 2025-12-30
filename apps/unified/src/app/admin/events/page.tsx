@@ -140,10 +140,10 @@ export default function AdminEventsPage() {
     <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-primary">Event Management</h1>
-              <p className="mt-2 text-sm text-secondary">
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Event Management</h1>
+              <p className="text-sm text-secondary">
                 View and manage all events in the system
               </p>
             </div>
@@ -155,9 +155,9 @@ export default function AdminEventsPage() {
             </Link>
           </div>
 
-          <Card>
-            <div className="p-6 space-y-4">
-              <div className="flex gap-4">
+          <Card className="!p-4">
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="flex-1">
                   <Input
                     placeholder="Search events by name, venue, or organizer..."
@@ -169,7 +169,7 @@ export default function AdminEventsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="rounded-md bg-void border border-border px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="rounded-lg bg-void border border-border-subtle px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/50"
                 >
                   <option value="all">All Status</option>
                   <option value="draft">Draft</option>
@@ -180,12 +180,14 @@ export default function AdminEventsPage() {
             </div>
           </Card>
 
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredEvents.length} of {events.length} events
+          <div className="mt-4 mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredEvents.length} of {events.length} events
+            </p>
           </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>

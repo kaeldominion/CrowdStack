@@ -101,7 +101,7 @@ export default function VenueAttendeesPage() {
       </div>
 
       {/* Access Scope Explanation */}
-      <Card className="bg-accent-secondary/10 border-accent-secondary/20">
+      <Card className="bg-accent-secondary/10 border-accent-secondary/20 hidden md:block">
         <div className="p-4">
           <p className="text-sm text-white/80">
             <strong>Privacy Protection:</strong> You're viewing attendees who registered or checked in at your venue.
@@ -113,42 +113,40 @@ export default function VenueAttendeesPage() {
 
       {/* Search and Filters */}
       <Card>
-        <div className="p-6 space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by name, email, or phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={filters.has_check_in === true ? "primary" : "secondary"}
-                onClick={() =>
-                  setFilters({
-                    ...filters,
-                    has_check_in: filters.has_check_in === true ? undefined : true,
-                  })
-                }
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Checked In
-              </Button>
-              <Button
-                variant={filters.is_flagged === true ? "primary" : "secondary"}
-                onClick={() =>
-                  setFilters({
-                    ...filters,
-                    is_flagged: filters.is_flagged === true ? undefined : true,
-                  })
-                }
-              >
-                <Flag className="h-4 w-4 mr-2" />
-                Flagged
-              </Button>
-            </div>
+        <div className="p-3 space-y-3">
+          <div className="flex-1">
+            <Input
+              placeholder="Search by name, email, or phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={filters.has_check_in === true ? "primary" : "secondary"}
+              onClick={() =>
+                setFilters({
+                  ...filters,
+                  has_check_in: filters.has_check_in === true ? undefined : true,
+                })
+              }
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Checked In
+            </Button>
+            <Button
+              variant={filters.is_flagged === true ? "primary" : "secondary"}
+              onClick={() =>
+                setFilters({
+                  ...filters,
+                  is_flagged: filters.is_flagged === true ? undefined : true,
+                })
+              }
+            >
+              <Flag className="h-4 w-4 mr-2" />
+              Flagged
+            </Button>
           </div>
         </div>
       </Card>

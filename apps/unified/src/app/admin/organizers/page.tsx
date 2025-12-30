@@ -75,10 +75,10 @@ export default function AdminOrganizersPage() {
     <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-primary">Organizer Management</h1>
-              <p className="mt-2 text-sm text-secondary">
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Organizer Management</h1>
+              <p className="text-sm text-secondary">
                 Manage all event organizers in the system
               </p>
             </div>
@@ -88,23 +88,23 @@ export default function AdminOrganizersPage() {
             </Button>
           </div>
 
-          <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search organizers by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
+          <Card className="!p-4">
+            <Input
+              placeholder="Search organizers by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
           </Card>
 
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredOrganizers.length} of {organizers.length} organizers
+          <div className="mt-4 mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredOrganizers.length} of {organizers.length} organizers
+            </p>
           </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>

@@ -14,6 +14,7 @@ import {
   Briefcase,
   Megaphone,
   Radio,
+  type LucideIcon,
 } from "lucide-react";
 import {
   LineChart,
@@ -148,15 +149,15 @@ export default function AnalyticsPage() {
     <Section spacing="lg">
       <Container>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary mb-2">Analytics</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Analytics</h1>
           <p className="text-sm text-secondary">
             Platform-wide metrics and insights
           </p>
         </div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           <StatCard
             title="Total Attendees"
             value={formatNumber(data.overview.totalAttendees)}
@@ -185,7 +186,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Secondary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 mb-6">
           <StatCard
             title="Venues"
             value={formatNumber(data.overview.totalVenues)}
@@ -224,10 +225,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 mb-6">
           {/* Registrations Trend (30 days) */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Registrations (Last 30 Days)
             </h3>
             <div className="h-64">
@@ -280,7 +281,7 @@ export default function AnalyticsPage() {
 
           {/* Monthly Trend */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Monthly Registrations (12 Months)
             </h3>
             <div className="h-64">
@@ -324,10 +325,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Charts Row 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 mb-6">
           {/* Role Distribution */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               User Role Distribution
             </h3>
             <div className="h-64">
@@ -374,7 +375,7 @@ export default function AnalyticsPage() {
 
           {/* Events by Status */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Events by Status
             </h3>
             <div className="h-64">
@@ -421,7 +422,7 @@ export default function AnalyticsPage() {
 
           {/* Check-in Rate */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Check-in Rate
             </h3>
             <div className="h-64 flex flex-col items-center justify-center">
@@ -465,10 +466,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Lists Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Top Events */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Top Events by Registrations
             </h3>
             <div className="space-y-1">
@@ -500,7 +501,7 @@ export default function AnalyticsPage() {
 
           {/* Top Promoters */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Top Promoters by Referrals
             </h3>
             <div className="space-y-1">
@@ -532,7 +533,7 @@ export default function AnalyticsPage() {
 
           {/* Top Organizers */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Top Organizers by Events
             </h3>
             <div className="space-y-1">
@@ -564,7 +565,7 @@ export default function AnalyticsPage() {
 
           {/* Top DJs */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Top DJs by Events
             </h3>
             <div className="space-y-1">
@@ -614,7 +615,7 @@ export default function AnalyticsPage() {
 
           {/* Top Referrers (All Users) */}
           <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Top Referrers (All Users)
             </h3>
             <div className="space-y-1">
@@ -649,58 +650,92 @@ export default function AnalyticsPage() {
   );
 }
 
-// Stat Card Component
+// Stat Card Component - Design System Pattern
 function StatCard({
   title,
   value,
   icon,
   color,
   trend,
-  size = "lg",
+  size = "default",
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
   color: keyof typeof COLORS;
   trend?: number;
-  size?: "sm" | "lg";
+  size?: "sm" | "default";
 }) {
-  const colorClass = {
-    primary: "bg-accent-secondary/10 text-primary",
-    secondary: "bg-purple-500/10 text-purple-500",
-    success: "bg-success/10 text-success",
-    warning: "bg-warning/10 text-warning",
-    danger: "bg-danger/10 text-danger",
-    info: "bg-cyan-500/10 text-cyan-500",
-    muted: "bg-foreground-muted/10 text-secondary",
+  const accentColors = {
+    primary: "border-accent-primary/30 bg-accent-primary/5",
+    secondary: "border-accent-secondary/30 bg-accent-secondary/5",
+    success: "border-accent-success/30 bg-accent-success/5",
+    warning: "border-accent-warning/30 bg-accent-warning/5",
+    danger: "border-accent-error/30 bg-accent-error/5",
+    info: "border-cyan-500/30 bg-cyan-500/5",
+    muted: "border-border-subtle",
   }[color];
 
+  const trendColors = {
+    up: "text-accent-success",
+    down: "text-accent-error",
+    neutral: "text-secondary",
+  };
+
+  const trendDirection = trend !== undefined ? (trend >= 0 ? "up" : "down") : undefined;
+
+  // Compact layout for secondary stats
+  if (size === "sm") {
+    return (
+      <Card className={`${accentColors} !p-3`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary truncate">
+              {title}
+            </p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <p className="font-sans text-xl font-bold tracking-tight text-primary">
+                {value}
+              </p>
+              {trendDirection && (
+                <div className={`flex items-center gap-0.5 ${trendColors[trendDirection]}`}>
+                  {trendDirection === "up" && <TrendingUp className="h-2.5 w-2.5" />}
+                  {trendDirection === "down" && <TrendingDown className="h-2.5 w-2.5" />}
+                  <span className="text-[10px] font-semibold">{Math.abs(trend!)}%</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="text-muted flex-shrink-0">
+            {icon}
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Default layout for primary stats
   return (
-    <Card className="p-4">
+    <Card className={accentColors}>
       <div className="flex items-start justify-between">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${colorClass}`}>
+        <div className="flex-1">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+            {title}
+          </p>
+          <p className="font-sans text-4xl font-bold tracking-tight text-primary mt-2">
+            {value}
+          </p>
+          {trendDirection && (
+            <div className={`flex items-center gap-1 mt-2 ${trendColors[trendDirection]}`}>
+              {trendDirection === "up" && <TrendingUp className="h-3 w-3" />}
+              {trendDirection === "down" && <TrendingDown className="h-3 w-3" />}
+              <span className="text-xs font-medium">{Math.abs(trend!)}%</span>
+            </div>
+          )}
+        </div>
+        <div className="text-muted">
           {icon}
         </div>
-        {trend !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-xs font-medium ${
-              trend >= 0 ? "text-success" : "text-danger"
-            }`}
-          >
-            {trend >= 0 ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {Math.abs(trend)}%
-          </div>
-        )}
-      </div>
-      <div className="mt-3">
-        <p className={`font-bold text-primary ${size === "lg" ? "text-2xl" : "text-xl"}`}>
-          {value}
-        </p>
-        <p className="text-xs text-secondary">{title}</p>
       </div>
     </Card>
   );

@@ -59,19 +59,19 @@ export default function DJEventsPage() {
   const pastEvents = events.filter((e) => new Date(e.start_time) <= new Date());
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Your Events</h1>
-        <p className="mt-2 text-sm text-white/60">Events where you're on the lineup</p>
+        <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Your Events</h1>
+        <p className="text-sm text-secondary">Events where you're on the lineup</p>
       </div>
 
       {upcomingEvents.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">Upcoming Events</h2>
-          <div className="space-y-3">
+          <h2 className="section-header mb-3">Upcoming Events</h2>
+          <div className="space-y-2">
             {upcomingEvents.map((event) => (
               <Link key={event.id} href={`/e/${event.slug}`}>
-                <Card className="p-4 hover:bg-white/5 transition-colors cursor-pointer">
+                <Card hover className="cursor-pointer">
                   <div className="flex items-center gap-4">
                     {event.flier_url && (
                       <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
@@ -85,8 +85,8 @@ export default function DJEventsPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white mb-1">{event.name}</h3>
-                      <div className="flex items-center gap-3 text-sm text-white/60">
+                      <h3 className="font-semibold text-primary mb-1">{event.name}</h3>
+                      <div className="flex items-center gap-3 text-sm text-secondary">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           <span>
@@ -128,11 +128,11 @@ export default function DJEventsPage() {
 
       {pastEvents.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">Past Events</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="section-header mb-3">Past Events</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pastEvents.map((event) => (
               <Link key={event.id} href={`/e/${event.slug}`}>
-                <Card className="p-4 hover:bg-white/5 transition-colors cursor-pointer opacity-75">
+                <Card hover className="cursor-pointer opacity-75">
                   {event.flier_url && (
                     <div className="w-full h-48 rounded-lg overflow-hidden mb-3">
                       <Image
@@ -144,8 +144,8 @@ export default function DJEventsPage() {
                       />
                     </div>
                   )}
-                  <h3 className="font-medium text-white mb-1">{event.name}</h3>
-                  <p className="text-xs text-white/40">
+                  <h3 className="font-medium text-primary mb-1">{event.name}</h3>
+                  <p className="text-xs text-secondary">
                     {new Date(event.start_time).toLocaleDateString()}
                   </p>
                 </Card>
@@ -156,10 +156,12 @@ export default function DJEventsPage() {
       )}
 
       {upcomingEvents.length === 0 && pastEvents.length === 0 && (
-        <Card className="p-8 text-center">
-          <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No events yet</h3>
-          <p className="text-white/60">You haven't been added to any event lineups yet.</p>
+        <Card>
+          <div className="p-8 text-center">
+            <Calendar className="h-12 w-12 text-secondary mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-primary mb-2">No events yet</h3>
+            <p className="text-sm text-secondary">You haven't been added to any event lineups yet.</p>
+          </div>
         </Card>
       )}
     </div>

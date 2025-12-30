@@ -416,6 +416,7 @@ export default function VenueSettingsPage() {
             variant="secondary" 
             size="sm"
             onClick={() => setShowPreview(true)}
+            className="hidden md:flex"
           >
             <Eye className="h-4 w-4 mr-2" />
             Preview
@@ -424,7 +425,7 @@ export default function VenueSettingsPage() {
             <Link href={publicVenueUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="secondary" size="sm">
                 <Eye className="h-4 w-4 mr-2" />
-                View Live Page
+                Live Page
                 <ExternalLink className="h-4 w-4 ml-2" />
               </Button>
             </Link>
@@ -433,7 +434,7 @@ export default function VenueSettingsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap gap-2 mb-4">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="location">Location</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>

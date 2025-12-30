@@ -536,42 +536,42 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </BentoCard>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Events</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{venueStats.totalEvents}</p>
+          <div className="grid grid-cols-4 gap-2">
+            <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
+              <div className="flex items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Total Events</p>
+                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.totalEvents}</p>
                 </div>
-                <Calendar className="h-5 w-5 text-white/40" />
               </div>
+              <Calendar className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">This Month</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{venueStats.thisMonth}</p>
+            <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
+              <div className="flex items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">This Month</p>
+                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.thisMonth}</p>
                 </div>
-                <TrendingUp className="h-5 w-5 text-white/40" />
               </div>
+              <TrendingUp className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{venueStats.totalCheckIns}</p>
+            <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
+              <div className="flex items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Check-ins</p>
+                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.totalCheckIns}</p>
                 </div>
-                <Ticket className="h-5 w-5 text-white/40" />
               </div>
+              <Ticket className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Repeat Rate</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{venueStats.repeatRate}%</p>
+            <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
+              <div className="flex items-start">
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Repeat Rate</p>
+                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.repeatRate}%</p>
                 </div>
-                <Repeat className="h-5 w-5 text-white/40" />
               </div>
+              <Repeat className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
           </div>
 
@@ -748,41 +748,41 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </Link>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Events</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{organizerStats.totalEvents}</p>
+          <div className="grid grid-cols-4 gap-2">
+            <BentoCard className="[&>div]:!p-2">
+              <div className="relative h-full flex flex-col">
+                <div className="flex-1">
+                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">EVENTS</p>
+                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.totalEvents}</p>
                 </div>
-                <Calendar className="h-5 w-5 text-white/40" />
+                <Calendar className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
               </div>
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Registrations</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{organizerStats.registrations}</p>
+            <BentoCard className="[&>div]:!p-2">
+              <div className="relative h-full flex flex-col">
+                <div className="flex-1">
+                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">RGSTRTNS</p>
+                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.registrations}</p>
                 </div>
-                <Ticket className="h-5 w-5 text-white/40" />
+                <Ticket className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
               </div>
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{organizerStats.checkIns}</p>
+            <BentoCard className="[&>div]:!p-2">
+              <div className="relative h-full flex flex-col">
+                <div className="flex-1">
+                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">CHECK-INS</p>
+                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.checkIns}</p>
                 </div>
-                <TrendingUp className="h-5 w-5 text-white/40" />
+                <TrendingUp className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
               </div>
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Promoters</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{organizerStats.promoters}</p>
+            <BentoCard className="[&>div]:!p-2">
+              <div className="relative h-full flex flex-col">
+                <div className="flex-1">
+                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">PRMTRS</p>
+                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.promoters}</p>
                 </div>
-                <Users className="h-5 w-5 text-white/40" />
+                <Users className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
               </div>
             </BentoCard>
           </div>
@@ -837,54 +837,56 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
           {/* Upcoming Events - List View */}
           {organizerEvents.upcomingEvents.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-indigo-400" />
+                <h3 className="section-header flex items-center gap-2 !mb-0">
+                  <Clock className="h-4 w-4 text-indigo-400 flex-shrink-0 mt-0.5" />
                   Upcoming Events
                 </h3>
                 <Link href="/app/organizer/events">
                   <Button variant="ghost" size="sm">View All</Button>
                 </Link>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {organizerEvents.upcomingEvents.slice(0, 5).map((event) => (
                   <Link key={event.id} href={`/app/organizer/events/${event.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
-                      <div className="flex items-center gap-4 min-w-0 flex-1">
-                        {event.flier_url && (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-white/10">
-                            <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
+                    <div className="relative flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/30 hover:bg-active/50 transition-all cursor-pointer group">
+                      {event.flier_url && (
+                        <div className="w-16 h-24 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
+                          <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-primary uppercase line-clamp-2 group-hover:text-accent-secondary transition-colors mb-1">
+                          {event.name}
+                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
+                          <Calendar className="h-3 w-3 text-muted flex-shrink-0" />
+                          <span>{new Date(event.start_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                          <span className="text-muted">•</span>
+                          <span>{new Date(event.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                        </div>
+                        {event.venue_name && (
+                          <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
+                            <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
+                            <span className="line-clamp-1">{event.venue_name}</span>
                           </div>
                         )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
-                          <div className="flex items-center gap-2 text-xs text-white/50">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(event.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
-                            <span>·</span>
-                            <span>{new Date(event.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
-                            {event.venue_name && (
-                              <>
-                                <span>·</span>
-                                <span className="truncate">{event.venue_name}</span>
-                              </>
-                            )}
-                          </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {event.venue_approval_status === "pending" && (
+                            <Badge variant="warning" className="!text-[9px]">Pending</Badge>
+                          )}
+                          {event.status === "draft" && (
+                            <Badge variant="secondary" className="!text-[9px]">Draft</Badge>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="text-center">
-                          <p className="text-white font-medium">{event.registrations}</p>
-                          <p className="text-xs text-white/40">Registered</p>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-center min-w-[50px]">
+                          <p className="text-sm font-bold text-primary">{event.registrations}</p>
+                          <p className="font-mono text-[8px] uppercase tracking-widest text-secondary">Reg</p>
                         </div>
-                        {event.venue_approval_status === "pending" && (
-                          <Badge variant="warning" className="text-xs">Pending</Badge>
-                        )}
-                        {event.status === "draft" && (
-                          <Badge variant="secondary" className="text-xs">Draft</Badge>
-                        )}
-                        <ArrowUpRight className="h-4 w-4 text-white/40 group-hover:text-primary transition-colors" />
+                        <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
                       </div>
                     </div>
                   </Link>

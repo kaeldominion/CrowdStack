@@ -131,9 +131,9 @@ export default function OrganizerLiveMissionControlPage() {
       if (!response.ok) throw new Error("Failed to load metrics");
       const data = await response.json();
       setMetrics(data);
+      setLoading(false);
     } catch (error) {
       console.error("Error loading metrics:", error);
-    } finally {
       setLoading(false);
     }
   };
@@ -264,10 +264,22 @@ export default function OrganizerLiveMissionControlPage() {
     swipeStartX.current = null;
   }, [swipingId, swipeOffset, handleDeleteMessage]);
 
-  if (loading || !metrics) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <LoadingSpinner text="Loading live metrics..." size="lg" />
+      </div>
+    );
+  }
+
+  if (!metrics) {
+    return (
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-primary mb-2">Failed to load metrics</p>
+          <p className="text-sm text-secondary mb-4">Unable to load live event metrics. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+        </div>
       </div>
     );
   }
@@ -327,46 +339,46 @@ export default function OrganizerLiveMissionControlPage() {
       </Card>
 
       {/* Flow Rate Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <Card padding="compact">
-          <div className="space-y-1">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Total Registrations
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="!p-1.5">
+          <div className="space-y-0.5">
+            <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary truncate">
+              Total Reg.
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
+            <p className="text-lg font-mono font-bold tracking-tighter text-primary">
               {metrics.total_registrations}
             </p>
           </div>
         </Card>
 
-        <Card padding="compact">
-          <div className="space-y-1">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Last 15 Min
+        <Card className="!p-1.5">
+          <div className="space-y-0.5">
+            <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary truncate">
+              Last 15m
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
+            <p className="text-lg font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_15min}
             </p>
           </div>
         </Card>
 
-        <Card padding="compact">
-          <div className="space-y-1">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+        <Card className="!p-1.5">
+          <div className="space-y-0.5">
+            <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary truncate">
               Last Hour
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
+            <p className="text-lg font-mono font-bold tracking-tighter text-primary">
               {metrics.check_ins_last_hour}
             </p>
           </div>
         </Card>
 
-        <Card padding="compact">
-          <div className="space-y-1">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+        <Card className="!p-1.5">
+          <div className="space-y-0.5">
+            <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary truncate">
               Peak Hour
             </p>
-            <p className="text-3xl font-mono font-bold tracking-tighter text-primary">
+            <p className="text-lg font-mono font-bold tracking-tighter text-primary">
               {metrics.peak_hour || "—"}
             </p>
           </div>

@@ -75,29 +75,29 @@ export default function AdminUsersPage() {
       <Section spacing="lg">
         <Container>
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-primary">User Management</h1>
-            <p className="mt-2 text-sm text-secondary">
+            <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">User Management</h1>
+            <p className="text-sm text-secondary">
               Manage users and their roles
             </p>
           </div>
 
-          <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search users by email or role..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
+          <Card className="!p-4">
+            <Input
+              placeholder="Search users by email or role..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
           </Card>
 
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredUsers.length} of {users.length} users
+          <div className="mt-4 mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredUsers.length} of {users.length} users
+            </p>
           </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>

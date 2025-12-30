@@ -241,11 +241,11 @@ export default function PromoterEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-primary">Events</h1>
-        <p className="mt-2 text-sm text-secondary">
+        <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Events</h1>
+        <p className="text-sm text-secondary">
           Manage your promotions and discover new events
         </p>
       </div>
@@ -275,9 +275,9 @@ export default function PromoterEventsPage() {
         </TabsList>
 
         {/* MY EVENTS TAB */}
-        <TabsContent value="my-events" className="mt-6 space-y-6">
+        <TabsContent value="my-events" className="mt-4 space-y-4">
           {totalMyEvents === 0 ? (
-            <Card className="bg-glass border-border-subtle">
+            <Card>
               <div className="p-8 text-center">
                 <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-primary mb-2">No events yet</h3>
@@ -296,14 +296,14 @@ export default function PromoterEventsPage() {
               {myEvents.liveEvents.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 bg-accent-error rounded-full animate-pulse" />
-                    <h3 className="text-lg font-semibold text-primary">Live Now</h3>
+                    <div className="h-2 w-2 bg-accent-error rounded-full animate-pulse" />
+                    <h3 className="section-header">Live Now</h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {myEvents.liveEvents.map((event) => (
                       <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                        <Card className="bg-glass border-l-4 border-l-accent-error border-border-subtle hover:bg-active transition-colors cursor-pointer h-full">
-                          <div className="p-4 space-y-3">
+                        <Card className="border-l-4 border-l-accent-error hover:bg-active transition-colors cursor-pointer h-full">
+                          <div className="space-y-3">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-semibold text-primary truncate">{event.name}</h4>

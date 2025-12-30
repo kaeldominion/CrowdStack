@@ -186,8 +186,8 @@ export default function AdminDashboardPage() {
   return (
     <Section spacing="lg">
       <Container>
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary mb-2">Admin Dashboard</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Admin Dashboard</h1>
           <p className="text-sm text-secondary">
             Quick access to all dashboards, tools, and areas of the platform
           </p>
@@ -195,110 +195,124 @@ export default function AdminDashboardPage() {
 
           {/* Live Events Section */}
           {liveEvents.length > 0 && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                  <h2 className="text-xl font-semibold text-primary">Live Events</h2>
+                  <div className="h-2 w-2 bg-accent-error rounded-full animate-pulse" />
+                  <h2 className="section-header">Live Events</h2>
                 </div>
-                <span className="text-sm text-secondary">
-                  {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                  {liveEvents.length} {liveEvents.length !== 1 ? "EVENTS" : "EVENT"}
                 </span>
               </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {liveEvents.map((event) => (
                   <Card 
                     key={event.id} 
                     hover 
-                    className="h-full border-l-4 border-l-red-500 cursor-pointer"
+                    className="h-full border-l-4 border-l-accent-error cursor-pointer"
                     onClick={() => router.push(`/admin/events/${event.id}`)}
                   >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-primary truncate">
-                            {event.name}
-                          </h3>
-                          {event.venue && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <MapPin className="h-3 w-3 text-secondary flex-shrink-0" />
-                              <span className="text-xs text-secondary truncate">
-                                {event.venue.name}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 text-secondary" />
-                          <span className="text-secondary">
-                            {event.registrations} registered
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3 text-success" />
-                          <span className="text-success font-medium">
-                            {event.checkins} checked in
-                          </span>
-                        </div>
-                      </div>
-
-                      {event.capacity && (
-                        <div className="mt-3">
-                          <div className="h-1.5 bg-raised rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
-                              style={{
-                                width: `${Math.min((event.checkins / event.capacity) * 100, 100)}%`,
-                              }}
-                            />
-                          </div>
-                          <p className="text-[10px] text-secondary mt-1">
-                            {Math.round((event.checkins / event.capacity) * 100)}% capacity
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Radio className="h-3 w-3 text-accent-error animate-pulse flex-shrink-0" />
+                          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-accent-error">
+                            LIVE
                           </p>
                         </div>
-                      )}
-
-                      <div className="mt-3 flex gap-2">
-                        <Link
-                          href={`/door/${event.id}`}
-                          target="_blank"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
-                        >
-                          <QrCode className="h-3 w-3" />
-                          Door Scanner
-                        </Link>
+                        <h3 className="text-sm font-semibold text-primary truncate mb-1">
+                          {event.name}
+                        </h3>
+                        {event.venue && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
+                            <span className="text-xs text-secondary truncate">
+                              {event.venue.name}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </Card>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-3 pt-3 border-t border-border-subtle">
+                      <div>
+                        <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">
+                          Registered
+                        </p>
+                        <p className="text-lg font-bold text-primary">{event.registrations}</p>
+                      </div>
+                      <div>
+                        <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">
+                          Checked In
+                        </p>
+                        <p className="text-lg font-bold text-accent-success">{event.checkins}</p>
+                      </div>
+                    </div>
+
+                    {event.capacity && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary">
+                            Capacity
+                          </p>
+                          <p className="text-xs font-medium text-secondary">
+                            {Math.round((event.checkins / event.capacity) * 100)}%
+                          </p>
+                        </div>
+                        <div className="h-1.5 bg-raised rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-accent-success transition-all"
+                            style={{
+                              width: `${Math.min((event.checkins / event.capacity) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t border-border-subtle">
+                      <Link
+                        href={`/door/${event.id}`}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-xs text-accent-secondary hover:text-accent-primary flex items-center gap-1.5 transition-colors"
+                      >
+                        <QrCode className="h-3 w-3" />
+                        Door Scanner
+                      </Link>
+                    </div>
+                  </Card>
                 ))}
               </div>
             </div>
           )}
 
           {loadingLive && (
-            <div className="mb-12">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-3 w-3 bg-foreground-muted rounded-full animate-pulse" />
-                <h2 className="text-xl font-semibold text-secondary">Loading live events...</h2>
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 bg-muted rounded-full animate-pulse" />
+                <h2 className="section-header">Loading live events...</h2>
               </div>
             </div>
           )}
 
           {/* Quick Access */}
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold text-primary mb-4">Quick Access</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+          <div className="mb-8">
+            <h2 className="section-header">Quick Access</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
               {dashboards.map((dashboard) => (
                 <Link key={dashboard.href} href={dashboard.href}>
-                  <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
-                      {dashboard.icon}
+                  <Card hover className="h-full !p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-primary mb-1">{dashboard.name}</h3>
+                        <p className="text-xs text-secondary">{dashboard.description}</p>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-secondary/10 text-accent-secondary flex-shrink-0">
+                        {dashboard.icon}
+                      </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-primary mb-2">{dashboard.name}</h3>
-                    <p className="text-xs text-secondary">{dashboard.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -306,17 +320,19 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Admin Management */}
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold text-primary mb-4">Management</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="mb-8">
+            <h2 className="section-header">Management</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
               {adminManagement.map((item) => (
                 <Link key={item.href} href={item.href}>
-                  <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
-                      {item.icon}
+                  <Card hover className="h-full !p-3">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-secondary/10 text-accent-secondary mb-2">
+                        {item.icon}
+                      </div>
+                      <h3 className="text-xs font-semibold text-primary mb-1">{item.name}</h3>
+                      <p className="text-[10px] text-secondary line-clamp-2">{item.description}</p>
                     </div>
-                    <h3 className="text-sm font-semibold text-primary mb-2">{item.name}</h3>
-                    <p className="text-xs text-secondary">{item.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -324,17 +340,21 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Admin Tools */}
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold text-primary mb-4">Admin Tools</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-8">
+            <h2 className="section-header">Admin Tools</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {adminTools.map((tool) => (
                 <Link key={tool.href} href={tool.href}>
-                  <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-warning/10 text-warning mb-4">
-                      {tool.icon}
+                  <Card hover className="h-full !p-4 border-accent-warning/30 bg-accent-warning/5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-primary mb-1">{tool.name}</h3>
+                        <p className="text-xs text-secondary">{tool.description}</p>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-warning/10 text-accent-warning flex-shrink-0">
+                        {tool.icon}
+                      </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-primary mb-2">{tool.name}</h3>
-                    <p className="text-xs text-secondary">{tool.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -342,17 +362,21 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Brand & Assets */}
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold text-primary mb-4">Brand & Assets</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-8">
+            <h2 className="section-header">Brand & Assets</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {brandTools.map((tool) => (
                 <Link key={tool.href} href={tool.href}>
-                  <Card hover className="h-full">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent-secondary/10 text-primary mb-4">
-                      {tool.icon}
+                  <Card hover className="h-full !p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-primary mb-1">{tool.name}</h3>
+                        <p className="text-xs text-secondary">{tool.description}</p>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-secondary/10 text-accent-secondary flex-shrink-0">
+                        {tool.icon}
+                      </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-primary mb-2">{tool.name}</h3>
-                    <p className="text-xs text-secondary">{tool.description}</p>
                   </Card>
                 </Link>
               ))}
@@ -360,9 +384,9 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Web App Areas */}
-          <div className="mb-12">
-            <h2 className="text-xl font-semibold text-primary mb-4">Web App Areas</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-8">
+            <h2 className="section-header">Web App Areas</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {webAppAreas.map((area) => (
                 <a
                   key={area.href}
@@ -370,17 +394,21 @@ export default function AdminDashboardPage() {
                   target={area.external ? "_blank" : undefined}
                   rel={area.external ? "noopener noreferrer" : undefined}
                 >
-                  <Card hover className="h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-success/10 text-success">
-                        {area.icon}
+                  <Card hover className="h-full !p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-primary mb-1">{area.name}</h3>
+                        <p className="text-xs text-secondary">{area.description}</p>
                       </div>
-                      {area.external && (
-                        <ExternalLink className="h-4 w-4 text-primary-subtle" />
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-success/10 text-accent-success">
+                          {area.icon}
+                        </div>
+                        {area.external && (
+                          <ExternalLink className="h-4 w-4 text-muted" />
+                        )}
+                      </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-primary mb-2">{area.name}</h3>
-                    <p className="text-xs text-secondary">{area.description}</p>
                   </Card>
                 </a>
               ))}
@@ -388,14 +416,16 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Quick Info */}
-          <Card>
-            <h3 className="text-sm font-semibold text-primary mb-4">Quick Info</h3>
-            <div className="grid grid-cols-1 gap-2 text-xs text-secondary sm:grid-cols-2">
+          <Card className="!p-4">
+            <h3 className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">Quick Info</h3>
+            <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
               <div>
-                <span className="font-medium text-primary">App URL:</span> {baseUrl || "Loading..."}
+                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">App URL</p>
+                <p className="text-sm text-primary font-mono">{baseUrl || "Loading..."}</p>
               </div>
               <div>
-                <span className="font-medium text-primary">Environment:</span> {process.env.NEXT_PUBLIC_APP_ENV || "development"}
+                <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">Environment</p>
+                <p className="text-sm text-primary font-mono">{process.env.NEXT_PUBLIC_APP_ENV || "development"}</p>
               </div>
             </div>
           </Card>

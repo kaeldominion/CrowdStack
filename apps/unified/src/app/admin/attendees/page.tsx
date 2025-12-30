@@ -89,14 +89,14 @@ export default function AdminAttendeesPage() {
     <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-primary">Attendee Database</h1>
-              <p className="mt-2 text-sm text-secondary">
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Attendee Database</h1>
+              <p className="text-sm text-secondary">
                 Comprehensive view of all attendees across all venues and events
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="secondary" onClick={() => setShowImportModal(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import CSV
@@ -112,23 +112,23 @@ export default function AdminAttendeesPage() {
             </div>
           </div>
 
-          <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search attendees by name, email, or phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
+          <Card className="!p-4">
+            <Input
+              placeholder="Search attendees by name, email, or phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
           </Card>
 
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredAttendees.length} of {attendees.length} attendees
+          <div className="mt-4 mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredAttendees.length} of {attendees.length} attendees
+            </p>
           </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>

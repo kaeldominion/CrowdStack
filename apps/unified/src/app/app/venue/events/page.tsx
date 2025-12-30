@@ -192,13 +192,11 @@ export default function VenueEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">
-            Events at Your Venue
-          </h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Events at Your Venue</h1>
+          <p className="text-sm text-secondary">
             Manage and track all events hosted at your venue
           </p>
         </div>
@@ -213,28 +211,28 @@ export default function VenueEventsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="text-sm text-secondary">Total Events</div>
-          <div className="text-3xl font-bold text-primary mt-1">{events.length}</div>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="[&>div]:!px-3 [&>div]:!py-2.5">
+          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Tot. Events</p>
+          <p className="font-sans text-lg font-bold tracking-tight text-primary">{events.length}</p>
         </Card>
-        <Card className="p-4">
-          <div className="text-sm text-secondary">Pending Approval</div>
-          <div className="text-3xl font-bold text-accent-warning mt-1">{pendingCount}</div>
+        <Card className="border-accent-warning/30 bg-accent-warning/5 [&>div]:!px-3 [&>div]:!py-2.5">
+          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Pending</p>
+          <p className="font-sans text-lg font-bold tracking-tight text-accent-warning">{pendingCount}</p>
         </Card>
-        <Card className="p-4">
-          <div className="text-sm text-secondary">Approved</div>
-          <div className="text-3xl font-bold text-accent-success mt-1">{approvedCount}</div>
+        <Card className="border-accent-success/30 bg-accent-success/5 [&>div]:!px-3 [&>div]:!py-2.5">
+          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Approved</p>
+          <p className="font-sans text-lg font-bold tracking-tight text-accent-success">{approvedCount}</p>
         </Card>
-        <Card className="p-4">
-          <div className="text-sm text-secondary">Upcoming</div>
-          <div className="text-3xl font-bold text-primary mt-1">{upcomingCount}</div>
+        <Card className="[&>div]:!px-3 [&>div]:!py-2.5">
+          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Upcoming</p>
+          <p className="font-sans text-lg font-bold tracking-tight text-primary">{upcomingCount}</p>
         </Card>
       </div>
 
       {/* Organizer Filter Badge */}
       {filteredOrganizer && (
-        <Card className="p-4 bg-accent-secondary/5 border-accent-secondary/20">
+        <div className="p-4 rounded-xl bg-glass border border-accent-secondary/20 bg-accent-secondary/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
@@ -252,7 +250,7 @@ export default function VenueEventsPage() {
               Clear Filter
             </Button>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Tabs and Search */}
@@ -281,12 +279,12 @@ export default function VenueEventsPage() {
         {/* Events Table */}
         {filteredEvents.length === 0 ? (
           <Card>
-            <div className="p-12 text-center">
+            <div className="p-8 text-center">
               <Calendar className="h-12 w-12 mx-auto text-secondary mb-4" />
               <h3 className="text-lg font-semibold text-primary mb-2">
                 No Events Found
               </h3>
-              <p className="text-secondary">
+              <p className="text-sm text-secondary">
                 {filteredOrganizer
                   ? `No events found for ${filteredOrganizer.name}.`
                   : activeTab === "pending" 

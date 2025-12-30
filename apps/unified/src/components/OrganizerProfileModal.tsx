@@ -106,9 +106,6 @@ export function OrganizerProfileModal({
               <Building2 className="h-6 w-6" />
               {organizer.name}
             </h2>
-            {organizer.company_name && (
-              <p className="text-secondary mt-1">{organizer.company_name}</p>
-            )}
           </div>
           {organizer.is_preapproved ? (
             <Badge variant="default">

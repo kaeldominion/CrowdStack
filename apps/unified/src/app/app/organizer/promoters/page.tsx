@@ -103,10 +103,10 @@ export default function OrganizerPromotersPage() {
     <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-primary">Promoters</h1>
-              <p className="mt-2 text-sm text-secondary">
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Promoters</h1>
+              <p className="text-sm text-secondary">
                 Promoters who have worked on your events
               </p>
             </div>
@@ -120,14 +120,12 @@ export default function OrganizerPromotersPage() {
           </div>
 
           <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search promoters by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
+            <Input
+              placeholder="Search promoters by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
           </Card>
 
           <div className="mt-4 text-sm text-secondary">
@@ -243,7 +241,7 @@ export default function OrganizerPromotersPage() {
 
           {promoters.length > 0 && (
             <Card className="mt-4">
-              <div className="p-4 flex items-start gap-3 bg-raised rounded-lg">
+              <div className="flex items-start gap-3">
                 <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-secondary">
                   <p className="font-medium text-primary mb-1">About Promoter Assignments</p>

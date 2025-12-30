@@ -409,14 +409,12 @@ export default function DoorScannerPage() {
   if (requiresLogin) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center" padding="none">
-          <div className="p-6">
-            <User className="h-16 w-16 text-muted mx-auto mb-4" />
-            <h1 className="page-title mb-4">Sign In Required</h1>
-            <p className="text-secondary mb-6">
-              Please sign in to access the door scanner for this event.
-            </p>
-          </div>
+        <Card className="max-w-md w-full text-center">
+          <User className="h-16 w-16 text-muted mx-auto mb-4" />
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-4">Sign In Required</h1>
+          <p className="text-sm text-secondary mb-6">
+            Please sign in to access the door scanner for this event.
+          </p>
           <Button
             variant="primary"
             size="lg"
@@ -433,34 +431,32 @@ export default function DoorScannerPage() {
   if (accessDenied) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center" padding="none">
-          <div className="p-6">
-            <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
-            <h1 className="page-title mb-4">Access Denied</h1>
-            <p className="text-secondary mb-2">
-              {error || "You don't have permission to access the door scanner for this event."}
-            </p>
-            <p className="text-sm text-muted mb-6">
-              Only event organizers, venue admins, and assigned door staff can access this scanner.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                onClick={() => router.push("/door")}
-              >
-                Back to Events
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="flex-1"
-                onClick={() => router.push("/me")}
-              >
-                My Dashboard
-              </Button>
-            </div>
+        <Card className="max-w-md w-full text-center">
+          <XCircle className="h-16 w-16 text-accent-error mx-auto mb-4" />
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-4">Access Denied</h1>
+          <p className="text-sm text-secondary mb-2">
+            {error || "You don't have permission to access the door scanner for this event."}
+          </p>
+          <p className="text-xs text-muted mb-6">
+            Only event organizers, venue admins, and assigned door staff can access this scanner.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="flex-1"
+              onClick={() => router.push("/door")}
+            >
+              Back to Events
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="flex-1"
+              onClick={() => router.push("/me")}
+            >
+              My Dashboard
+            </Button>
           </div>
         </Card>
       </div>
@@ -470,20 +466,18 @@ export default function DoorScannerPage() {
   if (error && !eventInfo) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] p-4">
-        <Card className="max-w-md w-full text-center" padding="none">
-          <div className="p-6">
-            <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
-            <h1 className="page-title mb-4">Unable to Load Event</h1>
-            <p className="text-secondary mb-6">{error}</p>
-            <Button
-              variant="secondary"
-              size="lg"
-              className="w-full"
-              onClick={() => router.push("/door")}
-            >
-              Back to Events
-            </Button>
-          </div>
+        <Card className="max-w-md w-full text-center">
+          <AlertTriangle className="h-16 w-16 text-accent-warning mx-auto mb-4" />
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-4">Unable to Load Event</h1>
+          <p className="text-sm text-secondary mb-6">{error}</p>
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full"
+            onClick={() => router.push("/door")}
+          >
+            Back to Events
+          </Button>
         </Card>
       </div>
     );
@@ -496,7 +490,7 @@ export default function DoorScannerPage() {
     : false;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Flash overlay */}
       <AnimatePresence>
         {flashColor && (
@@ -512,10 +506,10 @@ export default function DoorScannerPage() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="page-title">{eventInfo?.name || "Door Scanner"}</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">{eventInfo?.name || "Door Scanner"}</h1>
+          <p className="text-sm text-secondary">
             {eventInfo?.venue?.name && `${eventInfo.venue.name} • `}
             {isEventLive ? (
               <Badge variant="success" className="inline-flex items-center gap-1">
@@ -538,21 +532,21 @@ export default function DoorScannerPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="text-sm text-secondary mb-1">Checked In</div>
-          <div className="text-3xl font-bold text-accent-success">{stats.checkedIn}</div>
-          <div className="text-xs text-muted mt-1">Current attendance</div>
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-accent-success/30 bg-accent-success/5 !p-1.5">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-0.5">Checked In</p>
+          <p className="font-sans text-xl font-bold tracking-tight text-accent-success">{stats.checkedIn}</p>
+          <p className="text-[10px] text-secondary mt-0.5 truncate">Current attendance</p>
         </Card>
-        <Card className="p-4">
-          <div className="text-sm text-secondary mb-1">Registered</div>
-          <div className="text-3xl font-bold text-primary">{stats.registered}</div>
-          <div className="text-xs text-muted mt-1">Total registrations</div>
+        <Card className="!p-1.5">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-0.5">Registered</p>
+          <p className="font-sans text-xl font-bold tracking-tight text-primary">{stats.registered}</p>
+          <p className="text-[10px] text-secondary mt-0.5 truncate">Total registrations</p>
         </Card>
-        <Card className="p-4">
-          <div className="text-sm text-secondary mb-1">Remaining</div>
-          <div className="text-3xl font-bold text-accent-warning">{stats.remaining}</div>
-          <div className="text-xs text-muted mt-1">Available spots</div>
+        <Card className="border-accent-warning/30 bg-accent-warning/5 !p-1.5">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-0.5">Remaining</p>
+          <p className="font-sans text-xl font-bold tracking-tight text-accent-warning">{stats.remaining}</p>
+          <p className="text-[10px] text-secondary mt-0.5 truncate">Available spots</p>
         </Card>
       </div>
 
@@ -564,13 +558,13 @@ export default function DoorScannerPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
           >
-            <Card className={`p-4 border-2 ${
+            <Card className={
               lastCheckIn.status === "success"
-                ? "border-accent-success/50 bg-accent-success/5"
+                ? "border-accent-success/30 bg-accent-success/5"
                 : lastCheckIn.status === "duplicate"
-                ? "border-accent-warning/50 bg-accent-warning/5"
-                : "border-accent-error/50 bg-accent-error/5"
-            }`}>
+                ? "border-accent-warning/30 bg-accent-warning/5"
+                : "border-accent-error/30 bg-accent-error/5"
+            }>
               <div className="flex items-center gap-3">
                 {getStatusBadge(lastCheckIn.status)}
                 <div className="flex-1 min-w-0">
@@ -591,7 +585,7 @@ export default function DoorScannerPage() {
 
       {/* Scanner Section */}
       <Card>
-        <h2 className="section-header mb-4">QR Code Scanner</h2>
+        <h2 className="section-header mb-3">QR Code Scanner</h2>
         
         {/* QR Reader container */}
         <div 
@@ -626,7 +620,7 @@ export default function DoorScannerPage() {
         )}
 
         {cameraError && (
-          <Card className="mt-4 bg-accent-error/10 border-accent-error/20">
+          <Card className="mt-4 border-accent-error/30 bg-accent-error/5">
             <p className="text-sm text-accent-error">{cameraError}</p>
             <p className="text-xs text-muted mt-1">
               Make sure camera permissions are granted and you're using HTTPS.
@@ -637,8 +631,8 @@ export default function DoorScannerPage() {
 
       {/* Search Section */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="section-header">Search Attendees</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="section-header !mb-0 flex items-center">Search Attendees</h2>
           {!searchQuery.trim() && (
             <Button
               variant="ghost"
@@ -652,7 +646,7 @@ export default function DoorScannerPage() {
           )}
         </div>
         
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -732,7 +726,7 @@ export default function DoorScannerPage() {
       </Card>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Button
           variant="secondary"
           size="lg"
@@ -759,7 +753,7 @@ export default function DoorScannerPage() {
       {/* Recent Scans */}
       {recentScans.length > 0 && (
         <Card>
-          <h2 className="section-header mb-4">Recent Check-ins ({recentScans.length})</h2>
+          <h2 className="section-header mb-3">Recent Check-ins ({recentScans.length})</h2>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -803,7 +797,7 @@ export default function DoorScannerPage() {
               Scan this QR code to register for the event. Registrations will be attributed to the venue.
             </p>
             
-            <div className="flex flex-col items-center justify-center p-6 bg-raised rounded-lg">
+            <div className="flex flex-col items-center justify-center p-4 bg-raised rounded-lg">
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
                   (() => {
@@ -848,7 +842,7 @@ export default function DoorScannerPage() {
         onClose={() => setShowQuickAdd(false)}
         title="Quick Add Attendee"
       >
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-sm text-secondary">
             Add a new attendee and check them in immediately.
           </p>
@@ -906,10 +900,10 @@ export default function DoorScannerPage() {
       >
         {loadingProfile ? (
           <div className="p-8 flex items-center justify-center">
-            <LoadingSpinner text="Loading profile..." size="md" />
+            <LoadingSpinner text="Loading profile..." />
           </div>
         ) : selectedAttendee ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Profile Header */}
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center overflow-hidden">
@@ -947,18 +941,18 @@ export default function DoorScannerPage() {
               {selectedAttendee.email && (
                 <a 
                   href={`mailto:${selectedAttendee.email}`}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle hover:bg-active transition-colors"
                 >
-                  <Mail className="h-5 w-5 text-muted" />
+                  <Mail className="h-4 w-4 text-muted" />
                   <span className="text-primary">{selectedAttendee.email}</span>
                 </a>
               )}
               {(selectedAttendee.phone || selectedAttendee.whatsapp) && (
                 <a 
                   href={`tel:${selectedAttendee.whatsapp || selectedAttendee.phone}`}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle hover:bg-active transition-colors"
                 >
-                  <Phone className="h-5 w-5 text-muted" />
+                  <Phone className="h-4 w-4 text-muted" />
                   <span className="text-primary">{selectedAttendee.whatsapp || selectedAttendee.phone}</span>
                 </a>
               )}
@@ -967,15 +961,15 @@ export default function DoorScannerPage() {
                   href={`https://instagram.com/${selectedAttendee.instagram_handle}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg bg-raised hover:bg-active transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle hover:bg-active transition-colors"
                 >
-                  <Instagram className="h-5 w-5 text-muted" />
+                  <Instagram className="h-4 w-4 text-muted" />
                   <span className="text-primary">@{selectedAttendee.instagram_handle}</span>
                 </a>
               )}
               {selectedAttendee.date_of_birth && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-raised">
-                  <Calendar className="h-5 w-5 text-muted" />
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle">
+                  <Calendar className="h-4 w-4 text-muted" />
                   <span className="text-primary">
                     {new Date(selectedAttendee.date_of_birth).toLocaleDateString(undefined, {
                       year: "numeric",

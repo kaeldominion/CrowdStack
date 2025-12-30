@@ -26,6 +26,8 @@ import {
   Radio,
   ChevronLeft,
   ChevronRight,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -205,6 +207,7 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
 export function DashboardSidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const supabase = createBrowserClient();
 
@@ -228,6 +231,11 @@ export function DashboardSidebar() {
     };
     loadRoles();
   }, [supabase]);
+
+  // Close mobile drawer when route changes
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
 
   // Determine which sidebar items to show based on current path
   const getSidebarSections = (): SidebarSection[] => {
@@ -280,7 +288,128 @@ export function DashboardSidebar() {
     return "Dashboard";
   };
 
+  // Render navigation content (shared between desktop and mobile)
+  const renderNavContent = (isMobile: boolean = false) => (
+    <nav className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+      {sidebarSections.map((section, sectionIndex) => (
+        <div key={section.title} className={cn(sectionIndex > 0 && "mt-4")}>
+          {/* Section Title */}
+          {(!isCollapsed || isMobile) && (
+            <div className="px-3 py-2">
+              <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted">
+                {section.title}
+              </span>
+            </div>
+          )}
+          
+          {/* Section Items */}
+          <div className="flex flex-col gap-0.5">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = isItemActive(item);
+              
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => isMobile && setIsMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg",
+                    "transition-all duration-200",
+                    (isCollapsed && !isMobile) && "justify-center px-2",
+                    isActive
+                      ? "bg-accent-primary/15 text-accent-primary border border-accent-primary/20"
+                      : "text-secondary hover:text-primary hover:bg-active/50"
+                  )}
+                  title={(isCollapsed && !isMobile) ? item.label : undefined}
+                >
+                  <Icon className={cn(
+                    "flex-shrink-0",
+                    (isCollapsed && !isMobile) ? "w-5 h-5" : "w-4 h-4"
+                  )} />
+                  {(!isCollapsed || isMobile) && (
+                    <span className="text-sm font-medium truncate">
+                      {item.label}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
+    <>
+      {/* Mobile Hamburger Button */}
+      {sidebarSections.length > 0 && (
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className={cn(
+            "fixed bottom-4 left-4 z-[60]",
+            "lg:hidden",
+            "p-3 rounded-xl",
+            "bg-glass border-2 border-accent-primary/30",
+            "text-primary hover:text-accent-primary hover:border-accent-primary/50",
+            "hover:bg-active/50",
+            "transition-all duration-200",
+            "shadow-xl shadow-void/50",
+            "backdrop-blur-xl"
+          )}
+          aria-label={isMobileOpen ? "Close menu" : "Open menu"}
+        >
+          {isMobileOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
+        </button>
+      )}
+
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-[55] lg:hidden bg-void/80 backdrop-blur-sm"
+          onClick={() => setIsMobileOpen(false)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setIsMobileOpen(false);
+          }}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={cn(
+          "fixed left-0 top-20 bottom-0 z-[60]",
+          "lg:hidden",
+          "bg-glass/95 backdrop-blur-xl border-r border-border-subtle",
+          "transition-transform duration-300 ease-in-out",
+          "flex flex-col w-56",
+          isMobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+            {getDashboardName()}
+          </span>
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="p-1 rounded-lg hover:bg-active/50 text-muted hover:text-primary transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Mobile Navigation Content */}
+        {renderNavContent(true)}
+      </aside>
+
+      {/* Desktop Sidebar */}
     <aside
       className={cn(
         "fixed left-0 top-20 bottom-0 z-40",
@@ -314,56 +443,10 @@ export function DashboardSidebar() {
         </button>
       </div>
 
-      {/* Navigation Sections */}
-      <nav className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-        {sidebarSections.map((section, sectionIndex) => (
-          <div key={section.title} className={cn(sectionIndex > 0 && "mt-4")}>
-            {/* Section Title */}
-            {!isCollapsed && (
-              <div className="px-3 py-2">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted">
-                  {section.title}
-                </span>
-              </div>
-            )}
-            
-            {/* Section Items */}
-            <div className="flex flex-col gap-0.5">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = isItemActive(item);
-                
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-lg",
-                      "transition-all duration-200",
-                      isCollapsed && "justify-center px-2",
-                      isActive
-                        ? "bg-accent-primary/15 text-accent-primary border border-accent-primary/20"
-                        : "text-secondary hover:text-primary hover:bg-active/50"
-                    )}
-                    title={isCollapsed ? item.label : undefined}
-                  >
-                    <Icon className={cn(
-                      "flex-shrink-0",
-                      isCollapsed ? "w-5 h-5" : "w-4 h-4"
-                    )} />
-                    {!isCollapsed && (
-                      <span className="text-sm font-medium truncate">
-                        {item.label}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
+      {/* Desktop Navigation Content */}
+      {renderNavContent(false)}
     </aside>
+    </>
   );
 }
 

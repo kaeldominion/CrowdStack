@@ -100,10 +100,10 @@ export default function AdminVenuesPage() {
     <div className="min-h-screen">
       <Section spacing="lg">
         <Container>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-primary">Venue Management</h1>
-              <p className="mt-2 text-sm text-secondary">
+              <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Venue Management</h1>
+              <p className="text-sm text-secondary">
                 Manage all venues in the system
               </p>
             </div>
@@ -113,23 +113,23 @@ export default function AdminVenuesPage() {
             </Button>
           </div>
 
-          <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search venues by name, city, or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
+          <Card className="!p-4">
+            <Input
+              placeholder="Search venues by name, city, or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
           </Card>
 
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredVenues.length} of {venues.length} venues
+          <div className="mt-4 mb-4">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {filteredVenues.length} of {venues.length} venues
+            </p>
           </div>
 
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>

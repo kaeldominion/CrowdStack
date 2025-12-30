@@ -85,7 +85,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
       <div className="space-y-0">
         {/* Hero Image Section */}
         {heroImage && (
-          <div className="relative h-48 w-full overflow-hidden border-b-2 border-border-subtle">
+          <div className="relative h-40 w-full overflow-hidden border-b-2 border-border-subtle">
             <Image
               src={heroImage}
               alt={event.name}
@@ -93,10 +93,10 @@ export function EventCard({ event, onClick }: EventCardProps) {
               className="object-cover"
             />
             {/* Overlay with event name and date */}
-            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent flex flex-col justify-end p-4">
-              <h3 className="text-xl font-sans font-semibold text-primary mb-1 line-clamp-2">{event.name}</h3>
-              <div className="flex items-center gap-2 text-sm text-secondary">
-                <Calendar className="h-4 w-4" />
+            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent flex flex-col justify-end p-3">
+              <h3 className="text-base font-sans font-semibold text-primary mb-1 line-clamp-2">{event.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-secondary">
+                <Calendar className="h-3 w-3" />
                 <span>{formattedDate}</span>
                 <span className="text-muted">•</span>
                 <span>{formattedTime}</span>
@@ -106,13 +106,13 @@ export function EventCard({ event, onClick }: EventCardProps) {
         )}
 
         {/* Content Section */}
-        <div className="p-4 space-y-4">
+        <div className="p-3 space-y-3">
           {/* Event Name (if no hero image) */}
           {!heroImage && (
             <div>
-              <h3 className="text-xl font-sans font-semibold text-primary mb-2">{event.name}</h3>
-              <div className="flex items-center gap-2 text-sm text-secondary">
-                <Calendar className="h-4 w-4" />
+              <h3 className="text-base font-sans font-semibold text-primary mb-1.5">{event.name}</h3>
+              <div className="flex items-center gap-2 text-xs text-secondary">
+                <Calendar className="h-3 w-3" />
                 <span>{formattedDate}</span>
                 <span>•</span>
                 <span>{formattedTime}</span>
@@ -124,7 +124,7 @@ export function EventCard({ event, onClick }: EventCardProps) {
           {event.organizer && (
             <div className="flex items-center gap-2">
               <OrganizerAvatar organizer={event.organizer} size="sm" />
-              <span className="text-sm text-secondary">{event.organizer.name}</span>
+              <span className="text-xs text-secondary">{event.organizer.name}</span>
             </div>
           )}
 
@@ -137,19 +137,19 @@ export function EventCard({ event, onClick }: EventCardProps) {
 
           {/* Stats Section */}
           <div className="pt-2 border-t border-border-subtle">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Registrations</span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Users className="h-4 w-4 text-muted" />
-                  <span className="text-sm text-primary font-semibold">{event.registrations}</span>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary">Registrations</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Users className="h-3 w-3 text-muted" />
+                  <span className="text-xs text-primary font-semibold">{event.registrations}</span>
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">Check-ins</span>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <CheckCircle2 className="h-4 w-4 text-muted" />
-                  <span className="text-sm text-primary font-semibold">{event.checkins}</span>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary">Check-ins</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-3 w-3 text-muted" />
+                  <span className="text-xs text-primary font-semibold">{event.checkins}</span>
                 </div>
               </div>
             </div>
