@@ -210,7 +210,7 @@ export default function BrowsePage() {
 
       if (debouncedSearch) params.append("search", debouncedSearch);
       if (djsFilters.genre) params.append("genre", djsFilters.genre);
-      // Note: DJs are not filtered by location - they perform globally
+      if (djsFilters.country) params.append("country", djsFilters.country);
 
       const res = await fetch(`/api/browse/djs?${params}`);
       const data = await res.json();
@@ -503,6 +503,7 @@ export default function BrowsePage() {
                   filters={djsFilters} 
                   onChange={setDjsFilters}
                   variant="compact"
+                  filterType="djs"
                 />
               </div>
 

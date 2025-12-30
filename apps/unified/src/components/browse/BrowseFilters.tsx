@@ -10,17 +10,40 @@ export interface BrowseFilters {
   search?: string;
   date?: string;
   genre?: string;
+  country?: string;
 }
+
+// Common countries for DJ filtering
+const COUNTRIES = [
+  "United States",
+  "United Kingdom",
+  "Canada",
+  "Australia",
+  "Germany",
+  "France",
+  "Netherlands",
+  "Spain",
+  "Italy",
+  "Brazil",
+  "Mexico",
+  "Japan",
+  "South Korea",
+  "India",
+  "South Africa",
+];
 
 interface BrowseFiltersProps {
   filters: BrowseFilters;
   onChange: (filters: BrowseFilters) => void;
   variant?: "sidebar" | "compact";
+  /** Filter type - "events" shows date+genre, "djs" shows genre+country */
+  filterType?: "events" | "djs";
 }
 
-export function BrowseFilters({ filters, onChange, variant = "sidebar" }: BrowseFiltersProps) {
+export function BrowseFilters({ filters, onChange, variant = "sidebar", filterType = "events" }: BrowseFiltersProps) {
   // Use shared genre constants instead of fetching
   const genres = GENRES.map((genre) => ({ value: genre, label: genre }));
+  const countries = COUNTRIES.map((country) => ({ value: country, label: country }));
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -92,12 +115,15 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
         {isOpen && (
           <div className="absolute top-full left-0 mt-2 w-72 p-4 rounded-xl bg-surface border border-border-subtle shadow-xl z-50">
             <div className="space-y-4">
-              <Select
-                label="Date"
-                value={filters.date || ""}
-                onChange={(e) => handleFilterChange("date", e.target.value)}
-                options={dateOptions}
-              />
+              {/* Date filter - only for events */}
+              {filterType === "events" && (
+                <Select
+                  label="Date"
+                  value={filters.date || ""}
+                  onChange={(e) => handleFilterChange("date", e.target.value)}
+                  options={dateOptions}
+                />
+              )}
 
               <Select
                 label="Genre"
@@ -108,6 +134,19 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
                   ...genres,
                 ]}
               />
+
+              {/* Country filter - only for DJs */}
+              {filterType === "djs" && (
+                <Select
+                  label="Country"
+                  value={filters.country || ""}
+                  onChange={(e) => handleFilterChange("country", e.target.value)}
+                  options={[
+                    { value: "", label: "All Countries" },
+                    ...countries,
+                  ]}
+                />
+              )}
 
               {hasActiveFilters && (
                 <div className="pt-2 border-t border-border-subtle">
@@ -134,12 +173,15 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
     <div className="space-y-4">
       {/* Filter Dropdowns */}
       <div className="grid grid-cols-1 gap-4">
-        <Select
-          label="Date"
-          value={filters.date || ""}
-          onChange={(e) => handleFilterChange("date", e.target.value)}
-          options={dateOptions}
-        />
+        {/* Date filter - only for events */}
+        {filterType === "events" && (
+          <Select
+            label="Date"
+            value={filters.date || ""}
+            onChange={(e) => handleFilterChange("date", e.target.value)}
+            options={dateOptions}
+          />
+        )}
 
         <Select
           label="Genre"
@@ -150,6 +192,19 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
             ...genres,
           ]}
         />
+
+        {/* Country filter - only for DJs */}
+        {filterType === "djs" && (
+          <Select
+            label="Country"
+            value={filters.country || ""}
+            onChange={(e) => handleFilterChange("country", e.target.value)}
+            options={[
+              { value: "", label: "All Countries" },
+              ...countries,
+            ]}
+          />
+        )}
       </div>
 
       {/* Active Filter Pills */}
@@ -180,6 +235,19 @@ export function BrowseFilters({ filters, onChange, variant = "sidebar" }: Browse
                 className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
               >
                 Genre: {filters.genre}
+                <X className="h-3 w-3" />
+              </Badge>
+            </button>
+          )}
+
+          {filters.country && (
+            <button onClick={() => clearFilter("country")} className="inline-flex">
+              <Badge
+                color="blue"
+                variant="outline"
+                className="flex items-center gap-1.5 cursor-pointer hover:bg-accent-secondary/20"
+              >
+                Country: {filters.country}
                 <X className="h-3 w-3" />
               </Badge>
             </button>
