@@ -6,7 +6,6 @@ import { Card, Badge } from "@crowdstack/ui";
 import { 
   MapPin, 
   Users, 
-  Star,
   Calendar,
 } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
@@ -209,18 +208,12 @@ export default async function VenuePage({
               <h1 className="page-title">
                           {venue.name}
                         </h1>
-              <div className="flex items-center gap-4 mt-1">
-                {venue.city && (
-                  <div className="flex items-center gap-1.5 text-secondary">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm">{venue.city}</span>
-                          </div>
-                        )}
-                <div className="flex items-center gap-1.5">
-                  <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  <span className="text-sm text-primary font-medium">4.9 (1.2k)</span>
-                      </div>
-                    </div>
+              {venue.city && (
+                <div className="flex items-center gap-1.5 text-secondary mt-1">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-sm">{venue.city}</span>
+                </div>
+              )}
                   </div>
 
             {/* Action Buttons - aligned to bottom */}
