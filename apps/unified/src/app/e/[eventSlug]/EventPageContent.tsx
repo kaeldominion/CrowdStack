@@ -383,7 +383,6 @@ export function EventPageContent({
                   })),
                 }}
                 layout="landscape"
-                showRating={false}
                 showTags={true}
               />
                       )}

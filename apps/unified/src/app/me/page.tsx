@@ -534,7 +534,6 @@ export default function MePage() {
                       tags: venue.tags,
                     }}
                     layout="landscape"
-                    showRating={false}
                     showTags={false}
                   />
                 ))

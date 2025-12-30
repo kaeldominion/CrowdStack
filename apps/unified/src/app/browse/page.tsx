@@ -37,7 +37,6 @@ interface Venue {
   city?: string | null;
   state?: string | null;
   country?: string | null;
-  rating?: number | null;
   tags?: { tag_type: string; tag_value: string }[];
 }
 
@@ -603,7 +602,7 @@ export default function BrowsePage() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {venues.map((venue) => (
-                      <VenueCard key={venue.id} venue={venue} showRating showTags layout="portrait" />
+                      <VenueCard key={venue.id} venue={venue} showTags layout="portrait" />
                     ))}
                   </div>
                   {hasMoreVenues && (

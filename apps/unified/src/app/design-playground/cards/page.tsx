@@ -62,7 +62,6 @@ const MOCK_VENUE = {
   city: "Dubai",
   state: "UAE",
   country: "United Arab Emirates",
-  rating: 4.8,
   tags: [
     { tag_type: "music", tag_value: "House" },
     { tag_type: "music", tag_value: "Hip-Hop" },
@@ -330,9 +329,9 @@ export default function DesignCardsPage() {
           <div className="mb-8">
             <CardLabel>Portrait / Full Card</CardLabel>
             <CardGrid columns={3}>
-              <VenueCard venue={MOCK_VENUE} showRating showTags layout="portrait" />
-              <VenueCard venue={MOCK_VENUE} showRating={false} showTags={false} layout="portrait" />
-              <VenueCard venue={MOCK_VENUE_NO_IMAGE} showRating showTags layout="portrait" />
+              <VenueCard venue={MOCK_VENUE} showTags layout="portrait" />
+              <VenueCard venue={MOCK_VENUE} showTags={false} layout="portrait" />
+              <VenueCard venue={MOCK_VENUE_NO_IMAGE} showTags layout="portrait" />
             </CardGrid>
           </div>
 
@@ -341,7 +340,7 @@ export default function DesignCardsPage() {
             <CardLabel>Landscape / Compact Card</CardLabel>
             <CardGrid columns={3}>
               <VenueCard venue={MOCK_VENUE} layout="landscape" />
-              <VenueCard venue={MOCK_VENUE} showRating={false} layout="landscape" />
+              <VenueCard venue={MOCK_VENUE} showTags={false} layout="landscape" />
               <VenueCard venue={MOCK_VENUE_NO_IMAGE} layout="landscape" />
             </CardGrid>
           </div>

@@ -86,7 +86,6 @@ const SHOWCASE_VENUES = [
     city: "Dubai",
     country: "UAE",
     image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&h=400&fit=crop",
-    rating: 4.8,
     tags: ["House", "Upscale"],
   },
   {
@@ -96,7 +95,6 @@ const SHOWCASE_VENUES = [
     city: "Los Angeles",
     country: "USA",
     image: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=600&h=400&fit=crop",
-    rating: 4.6,
     tags: ["Techno", "Underground"],
   },
   {
@@ -106,7 +104,6 @@ const SHOWCASE_VENUES = [
     city: "New York",
     country: "USA",
     image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=400&fit=crop",
-    rating: 4.9,
     tags: ["Exclusive", "Formal"],
   },
   {
@@ -116,7 +113,6 @@ const SHOWCASE_VENUES = [
     city: "Miami",
     country: "USA",
     image: "https://images.unsplash.com/photo-1545128485-c400e7702796?w=600&h=400&fit=crop",
-    rating: 4.7,
     tags: ["Rooftop", "Beach"],
   },
 ];
@@ -482,11 +478,6 @@ function VenueShowcaseCard({ venue, index }: { venue: any; index: number }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-transparent" />
             
-            {/* Rating badge */}
-            <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-void/80 backdrop-blur-sm border border-border-subtle">
-              <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-              <span className="text-xs font-bold text-primary">{venue.rating}</span>
-                      </div>
                 </div>
           
           {/* Content */}
@@ -599,7 +590,6 @@ export default function HomePage() {
               city: venue.city || "",
               country: venue.country || "",
               image: venue.cover_image_url || venue.logo_url || "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&h=400&fit=crop",
-              rating: venue.rating || 4.5,
               tags: musicTags.map((t: { tag_type: string; tag_value: string }) => t.tag_value) || [],
             };
           });

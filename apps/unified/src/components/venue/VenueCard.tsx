@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Star, Navigation } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import { Badge } from "@crowdstack/ui";
 
 interface VenueCardProps {
@@ -16,13 +16,10 @@ interface VenueCardProps {
     city?: string | null;
     state?: string | null;
     country?: string | null;
-    rating?: number | null;
     tags?: { tag_type: string; tag_value: string }[];
   };
   /** Owner/organizer avatar URL */
   ownerAvatarUrl?: string | null;
-  /** Show rating badge */
-  showRating?: boolean;
   /** Show tags */
   showTags?: boolean;
   /** Layout orientation */
@@ -33,7 +30,6 @@ interface VenueCardProps {
 export function VenueCard({ 
   venue, 
   ownerAvatarUrl,
-  showRating = true,
   showTags = true,
   layout = "portrait",
   className = "",
@@ -51,9 +47,6 @@ export function VenueCard({
   const categoryTags = venue.tags
     ?.filter(t => t.tag_type === "music" || t.tag_type === "crowd_type")
     .slice(0, 2) || [];
-
-  // Default rating if not provided
-  const rating = venue.rating ?? 4.9;
 
   // Landscape layout - horizontal card
   if (layout === "landscape") {
@@ -103,12 +96,6 @@ export function VenueCard({
                     {tag.tag_value}
                   </Badge>
                 ))}
-              </div>
-            )}
-            {showRating && (
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                <span className="text-xs font-medium text-secondary">{rating.toFixed(1)}</span>
               </div>
             )}
           </div>
@@ -174,27 +161,17 @@ export function VenueCard({
 
         {/* Content at bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 space-y-3">
-          {/* Venue Name & Rating Row */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-sans text-xl font-bold text-primary group-hover:text-accent-secondary transition-colors line-clamp-2">
+          {/* Venue Name & Location */}
+          <div>
+            <h3 className="font-sans text-xl font-bold text-primary group-hover:text-accent-secondary transition-colors line-clamp-2">
               {venue.name}
             </h3>
-              
-              {/* Location */}
-              {location && (
-                <div className="flex items-center gap-1.5 mt-1 text-secondary">
-                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="text-sm truncate">{location}</span>
-                </div>
-              )}
-            </div>
             
-            {/* Rating Badge */}
-            {showRating && (
-              <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-glass/80 border border-border-subtle">
-                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                <span className="text-sm font-bold text-primary">{rating.toFixed(1)}</span>
+            {/* Location */}
+            {location && (
+              <div className="flex items-center gap-1.5 mt-1 text-secondary">
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="text-sm truncate">{location}</span>
               </div>
             )}
           </div>
