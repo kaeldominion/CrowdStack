@@ -34,7 +34,7 @@ export function VenueCard({
   layout = "portrait",
   className = "",
 }: VenueCardProps) {
-  const venueUrl = venue.slug ? `/v/${venue.slug}` : "#";
+  const venueUrl = venue.slug ? `/v/${venue.slug}` : `/v/${venue.id}`;
   const heroImage = venue.cover_image_url || venue.logo_url;
   
   // Get location string
