@@ -511,16 +511,16 @@ export default function BrowsePage() {
 
               {djsLoading && djs.length === 0 ? (
                 <>
-                  {/* Skeleton for portrait cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(3)].map((_, i) => (
-                      <DJCardSkeleton key={i} layout="portrait" />
-                    ))}
-                  </div>
-                  {/* Skeleton for row cards */}
-                  <div className="space-y-3">
+                  {/* Mobile: Row skeleton */}
+                  <div className="space-y-3 md:hidden">
                     {[...Array(3)].map((_, i) => (
                       <DJCardSkeleton key={`row-${i}`} layout="row" />
+                    ))}
+                  </div>
+                  {/* Desktop: Portrait skeleton */}
+                  <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                      <DJCardSkeleton key={i} layout="portrait" />
                     ))}
                   </div>
                 </>
@@ -532,23 +532,33 @@ export default function BrowsePage() {
                 </Card>
               ) : (
                 <>
-                  {/* First row: Portrait/Full cards (first 3 DJs) */}
-                  {djs.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {djs.slice(0, 3).map((dj) => (
-                        <DJCard key={dj.id} dj={dj} layout="portrait" showStats />
-                      ))}
-                    </div>
-                  )}
+                  {/* Mobile: All DJs in row format */}
+                  <div className="space-y-3 md:hidden">
+                    {djs.map((dj) => (
+                      <DJCard key={dj.id} dj={dj} layout="row" showStats />
+                    ))}
+                  </div>
 
-                  {/* Remaining DJs: Row/List format */}
-                  {djs.length > 3 && (
-                    <div className="space-y-3">
-                      {djs.slice(3).map((dj) => (
-                        <DJCard key={dj.id} dj={dj} layout="row" showStats />
-                      ))}
-                    </div>
-                  )}
+                  {/* Desktop: First 3 as portrait cards, rest as row cards */}
+                  <div className="hidden md:block">
+                    {/* First row: Portrait/Full cards (first 3 DJs) */}
+                    {djs.length > 0 && (
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                        {djs.slice(0, 3).map((dj) => (
+                          <DJCard key={dj.id} dj={dj} layout="portrait" showStats />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Remaining DJs: Row/List format */}
+                    {djs.length > 3 && (
+                      <div className="space-y-3 mt-6">
+                        {djs.slice(3).map((dj) => (
+                          <DJCard key={dj.id} dj={dj} layout="row" showStats />
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {hasMoreDjs && (
                     <div className="mt-8 text-center">
