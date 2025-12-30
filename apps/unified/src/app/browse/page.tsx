@@ -136,11 +136,18 @@ export default function BrowsePage() {
     fetchFeaturedEvents();
   }, []);
 
-  // Fetch live events
+  // Fetch live events (filtered by search if active)
   useEffect(() => {
     async function fetchLiveEvents() {
       try {
-        const res = await fetch("/api/browse/events?live=true&limit=10");
+        const params = new URLSearchParams({
+          live: "true",
+          limit: "10",
+        });
+        if (debouncedSearch) {
+          params.append("search", debouncedSearch);
+        }
+        const res = await fetch(`/api/browse/events?${params}`);
         const data = await res.json();
         setLiveEvents(data.events || []);
       } catch (error) {
@@ -148,7 +155,7 @@ export default function BrowsePage() {
       }
     }
     fetchLiveEvents();
-  }, []);
+  }, [debouncedSearch]);
 
   // Fetch events
   const fetchEvents = useCallback(async (reset = false) => {
@@ -170,7 +177,10 @@ export default function BrowsePage() {
       if (reset) {
         setAllEvents(data.events || []);
         setEventsOffset(ITEMS_PER_PAGE);
-        setTotalEventsCount(data.totalCount || data.count || 0);
+        // Use filtered count (after search) if search is active, otherwise use totalCount
+        setTotalEventsCount(
+          debouncedSearch ? (data.count || 0) : (data.totalCount || data.count || 0)
+        );
       } else {
         setAllEvents((prev) => [...prev, ...(data.events || [])]);
         setEventsOffset((prev) => prev + ITEMS_PER_PAGE);
@@ -267,7 +277,10 @@ export default function BrowsePage() {
       if (reset) {
         setPastEvents(data.events || []);
         setPastEventsOffset(ITEMS_PER_PAGE);
-        setTotalPastEventsCount(data.totalCount || data.count || 0);
+        // Use filtered count (after search) if search is active, otherwise use totalCount
+        setTotalPastEventsCount(
+          debouncedSearch ? (data.count || 0) : (data.totalCount || data.count || 0)
+        );
       } else {
         setPastEvents((prev) => [...prev, ...(data.events || [])]);
         setPastEventsOffset((prev) => prev + ITEMS_PER_PAGE);

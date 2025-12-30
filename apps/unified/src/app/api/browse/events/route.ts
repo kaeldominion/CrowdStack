@@ -108,6 +108,13 @@ export async function GET(request: NextRequest) {
           city,
           state,
           country
+        ),
+        event_lineups(
+          djs(
+            id,
+            name,
+            handle
+          )
         )
       `)
       .eq("status", "published")
@@ -230,7 +237,19 @@ export async function GET(request: NextRequest) {
       events = events.filter((event: any) => {
         const eventName = event.name?.toLowerCase() || "";
         const venueName = (event.venue as any)?.name?.toLowerCase() || "";
-        return eventName.includes(searchLower) || venueName.includes(searchLower);
+        
+        // Search in DJ names from lineups
+        const lineups = event.event_lineups || [];
+        const djNames = lineups
+          .map((lineup: any) => {
+            const dj = Array.isArray(lineup.djs) ? lineup.djs[0] : lineup.djs;
+            return dj?.name?.toLowerCase() || dj?.handle?.toLowerCase() || "";
+          })
+          .filter(Boolean);
+        
+        const matchesDJ = djNames.some((djName: string) => djName.includes(searchLower));
+        
+        return eventName.includes(searchLower) || venueName.includes(searchLower) || matchesDJ;
       });
     }
 
@@ -265,6 +284,13 @@ export async function GET(request: NextRequest) {
             city,
             state,
             country
+          ),
+          event_lineups(
+            djs(
+              id,
+              name,
+              handle
+            )
           )
         `)
         .eq("status", "published")
