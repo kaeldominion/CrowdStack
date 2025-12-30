@@ -336,8 +336,8 @@ export default function BrowsePage() {
   };
 
   return (
-    <div className="min-h-screen bg-void">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pb-8 md:pb-12">
+    <div className="min-h-screen bg-void -mt-20 pt-20">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 pb-8 md:pb-12">
         {/* Header */}
         <div className="text-center mb-8 md:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mb-4">
