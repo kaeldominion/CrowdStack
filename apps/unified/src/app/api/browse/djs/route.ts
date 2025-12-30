@@ -42,10 +42,12 @@ export async function GET(request: NextRequest) {
       });
 
     // Build the base query - only show DJs with profile images (completed profiles)
+    // Filter out both null AND empty string values
     let query = supabase
       .from("djs")
       .select("id, name, handle, bio, genres, location, profile_image_url, cover_image_url", { count: "exact" })
-      .not("profile_image_url", "is", null);
+      .not("profile_image_url", "is", null)
+      .neq("profile_image_url", "");
 
     // Search by name, bio, or handle
     if (search) {
