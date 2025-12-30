@@ -8,18 +8,23 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { Calendar, Radio } from "lucide-react";
 import { Card, Badge } from "@crowdstack/ui";
 import { EventCardRow } from "@/components/EventCardRow";
+import { EventCard as VenueEventCard } from "@/components/venue/EventCard";
+import { EventCardCompact } from "@/components/EventCardCompact";
 
 interface Event {
   id: string;
   slug: string;
   name: string;
+  description?: string | null;
   start_time: string;
   end_time: string | null;
   cover_image_url: string | null;
   flier_url: string | null;
+  capacity?: number | null;
   registration_count: number;
   requires_approval?: boolean;
   registration_type?: "guestlist" | "display_only" | "external_link";
@@ -85,23 +90,49 @@ export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, ve
         >
           Past Events
         </button>
-        <button className="tab-label tab-label-inactive opacity-50 cursor-not-allowed" disabled>
+        <Link
+          href={`/v/${venueSlug}/photos`}
+          className={`tab-label tab-label-inactive`}
+        >
           Photos
-        </button>
+        </Link>
       </nav>
 
       {/* Tab Content */}
       {activeTab === "upcoming" && (
         <>
           {upcomingEvents.length > 0 ? (
-            <div className="space-y-3">
-              {upcomingEvents.map((event) => (
-                <EventCardRow 
-                  key={event.id} 
-                  event={event}
-                />
-              ))}
-            </div>
+            <>
+              {/* Desktop: Full format cards in grid */}
+              <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcomingEvents.map((event) => (
+                  <VenueEventCard 
+                    key={event.id} 
+                    event={{
+                      id: event.id,
+                      slug: event.slug,
+                      name: event.name,
+                      description: event.description || null,
+                      start_time: event.start_time,
+                      end_time: event.end_time,
+                      cover_image_url: event.cover_image_url,
+                      flier_url: event.flier_url,
+                      capacity: event.capacity ?? null,
+                      registration_count: event.registration_count,
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Mobile: Compact cards */}
+              <div className="md:hidden space-y-3">
+                {upcomingEvents.map((event) => (
+                  <EventCardCompact 
+                    key={event.id} 
+                    event={event}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <Card className="!p-8 text-center border-dashed">
               <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
