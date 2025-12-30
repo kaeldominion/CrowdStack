@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { Building2, Plus, Search, ChevronRight, ExternalLink } from "lucide-react";
+import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 import { CreateVenueModal } from "@/components/CreateVenueModal";
 import { EditVenueModal } from "@/components/EditVenueModal";
 
@@ -162,11 +163,11 @@ export default function AdminVenuesPage() {
                           </Link>
                         </TableCell>
                         <TableCell>
-                          {venue.city || venue.state || venue.country || venue.address ? (
-                            <span>
-                              {[venue.city, venue.state || venue.country].filter(Boolean).join(", ") || venue.address}
-                            </span>
-                          ) : "—"}
+                          {formatVenueLocation({
+                            city: venue.city,
+                            state: venue.state,
+                            country: venue.country,
+                          }) || venue.address || "—"}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MapPin, Navigation } from "lucide-react";
 import { Badge } from "@crowdstack/ui";
+import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 
 interface VenueCardProps {
   venue: {
@@ -37,11 +38,12 @@ export function VenueCard({
   const venueUrl = venue.slug ? `/v/${venue.slug}` : `/v/${venue.id}`;
   const heroImage = venue.cover_image_url || venue.logo_url;
   
-  // Get location string
-  const locationParts = [venue.city, venue.state].filter(Boolean);
-  const location = locationParts.length > 0 
-    ? locationParts.join(", ") 
-    : null;
+  // Get standardized location string
+  const location = formatVenueLocation({
+    city: venue.city,
+    state: venue.state,
+    country: venue.country,
+  });
 
   // Get music/category tags (limit to 2)
   const categoryTags = venue.tags

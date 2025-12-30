@@ -13,6 +13,7 @@ import { FavoriteButton } from "@/components/FavoriteButton";
 import { VenueEventTabs } from "@/components/venue/VenueEventTabs";
 import { MapPreview } from "@/components/venue/MapPreview";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
+import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 
 interface VenueEvent {
   id: string;
@@ -208,10 +209,20 @@ export default async function VenuePage({
               <h1 className="page-title">
                           {venue.name}
                         </h1>
-              {venue.city && (
+              {formatVenueLocation({
+                city: venue.city,
+                state: venue.state,
+                country: venue.country,
+              }) && (
                 <div className="flex items-center gap-1.5 text-secondary mt-1">
                   <MapPin className="h-4 w-4" />
-                  <span className="text-sm">{venue.city}</span>
+                  <span className="text-sm">
+                    {formatVenueLocation({
+                      city: venue.city,
+                      state: venue.state,
+                      country: venue.country,
+                    })}
+                  </span>
                 </div>
               )}
                   </div>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { MapPin } from "lucide-react";
 import type { Venue } from "@crowdstack/shared/types";
+import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 
 interface VenuePreviewProps {
   venue: Venue | null;
@@ -27,7 +28,11 @@ export function VenuePreview({
   }
 
   const logoSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
-  const location = [venue.city, venue.state].filter(Boolean).join(", ");
+  const location = formatVenueLocation({
+    city: venue.city,
+    state: venue.state,
+    country: venue.country,
+  });
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
