@@ -1333,128 +1333,128 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       )}
 
       {/* Navigation Bar - Matches global DockNav pattern */}
-      <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center gap-1 px-3 sm:px-4 rounded-full border border-border-strong backdrop-blur-xl bg-void/90 shadow-2xl shadow-void/50 ring-1 ring-border-subtle">
-          {/* Logo */}
-          <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 px-2">
-            <Logo variant="tricolor" size="sm" iconOnly animated={false} />
-          </Link>
+      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto font-sans">
+        <div className="flex items-center rounded-full border border-border-strong backdrop-blur-xl bg-void/90 shadow-2xl shadow-void/50 ring-1 ring-border-subtle py-2 px-3">
+          {/* Logo Section */}
+          <div className="flex items-center gap-2 pr-3 border-r border-border-strong">
+            <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105">
+              <Logo variant="tricolor" size="sm" iconOnly className="sm:hidden" />
+              <Logo variant="tricolor" size="sm" className="hidden sm:flex" />
+            </Link>
+          </div>
           
-          <div className="h-5 w-px bg-border-subtle mx-1" />
-          
-          {/* Nav Items */}
-          {navLoading ? (
-            <>
-              {/* Browse link for all users */}
-              <Link 
-                href="/browse" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
-              >
-                Browse
-              </Link>
-              <div className="h-5 w-px bg-border-subtle mx-1" />
-              {/* Login button */}
-              <Link 
-                href="/login" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 transition-opacity px-4 py-1.5 rounded-full"
-              >
-                Login
-              </Link>
-            </>
-          ) : navUser ? (
-            <>
-              {/* ME link */}
-              <Link 
-                href="/me" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
-              >
-                Me
-              </Link>
-              <div className="h-5 w-px bg-border-subtle mx-1" />
-              {/* Browse link */}
-              <Link 
-                href="/browse" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
-              >
-                Browse
-              </Link>
-              <div className="h-5 w-px bg-border-subtle mx-1" />
-              {/* Avatar Dropdown */}
-              <div className="relative" ref={profileRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all duration-300 hover:bg-active"
+          {/* Nav Links */}
+          <div className="flex items-center gap-0.5 pl-2">
+            {/* Nav Items */}
+            {navLoading ? (
+              <>
+                {/* Browse link for all users */}
+                <Link 
+                  href="/browse" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
                 >
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary flex items-center justify-center text-void text-xs font-bold">
-                    {getNavUserInitial()}
-                  </div>
-                  <ChevronDown className={`h-3 w-3 text-secondary transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                {/* Profile Dropdown */}
-                {isProfileOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-56 rounded-xl border border-border-subtle backdrop-blur-xl bg-glass shadow-soft overflow-hidden">
-                    {/* User Info */}
-                    <div className="px-4 py-3 border-b border-border-subtle">
-                      <p className="text-sm font-bold text-primary truncate">
-                        {navUser.name || "Guest"}
-                      </p>
-                      <p className="font-mono text-[10px] text-muted truncate">{navUser.email}</p>
+                  Browse
+                </Link>
+                {/* Login button */}
+                <Link 
+                  href="/login" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 shadow-lg"
+                >
+                  Login
+                </Link>
+              </>
+            ) : navUser ? (
+              <>
+                {/* ME link */}
+                <Link 
+                  href="/me" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
+                >
+                  Me
+                </Link>
+                {/* Browse link */}
+                <Link 
+                  href="/browse" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
+                >
+                  Browse
+                </Link>
+                {/* Avatar Dropdown */}
+                <div className="relative" ref={profileRef}>
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-full transition-all duration-300 hover:bg-active"
+                  >
+                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-accent-secondary to-accent-primary flex items-center justify-center text-void text-xs font-bold">
+                      {getNavUserInitial()}
                     </div>
+                    <ChevronDown className={`h-3 w-3 text-secondary transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                  </button>
 
-                    {/* Profile Links */}
-                    <div className="py-1">
-                      <Link
-                        href="/me"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
-                      >
-                        <User className="h-4 w-4" />
-                        Me
-                      </Link>
-                      <Link
-                        href="/me/profile"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
-                      >
-                        <Settings className="h-4 w-4" />
-                        Settings
-                      </Link>
-                    </div>
+                  {/* Profile Dropdown */}
+                  {isProfileOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-56 rounded-xl border border-border-strong backdrop-blur-xl bg-glass shadow-2xl shadow-void/50 ring-1 ring-border-subtle overflow-hidden">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-border-subtle">
+                        <p className="text-sm font-bold text-primary truncate">
+                          {navUser.name || "Guest"}
+                        </p>
+                        <p className="font-mono text-[10px] text-muted truncate">{navUser.email}</p>
+                      </div>
 
-                    {/* Sign Out */}
-                    <div className="border-t border-border-subtle py-1">
-                      <button
-                        onClick={handleNavLogout}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:bg-active transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        Sign Out
-                      </button>
+                      {/* Profile Links */}
+                      <div className="py-1">
+                        <Link
+                          href="/me"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
+                        >
+                          <User className="h-4 w-4" />
+                          Me
+                        </Link>
+                        <Link
+                          href="/me/profile"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </Link>
+                      </div>
+
+                      {/* Sign Out */}
+                      <div className="border-t border-border-subtle py-1">
+                        <button
+                          onClick={handleNavLogout}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:bg-active transition-colors"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Browse link for all users */}
-              <Link 
-                href="/browse" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-primary transition-colors px-3 py-2"
-              >
-                Browse
-              </Link>
-              <div className="h-5 w-px bg-border-subtle mx-1" />
-              {/* Login button with gradient */}
-              <Link 
-                href="/login" 
-                className="font-mono text-[11px] font-bold uppercase tracking-widest text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 transition-opacity px-4 py-1.5 rounded-full"
-              >
-                Login
-              </Link>
-            </>
-          )}
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Browse link for all users */}
+                <Link 
+                  href="/browse" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
+                >
+                  Browse
+                </Link>
+                {/* Login button with gradient */}
+                <Link 
+                  href="/login" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 shadow-lg"
+                >
+                  Login
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
