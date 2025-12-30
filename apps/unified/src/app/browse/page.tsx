@@ -405,7 +405,15 @@ export default function BrowsePage() {
           {/* EVENTS TAB */}
           {activeTab === "events" && (
             <div className="space-y-8">
-              {/* Filter Button */}
+              {/* Featured Events */}
+              {!debouncedSearch && featuredEvents.length > 0 && (
+                <section>
+                  <h3 className="section-header mb-4">Featured</h3>
+                  <FeaturedEventsCarousel events={featuredEvents} />
+                </section>
+              )}
+
+              {/* Filter Button and Upcoming Events Header */}
               <div className="flex items-center justify-between">
                 <h2 className="section-header">
                   {debouncedSearch ? `Events matching "${debouncedSearch}"` : "Upcoming Events"}
@@ -416,14 +424,6 @@ export default function BrowsePage() {
                   variant="compact"
                 />
               </div>
-
-              {/* Featured Events */}
-              {!debouncedSearch && featuredEvents.length > 0 && (
-                <section>
-                  <h3 className="section-header mb-4">Featured</h3>
-                  <FeaturedEventsCarousel events={featuredEvents} />
-                </section>
-              )}
 
               {/* Live Events */}
               {liveEvents.length > 0 && (

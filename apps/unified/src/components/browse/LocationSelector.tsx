@@ -338,7 +338,8 @@ export function LocationSelector({
           onKeyDown={handleKeyDown}
           placeholder={detectingLocation ? "Detecting location..." : "Search city or location..."}
           disabled={detectingLocation || loading}
-          className="pl-11 pr-20"
+          className="pl-11 pr-20 text-base"
+          style={{ fontSize: '16px' }}
         />
         {value && (
           <button

@@ -274,7 +274,16 @@ export function MobileScrollExperience({
 
         {/* Content Container */}
         <div className="relative">
-          {children}
+          {/* Dark overlay for pull-up content - 5% transparent (95% opaque) */}
+          <div 
+            className="absolute inset-0 bg-black pointer-events-none"
+            style={{
+              opacity: 0.95
+            }}
+          />
+          <div className="relative z-10">
+            {children}
+          </div>
           {/* Bottom padding - just enough to ensure content card clears safe area */}
           <div className="h-24 sm:h-32" />
         </div>

@@ -59,6 +59,52 @@ export function NavigationProgress() {
     lastPathnameRef.current = pathname;
   }, [pathname, searchParams, isNavigating, completeNavigation]);
 
+  // Complete progress when page finishes loading (fallback for same-page navigation)
+  useEffect(() => {
+    if (!isNavigating || isComplete) return;
+
+    const handleLoad = () => {
+      if (isNavigating && !isComplete) {
+        completeNavigation();
+      }
+    };
+
+    const handleDOMContentLoaded = () => {
+      // Complete after DOM is ready
+      setTimeout(() => {
+        if (isNavigating && !isComplete) {
+          completeNavigation();
+        }
+      }, 200);
+    };
+
+    // Check if page is already loaded
+    if (document.readyState === 'complete') {
+      // Page already loaded, complete after a short delay
+      const timer = setTimeout(() => {
+        if (isNavigating && !isComplete) {
+          completeNavigation();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (document.readyState === 'interactive') {
+      // DOM is ready but resources might still be loading
+      handleDOMContentLoaded();
+      window.addEventListener('load', handleLoad);
+      return () => {
+        window.removeEventListener('load', handleLoad);
+      };
+    } else {
+      // Wait for DOM to be ready, then for load
+      document.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
+      window.addEventListener('load', handleLoad);
+      return () => {
+        document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+        window.removeEventListener('load', handleLoad);
+      };
+    }
+  }, [isNavigating, isComplete, completeNavigation]);
+
   // Listen for navigation events
   useEffect(() => {
     // Handle link clicks
@@ -80,6 +126,7 @@ export function NavigationProgress() {
     };
 
     // Handle programmatic navigation (router.push, router.replace)
+    // Only intercept if it's actually a different path
     const originalPushState = history.pushState.bind(history);
     const originalReplaceState = history.replaceState.bind(history);
     
@@ -88,12 +135,15 @@ export function NavigationProgress() {
       if (url && typeof url === "string") {
         try {
           const newPath = new URL(url, window.location.origin).pathname;
-          if (newPath !== pathname) {
+          // Only start navigation if path actually changes (ignore hash changes, query params only)
+          if (newPath !== pathname && newPath !== window.location.pathname) {
             startNavigation();
           }
         } catch {
-          // If URL parsing fails, still start navigation for safety
-          startNavigation();
+          // If URL parsing fails, check if it's a different path
+          if (url !== window.location.pathname + window.location.search + window.location.hash) {
+            startNavigation();
+          }
         }
       }
       return originalPushState(...args);
@@ -104,11 +154,15 @@ export function NavigationProgress() {
       if (url && typeof url === "string") {
         try {
           const newPath = new URL(url, window.location.origin).pathname;
-          if (newPath !== pathname) {
+          // Only start navigation if path actually changes
+          if (newPath !== pathname && newPath !== window.location.pathname) {
             startNavigation();
           }
         } catch {
-          startNavigation();
+          // If URL parsing fails, check if it's a different path
+          if (url !== window.location.pathname + window.location.search + window.location.hash) {
+            startNavigation();
+          }
         }
       }
       return originalReplaceState(...args);
@@ -141,6 +195,13 @@ export function NavigationProgress() {
     const timer4 = setTimeout(() => setProgress(70), 600);
     const timer5 = setTimeout(() => setProgress(85), 1200);
     const timer6 = setTimeout(() => setProgress(92), 2500);
+    
+    // Fallback: Complete after 5 seconds if no route change detected
+    const fallbackTimer = setTimeout(() => {
+      if (isNavigating && !isComplete) {
+        completeNavigation();
+      }
+    }, 5000);
 
     return () => {
       clearTimeout(timer1);
@@ -149,8 +210,9 @@ export function NavigationProgress() {
       clearTimeout(timer4);
       clearTimeout(timer5);
       clearTimeout(timer6);
+      clearTimeout(fallbackTimer);
     };
-  }, [isNavigating, isComplete]);
+  }, [isNavigating, isComplete, completeNavigation]);
 
   if (!isNavigating) return null;
 

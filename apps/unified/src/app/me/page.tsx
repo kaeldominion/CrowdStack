@@ -72,6 +72,18 @@ export default function MePage() {
 
   useEffect(() => {
     loadUserData();
+    
+    // Prevent scroll restoration that might cause jump to top
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    
+    return () => {
+      // Restore scroll restoration on unmount
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'auto';
+      }
+    };
   }, []);
 
   const loadUserData = async () => {
@@ -271,7 +283,7 @@ export default function MePage() {
   }
 
   return (
-    <div className="min-h-screen bg-void overscroll-none">
+    <div className="min-h-screen bg-void overscroll-none" style={{ overscrollBehavior: 'none' }}>
       {/* Mobile Layout */}
       <div className="lg:hidden relative">
         {/* Gradient Background - extends behind nav (pt-20 = 5rem, hero = 10rem = 15rem total) */}
