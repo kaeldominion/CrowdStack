@@ -8,12 +8,13 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
-import { Calendar, Radio } from "lucide-react";
+import Image from "next/image";
+import { Calendar, Radio, Camera } from "lucide-react";
 import { Card, Badge } from "@crowdstack/ui";
 import { EventCardRow } from "@/components/EventCardRow";
 import { EventCard as VenueEventCard } from "@/components/venue/EventCard";
 import { EventCardCompact } from "@/components/EventCardCompact";
+import type { VenueGallery as VenueGalleryType } from "@crowdstack/shared/types";
 
 interface Event {
   id: string;
@@ -39,10 +40,11 @@ interface VenueEventTabsProps {
   pastEvents: Event[];
   venueName: string;
   venueSlug: string;
+  gallery?: VenueGalleryType[];
 }
 
-export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, venueName, venueSlug }: VenueEventTabsProps) {
-  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, venueName, venueSlug, gallery = [] }: VenueEventTabsProps) {
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past" | "photos">("upcoming");
   const [showAllPast, setShowAllPast] = useState(false);
   
   const hasLiveEvents = liveEvents.length > 0;
@@ -90,12 +92,12 @@ export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, ve
         >
           Past Events
         </button>
-        <Link
-          href={`/v/${venueSlug}/photos`}
-          className={`tab-label tab-label-inactive`}
+        <button
+          onClick={() => setActiveTab("photos")}
+          className={`tab-label ${activeTab === "photos" ? "tab-label-active" : "tab-label-inactive"}`}
         >
           Photos
-        </Link>
+        </button>
       </nav>
 
       {/* Tab Content */}
@@ -170,6 +172,59 @@ export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, ve
               <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-primary mb-2">No past events yet</h3>
               <p className="text-sm text-secondary">{venueName} hasn&apos;t hosted any events yet.</p>
+            </Card>
+          )}
+        </>
+      )}
+
+      {activeTab === "photos" && (
+        <>
+          {gallery.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gallery.map((image) => {
+                // Construct image URL (same pattern as VenueGallery component)
+                const getImageUrl = (img: VenueGalleryType) => {
+                  if (img.storage_path.startsWith("http")) {
+                    return img.storage_path;
+                  }
+                  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+                  const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+                  if (supabaseProjectRef) {
+                    return `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${img.storage_path}`;
+                  }
+                  return img.storage_path;
+                };
+
+                const imageUrl = getImageUrl(image);
+
+                return (
+                  <div
+                    key={image.id}
+                    className="relative aspect-square rounded-xl overflow-hidden bg-raised border border-border-subtle hover:border-accent-primary/50 transition-all group cursor-pointer"
+                  >
+                    <Image
+                      src={imageUrl}
+                      alt={image.caption || `Gallery image ${image.id}`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    />
+                    {image.caption && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <p className="text-xs text-white line-clamp-2">{image.caption}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="!p-8 text-center border-dashed">
+              <Camera className="h-12 w-12 text-muted mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-primary mb-2">No photos yet</h3>
+              <p className="text-sm text-secondary">Photos from events at {venueName} will appear here.</p>
             </Card>
           )}
         </>

@@ -342,6 +342,7 @@ export default async function VenuePage({
                 pastEvents={pastEvents}
                 venueName={venue.name}
                 venueSlug={params.venueSlug}
+                gallery={gallery}
               />
             </main>
                 </div>
