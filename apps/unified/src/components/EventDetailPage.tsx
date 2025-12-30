@@ -3097,11 +3097,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             
+                            // Log file details for debugging
+                            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                            console.log(`[VideoFlier Client] Selected file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
+                            
                             // Validate size client-side (50MB max - Supabase Storage limit)
                             const maxSizeBytes = 50 * 1024 * 1024; // 50MB
                             
                             if (file.size > maxSizeBytes) {
-                              const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
                               alert(`Video file (${fileSizeMB}MB) must be under 50MB. Please compress your video or use a smaller file.`);
                               e.target.value = "";
                               return;
@@ -3143,14 +3146,34 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                 });
                               
                               if (uploadError) {
-                                console.error(`[VideoFlier Client] Supabase upload failed:`, uploadError);
-                                let errorMessage = "Failed to upload video";
+                                const actualFileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                                console.error(`[VideoFlier Client] Supabase upload failed:`, {
+                                  message: uploadError.message,
+                                  statusCode: (uploadError as any).statusCode,
+                                  error: uploadError,
+                                  fileSize: `${actualFileSizeMB}MB`,
+                                  fileName: file.name
+                                });
                                 
-                                if (uploadError.message?.includes("exceeded the maximum allowed size") || 
-                                    uploadError.message?.includes("maximum allowed size")) {
-                                  errorMessage = "File size exceeds storage limit (50MB). Please compress your video or use a smaller file.";
+                                let errorMessage = "Failed to upload video";
+                                const errMsg = uploadError.message?.toLowerCase() || "";
+                                
+                                // Check for file size limit errors
+                                if (errMsg.includes("exceeded the maximum allowed size") || 
+                                    errMsg.includes("maximum allowed size") ||
+                                    errMsg.includes("payload too large") ||
+                                    errMsg.includes("file size")) {
+                                  errorMessage = `File size (${actualFileSizeMB}MB) exceeds storage limit (50MB). Please compress your video or use a smaller file.`;
+                                } 
+                                // Check for permission/RLS errors
+                                else if (errMsg.includes("permission") || 
+                                         errMsg.includes("policy") || 
+                                         errMsg.includes("unauthorized") ||
+                                         errMsg.includes("not allowed") ||
+                                         (uploadError as any).statusCode === 403) {
+                                  errorMessage = `Permission denied: You may not have permission to upload videos for this event. Please contact support if this issue persists. (Error: ${uploadError.message})`;
                                 } else {
-                                  errorMessage = uploadError.message || errorMessage;
+                                  errorMessage = `Upload failed: ${uploadError.message}. File size: ${actualFileSizeMB}MB`;
                                 }
                                 
                                 alert(errorMessage);
