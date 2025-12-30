@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Button, Badge, Modal, Input, Textarea, ConfirmModal } from "@crowdstack/ui";
-import { Radio, MapPin, Calendar, Users, Instagram, Globe, Image as ImageIcon, Video, Settings, Plus, Edit, Trash2, Loader2, Circle, X } from "lucide-react";
+import { Radio, MapPin, Calendar, Users, Instagram, Globe, Image as ImageIcon, Video, Settings, Plus, Edit, Trash2, Loader2, Circle, X, Camera, Upload } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { DJFollowButton } from "@/components/DJFollowButton";
@@ -114,6 +114,14 @@ export function DJProfilePageContent({
   const [deletingMix, setDeletingMix] = useState(false);
   const [deletingVideo, setDeletingVideo] = useState(false);
   const [deletingGallery, setDeletingGallery] = useState(false);
+  
+  // Avatar and cover image state
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(dj.profile_image_url);
+  const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(heroImage);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   
   // Tab state
   type TabId = "events" | "mixes" | "videos" | "photos" | "history";
@@ -553,6 +561,90 @@ export function DJProfilePageContent({
     }
   };
 
+  // Avatar upload handler
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be less than 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/dj/profile/avatar${getApiDjId()}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload avatar");
+      }
+
+      const data = await response.json();
+      setCurrentAvatarUrl(data.avatar_url);
+    } catch (error: any) {
+      alert(error.message || "Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Cover image upload handler
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be less than 10MB");
+      return;
+    }
+
+    setUploadingCover(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/dj/profile/cover${getApiDjId()}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload cover image");
+      }
+
+      const data = await response.json();
+      setCurrentCoverUrl(data.cover_url);
+    } catch (error: any) {
+      alert(error.message || "Failed to upload cover image");
+    } finally {
+      setUploadingCover(false);
+      if (coverInputRef.current) {
+        coverInputRef.current.value = "";
+      }
+    }
+  };
+
   // Format stats
   const formatCount = (count: number): string => {
     if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
@@ -575,19 +667,53 @@ export function DJProfilePageContent({
       <div className="fixed inset-0 bg-void -z-20" />
       
       {/* Hero Background Image - Fades to black */}
-      {heroImage && (
-        <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImage}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* Gradient overlay - fades to void/black */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/70 to-void" />
-          <div className="absolute inset-0 bg-gradient-to-r from-void/30 via-transparent to-void/30" />
-        </div>
-      )}
+      <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden group/hero">
+        {currentCoverUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentCoverUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* Gradient overlay - fades to void/black */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/70 to-void" />
+            <div className="absolute inset-0 bg-gradient-to-r from-void/30 via-transparent to-void/30" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-void/50 to-void" />
+        )}
+        
+        {/* Edit Cover Button */}
+        {canEditDJ && (
+          <>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCoverUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              className="absolute top-20 right-6 z-10 flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 border border-white/20 rounded-lg text-white text-sm font-medium opacity-0 group-hover/hero:opacity-100 transition-opacity backdrop-blur-sm"
+            >
+              {uploadingCover ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Camera className="h-4 w-4" />
+                  {currentCoverUrl ? "Change Cover" : "Add Cover"}
+                </>
+              )}
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Main Content */}
       <div className="relative z-10 pt-24 pb-12 px-6 md:px-10 lg:px-16">
@@ -596,10 +722,10 @@ export function DJProfilePageContent({
           {/* Hero Section */}
           <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6 mb-8">
             {/* DJ Avatar */}
-            <div className="relative h-24 w-24 lg:h-28 lg:w-28 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0 mb-1">
-              {dj.profile_image_url ? (
+            <div className="relative h-24 w-24 lg:h-28 lg:w-28 rounded-2xl overflow-hidden bg-glass border border-border-subtle flex-shrink-0 mb-1 group/avatar">
+              {currentAvatarUrl ? (
                 <Image
-                  src={dj.profile_image_url}
+                  src={currentAvatarUrl}
                   alt={dj.name}
                   fill
                   sizes="(max-width: 1024px) 96px, 112px"
@@ -609,6 +735,30 @@ export function DJProfilePageContent({
                 <div className="h-full w-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">{dj.name[0].toUpperCase()}</span>
                 </div>
+              )}
+              
+              {/* Edit Avatar Overlay */}
+              {canEditDJ && (
+                <>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-6 w-6 text-white" />
+                    )}
+                  </button>
+                </>
               )}
             </div>
           

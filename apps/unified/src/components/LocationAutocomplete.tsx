@@ -75,6 +75,7 @@ export function LocationAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isSelectingRef = useRef(false); // Track if a selection is in progress
 
   // Sync external value changes
   useEffect(() => {
@@ -125,6 +126,9 @@ export function LocationAutocomplete({
 
   // Handle selection
   const handleSelect = (prediction: PlacePrediction) => {
+    // Mark that we're selecting to prevent blur from overwriting
+    isSelectingRef.current = true;
+    
     // Format as "City, Country" or use description
     let formattedLocation = prediction.structured_formatting
       ? `${prediction.structured_formatting.main_text}, ${prediction.structured_formatting.secondary_text}`
@@ -138,6 +142,11 @@ export function LocationAutocomplete({
     setPredictions([]);
     setIsOpen(false);
     setHighlightedIndex(-1);
+    
+    // Reset the selecting flag after a short delay
+    setTimeout(() => {
+      isSelectingRef.current = false;
+    }, 250);
   };
 
   // Handle keyboard navigation
@@ -174,6 +183,10 @@ export function LocationAutocomplete({
   const handleBlur = () => {
     // Delay to allow click on dropdown item
     setTimeout(() => {
+      // Don't update if a selection just happened (prevents overwriting the selected value)
+      if (isSelectingRef.current) {
+        return;
+      }
       if (inputValue !== value) {
         onChange(inputValue);
       }

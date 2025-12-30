@@ -284,7 +284,7 @@ export default function DJProfileEditPage() {
           <p className="text-sm text-white/60 mb-4">Image upload functionality coming soon</p>
           
           {dj?.profile_image_url && (
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-border-subtle">
+            <div className="relative w-32 h-32 rounded-2xl overflow-hidden border-2 border-border-subtle">
               <Image
                 src={dj.profile_image_url}
                 alt="Profile"

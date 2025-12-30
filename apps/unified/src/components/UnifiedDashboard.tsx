@@ -116,6 +116,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     followerCount: 0,
     upcomingEventsCount: 0,
   });
+  const [djHandle, setDJHandle] = useState<string | null>(null);
 
   const isVenue = userRoles.includes("venue_admin");
   const isOrganizer = userRoles.includes("event_organizer");
@@ -245,6 +246,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             setDJStats(data.stats || djStats);
           })
           .catch((e) => console.error("Failed to load DJ stats:", e))
+      );
+      promises.push(
+        fetch("/api/dj/profile")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.dj?.handle) {
+              setDJHandle(data.dj.handle);
+            }
+          })
+          .catch((e) => console.error("Failed to load DJ profile:", e))
       );
     }
 
@@ -1171,20 +1182,49 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               <Radio className="h-5 w-5" />
               DJ Dashboard
             </h2>
-            <div className="flex gap-2">
-              <Link href="/app/dj/mixes">
-                <Button variant="secondary" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Mix
-                </Button>
-              </Link>
-              <Link href="/app/dj/profile">
-                <Button variant="secondary" size="sm">
-                  Edit Profile
-                </Button>
-              </Link>
-            </div>
+            <Link href="/app/dj/profile">
+              <Button variant="secondary" size="sm">
+                Edit Profile Info
+              </Button>
+            </Link>
           </div>
+
+          {/* Public Profile Card */}
+          {djHandle && (
+            <BentoCard span={4}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="h-4 w-4 text-accent-primary" />
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                      Your Public Profile
+                    </p>
+                  </div>
+                  <p className="text-sm text-white/60">
+                    Add mixes, photos, videos, and update your avatar and cover image directly on your public profile page.
+                  </p>
+                </div>
+                <a
+                  href={(() => {
+                    if (typeof window !== "undefined") {
+                      const origin = window.location.origin;
+                      const webUrl = origin.replace(/app(-beta)?\./, "");
+                      return `${webUrl}/dj/${djHandle}`;
+                    }
+                    return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/dj/${djHandle}`;
+                  })()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="primary" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Public Profile
+                    <ExternalLink className="h-4 w-4 ml-2" />
+                  </Button>
+                </a>
+              </div>
+            </BentoCard>
+          )}
 
           {/* Stats Summary */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -1227,7 +1267,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Link href="/app/dj/profile">
               <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -1235,21 +1275,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Edit Profile</p>
-                    <p className="text-xs text-white/60">Update your bio, links, and images</p>
-                  </div>
-                </div>
-              </BentoCard>
-            </Link>
-            <Link href="/app/dj/mixes">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <Radio className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">Manage Mixes</p>
-                    <p className="text-xs text-white/60">Add, edit, and feature your mixes</p>
+                    <p className="font-medium text-white">Edit Profile Info</p>
+                    <p className="text-xs text-white/60">Update your bio, location, genres, and social links</p>
                   </div>
                 </div>
               </BentoCard>
