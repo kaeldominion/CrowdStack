@@ -74,34 +74,19 @@ function BrowseAllEventsContent() {
   const [selectedLocation, setSelectedLocation] = useState(initialCity);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
-  const [citiesLoading, setCitiesLoading] = useState(true);
 
   const totalPages = Math.ceil(totalCount / EVENTS_PER_PAGE);
 
-  // Fetch available cities
+  // Load saved location from cookie on mount
   useEffect(() => {
-    async function fetchCities() {
-      try {
-        const res = await fetch("/api/browse/events?limit=1000");
-        const data = await res.json();
-        
-        const uniqueCities = Array.from(
-          new Set(
-            data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
-          )
-        ).sort() as string[];
-
-        setAvailableCities(
-          uniqueCities.map((city) => ({ value: city, label: city }))
-        );
-      } catch (error) {
-        console.error("Error fetching cities:", error);
-      } finally {
-        setCitiesLoading(false);
-      }
+    if (typeof document === "undefined") return;
+    const savedLocation = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("crowdstack_location="))
+      ?.split("=")[1];
+    if (savedLocation) {
+      setSelectedLocation(savedLocation);
     }
-    fetchCities();
   }, []);
 
   // Fetch events
@@ -215,8 +200,6 @@ function BrowseAllEventsContent() {
           <LocationSelector
             value={selectedLocation}
             onChange={setSelectedLocation}
-            cities={availableCities}
-            loading={citiesLoading}
           />
         </div>
 

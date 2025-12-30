@@ -99,8 +99,6 @@ export default function BrowsePage() {
   
   // Location
   const [selectedLocation, setSelectedLocation] = useState("");
-  const [availableCities, setAvailableCities] = useState<{ value: string; label: string }[]>([]);
-  const [citiesLoading, setCitiesLoading] = useState(true);
 
   const ITEMS_PER_PAGE = 12;
 
@@ -112,30 +110,16 @@ export default function BrowsePage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch available cities (from events only - DJs are global)
+  // Load saved location from cookie on mount
   useEffect(() => {
-    async function fetchCities() {
-      try {
-        const res = await fetch("/api/browse/events?limit=1000");
-        const data = await res.json();
-        
-        // Get venue cities from events
-        const uniqueCities = Array.from(
-          new Set(
-            data.events?.map((e: any) => e.venue?.city).filter(Boolean) || []
-          )
-        ).sort() as string[];
-        
-        setAvailableCities(
-          uniqueCities.map((city) => ({ value: city, label: city }))
-        );
-      } catch (error) {
-        console.error("Error fetching cities:", error);
-      } finally {
-        setCitiesLoading(false);
-      }
+    if (typeof document === "undefined") return;
+    const savedLocation = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("crowdstack_location="))
+      ?.split("=")[1];
+    if (savedLocation) {
+      setSelectedLocation(savedLocation);
     }
-    fetchCities();
   }, []);
 
   // Fetch featured events
@@ -353,8 +337,6 @@ export default function BrowsePage() {
               <LocationSelector
                 value={selectedLocation}
                 onChange={setSelectedLocation}
-                cities={availableCities}
-                loading={citiesLoading}
               />
             </div>
           )}
