@@ -196,8 +196,8 @@ export function DJCard({
               <Music className="w-16 h-16 text-muted" />
             </div>
           )}
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/30 to-transparent" />
+          {/* Strong gradient fade at bottom for name readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 via-40% to-transparent" />
           
           {/* Stats overlay - top right */}
           {hasStats && (
@@ -217,15 +217,15 @@ export function DJCard({
             </div>
           )}
           
-          {/* Name overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="font-sans font-black text-lg uppercase tracking-tight text-white group-hover:text-accent-primary transition-colors">
+          {/* Name overlay - large prominent text */}
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <h3 className="font-sans font-black text-2xl md:text-3xl uppercase tracking-tight text-white group-hover:text-accent-primary transition-colors drop-shadow-lg">
               {dj.name}
             </h3>
             {showLocation && dj.location && (
-              <div className="flex items-center gap-1 text-xs text-white/70 mt-1">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span>{dj.location}</span>
+              <div className="flex items-center gap-1.5 text-sm text-white/80 mt-1.5">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="drop-shadow-md">{dj.location}</span>
               </div>
             )}
           </div>
