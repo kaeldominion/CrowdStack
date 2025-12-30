@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import crypto from "crypto";
+import { trackReferralClick } from "@/lib/analytics/server";
 
 // Helper to create anonymous visitor fingerprint
 function createVisitorFingerprint(request: NextRequest): string {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify referrer user exists
+    // Verify referrer user exists and get promoter ID if applicable
     const { data: referrer, error: userError } = await supabase.auth.admin.getUserById(referrerUserId);
     
     if (userError || !referrer) {
@@ -55,6 +56,18 @@ export async function POST(request: NextRequest) {
         { error: "Referrer user not found" },
         { status: 404 }
       );
+    }
+
+    // Get promoter ID if the referrer is a promoter
+    let promoterId: string | undefined;
+    const { data: promoter } = await supabase
+      .from("promoters")
+      .select("id")
+      .eq("created_by", referrerUserId)
+      .single();
+    
+    if (promoter) {
+      promoterId = promoter.id;
     }
 
     // Create visitor fingerprint
@@ -94,6 +107,15 @@ export async function POST(request: NextRequest) {
     } catch (xpErr) {
       console.warn("[Track Click] XP award error (non-critical):", xpErr);
       // Don't fail the request if XP award fails
+    }
+
+    // Track analytics event
+    try {
+      if (promoterId) {
+        await trackReferralClick(eventId, promoterId, referrerUserId);
+      }
+    } catch (analyticsError) {
+      console.warn("[Track Click] Failed to track analytics event:", analyticsError);
     }
 
     return NextResponse.json({ 

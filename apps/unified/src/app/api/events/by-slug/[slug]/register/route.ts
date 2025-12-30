@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { generateQRPassToken } from "@crowdstack/shared/qr/generate";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import type { RegisterEventRequest } from "@crowdstack/shared";
+import { trackEventRegistration } from "@/lib/analytics/server";
 
 export async function POST(
   request: NextRequest,
@@ -429,6 +430,21 @@ export async function POST(
             registration_id: registration.id,
           })
           .eq("id", recentClick.id);
+        
+        // Track referral conversion if we have a promoter ID
+        if (referralPromoterId) {
+          try {
+            const { trackReferralConversion } = await import("@/lib/analytics/server");
+            await trackReferralConversion(
+              event.id,
+              referralPromoterId,
+              attendee.id,
+              registration.id
+            );
+          } catch (analyticsError) {
+            console.warn("[Register API] Failed to track referral conversion:", analyticsError);
+          }
+        }
       }
     }
 
@@ -465,6 +481,19 @@ export async function POST(
       event_id: event.id,
       attendee_id: attendee.id,
     });
+
+    // Track analytics event
+    try {
+      await trackEventRegistration(
+        event.id,
+        event.name || "Unknown Event",
+        attendee.id,
+        !!referralPromoterId || !!referredByUserId,
+        referralPromoterId || undefined
+      );
+    } catch (analyticsError) {
+      console.warn("[Register API] Failed to track analytics event:", analyticsError);
+    }
 
     // Get venue and organizer details for success screen
     let venue = null;

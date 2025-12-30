@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { notifyOrganizerOfApproval } from "@crowdstack/shared/notifications/send";
+import { trackEventApproved, trackEventRejected } from "@/lib/analytics/server";
 
 export async function POST(
   request: Request,
@@ -137,6 +138,17 @@ export async function POST(
       );
     } catch (notifyError) {
       console.error("Failed to notify organizer:", notifyError);
+    }
+
+    // Track analytics event
+    try {
+      if (action === "approve") {
+        await trackEventApproved(eventId, event.name, event.venue_id);
+      } else {
+        await trackEventRejected(eventId, event.name, event.venue_id);
+      }
+    } catch (analyticsError) {
+      console.warn("[Event Approval API] Failed to track analytics event:", analyticsError);
     }
 
     return NextResponse.json({

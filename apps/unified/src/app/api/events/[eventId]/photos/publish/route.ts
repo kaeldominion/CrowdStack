@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { userHasRole } from "@crowdstack/shared/auth/roles";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { sendPhotosNotificationBatch } from "@crowdstack/shared/email/photo-notifications";
+import { trackPhotoPublished } from "@/lib/analytics/server";
 
 // Minimum hours between automatic notification emails on publish
 // This prevents abuse via rapid publish/unpublish cycles
@@ -142,6 +143,19 @@ export async function POST(
       event_id: params.eventId,
       album_id: album.id,
     });
+
+    // Track analytics event
+    try {
+      // Get photo count
+      const { count: photoCount } = await serviceSupabase
+        .from("photos")
+        .select("*", { count: "exact", head: true })
+        .eq("album_id", album.id);
+      
+      await trackPhotoPublished(params.eventId, photoCount || 0);
+    } catch (analyticsError) {
+      console.warn("[Photo Publish API] Failed to track analytics event:", analyticsError);
+    }
 
     let emailsSent = 0;
     let emailsFailed = 0;

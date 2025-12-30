@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { userHasRole } from "@crowdstack/shared/auth/roles";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { generateAndUploadPayoutStatement } from "@crowdstack/shared/pdf/generate-statement";
+import { trackPayoutGenerated } from "@/lib/analytics/server";
 
 export async function POST(
   request: NextRequest,
@@ -166,6 +167,19 @@ export async function POST(
       payout_run_id: payoutRun.id,
       event_id: params.eventId,
     });
+
+    // Track analytics event
+    try {
+      const totalAmount = payoutLines.reduce((sum, pl) => sum + (pl.commission_amount || 0), 0);
+      await trackPayoutGenerated(
+        params.eventId,
+        event.name || "Unknown Event",
+        payoutLines.length,
+        totalAmount
+      );
+    } catch (analyticsError) {
+      console.warn("[Payout Generate API] Failed to track analytics event:", analyticsError);
+    }
 
     return NextResponse.json({
       payout_run: payoutRun,

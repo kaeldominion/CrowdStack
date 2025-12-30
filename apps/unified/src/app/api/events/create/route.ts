@@ -5,6 +5,7 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import type { CreateEventRequest } from "@crowdstack/shared";
 import { notifyVenueOfPendingEvent, notifyVenueOfAutoApprovedEvent } from "@crowdstack/shared/notifications/send";
+import { trackEventCreated } from "@/lib/analytics/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -332,6 +333,18 @@ export async function POST(request: NextRequest) {
       event_id: event.id,
       organizer_id: organizer.id,
     });
+
+    // Track analytics event
+    try {
+      await trackEventCreated(
+        event.id,
+        event.name || "Unknown Event",
+        organizer.id,
+        event.venue_id || undefined
+      );
+    } catch (analyticsError) {
+      console.warn("[Create Event API] Failed to track analytics event:", analyticsError);
+    }
 
     return NextResponse.json({ event });
   } catch (error: any) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId } from "@/lib/auth/check-role";
 import { getUserRolesById } from "@crowdstack/shared/auth/roles";
+import { trackPromoterApproved } from "@/lib/analytics/server";
 
 // GET - Fetch promoter requests for an event
 export async function GET(
@@ -184,6 +185,13 @@ export async function PATCH(
       }
       
       console.log("Promoter assigned successfully:", assignData);
+
+      // Track analytics event
+      try {
+        await trackPromoterApproved(eventId, promoterRequest.promoter_id, event.organizer_id || "");
+      } catch (analyticsError) {
+        console.warn("[Promoter Requests API] Failed to track analytics event:", analyticsError);
+      }
 
       return NextResponse.json({ success: true, message: "Request approved", promoterAssigned: true });
     } else {

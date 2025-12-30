@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { cookies } from "next/headers";
+import { trackCheckIn } from "@/lib/analytics/server";
 
 /**
  * POST /api/events/[eventId]/checkin
@@ -289,6 +290,28 @@ export async function POST(
       });
     } catch (outboxError) {
       console.warn(`[Check-in API] Failed to emit outbox event:`, outboxError);
+    }
+
+    // Track analytics event
+    try {
+      // Get event name for tracking
+      const { data: eventData } = await serviceSupabase
+        .from("events")
+        .select("name")
+        .eq("id", eventId)
+        .single();
+      
+      const method = body.qr_token ? "qr_code" : "manual";
+      await trackCheckIn(
+        eventId,
+        eventData?.name || "Unknown Event",
+        registration.attendee_id,
+        registrationId,
+        userId,
+        method
+      );
+    } catch (analyticsError) {
+      console.warn("[Check-in API] Failed to track analytics event:", analyticsError);
     }
 
     const duration = Date.now() - startTime;

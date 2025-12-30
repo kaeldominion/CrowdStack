@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
+import { trackQuickAdd, trackCheckIn } from "@/lib/analytics/server";
 
 interface QuickAddRequest {
   name: string;
@@ -223,6 +224,33 @@ export async function POST(
     }
 
     console.log(`[Quick Add API] ✅ Successfully quick-added and checked in ${attendee.name}`);
+
+    // Track analytics events
+    try {
+      // Get event name for tracking
+      const { data: eventData } = await serviceSupabase
+        .from("events")
+        .select("name")
+        .eq("id", eventId)
+        .single();
+      
+      const eventName = eventData?.name || "Unknown Event";
+      
+      // Track quick-add
+      await trackQuickAdd(eventId, eventName, attendee.id);
+      
+      // Also track check-in
+      await trackCheckIn(
+        eventId,
+        eventName,
+        attendee.id,
+        registration.id,
+        userId,
+        "quick_add"
+      );
+    } catch (analyticsError) {
+      console.warn("[Quick Add API] Failed to track analytics events:", analyticsError);
+    }
 
     return NextResponse.json({
       success: true,
