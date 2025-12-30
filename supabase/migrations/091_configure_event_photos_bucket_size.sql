@@ -20,6 +20,3 @@ SET
   ]
 WHERE id = 'event-photos';
 
--- Add a comment for clarity
-COMMENT ON COLUMN storage.buckets.file_size_limit IS 'Maximum file size in bytes. Set to 50MB for event-photos to allow video fliers.';
-
