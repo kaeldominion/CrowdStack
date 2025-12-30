@@ -340,6 +340,7 @@ export async function POST(request: NextRequest) {
         event.id,
         event.name || "Unknown Event",
         organizer.id,
+        request,
         event.venue_id || undefined
       );
     } catch (analyticsError) {

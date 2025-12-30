@@ -439,7 +439,8 @@ export async function POST(
               event.id,
               referralPromoterId,
               attendee.id,
-              registration.id
+              registration.id,
+              request
             );
           } catch (analyticsError) {
             console.warn("[Register API] Failed to track referral conversion:", analyticsError);
@@ -489,6 +490,7 @@ export async function POST(
         event.name || "Unknown Event",
         attendee.id,
         !!referralPromoterId || !!referredByUserId,
+        request,
         referralPromoterId || undefined
       );
     } catch (analyticsError) {

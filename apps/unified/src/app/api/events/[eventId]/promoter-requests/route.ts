@@ -188,7 +188,7 @@ export async function PATCH(
 
       // Track analytics event
       try {
-        await trackPromoterApproved(eventId, promoterRequest.promoter_id, event.organizer_id || "");
+        await trackPromoterApproved(eventId, promoterRequest.promoter_id, event.organizer_id || "", request);
       } catch (analyticsError) {
         console.warn("[Promoter Requests API] Failed to track analytics event:", analyticsError);
       }

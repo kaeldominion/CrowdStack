@@ -175,7 +175,8 @@ export async function POST(
         params.eventId,
         event.name || "Unknown Event",
         payoutLines.length,
-        totalAmount
+        totalAmount,
+        request
       );
     } catch (analyticsError) {
       console.warn("[Payout Generate API] Failed to track analytics event:", analyticsError);

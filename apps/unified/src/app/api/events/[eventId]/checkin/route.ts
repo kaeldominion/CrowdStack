@@ -308,7 +308,8 @@ export async function POST(
         registration.attendee_id,
         registrationId,
         userId,
-        method
+        method,
+        request
       );
     } catch (analyticsError) {
       console.warn("[Check-in API] Failed to track analytics event:", analyticsError);

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { notifyOrganizerOfApproval } from "@crowdstack/shared/notifications/send";
 import { trackEventApproved, trackEventRejected } from "@/lib/analytics/server";
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
   try {
@@ -143,9 +143,9 @@ export async function POST(
     // Track analytics event
     try {
       if (action === "approve") {
-        await trackEventApproved(eventId, event.name, event.venue_id);
+        await trackEventApproved(eventId, event.name, event.venue_id, request);
       } else {
-        await trackEventRejected(eventId, event.name, event.venue_id);
+        await trackEventRejected(eventId, event.name, event.venue_id, request);
       }
     } catch (analyticsError) {
       console.warn("[Event Approval API] Failed to track analytics event:", analyticsError);

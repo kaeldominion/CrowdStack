@@ -152,7 +152,7 @@ export async function POST(
         .select("*", { count: "exact", head: true })
         .eq("album_id", album.id);
       
-      await trackPhotoPublished(params.eventId, photoCount || 0);
+      await trackPhotoPublished(params.eventId, photoCount || 0, request);
     } catch (analyticsError) {
       console.warn("[Photo Publish API] Failed to track analytics event:", analyticsError);
     }

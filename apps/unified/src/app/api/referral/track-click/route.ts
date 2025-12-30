@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Track analytics event
     try {
       if (promoterId) {
-        await trackReferralClick(eventId, promoterId, referrerUserId);
+        await trackReferralClick(eventId, promoterId, referrerUserId, request);
       }
     } catch (analyticsError) {
       console.warn("[Track Click] Failed to track analytics event:", analyticsError);

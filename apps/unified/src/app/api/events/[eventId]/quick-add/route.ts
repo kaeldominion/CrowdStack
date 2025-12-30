@@ -237,7 +237,7 @@ export async function POST(
       const eventName = eventData?.name || "Unknown Event";
       
       // Track quick-add
-      await trackQuickAdd(eventId, eventName, attendee.id);
+      await trackQuickAdd(eventId, eventName, attendee.id, request);
       
       // Also track check-in
       await trackCheckIn(
@@ -246,7 +246,8 @@ export async function POST(
         attendee.id,
         registration.id,
         userId,
-        "quick_add"
+        "quick_add",
+        request
       );
     } catch (analyticsError) {
       console.warn("[Quick Add API] Failed to track analytics events:", analyticsError);
