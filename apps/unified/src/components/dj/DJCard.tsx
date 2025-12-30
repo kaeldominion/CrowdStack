@@ -182,22 +182,24 @@ export function DJCard({
     <Link href={`/dj/${dj.handle}`} className="block group">
       <Card className="overflow-hidden hover:border-accent-primary/50 transition-all" padding="none">
         {/* Image */}
-        <div className="relative aspect-square bg-raised">
+        <div className="relative aspect-square bg-raised overflow-hidden">
           {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={dj.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+            <>
+              <Image
+                src={imageUrl}
+                alt={dj.name}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+              {/* Strong gradient fade - scales with image to prevent edge showing on hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 via-40% to-transparent group-hover:scale-105 transition-transform duration-300" />
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Music className="w-16 h-16 text-muted" />
             </div>
           )}
-          {/* Strong gradient fade at bottom for name readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 via-40% to-transparent" />
           
           {/* Stats overlay - top right */}
           {hasStats && (
