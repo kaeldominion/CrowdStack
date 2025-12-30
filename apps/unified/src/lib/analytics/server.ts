@@ -23,14 +23,54 @@ export async function trackServerEvent(
   properties?: Record<string, string | number | boolean | null | undefined>,
   request?: NextRequest
 ): Promise<void> {
-  try {
-    // Vercel Analytics requires the request object to identify the request source
-    // Pass the request directly - Vercel Analytics will extract what it needs
-    const options = request ? { request } : undefined;
+  // Only log in development or if explicitly enabled
+  const isDevelopment = process.env.NODE_ENV === "development";
+  const enableAnalyticsDebug = process.env.ENABLE_ANALYTICS_DEBUG === "true";
 
-    await track(eventName, properties, options);
+  try {
+    if (isDevelopment || enableAnalyticsDebug) {
+      console.log("[Analytics] Tracking server event:", {
+        eventName,
+        properties,
+        hasRequest: !!request,
+        url: request?.url,
+      });
+    }
+
+    // Vercel Analytics server-side tracking
+    // IMPORTANT: Custom events require Vercel Pro or Enterprise plan
+    // The track function from @vercel/analytics/server accepts:
+    // track(eventName, properties, options)
+    // where options can contain { request: NextRequest }
+    if (request) {
+      await track(eventName, properties, { request });
+      if (isDevelopment || enableAnalyticsDebug) {
+        console.log("[Analytics] Event tracked successfully with request");
+      }
+    } else {
+      // Fallback: track without request (may not work in all environments)
+      await track(eventName, properties);
+      if (isDevelopment || enableAnalyticsDebug) {
+        console.log("[Analytics] Event tracked successfully without request");
+      }
+    }
   } catch (error) {
+    // Always log errors
     console.error("[Analytics] Error tracking server event:", error);
+    console.error("[Analytics] Event name:", eventName);
+    console.error("[Analytics] Properties:", JSON.stringify(properties, null, 2));
+    console.error("[Analytics] Has request:", !!request);
+    
+    if (error instanceof Error) {
+      console.error("[Analytics] Error message:", error.message);
+      console.error("[Analytics] Error stack:", error.stack);
+      
+      // Check if it's a plan-related error
+      if (error.message.includes("plan") || error.message.includes("upgrade")) {
+        console.error("[Analytics] ⚠️  Custom events require Vercel Pro or Enterprise plan");
+        console.error("[Analytics] Please check your Vercel plan in the dashboard");
+      }
+    }
   }
 }
 
