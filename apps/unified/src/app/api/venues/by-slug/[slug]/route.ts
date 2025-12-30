@@ -127,7 +127,7 @@ export async function GET(
 
     // Get favorite count (followers)
     const { count: favoriteCount } = await supabase
-      .from("attendee_favorites")
+      .from("venue_favorites")
       .select("*", { count: "exact", head: true })
       .eq("venue_id", venue.id);
 

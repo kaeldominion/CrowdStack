@@ -40,11 +40,17 @@ export default function CreateDJProfilePage() {
       try {
         const response = await fetch("/api/dj/profile/check");
         if (response.ok) {
-          // User already has a profile, redirect to dashboard
-          router.push("/app/dj");
+          const data = await response.json();
+          // Only redirect if user actually has a profile
+          if (data.hasProfile) {
+            router.push("/app/dj");
+          }
         }
+        // 401 = not authenticated (stay on page, will fail on submit)
+        // hasProfile: false = authenticated but no profile (stay on page to create one)
       } catch (error) {
-        // 404 is expected if no profile exists
+        // Network error - stay on page
+        console.error("Error checking DJ profile:", error);
       }
     };
     checkExistingProfile();
