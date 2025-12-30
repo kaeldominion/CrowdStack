@@ -199,8 +199,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Use service role client for superadmin operations to bypass RLS
+    const { createServiceRoleClient } = await import("@crowdstack/shared/supabase/server");
+    const dbClient = isSuperadmin ? createServiceRoleClient() : supabase;
+
     // Get venue with all fields
-    const { data: venue, error: venueError } = await supabase
+    const { data: venue, error: venueError } = await dbClient
       .from("venues")
       .select("*")
       .eq("id", venueId)
@@ -214,7 +218,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get gallery images
-    const { data: gallery } = await supabase
+    const { data: gallery } = await dbClient
       .from("venue_gallery")
       .select("*")
       .eq("venue_id", venueId)
@@ -222,7 +226,7 @@ export async function GET(request: NextRequest) {
       .order("display_order", { ascending: true });
 
     // Get tags
-    const { data: tags } = await supabase
+    const { data: tags } = await dbClient
       .from("venue_tags")
       .select("*")
       .eq("venue_id", venueId)
@@ -290,11 +294,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Use service role client for superadmin operations to bypass RLS
+    // This allows superadmins to update any venue, even if not assigned via venue_users
+    const { createServiceRoleClient } = await import("@crowdstack/shared/supabase/server");
+    const dbClient = isSuperadmin ? createServiceRoleClient() : supabase;
+
     const body = await request.json();
 
     // Validate slug uniqueness if provided
     if (body.venue?.slug) {
-      const { data: existingVenue } = await supabase
+      const { data: existingVenue } = await dbClient
         .from("venues")
         .select("id")
         .eq("slug", body.venue.slug)
@@ -312,7 +321,7 @@ export async function PUT(request: NextRequest) {
     // Update venue
     if (body.venue) {
       // Get current venue data to compare
-      const { data: currentVenue } = await supabase
+      const { data: currentVenue } = await dbClient
         .from("venues")
         .select("google_maps_url, address, city, state, country")
         .eq("id", venueId)
@@ -367,7 +376,7 @@ export async function PUT(request: NextRequest) {
 
       updateData.updated_at = new Date().toISOString();
 
-      const { data: updatedVenue, error: updateError } = await supabase
+      const { data: updatedVenue, error: updateError } = await dbClient
         .from("venues")
         .update(updateData)
         .eq("id", venueId)
@@ -385,7 +394,7 @@ export async function PUT(request: NextRequest) {
     // Update tags if provided
     if (body.tags && Array.isArray(body.tags)) {
       // Delete all existing tags
-      await supabase.from("venue_tags").delete().eq("venue_id", venueId);
+      await dbClient.from("venue_tags").delete().eq("venue_id", venueId);
 
       // Insert all tags (including new ones with temp IDs)
       const tagsToInsert = body.tags
@@ -397,7 +406,7 @@ export async function PUT(request: NextRequest) {
         }));
 
       if (tagsToInsert.length > 0) {
-        const { error: tagsError } = await supabase
+        const { error: tagsError } = await dbClient
           .from("venue_tags")
           .insert(tagsToInsert);
 
@@ -412,20 +421,20 @@ export async function PUT(request: NextRequest) {
     }
 
     // Reload full venue data
-    const { data: venue } = await supabase
+    const { data: venue } = await dbClient
       .from("venues")
       .select("*")
       .eq("id", venueId)
       .single();
 
-    const { data: gallery } = await supabase
+    const { data: gallery } = await dbClient
       .from("venue_gallery")
       .select("*")
       .eq("venue_id", venueId)
       .order("is_hero", { ascending: false })
       .order("display_order", { ascending: true });
 
-    const { data: tags } = await supabase
+    const { data: tags } = await dbClient
       .from("venue_tags")
       .select("*")
       .eq("venue_id", venueId)
