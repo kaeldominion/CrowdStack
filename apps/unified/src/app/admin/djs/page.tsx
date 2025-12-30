@@ -72,9 +72,8 @@ export default function AdminDJsPage() {
           <div className="flex justify-center items-center min-h-[400px]">
             <LoadingSpinner size="lg" />
           </div>
-        </Container>
-      </Section>
-    </div>
+        </Section>
+      </Container>
     );
   }
 
