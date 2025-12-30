@@ -1334,7 +1334,7 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
       {/* Navigation Bar - Matches global DockNav pattern */}
       <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto sm:top-4">
-        <div className="flex h-12 sm:h-14 items-center gap-1 px-3 sm:px-4 rounded-full border border-border-subtle backdrop-blur-xl bg-void/90 shadow-soft">
+        <div className="flex h-12 sm:h-14 items-center gap-1 px-3 sm:px-4 rounded-full border border-border-strong backdrop-blur-xl bg-void/90 shadow-2xl shadow-void/50 ring-1 ring-border-subtle">
           {/* Logo */}
           <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 px-2">
             <Logo variant="tricolor" size="sm" iconOnly animated={false} />
