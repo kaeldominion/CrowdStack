@@ -8,11 +8,16 @@ export const dynamic = "force-dynamic";
  * Browse and search DJ profiles
  * 
  * Query params:
- * - search: Search by name, bio, or handle
+ * - search: Search by name, bio, or handle (when searching, shows all DJs including those without events)
  * - genre: Filter by genre (DJs can have multiple genres)
  * - country: Filter by country in location field
  * - limit: Number of results (default 12)
  * - offset: Pagination offset (default 0)
+ * 
+ * Browse rules:
+ * - Must have a profile image (completed profile)
+ * - Must have at least one event in lineup (prevents spam profiles)
+ * - When searching, event requirement is relaxed to help find new DJs
  */
 export async function GET(request: NextRequest) {
   try {
@@ -25,8 +30,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient();
 
-    // First, get all DJ IDs with their follower counts
-    // We need this for sorting by popularity
+    // Get all DJ IDs with their follower counts (for sorting by popularity)
     const { data: djFollowCounts } = await supabase
       .from("dj_follows")
       .select("dj_id")
@@ -40,6 +44,14 @@ export async function GET(request: NextRequest) {
         });
         return { data: counts };
       });
+
+    // Get DJ IDs that have at least one event in lineup
+    // This prevents spam/empty profiles from appearing in browse
+    const { data: djsWithEvents } = await supabase
+      .from("event_lineups")
+      .select("dj_id");
+    
+    const djIdsWithEvents = new Set(djsWithEvents?.map(l => l.dj_id) || []);
 
     // Build the base query - only show DJs with profile images (completed profiles)
     // Filter out both null AND empty string values
@@ -65,15 +77,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all matching DJs first (we'll sort by follower count in JS)
-    const { data: allDjs, error, count } = await query;
+    const { data: allDjs, error } = await query;
 
     if (error) {
       console.error("[Browse DJs] Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Filter DJs based on whether they have events
+    // When searching, show all DJs (helps find new DJs)
+    // When browsing (no search), require at least one event
+    const filteredDjs = (allDjs || []).filter(dj => {
+      if (search) {
+        // When searching, show all DJs with profile images
+        return true;
+      }
+      // When browsing, require at least one event
+      return djIdsWithEvents.has(dj.id);
+    });
+
     // Sort by follower count (most popular first), then by name
-    const sortedDjs = (allDjs || []).sort((a, b) => {
+    const sortedDjs = filteredDjs.sort((a, b) => {
       const aFollowers = djFollowCounts?.[a.id] || 0;
       const bFollowers = djFollowCounts?.[b.id] || 0;
       
@@ -90,7 +114,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       djs: paginatedDjs,
       count: paginatedDjs.length,
-      totalCount: count || 0,
+      totalCount: sortedDjs.length, // Use filtered count, not raw count
       offset,
       limit,
     });

@@ -667,23 +667,23 @@ export function DJProfilePageContent({
       <div className="fixed inset-0 bg-void -z-20" />
       
       {/* Hero Background Image - Fades to black */}
-      <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden">
+        <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden">
         {currentCoverUrl ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
               src={currentCoverUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            {/* Gradient overlay - fades to void/black */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/70 to-void" />
-            <div className="absolute inset-0 bg-gradient-to-r from-void/30 via-transparent to-void/30" />
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Gradient overlay - fades to void/black */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/70 to-void" />
+          <div className="absolute inset-0 bg-gradient-to-r from-void/30 via-transparent to-void/30" />
           </>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-void/50 to-void" />
         )}
-      </div>
+        </div>
       
       {/* Hidden file input for cover upload */}
       {canEditDJ && (
@@ -800,16 +800,16 @@ export function DJProfilePageContent({
                       </>
                     )}
                   </Button>
-                  <Link href={getManageUrl()}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="h-8 w-8 p-0"
+                <Link href={getManageUrl()}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-8 w-8 p-0"
                       title="Edit Profile Info"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </Link>
                 </>
               )}
             </div>

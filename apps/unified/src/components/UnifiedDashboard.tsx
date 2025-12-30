@@ -1182,12 +1182,12 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               <Radio className="h-5 w-5" />
               DJ Dashboard
             </h2>
-            <Link href="/app/dj/profile">
-              <Button variant="secondary" size="sm">
+              <Link href="/app/dj/profile">
+                <Button variant="secondary" size="sm">
                 Edit Profile Info
-              </Button>
-            </Link>
-          </div>
+                </Button>
+              </Link>
+            </div>
 
           {/* Public Profile Card */}
           {djHandle && (
@@ -1199,7 +1199,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
                       Your Public Profile
                     </p>
-                  </div>
+          </div>
                   <p className="text-sm text-white/60">
                     Add mixes, photos, videos, and update your avatar and cover image directly on your public profile page.
                   </p>

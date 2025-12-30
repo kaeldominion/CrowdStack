@@ -43,7 +43,7 @@ export default function CreateDJProfilePage() {
           const data = await response.json();
           // Only redirect if user actually has a profile
           if (data.hasProfile) {
-            router.push("/app/dj");
+          router.push("/app/dj");
           }
         }
         // 401 = not authenticated (stay on page, will fail on submit)
