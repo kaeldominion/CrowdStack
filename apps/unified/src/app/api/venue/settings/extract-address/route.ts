@@ -11,13 +11,15 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
   city: string | null;
   state: string | null;
   country: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }> {
   try {
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
     if (!googleMapsApiKey) {
       console.error("Google Maps API key not configured");
-      return { address: null, city: null, state: null, country: null };
+      return { address: null, city: null, state: null, country: null, latitude: null, longitude: null };
     }
 
     // First, try to extract place ID directly from short URLs using Google Places API
@@ -75,6 +77,8 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
     
     let geocodeUrl: string | null = null;
     let coordsMatch: RegExpMatchArray | null = null;
+    let extractedLat: number | null = null;
+    let extractedLng: number | null = null;
     
     for (const pattern of coordsPatterns) {
       coordsMatch = resolvedUrl.match(pattern);
@@ -82,10 +86,10 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
     }
     
     if (coordsMatch) {
-      const lat = parseFloat(coordsMatch[1]);
-      const lng = parseFloat(coordsMatch[2]);
-      console.log(`Extracted coordinates: ${lat}, ${lng}`);
-      geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleMapsApiKey}`;
+      extractedLat = parseFloat(coordsMatch[1]);
+      extractedLng = parseFloat(coordsMatch[2]);
+      console.log(`Extracted coordinates: ${extractedLat}, ${extractedLng}`);
+      geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${extractedLat},${extractedLng}&key=${googleMapsApiKey}`;
     } else {
       // Method 2: Extract place ID from URL patterns
       // Google Maps URLs can have place IDs in various formats:
@@ -129,10 +133,10 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
           if (placeDetailsData.status === "OK" && placeDetailsData.result) {
             // If we have coordinates, use reverse geocoding for better results
             if (placeDetailsData.result.geometry?.location) {
-              const lat = placeDetailsData.result.geometry.location.lat;
-              const lng = placeDetailsData.result.geometry.location.lng;
-              console.log(`Got coordinates from place details: ${lat}, ${lng}`);
-              geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleMapsApiKey}`;
+              extractedLat = placeDetailsData.result.geometry.location.lat;
+              extractedLng = placeDetailsData.result.geometry.location.lng;
+              console.log(`Got coordinates from place details: ${extractedLat}, ${extractedLng}`);
+              geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${extractedLat},${extractedLng}&key=${googleMapsApiKey}`;
             } else {
               // Use place details directly
               geocodeUrl = placeDetailsUrl;
@@ -168,7 +172,7 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
 
     if (!geocodeUrl) {
       console.error("Could not extract location from URL format. Original:", url, "Resolved:", resolvedUrl);
-      return { address: null, city: null, state: null, country: null };
+      return { address: null, city: null, state: null, country: null, latitude: null, longitude: null };
     }
 
     // Call Google Geocoding API or Place Details API
@@ -178,7 +182,7 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
 
     if (geocodeData.status !== "OK") {
       console.error("Geocoding failed:", geocodeData.status, geocodeData.error_message || "");
-      return { address: null, city: null, state: null, country: null };
+      return { address: null, city: null, state: null, country: null, latitude: null, longitude: null };
     }
 
     // Handle Place Details API response format (different from Geocoding API)
@@ -192,9 +196,15 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
     } else if (geocodeData.results && geocodeData.results.length > 0) {
       // Geocoding API response
       result = geocodeData.results[0];
+      // Try to extract coordinates from geocoding result if not already extracted
+      if ((extractedLat == null || extractedLng == null) && result.geometry?.location) {
+        extractedLat = result.geometry.location.lat;
+        extractedLng = result.geometry.location.lng;
+        console.log(`Got coordinates from geocoding result: ${extractedLat}, ${extractedLng}`);
+      }
     } else {
       console.error("No results in geocoding response");
-      return { address: null, city: null, state: null, country: null };
+      return { address: null, city: null, state: null, country: null, latitude: null, longitude: null };
     }
     const addressComponents = result.address_components || [];
     
@@ -246,13 +256,15 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
     country = countryComponent?.short_name || null;
     
     // Log what we extracted for debugging
-    console.log(`Parsed address components:`, { address, city, state, country, hasFormatted: !!result.formatted_address });
+    console.log(`Parsed address components:`, { address, city, state, country, latitude: extractedLat, longitude: extractedLng, hasFormatted: !!result.formatted_address });
 
     return {
       address,
       city,
       state,
       country,
+      latitude: extractedLat,
+      longitude: extractedLng,
     };
   } catch (error: any) {
     console.error("Error extracting address from Google Maps URL:", error);
@@ -260,7 +272,7 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
     if (error.message && error.message.includes("API key")) {
       throw error;
     }
-    return { address: null, city: null, state: null, country: null };
+    return { address: null, city: null, state: null, country: null, latitude: null, longitude: null };
   }
 }
 
@@ -393,16 +405,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update venue with extracted address
+    // Update venue with extracted address and coordinates
+    const updateData: any = {
+      address: addressInfo.address,
+      city: addressInfo.city,
+      state: addressInfo.state,
+      country: addressInfo.country,
+      updated_at: new Date().toISOString(),
+    };
+    
+    // Add coordinates if we extracted them
+    if (addressInfo.latitude != null && addressInfo.longitude != null) {
+      updateData.latitude = addressInfo.latitude;
+      updateData.longitude = addressInfo.longitude;
+      console.log(`Saving coordinates to venue: ${addressInfo.latitude}, ${addressInfo.longitude}`);
+    }
+    
     const { data: updatedVenue, error: updateError } = await supabase
       .from("venues")
-      .update({
-        address: addressInfo.address,
-        city: addressInfo.city,
-        state: addressInfo.state,
-        country: addressInfo.country,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", venueId)
       .select()
       .single();
