@@ -667,7 +667,7 @@ export function DJProfilePageContent({
       <div className="fixed inset-0 bg-void -z-20" />
       
       {/* Hero Background Image - Fades to black */}
-      <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden group/hero">
+      <div className="fixed inset-x-0 top-0 h-[450px] z-0 overflow-hidden">
         {currentCoverUrl ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -683,37 +683,18 @@ export function DJProfilePageContent({
         ) : (
           <div className="absolute inset-0 bg-gradient-to-b from-void/50 to-void" />
         )}
-        
-        {/* Edit Cover Button */}
-        {canEditDJ && (
-          <>
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleCoverUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => coverInputRef.current?.click()}
-              disabled={uploadingCover}
-              className="absolute top-20 right-6 z-10 flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 border border-white/20 rounded-lg text-white text-sm font-medium opacity-0 group-hover/hero:opacity-100 transition-opacity backdrop-blur-sm"
-            >
-              {uploadingCover ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Camera className="h-4 w-4" />
-                  {currentCoverUrl ? "Change Cover" : "Add Cover"}
-                </>
-              )}
-            </button>
-          </>
-        )}
       </div>
+      
+      {/* Hidden file input for cover upload */}
+      {canEditDJ && (
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleCoverUpload}
+          className="hidden"
+        />
+      )}
 
       {/* Main Content */}
       <div className="relative z-10 pt-24 pb-12 px-6 md:px-10 lg:px-16">
@@ -801,16 +782,35 @@ export function DJProfilePageContent({
                 iconOnly
               />
               {canEditDJ && (
-                <Link href={getManageUrl()}>
+                <>
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-8 w-8 p-0"
-                    title="Manage DJ Profile"
+                    className="h-8 px-3"
+                    title={currentCoverUrl ? "Change Cover Image" : "Add Cover Image"}
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={uploadingCover}
                   >
-                    <Settings className="h-4 w-4" />
+                    {uploadingCover ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <ImageIcon className="h-4 w-4 mr-1.5" />
+                        <span className="text-xs">{currentCoverUrl ? "Cover" : "Add Cover"}</span>
+                      </>
+                    )}
                   </Button>
-                </Link>
+                  <Link href={getManageUrl()}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      title="Edit Profile Info"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
           </div>
