@@ -17,6 +17,7 @@ interface MapPreviewProps {
 export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }: MapPreviewProps) {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   // Build display address
   const displayAddress = address || [city, state, country].filter(Boolean).join(", ");
@@ -103,14 +104,22 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
       return url;
     }
     
-    // Fallback to OpenStreetMap static map service (free, no API key needed)
-    const osmUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${finalLat},${finalLng}&zoom=${zoom}&size=${width}x${height}&maptype=osmarenderer&markers=${finalLat},${finalLng},red-pushpin`;
-    console.log("[MapPreview] Using OpenStreetMap fallback:", osmUrl);
-    return osmUrl;
+    // No static image available without API key
+    console.warn("[MapPreview] No Google Maps API key configured - will use iframe embed instead");
+    return null;
+  };
+
+  // Generate Google Maps embed URL (works without API key)
+  const getEmbedUrl = (): string | null => {
+    if (!hasCoordinates) return null;
+    // Use output=embed format which works without API key
+    return `https://www.google.com/maps?q=${finalLat},${finalLng}&hl=en&z=15&output=embed`;
   };
 
   const staticMapUrl = getStaticMapUrl();
+  const embedUrl = getEmbedUrl();
   const showImage = staticMapUrl && !imageError;
+  const showEmbed = !showImage && hasCoordinates;
 
   // Debug info (only in development)
   const isDev = process.env.NODE_ENV === "development";
@@ -138,7 +147,7 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
     >
       <Card padding="none" hover className="overflow-hidden group">
         <div className="relative h-32 bg-raised">
-          {/* Static Map Image */}
+          {/* Static Map Image (when API key available) */}
           {showImage && (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -165,8 +174,26 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
             </>
           )}
 
-          {/* Fallback placeholder (shown when no coords or image fails) */}
-          {(!showImage || !imageLoaded) && (
+          {/* Google Maps Embed (fallback when no API key but we have coordinates) */}
+          {showEmbed && embedUrl && (
+            <>
+              <iframe
+                src={embedUrl}
+                className={`absolute inset-0 w-full h-full border-0 transition-opacity duration-300 ${
+                  iframeLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                onLoad={() => setIframeLoaded(true)}
+                title={`Map location${displayAddress ? `: ${displayAddress}` : ""}`}
+              />
+              {/* Dark overlay for better text visibility */}
+              <div className="absolute inset-0 bg-void/40 group-hover:bg-void/30 transition-colors pointer-events-none" />
+            </>
+          )}
+
+          {/* Fallback placeholder (shown when no coords) */}
+          {!hasCoordinates && (
             <div className="absolute inset-0">
               {/* Grid pattern to simulate map */}
               <div className="absolute inset-0 opacity-20">
@@ -184,12 +211,19 @@ export function MapPreview({ lat, lng, address, city, state, country, mapsUrl }:
             </div>
           )}
 
+          {/* Loading state for image/embed */}
+          {((showImage && !imageLoaded) || (showEmbed && !iframeLoaded)) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-raised">
+              <div className="w-6 h-6 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+
           {/* Center pin & button */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-10 pointer-events-none">
             <div className="w-10 h-10 rounded-full bg-accent-primary/90 flex items-center justify-center shadow-lg">
               <MapPin className="h-5 w-5 text-white" />
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-glass/80 backdrop-blur-sm border border-border-subtle text-xs font-medium text-primary group-hover:bg-active transition-colors">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-glass/80 backdrop-blur-sm border border-border-subtle text-xs font-medium text-primary group-hover:bg-active transition-colors pointer-events-auto">
               <Map className="h-3.5 w-3.5" />
               Open in Maps
               <ExternalLink className="h-3 w-3 opacity-50" />
