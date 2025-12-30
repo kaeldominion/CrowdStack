@@ -39,6 +39,11 @@ export default function VenueSettingsPage() {
   const [uploadSuccess, setUploadSuccess] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; caption: string } | null>(null);
+  
+  // Address extraction state
+  const [extractingAddress, setExtractingAddress] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const [extractSuccess, setExtractSuccess] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -125,6 +130,105 @@ export default function VenueSettingsPage() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
     updateVenueField("slug", slug);
+  };
+
+  // Try to extract coordinates from URL client-side (works for full URLs)
+  const extractCoordsFromUrlClientSide = (url: string): { lat: number; lng: number } | null => {
+    if (!url) return null;
+    
+    // Pattern 1: @lat,lng (most common)
+    let match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+    
+    // Pattern 2: !3dlat!4dlng
+    match = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+    
+    // Pattern 3: ?q=lat,lng
+    match = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+    
+    return null;
+  };
+
+  const extractAddressFromUrl = async () => {
+    if (!data?.venue?.google_maps_url) {
+      setExtractError("Please enter a Google Maps URL first");
+      return;
+    }
+
+    const url = data.venue.google_maps_url;
+    setExtractingAddress(true);
+    setExtractError(null);
+    setExtractSuccess(false);
+
+    // First, try client-side extraction (instant, no API needed)
+    const clientCoords = extractCoordsFromUrlClientSide(url);
+    if (clientCoords) {
+      console.log("[Settings] Extracted coordinates client-side:", clientCoords);
+      // Update local state with coordinates
+      setData({
+        ...data,
+        venue: {
+          ...data.venue,
+          latitude: clientCoords.lat,
+          longitude: clientCoords.lng,
+        },
+      });
+      setExtractSuccess(true);
+      setExtractingAddress(false);
+      setTimeout(() => setExtractSuccess(false), 3000);
+      return;
+    }
+
+    // If client-side fails (short URL), try server-side
+    console.log("[Settings] Client-side extraction failed, trying server-side...");
+    
+    try {
+      const apiUrl = venueId 
+        ? `/api/venue/settings/extract-address?venueId=${venueId}` 
+        : "/api/venue/settings/extract-address";
+      
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ google_maps_url: url }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to extract address");
+      }
+
+      // Reload venue data to get updated coordinates and address
+      await loadSettings();
+      setExtractSuccess(true);
+      setTimeout(() => setExtractSuccess(false), 3000);
+    } catch (error: any) {
+      console.error("Failed to extract address:", error);
+      // Provide helpful error message for short URLs
+      const isShortUrl = /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url);
+      if (isShortUrl) {
+        setExtractError("Short URL extraction requires Google Maps API key. Please open the link in your browser and copy the full URL, or enter coordinates manually below.");
+      } else {
+        setExtractError(error.message || "Failed to extract address from URL");
+      }
+    } finally {
+      setExtractingAddress(false);
+    }
   };
 
   const handleImageUpload = async (type: "logo" | "cover", file: File) => {
@@ -438,18 +542,77 @@ export default function VenueSettingsPage() {
             <div className="space-y-6">
               <h2 className="text-2xl font-semibold text-primary">Location</h2>
 
+              {/* Setup Instructions */}
+              {!(data.venue.latitude && data.venue.longitude) && (
+                <div className="bg-accent-primary/10 border border-accent-primary/20 rounded-lg p-4">
+                  <h3 className="font-semibold text-primary mb-2">📍 How to set up your venue location</h3>
+                  <ol className="text-sm text-secondary space-y-2 list-decimal list-inside">
+                    <li>Open <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="text-accent-primary hover:underline">Google Maps</a> and search for your venue</li>
+                    <li>Copy the <strong>full URL</strong> from your browser&apos;s address bar (not a short link)</li>
+                    <li>Paste it below and click <strong>&quot;Extract Address &amp; Coordinates&quot;</strong></li>
+                    <li>Once coordinates are saved, you can replace the URL with a shorter link if you prefer</li>
+                  </ol>
+                </div>
+              )}
+
+              {/* Success state */}
+              {data.venue.latitude && data.venue.longitude && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <p className="text-sm text-green-400 flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    <span><strong>Location configured!</strong> Map coordinates are saved. You can use any Google Maps URL format now.</span>
+                  </p>
+                </div>
+              )}
+
               <Input
                 label="Google Maps URL"
                 type="url"
                 value={data.venue.google_maps_url || ""}
                 onChange={(e) => updateVenueField("google_maps_url", e.target.value)}
                 placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
-                helperText="Paste any Google Maps URL (including short links like maps.app.goo.gl). This will be used for the 'Open in Maps' button on your venue page."
+                helperText={
+                  data.venue.latitude && data.venue.longitude
+                    ? "✓ Coordinates saved. You can use a short link now - it will be used for the 'Open in Maps' button."
+                    : "Paste the full Google Maps URL first to extract coordinates, then you can replace with a short link."
+                }
               />
+
+              {/* Extract Address Button */}
+              {data.venue.google_maps_url && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={extractAddressFromUrl}
+                    disabled={extractingAddress}
+                    loading={extractingAddress}
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    {extractingAddress ? "Extracting..." : "Extract Address & Coordinates"}
+                  </Button>
+                  {extractSuccess && (
+                    <span className="text-sm text-green-500 flex items-center gap-1">
+                      <Check className="h-4 w-4" />
+                      Address extracted!
+                    </span>
+                  )}
+                  {extractError && (
+                    <span className="text-sm text-red-500">{extractError}</span>
+                  )}
+                </div>
+              )}
 
               {/* Map Preview */}
               {data.venue.google_maps_url && (
-                <MapPreview mapsUrl={data.venue.google_maps_url} />
+                <MapPreview 
+                  mapsUrl={data.venue.google_maps_url}
+                  lat={data.venue.latitude}
+                  lng={data.venue.longitude}
+                  address={data.venue.address}
+                  city={data.venue.city}
+                  state={data.venue.state}
+                  country={data.venue.country}
+                />
               )}
 
               {/* Address Fields - Manual Editing */}
@@ -490,6 +653,36 @@ export default function VenueSettingsPage() {
                     onChange={(e) => updateVenueField("country", e.target.value)}
                     placeholder="US"
                   />
+
+                  {/* Manual Coordinates Entry */}
+                  <div className="border-t border-border pt-4 mt-4">
+                    <p className="text-sm text-secondary mb-3">
+                      <strong>Map Coordinates</strong> - Required for map preview. Get these from Google Maps URL or enter manually.
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        label="Latitude"
+                        type="number"
+                        step="any"
+                        value={data.venue.latitude || ""}
+                        onChange={(e) => updateVenueField("latitude", e.target.value ? parseFloat(e.target.value) : null)}
+                        placeholder="-8.8123456"
+                        helperText="e.g., -8.8123456"
+                      />
+                      <Input
+                        label="Longitude"
+                        type="number"
+                        step="any"
+                        value={data.venue.longitude || ""}
+                        onChange={(e) => updateVenueField("longitude", e.target.value ? parseFloat(e.target.value) : null)}
+                        placeholder="115.1234567"
+                        helperText="e.g., 115.1234567"
+                      />
+                    </div>
+                    <p className="text-xs text-secondary mt-2">
+                      💡 Tip: In Google Maps, right-click on the location → "What&apos;s here?" to see coordinates
+                    </p>
+                  </div>
                 </div>
               </div>
 
