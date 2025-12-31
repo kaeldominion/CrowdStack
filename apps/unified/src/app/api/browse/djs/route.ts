@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-
-export const dynamic = "force-dynamic";
+import { CACHE, getCacheControl } from "@/lib/cache";
 
 /**
  * GET /api/browse/djs
@@ -117,13 +116,20 @@ export async function GET(request: NextRequest) {
       event_count: djEventCounts[dj.id] || 0,
     }));
 
-    return NextResponse.json({
-      djs: djsWithStats,
-      count: djsWithStats.length,
-      totalCount: sortedDjs.length, // Use filtered count, not raw count
-      offset,
-      limit,
-    });
+    return NextResponse.json(
+      {
+        djs: djsWithStats,
+        count: djsWithStats.length,
+        totalCount: sortedDjs.length, // Use filtered count, not raw count
+        offset,
+        limit,
+      },
+      {
+        headers: {
+          'Cache-Control': getCacheControl(CACHE.publicBrowse),
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Browse DJs] Unexpected error:", error);
     return NextResponse.json({ error: "Failed to fetch DJs" }, { status: 500 });

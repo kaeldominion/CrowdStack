@@ -8,6 +8,7 @@ import { CrispChat } from "@/components/CrispChat";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ToastProvider } from "@crowdstack/ui";
+import { QueryProvider } from "@/components/QueryProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -40,17 +41,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark bg-void">
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className} antialiased bg-void`}>
-        <ToastProvider>
-          <Suspense fallback={null}>
-            <ImpersonationBanner />
-          </Suspense>
-          <Suspense fallback={null}>
-            <NavigationProgress />
-          </Suspense>
-          <ConditionalLayout>{children}</ConditionalLayout>
-          <Analytics />
-          <CrispChat />
-        </ToastProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <Suspense fallback={null}>
+              <ImpersonationBanner />
+            </Suspense>
+            <Suspense fallback={null}>
+              <NavigationProgress />
+            </Suspense>
+            <ConditionalLayout>{children}</ConditionalLayout>
+            <Analytics />
+            <CrispChat />
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

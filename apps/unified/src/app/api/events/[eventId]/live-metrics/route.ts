@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { getLiveMetrics } from "@/lib/data/live-metrics";
 import { cookies } from "next/headers";
+import { CACHE, getCacheControl } from "@/lib/cache";
+
+// Real-time route - explicitly disable caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   request: Request,
@@ -34,7 +39,11 @@ export async function GET(
       capacity: metrics.capacity,
     });
 
-    return NextResponse.json(metrics);
+    return NextResponse.json(metrics, {
+      headers: {
+        'Cache-Control': getCacheControl(CACHE.realtime),
+      },
+    });
   } catch (error: any) {
     console.error("[Live Metrics API] Error:", error);
     return NextResponse.json(

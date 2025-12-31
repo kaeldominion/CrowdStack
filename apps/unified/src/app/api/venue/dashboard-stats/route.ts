@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { getVenueDashboardStats } from "@/lib/data/dashboard-stats";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
+import { CACHE, getCacheControl } from "@/lib/cache";
 
 export async function GET() {
   try {
@@ -32,7 +33,14 @@ export async function GET() {
     // Extract venue from stats and return separately
     const { venue, ...stats } = result as any;
 
-    return NextResponse.json({ stats, venue });
+    return NextResponse.json(
+      { stats, venue },
+      {
+        headers: {
+          'Cache-Control': getCacheControl(CACHE.dashboardStats),
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Venue Dashboard Stats] Error:", error);
     return NextResponse.json(

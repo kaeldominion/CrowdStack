@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { CACHE, getCacheControl } from "@/lib/cache";
+import { createTimer } from "@/lib/perf";
 
-// Disable caching for this route - responses can exceed 2MB due to gallery images and events
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Note: Response data can be large (gallery + events), so we rely on CDN caching via headers
+// rather than Next.js server caching which has a 2MB limit
 
 /**
  * GET /api/venues/by-slug/[slug]
@@ -14,6 +15,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
+  const timer = createTimer(`venue-by-slug:${params.slug}`);
+  
   try {
     const supabase = createServiceRoleClient();
 
@@ -138,19 +141,34 @@ export async function GET(
       .eq("venue_id", venue.id)
       .eq("status", "published");
 
-    return NextResponse.json({
-      venue: {
-        ...venue,
-        gallery: gallery || [],
-        tags: tags || [],
-        live_events: liveEvents,
-        upcoming_events: upcomingEvents.slice(0, 20),
-        past_events: pastEvents.slice(0, 50), // Return more for client-side pagination
-        follower_count: favoriteCount || 0,
-        total_event_count: totalEventCount || 0,
+    const duration = timer.end();
+    
+    const headers: HeadersInit = {
+      'Cache-Control': getCacheControl(CACHE.publicEntity),
+    };
+    
+    // Add timing header in development
+    if (process.env.NODE_ENV === 'development') {
+      headers['X-Response-Time'] = `${duration}ms`;
+    }
+
+    return NextResponse.json(
+      {
+        venue: {
+          ...venue,
+          gallery: gallery || [],
+          tags: tags || [],
+          live_events: liveEvents,
+          upcoming_events: upcomingEvents.slice(0, 20),
+          past_events: pastEvents.slice(0, 50), // Return more for client-side pagination
+          follower_count: favoriteCount || 0,
+          total_event_count: totalEventCount || 0,
+        },
       },
-    });
+      { headers }
+    );
   } catch (error: any) {
+    timer.end(); // Log timing even on error
     console.error("Failed to fetch venue:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch venue" },

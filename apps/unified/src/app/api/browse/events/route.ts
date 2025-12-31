@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getVenueEventGenre } from "@/lib/constants/genres";
+import { CACHE, getCacheControl } from "@/lib/cache";
 
 /**
  * GET /api/browse/events
@@ -449,11 +450,18 @@ export async function GET(request: NextRequest) {
       totalCount,
     });
 
-    return NextResponse.json({
-      events: eventsWithCounts,
-      count: filteredCount, // Count of events after all filters (before pagination)
-      totalCount: totalCount || 0, // Total count of all matching events
-    });
+    return NextResponse.json(
+      {
+        events: eventsWithCounts,
+        count: filteredCount, // Count of events after all filters (before pagination)
+        totalCount: totalCount || 0, // Total count of all matching events
+      },
+      {
+        headers: {
+          'Cache-Control': getCacheControl(CACHE.publicBrowse),
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Browse Events] Error:", error);
     return NextResponse.json(

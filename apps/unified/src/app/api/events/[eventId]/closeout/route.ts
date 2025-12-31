@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId } from "@/lib/auth/check-role";
 import type { CloseoutSummary } from "@crowdstack/shared/types";
+import { CACHE, getCacheControl } from "@/lib/cache";
+
+// Financial data - explicitly disable caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /**
  * GET /api/events/[eventId]/closeout
@@ -94,14 +99,21 @@ export async function GET(
     }
 
     if (!eventPromoters || eventPromoters.length === 0) {
-      return NextResponse.json({
-        event_id: params.eventId,
-        event_name: event.name,
-        promoters: [],
-        total_checkins: 0,
-        total_payout: 0,
-        currency: event.currency || "IDR",
-      } as CloseoutSummary);
+      return NextResponse.json(
+        {
+          event_id: params.eventId,
+          event_name: event.name,
+          promoters: [],
+          total_checkins: 0,
+          total_payout: 0,
+          currency: event.currency || "IDR",
+        } as CloseoutSummary,
+        {
+          headers: {
+            'Cache-Control': getCacheControl(CACHE.realtime),
+          },
+        }
+      );
     }
 
     // Get all check-ins for this event with referral promoter
@@ -193,7 +205,11 @@ export async function GET(
       currency: event.currency || "IDR",
     };
 
-    return NextResponse.json(summary);
+    return NextResponse.json(summary, {
+      headers: {
+        'Cache-Control': getCacheControl(CACHE.realtime),
+      },
+    });
   } catch (error: any) {
     console.error("[Closeout API] Error:", error);
     return NextResponse.json(

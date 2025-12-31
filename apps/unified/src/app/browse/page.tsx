@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Card } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
@@ -11,6 +11,13 @@ import { DJCard, DJCardSkeleton } from "@/components/dj/DJCard";
 import { BrowseFilters, type BrowseFilters as BrowseFiltersType } from "@/components/browse/BrowseFilters";
 import { FeaturedEventsCarousel } from "@/components/browse/FeaturedEventsCarousel";
 import { LocationSelector } from "@/components/browse/LocationSelector";
+import { 
+  useFeaturedEvents, 
+  useLiveEvents, 
+  useBrowseEventsInfinite, 
+  useBrowseVenuesInfinite, 
+  useBrowseDJsInfinite 
+} from "@/lib/hooks";
 
 interface Event {
   id: string;

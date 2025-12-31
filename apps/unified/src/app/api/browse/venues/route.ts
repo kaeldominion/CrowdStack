@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { CACHE, getCacheControl } from "@/lib/cache";
 
 /**
  * GET /api/browse/venues
@@ -83,10 +84,17 @@ export async function GET(request: NextRequest) {
       tags: venueTagsMap[venue.id] || [],
     }));
 
-    return NextResponse.json({
-      venues: venuesWithTags,
-      count: venuesWithTags.length,
-    });
+    return NextResponse.json(
+      {
+        venues: venuesWithTags,
+        count: venuesWithTags.length,
+      },
+      {
+        headers: {
+          'Cache-Control': getCacheControl(CACHE.publicBrowse),
+        },
+      }
+    );
   } catch (error: any) {
     console.error("[Browse Venues] Caught error:", error.message, error.stack);
     return NextResponse.json(

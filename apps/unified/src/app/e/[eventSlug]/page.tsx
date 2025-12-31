@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
 import { ReferralTracker } from "@/components/ReferralTracker";
 import { MobileStickyCTAWrapper } from "./MobileStickyCTAWrapper";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
-// Force dynamic rendering to prevent caching stale organizer data
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: Revalidate event pages every 2 minutes
+// Events change more frequently than venues (registration counts, status updates)
+export const revalidate = 120;
 
 function getBaseUrl() {
   if (typeof window !== "undefined") {
@@ -29,82 +30,87 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-async function getEvent(slug: string) {
-  try {
-    const supabase = createServiceRoleClient();
+// Cached event fetch - revalidates every 2 minutes
+const getEvent = unstable_cache(
+  async (slug: string) => {
+    try {
+      const supabase = createServiceRoleClient();
 
-    // Get published event by slug
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .select(`
-        *,
-        organizer:organizers(id, name),
-        venue:venues(
-          id, 
-          name, 
-          slug, 
-          address, 
-          city, 
-          state, 
-          country, 
-          google_maps_url, 
-          cover_image_url, 
-          logo_url
-        )
-      `)
-      .eq("slug", slug)
-      .eq("status", "published")
-      .single();
+      // Get published event by slug
+      const { data: event, error: eventError } = await supabase
+        .from("events")
+        .select(`
+          *,
+          organizer:organizers(id, name),
+          venue:venues(
+            id, 
+            name, 
+            slug, 
+            address, 
+            city, 
+            state, 
+            country, 
+            google_maps_url, 
+            cover_image_url, 
+            logo_url
+          )
+        `)
+        .eq("slug", slug)
+        .eq("status", "published")
+        .single();
+        
+      if (eventError || !event) {
+        return null;
+      }
       
-    if (eventError || !event) {
+      // Fetch venue tags separately if venue exists
+      let venueTags: { tag_type: string; tag_value: string }[] = [];
+      if (event.venue?.id) {
+        const { data: tags } = await supabase
+          .from("venue_tags")
+          .select("tag_type, tag_value")
+          .eq("venue_id", event.venue.id);
+        venueTags = tags || [];
+      }
+
+      // Get registration count
+      const { count: registrationCount } = await supabase
+        .from("registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("event_id", event.id);
+
+      // Get recent attendees with profile pics (limit 5)
+      const { data: recentAttendees } = await supabase
+        .from("registrations")
+        .select(`
+          id,
+          attendee:attendees(
+            id,
+            name,
+            profile_picture_url
+          )
+        `)
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      return {
+        ...event,
+        registration_count: registrationCount || 0,
+        recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
+        venue: event.venue ? {
+          ...event.venue,
+          venue_tags: venueTags,
+        } : null,
+      };
+    } catch (error) {
+      console.error("Failed to fetch event:", error);
       return null;
     }
-    
-    // Fetch venue tags separately if venue exists
-    let venueTags: { tag_type: string; tag_value: string }[] = [];
-    if (event.venue?.id) {
-      const { data: tags } = await supabase
-        .from("venue_tags")
-        .select("tag_type, tag_value")
-        .eq("venue_id", event.venue.id);
-      venueTags = tags || [];
-    }
-
-    // Get registration count
-    const { count: registrationCount } = await supabase
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", event.id);
-
-    // Get recent attendees with profile pics (limit 5)
-    const { data: recentAttendees } = await supabase
-      .from("registrations")
-      .select(`
-        id,
-        attendee:attendees(
-          id,
-          name,
-          profile_picture_url
-        )
-      `)
-      .eq("event_id", event.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    return {
-      ...event,
-      registration_count: registrationCount || 0,
-      recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
-      venue: event.venue ? {
-        ...event.venue,
-        venue_tags: venueTags,
-      } : null,
-    };
-  } catch (error) {
-    console.error("Failed to fetch event:", error);
-    return null;
-  }
-}
+  },
+  ['event-by-slug'],
+  { revalidate: 120, tags: ['events'] }
+);
 
 export async function generateMetadata({
   params,
