@@ -1,12 +1,87 @@
 import "server-only";
 import { createClient } from "@crowdstack/shared/supabase/server";
+import { cookies } from "next/headers";
+
+const SELECTED_VENUE_COOKIE = "selected_venue_id";
 
 /**
- * Get the current user's venue ID
- * Returns the first venue the user has access to (via venue_users or created_by)
+ * Get all venues the current user has access to
+ * Returns array of venue IDs (via venue_users or created_by)
+ */
+export async function getUserVenueIds(): Promise<string[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const venueIds: string[] = [];
+
+  // Check junction table (new way)
+  const { data: venueUsers } = await supabase
+    .from("venue_users")
+    .select("venue_id")
+    .eq("user_id", user.id);
+
+  if (venueUsers) {
+    venueIds.push(...venueUsers.map((vu) => vu.venue_id));
+  }
+
+  // Also check created_by (backward compatibility)
+  const { data: createdVenues } = await supabase
+    .from("venues")
+    .select("id")
+    .eq("created_by", user.id);
+
+  if (createdVenues) {
+    const createdIds = createdVenues.map((v) => v.id);
+    // Avoid duplicates
+    createdIds.forEach((id) => {
+      if (!venueIds.includes(id)) {
+        venueIds.push(id);
+      }
+    });
+  }
+
+  return venueIds;
+}
+
+/**
+ * Get all venues the current user has access to (with details)
+ * Returns array of venue objects with id, name, slug
+ */
+export async function getUserVenues(): Promise<Array<{ id: string; name: string; slug: string | null }>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const venueIds = await getUserVenueIds();
+  if (venueIds.length === 0) {
+    return [];
+  }
+
+  const { data: venues } = await supabase
+    .from("venues")
+    .select("id, name, slug")
+    .in("id", venueIds)
+    .order("name", { ascending: true });
+
+  return venues || [];
+}
+
+/**
+ * Get the selected venue ID from cookie, or fallback to first available venue
+ * Returns the selected venue ID if user has access, otherwise the first venue they have access to
  */
 export async function getUserVenueId(): Promise<string | null> {
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,29 +91,73 @@ export async function getUserVenueId(): Promise<string | null> {
     return null;
   }
 
-  // Check junction table first (new way)
-  const { data: venueUser } = await supabase
-    .from("venue_users")
-    .select("venue_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
+  // Check for selected venue in cookie
+  const cookieStore = await cookies();
+  const selectedVenueId = cookieStore.get(SELECTED_VENUE_COOKIE)?.value;
 
-  if (venueUser?.venue_id) {
-    console.log("[getUserVenueId] Found venue via venue_users:", venueUser.venue_id);
-    return venueUser.venue_id;
+  if (selectedVenueId) {
+    // Verify user has access to this venue
+    const venueIds = await getUserVenueIds();
+    if (venueIds.includes(selectedVenueId)) {
+      console.log("[getUserVenueId] Using selected venue from cookie:", selectedVenueId);
+      return selectedVenueId;
+    }
   }
 
-  // Fallback to created_by (backward compatibility)
-  const { data: venue, error } = await supabase
-    .from("venues")
-    .select("id")
-    .eq("created_by", user.id)
-    .limit(1)
-    .single();
+  // Fallback to first venue
+  const venueIds = await getUserVenueIds();
+  if (venueIds.length > 0) {
+    console.log("[getUserVenueId] Using first available venue:", venueIds[0]);
+    return venueIds[0];
+  }
 
-  console.log("[getUserVenueId] Venue query result:", { venue: venue?.id, error: error?.message });
-  return venue?.id || null;
+  console.log("[getUserVenueId] No venues found for user");
+  return null;
+}
+
+/**
+ * Get all organizer IDs the current user has access to
+ * Returns array of organizer IDs (via organizer_users or created_by)
+ */
+export async function getUserOrganizerIds(): Promise<string[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const organizerIds: string[] = [];
+
+  // Check junction table (new way)
+  const { data: organizerUsers } = await supabase
+    .from("organizer_users")
+    .select("organizer_id")
+    .eq("user_id", user.id);
+
+  if (organizerUsers) {
+    organizerIds.push(...organizerUsers.map((ou) => ou.organizer_id));
+  }
+
+  // Also check created_by (backward compatibility)
+  const { data: createdOrganizers } = await supabase
+    .from("organizers")
+    .select("id")
+    .eq("created_by", user.id);
+
+  if (createdOrganizers) {
+    const createdIds = createdOrganizers.map((o) => o.id);
+    // Avoid duplicates
+    createdIds.forEach((id) => {
+      if (!organizerIds.includes(id)) {
+        organizerIds.push(id);
+      }
+    });
+  }
+
+  return organizerIds;
 }
 
 /**
@@ -46,36 +165,8 @@ export async function getUserVenueId(): Promise<string | null> {
  * Returns the first organizer the user has access to (via organizer_users or created_by)
  */
 export async function getUserOrganizerId(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return null;
-  }
-
-  // Check junction table first (new way)
-  const { data: organizerUser } = await supabase
-    .from("organizer_users")
-    .select("organizer_id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .single();
-
-  if (organizerUser?.organizer_id) {
-    return organizerUser.organizer_id;
-  }
-
-  // Fallback to created_by (backward compatibility)
-  const { data: organizer } = await supabase
-    .from("organizers")
-    .select("id")
-    .eq("created_by", user.id)
-    .limit(1)
-    .single();
-
-  return organizer?.id || null;
+  const organizerIds = await getUserOrganizerIds();
+  return organizerIds.length > 0 ? organizerIds[0] : null;
 }
 
 /**

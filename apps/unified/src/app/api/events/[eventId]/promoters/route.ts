@@ -32,6 +32,16 @@ export async function GET(
         id,
         commission_type,
         commission_config,
+        currency,
+        per_head_rate,
+        per_head_min,
+        per_head_max,
+        bonus_threshold,
+        bonus_amount,
+        bonus_tiers,
+        fixed_fee,
+        minimum_guests,
+        below_minimum_percent,
         created_at,
         promoter:promoters(id, name, email, phone)
       `)
@@ -94,7 +104,24 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { promoter_id, user_id, commission_type, commission_config, assigned_by } = body;
+    const { 
+      promoter_id, 
+      user_id, 
+      commission_type, 
+      commission_config, 
+      assigned_by,
+      // Enhanced payout model fields
+      currency,
+      per_head_rate,
+      per_head_min,
+      per_head_max,
+      bonus_threshold,
+      bonus_amount,
+      bonus_tiers,
+      fixed_fee,
+      minimum_guests,
+      below_minimum_percent,
+    } = body;
 
     if (!promoter_id && !user_id) {
       return NextResponse.json(
@@ -103,7 +130,7 @@ export async function POST(
       );
     }
 
-    let promoter: { id: string; name: string; created_by: string | null } | null = null;
+    let promoter: { id: string; name: string; email?: string | null; created_by: string | null } | null = null;
 
     // If user_id is provided, create or find promoter profile for that user
     if (user_id) {
@@ -164,7 +191,7 @@ export async function POST(
       // promoter_id was provided, fetch the promoter
       const { data: fetchedPromoter, error: promoterError } = await serviceSupabase
         .from("promoters")
-        .select("id, name, created_by")
+        .select("id, name, email, created_by")
         .eq("id", promoter_id)
         .single();
 
@@ -176,6 +203,27 @@ export async function POST(
       }
 
       promoter = fetchedPromoter;
+      
+      // If promoter has email but no linked user, try to find and link the user
+      if (!fetchedPromoter.created_by && fetchedPromoter.email) {
+        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
+        const matchingUser = authUsers?.users?.find(
+          (u) => u.email?.toLowerCase() === fetchedPromoter.email?.toLowerCase()
+        );
+        
+        if (matchingUser) {
+          // Link the promoter to the user account
+          await serviceSupabase
+            .from("promoters")
+            .update({ created_by: matchingUser.id })
+            .eq("id", fetchedPromoter.id);
+          
+          // Update local reference for role assignment
+          promoter = { ...fetchedPromoter, created_by: matchingUser.id };
+          
+          console.log(`[Promoters API] Linked promoter ${promoter.id} to user ${matchingUser.id}`);
+        }
+      }
     }
 
     // Auto-upgrade user to promoter role if they have a user account but don't have the role yet
@@ -240,27 +288,151 @@ export async function POST(
       }
     }
 
+    // Determine commission_type based on what fields are provided
+    // If any enhanced fields are provided, use "enhanced", otherwise use legacy "flat_per_head"
+    const hasEnhancedFields = 
+      per_head_rate !== undefined || 
+      fixed_fee !== undefined || 
+      bonus_threshold !== undefined || 
+      bonus_tiers !== undefined ||
+      minimum_guests !== undefined;
+    
+    const finalCommissionType = hasEnhancedFields ? "enhanced" : (commission_type || "flat_per_head");
+    const finalCommissionConfig = commission_config || (finalCommissionType === "flat_per_head" ? { amount_per_head: 0 } : {});
+
     // Add promoter to event
     const { data: eventPromoter, error } = await serviceSupabase
       .from("event_promoters")
       .insert({
         event_id: eventId,
         promoter_id: promoter.id,
-        commission_type: commission_type || "flat_per_head",
-        commission_config: commission_config || { amount_per_head: 5 },
+        commission_type: finalCommissionType,
+        commission_config: finalCommissionConfig,
         assigned_by: finalAssignedBy || "organizer",
+        // Enhanced payout model fields
+        currency: currency || null,
+        per_head_rate: per_head_rate !== undefined ? (per_head_rate === null || per_head_rate === "" ? null : parseFloat(per_head_rate)) : null,
+        per_head_min: per_head_min !== undefined ? (per_head_min === null || per_head_min === "" ? null : parseInt(per_head_min)) : null,
+        per_head_max: per_head_max !== undefined ? (per_head_max === null || per_head_max === "" ? null : parseInt(per_head_max)) : null,
+        bonus_threshold: bonus_threshold !== undefined ? (bonus_threshold === null || bonus_threshold === "" ? null : parseInt(bonus_threshold)) : null,
+        bonus_amount: bonus_amount !== undefined ? (bonus_amount === null || bonus_amount === "" ? null : parseFloat(bonus_amount)) : null,
+        bonus_tiers: bonus_tiers && Array.isArray(bonus_tiers) && bonus_tiers.length > 0 ? bonus_tiers : null,
+        fixed_fee: fixed_fee !== undefined ? (fixed_fee === null || fixed_fee === "" ? null : parseFloat(fixed_fee)) : null,
+        minimum_guests: minimum_guests !== undefined ? (minimum_guests === null || minimum_guests === "" ? null : parseInt(minimum_guests)) : null,
+        below_minimum_percent: below_minimum_percent !== undefined ? (below_minimum_percent === null || below_minimum_percent === "" ? null : parseFloat(below_minimum_percent)) : null,
       })
       .select(`
         id,
         commission_type,
         commission_config,
+        currency,
+        per_head_rate,
+        per_head_min,
+        per_head_max,
+        bonus_threshold,
+        bonus_amount,
+        bonus_tiers,
+        fixed_fee,
+        minimum_guests,
+        below_minimum_percent,
         created_at,
-        promoter:promoters(id, name, email, phone)
+        promoter:promoters(id, name, email, phone, created_by)
       `)
       .single();
 
     if (error) {
       throw error;
+    }
+
+    // Send event assignment email (non-blocking)
+    try {
+      const promoter = Array.isArray(eventPromoter.promoter) 
+        ? eventPromoter.promoter[0] 
+        : eventPromoter.promoter;
+
+      if (promoter?.email) {
+        // Get event details with venue and flier
+        const { data: event } = await serviceSupabase
+          .from("events")
+          .select(`
+            name,
+            slug,
+            start_time,
+            end_time,
+            description,
+            currency,
+            flier_url,
+            cover_image_url,
+            venue:venues(id, name, address, city, state)
+          `)
+          .eq("id", eventId)
+          .single();
+
+        if (event) {
+          const { sendEventAssignmentEmail } = await import("@crowdstack/shared/email/promoter-emails");
+          const { sendPromoterWelcomeEmail } = await import("@crowdstack/shared/email/promoter-emails");
+
+          // Check if this is promoter's first event (send welcome)
+          const { data: otherEvents } = await serviceSupabase
+            .from("event_promoters")
+            .select("id")
+            .eq("promoter_id", promoter.id)
+            .neq("event_id", eventId)
+            .limit(1);
+
+          if (!otherEvents || otherEvents.length === 0) {
+            // First event - send welcome email
+            await sendPromoterWelcomeEmail(
+              promoter.id,
+              promoter.name,
+              promoter.email,
+              promoter.created_by || null
+            );
+          }
+
+          // Build referral link
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
+          const referralLink = `${baseUrl}/e/${event.slug}?ref=${promoter.id}`;
+
+          // Send assignment email
+          await sendEventAssignmentEmail(
+            promoter.id,
+            promoter.name,
+            promoter.email,
+            (promoter as any).created_by || null,
+            {
+              eventId,
+              eventName: event.name,
+              eventSlug: event.slug,
+              eventDate: event.start_time,
+              eventEndDate: event.end_time,
+              eventDescription: event.description,
+              venueName: (event.venue as any)?.name || null,
+              venueAddress: (event.venue as any)?.address || null,
+              venueCity: (event.venue as any)?.city || null,
+              venueState: (event.venue as any)?.state || null,
+              flierUrl: event.flier_url || event.cover_image_url || null,
+              referralLink,
+            },
+            {
+              currency: (eventPromoter as any).currency,
+              per_head_rate: (eventPromoter as any).per_head_rate,
+              per_head_min: (eventPromoter as any).per_head_min,
+              per_head_max: (eventPromoter as any).per_head_max,
+              bonus_threshold: (eventPromoter as any).bonus_threshold,
+              bonus_amount: (eventPromoter as any).bonus_amount,
+              bonus_tiers: (eventPromoter as any).bonus_tiers,
+              fixed_fee: (eventPromoter as any).fixed_fee,
+              minimum_guests: (eventPromoter as any).minimum_guests,
+              below_minimum_percent: (eventPromoter as any).below_minimum_percent,
+            },
+            event.currency || "IDR"
+          );
+        }
+      }
+    } catch (emailError) {
+      console.warn("[Promoters API] Failed to send assignment email:", emailError);
+      // Don't fail the request if email fails
     }
 
     return NextResponse.json({ 

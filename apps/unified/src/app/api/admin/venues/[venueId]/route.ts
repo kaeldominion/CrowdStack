@@ -3,6 +3,41 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
+export async function GET(
+  request: Request,
+  { params }: { params: { venueId: string } }
+) {
+  try {
+    const { venueId } = params;
+
+    // Verify admin access
+    const hasAccess = await userHasRoleOrSuperadmin("superadmin");
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get venue with related data
+    const { data: venue, error } = await serviceSupabase
+      .from("venues")
+      .select("*")
+      .eq("id", venueId)
+      .single();
+
+    if (error || !venue) {
+      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ venue });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch venue" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: { venueId: string } }

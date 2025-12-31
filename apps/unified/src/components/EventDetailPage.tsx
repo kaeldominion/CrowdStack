@@ -328,6 +328,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     mobile_style: "flip" as "flip" | "scroll",
     reason: "",
     show_photo_email_notice: false,
+    registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
+    external_ticket_url: "",
   });
 
   useEffect(() => {
@@ -521,6 +523,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             mobile_style: data.event.mobile_style || "flip",
             reason: "",
             show_photo_email_notice: Boolean(data.event.show_photo_email_notice),
+            registration_type: (data.event.registration_type as "guestlist" | "display_only" | "external_link") || "guestlist",
+            external_ticket_url: data.event.external_ticket_url || "",
           });
         }
       } else if (response.status === 403 || response.status === 404) {
@@ -631,6 +635,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           to: editForm.show_photo_email_notice,
           eventValue: event.show_photo_email_notice,
         });
+      }
+
+      // Registration type and external ticket URL
+      if (editForm.registration_type !== ((event as any).registration_type || "guestlist")) {
+        updates.registration_type = editForm.registration_type;
+      }
+      if (editForm.external_ticket_url !== ((event as any).external_ticket_url || "")) {
+        updates.external_ticket_url = editForm.external_ticket_url || null;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -3042,6 +3054,46 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               ]}
               helperText="Timezone for event times"
             />
+
+            {/* Registration Type */}
+            <div className="space-y-4 border-t border-border pt-6">
+              <h3 className="text-sm font-semibold text-primary">Registration Settings</h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">Registration Type</label>
+                <select
+                  value={editForm.registration_type}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      registration_type: e.target.value as "guestlist" | "display_only" | "external_link",
+                    }))
+                  }
+                  className="w-full rounded-xl bg-raised border border-border-subtle px-4 py-3 text-sm text-primary focus:outline-none focus:border-accent-primary/50 focus:ring-2 focus:ring-accent-primary/20"
+                >
+                  <option value="guestlist">Guestlist - Attendees register through CrowdStack</option>
+                  <option value="display_only">Display Only - Show event info, no registration</option>
+                  <option value="external_link">External Tickets - Link to external ticketing (RA, Eventbrite, etc.)</option>
+                </select>
+                <p className="mt-1.5 text-xs text-secondary">
+                  {editForm.registration_type === "guestlist" && "Attendees can register directly through CrowdStack with QR check-in."}
+                  {editForm.registration_type === "display_only" && "Event will be visible but no registration button will be shown."}
+                  {editForm.registration_type === "external_link" && "A \"Get Tickets\" button will link to your external ticketing page."}
+                </p>
+              </div>
+
+              {editForm.registration_type === "external_link" && (
+                <Input
+                  label="External Ticket URL"
+                  type="url"
+                  required
+                  value={editForm.external_ticket_url}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, external_ticket_url: e.target.value }))}
+                  placeholder="https://ra.co/events/..."
+                  helperText="Full URL to your external ticketing page"
+                />
+              )}
+            </div>
             
             {config.role === "venue" && (
               <Textarea

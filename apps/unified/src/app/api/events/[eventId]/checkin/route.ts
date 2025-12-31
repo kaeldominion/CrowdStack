@@ -4,6 +4,7 @@ import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { cookies } from "next/headers";
 import { trackCheckIn } from "@/lib/analytics/server";
+import { sendBonusProgressNotification } from "@crowdstack/shared/email/bonus-notifications";
 
 /**
  * POST /api/events/[eventId]/checkin
@@ -169,6 +170,7 @@ export async function POST(
         id,
         event_id,
         attendee_id,
+        referral_promoter_id,
         attendee:attendees(id, name, email, phone)
       `)
       .eq("id", registrationId)
@@ -277,6 +279,72 @@ export async function POST(
       }
     } catch (xpAwardError) {
       console.warn(`[Check-in API] XP award error:`, xpAwardError);
+    }
+
+    // Check for bonus notifications (non-blocking)
+    if (registration.referral_promoter_id) {
+      try {
+        // Get promoter details and event promoter contract
+        const { data: promoter } = await serviceSupabase
+          .from("promoters")
+          .select("id, name, email, created_by")
+          .eq("id", registration.referral_promoter_id)
+          .single();
+
+        if (promoter) {
+          const { data: eventPromoter } = await serviceSupabase
+            .from("event_promoters")
+            .select("bonus_threshold, bonus_amount")
+            .eq("event_id", eventId)
+            .eq("promoter_id", registration.referral_promoter_id)
+            .single();
+
+          if (
+            eventPromoter?.bonus_threshold &&
+            eventPromoter?.bonus_amount
+          ) {
+            // Count current check-ins for this promoter
+            const { data: promoterCheckins } = await serviceSupabase
+              .from("checkins")
+              .select(`
+                registration_id,
+                registrations!inner(
+                  event_id,
+                  referral_promoter_id
+                )
+              `)
+              .eq("registrations.event_id", eventId)
+              .eq("registrations.referral_promoter_id", registration.referral_promoter_id)
+              .is("undo_at", null);
+
+            const checkinsCount = promoterCheckins?.length || 0;
+
+            // Get event currency
+            const { data: eventData } = await serviceSupabase
+              .from("events")
+              .select("name, currency")
+              .eq("id", eventId)
+              .single();
+
+            if (promoter.email && eventData) {
+              await sendBonusProgressNotification(
+                promoter.id,
+                promoter.name,
+                promoter.email,
+                promoter.created_by,
+                eventData.name || "Event",
+                eventId,
+                checkinsCount,
+                eventPromoter.bonus_threshold,
+                eventPromoter.bonus_amount,
+                eventData.currency || "IDR"
+              );
+            }
+          }
+        }
+      } catch (bonusError) {
+        console.warn(`[Check-in API] Bonus notification error:`, bonusError);
+      }
     }
 
     // Try to emit outbox event (non-blocking)

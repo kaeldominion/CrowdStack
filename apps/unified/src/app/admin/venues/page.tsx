@@ -197,7 +197,7 @@ export default function AdminVenuesPage() {
                               </Link>
                             )}
                             <Link
-                              href={`/app/venue/settings?venueId=${venue.id}`}
+                              href={`/admin/venues/${venue.id}`}
                               className="text-secondary hover:text-primary"
                             >
                               <ChevronRight className="h-4 w-4" />

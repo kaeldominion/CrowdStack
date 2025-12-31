@@ -27,19 +27,19 @@ export async function GET(
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get all email logs for this event
+    // Get all email logs for this event from email_send_logs
+    // Query by event_id in metadata JSONB field
     const { data: emailLogs, error } = await serviceSupabase
-      .from("message_logs")
+      .from("email_send_logs")
       .select("*")
-      .eq("event_id", params.eventId)
-      .not("email_message_type", "is", null)
+      .eq("metadata->>event_id", params.eventId)
       .order("created_at", { ascending: false });
 
     if (error) {
       throw error;
     }
 
-    // Group by email_message_type and calculate stats
+    // Group by template_slug (which indicates email type) and calculate stats
     const statsByType: Record<string, {
       type: string;
       total: number;
@@ -65,7 +65,8 @@ export async function GET(
     }> = {};
 
     (emailLogs || []).forEach((log: any) => {
-      const type = log.email_message_type || "unknown";
+      // Use template_slug as the type, or fallback to email_type from metadata
+      const type = log.metadata?.email_type || log.template_slug || "unknown";
       
       if (!statsByType[type]) {
         statsByType[type] = {
@@ -86,21 +87,22 @@ export async function GET(
       const stats = statsByType[type];
       stats.total++;
       
-      if (log.email_delivered_at) stats.delivered++;
-      if (log.email_opened_at) stats.opened++;
-      if (log.email_clicked_at) stats.clicked++;
-      if (log.email_bounced_at) stats.bounced++;
+      // email_send_logs uses status field: 'sent' = delivered, 'bounced' = bounced
+      if (log.status === "sent") stats.delivered++;
+      if (log.opened_at) stats.opened++;
+      if (log.clicked_at) stats.clicked++;
+      if (log.status === "bounced") stats.bounced++;
 
       stats.emails.push({
         id: log.id,
-        recipient_email: log.email_recipient_email || log.recipient_email || "Unknown",
-        subject: log.email_subject || log.subject || "No subject",
+        recipient_email: log.recipient || "Unknown",
+        subject: log.subject || "No subject",
         created_at: log.created_at,
-        delivered_at: log.email_delivered_at,
-        opened_at: log.email_opened_at,
-        clicked_at: log.email_clicked_at,
-        bounced_at: log.email_bounced_at,
-        bounce_reason: log.email_bounce_reason,
+        delivered_at: log.status === "sent" ? (log.sent_at || log.created_at) : null,
+        opened_at: log.opened_at,
+        clicked_at: log.clicked_at,
+        bounced_at: log.status === "bounced" ? (log.sent_at || log.created_at) : null,
+        bounce_reason: log.error_message || null,
       });
     });
 

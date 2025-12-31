@@ -193,7 +193,6 @@ export async function POST(
         venueName,
         galleryUrl,
         customMessage,
-        thumbnailUrls,
       });
 
       return NextResponse.json({

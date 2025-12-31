@@ -28,9 +28,15 @@ import {
   ChevronRight,
   Menu,
   X,
+  UserPlus,
+  UserCog,
+  Mail,
+  Merge,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
+import { VenueSwitcher } from "../VenueSwitcher";
 
 interface SidebarNavItem {
   href: string;
@@ -168,7 +174,7 @@ const DJ_SIDEBAR_ITEMS: SidebarSection[] = [
   },
 ];
 
-// Admin Sidebar Items
+// Admin Sidebar Items - Pure admin navigation
 const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
   {
     title: "Overview",
@@ -181,17 +187,26 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
     title: "Entities",
     items: [
       { href: "/admin/venues", label: "Venues", icon: Building2 },
-      { href: "/admin/events", label: "Events", icon: Calendar },
       { href: "/admin/organizers", label: "Organizers", icon: Building2 },
       { href: "/admin/promoters", label: "Promoters", icon: Megaphone },
       { href: "/admin/djs", label: "DJs", icon: Radio },
+      { href: "/admin/events", label: "Events", icon: Calendar },
     ],
   },
   {
     title: "Users",
     items: [
       { href: "/admin/users", label: "All Users", icon: Users },
+      { href: "/admin/users/assign", label: "User Assignment", icon: UserPlus },
+      { href: "/admin/users/impersonate", label: "Login as User", icon: UserCog },
       { href: "/admin/attendees", label: "Attendees", icon: Users },
+      { href: "/admin/attendees/merge", label: "Merge Duplicates", icon: Merge },
+    ],
+  },
+  {
+    title: "Communications",
+    items: [
+      { href: "/admin/communications", label: "Email Templates", icon: Mail },
     ],
   },
   {
@@ -200,6 +215,7 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
       { href: "/admin/disputes", label: "Disputes", icon: AlertTriangle },
       { href: "/admin/tools/xp-ledger", label: "XP Ledger", icon: Wrench },
       { href: "/admin/tools/brand-assets", label: "Brand Assets", icon: Wrench },
+      { href: "/design-playground", label: "Design System", icon: Palette },
     ],
   },
 ];
@@ -238,10 +254,14 @@ export function DashboardSidebar() {
   }, [pathname]);
 
   // Determine which sidebar items to show based on current path
+  // Simple logic: Admin routes get admin sidebar, other routes get role-based sidebars
   const getSidebarSections = (): SidebarSection[] => {
+    // ALL /admin/* routes get the admin sidebar - no exceptions
     if (pathname?.startsWith("/admin")) {
       return ADMIN_SIDEBAR_ITEMS;
     }
+    
+    // Role-based sidebars for /app/* routes
     if (pathname?.startsWith("/app/venue")) {
       return VENUE_SIDEBAR_ITEMS;
     }
@@ -280,6 +300,7 @@ export function DashboardSidebar() {
 
   // Get current dashboard name for header
   const getDashboardName = () => {
+    if (pathname?.startsWith("/admin/venues/")) return "Venue";
     if (pathname?.startsWith("/admin")) return "Admin";
     if (pathname?.startsWith("/app/venue")) return "Venue";
     if (pathname?.startsWith("/app/organizer")) return "Organizer";
@@ -392,17 +413,23 @@ export function DashboardSidebar() {
         )}
       >
         {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-            {getDashboardName()}
-          </span>
-          <button
-            onClick={() => setIsMobileOpen(false)}
-            className="p-1 rounded-lg hover:bg-active/50 text-muted hover:text-primary transition-colors"
-            aria-label="Close menu"
-          >
-            <X className="w-4 h-4" />
-          </button>
+        <div className="flex flex-col gap-2 p-4 border-b border-border-subtle">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              {getDashboardName()}
+            </span>
+            <button
+              onClick={() => setIsMobileOpen(false)}
+              className="p-1 rounded-lg hover:bg-active/50 text-muted hover:text-primary transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {/* Venue Switcher - only show on venue routes */}
+          {pathname?.startsWith("/app/venue") && (
+            <VenueSwitcher />
+          )}
         </div>
 
         {/* Mobile Navigation Content */}
@@ -422,25 +449,34 @@ export function DashboardSidebar() {
     >
       {/* Header with collapse toggle */}
       <div className={cn(
-        "flex items-center justify-between p-4 border-b border-border-subtle",
-        isCollapsed && "justify-center"
+        "flex flex-col gap-2 p-4 border-b border-border-subtle",
+        isCollapsed && "items-center"
       )}>
-        {!isCollapsed && (
-          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-            {getDashboardName()}
-          </span>
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1 rounded-lg hover:bg-active/50 text-muted hover:text-primary transition-colors"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
+        <div className={cn(
+          "flex items-center justify-between",
+          isCollapsed && "justify-center"
+        )}>
+          {!isCollapsed && (
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              {getDashboardName()}
+            </span>
           )}
-        </button>
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 rounded-lg hover:bg-active/50 text-muted hover:text-primary transition-colors"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+        {/* Venue Switcher - only show on venue routes */}
+        {pathname?.startsWith("/app/venue") && !isCollapsed && (
+          <VenueSwitcher />
+        )}
       </div>
 
       {/* Desktop Navigation Content */}

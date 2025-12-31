@@ -1,7 +1,7 @@
 import "server-only";
 
-import { sendEmail } from "./postmark";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { sendTemplateEmail } from "./template-renderer";
 
 interface PhotosLiveEmailOptions {
   to: string;
@@ -10,11 +10,11 @@ interface PhotosLiveEmailOptions {
   venueName: string | null;
   galleryUrl: string;
   customMessage?: string;
-  thumbnailUrls?: string[]; // 3-6 preview thumbnails
 }
 
 /**
  * Send "Photos are live" notification email to an attendee
+ * Uses the database-driven email template system
  * Returns the Postmark MessageID for tracking
  */
 export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Promise<string> {
@@ -24,154 +24,40 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
     eventDate,
     venueName,
     galleryUrl,
-    customMessage,
-    thumbnailUrls = [],
+    customMessage = "",
   } = options;
 
-  const locationText = venueName ? ` at ${venueName}` : "";
-  const subject = venueName 
-    ? `Photos from ${eventName} @ ${venueName} are now available!`
-    : `Photos from ${eventName} are now available!`;
+  // Get recipient user ID if available
+  const serviceSupabase = createServiceRoleClient();
+  const { data: user } = await serviceSupabase
+    .from("attendees")
+    .select("id")
+    .eq("email", to)
+    .single();
 
-  // Generate thumbnail grid HTML (3-6 images in a row)
-  const thumbnailsHtml = thumbnailUrls.length > 0
-    ? `
-      <div style="margin: 24px 0;">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-          <tr>
-            ${thumbnailUrls.slice(0, 6).map((url, i) => `
-              <td style="width: ${100 / Math.min(thumbnailUrls.length, 6)}%; padding: 4px;">
-                <img 
-                  src="${url}" 
-                  alt="Event photo ${i + 1}" 
-                  style="width: 100%; height: auto; border-radius: 8px; display: block;"
-                />
-              </td>
-            `).join("")}
-          </tr>
-        </table>
-      </div>
-    `
-    : "";
+  const recipientUserId = user?.id || null;
 
-  const customMessageHtml = customMessage
-    ? `
-      <div style="background: #1F2937; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
-        <p style="color: #E5E7EB; margin: 0; font-style: italic;">"${customMessage}"</p>
-      </div>
-    `
-    : "";
-
-  const htmlBody = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Photos from ${eventName}</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #0B0D10; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #0B0D10;">
-    <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; background-color: #111318; border-radius: 16px; overflow: hidden;">
-          
-          <!-- Header with Logo -->
-          <tr>
-            <td style="padding: 32px 32px 24px 32px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              <img 
-                src="https://crowdstack.app/logos/crowdstack-icon-tricolor-on-transparent.png" 
-                alt="CrowdStack" 
-                width="48" 
-                height="48" 
-                style="display: block; margin: 0 auto 16px auto;"
-              />
-              <h1 style="color: #FFFFFF; font-size: 24px; font-weight: 700; margin: 0; line-height: 1.3;">
-                Your photos are ready!
-              </h1>
-            </td>
-          </tr>
-          
-          <!-- Main Content -->
-          <tr>
-            <td style="padding: 32px;">
-              <p style="color: #E5E7EB; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
-                Hey there! The photos from <strong style="color: #FFFFFF;">${eventName}</strong>${locationText} on ${eventDate} are now available for viewing.
-              </p>
-              
-              ${customMessageHtml}
-              
-              ${thumbnailsHtml}
-              
-              <p style="color: #9CA3AF; font-size: 14px; line-height: 1.5; margin: 16px 0 24px 0;">
-                Browse the full gallery, download your favorites, and share the memories!
-              </p>
-              
-              <!-- CTA Button -->
-              <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td align="center">
-                    <a 
-                      href="${galleryUrl}" 
-                      style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px;"
-                    >
-                      View Photos
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Fallback Link -->
-              <p style="color: #6B7280; font-size: 12px; line-height: 1.5; margin: 24px 0 0 0; text-align: center;">
-                If the button doesn't work, copy and paste this link:<br/>
-                <a href="${galleryUrl}" style="color: #8B5CF6; word-break: break-all;">${galleryUrl}</a>
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 32px; background-color: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1);">
-              <p style="color: #6B7280; font-size: 12px; line-height: 1.5; margin: 0; text-align: center;">
-                You're receiving this because you attended ${eventName}.<br/>
-                Powered by <a href="https://crowdstack.app" style="color: #8B5CF6; text-decoration: none;">CrowdStack</a>
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `.trim();
-
-  const textBody = `
-Your photos from ${eventName} are ready!
-
-Hey there! The photos from ${eventName}${locationText} on ${eventDate} are now available for viewing.
-
-${customMessage ? `Message from the organizer: "${customMessage}"\n` : ""}
-Browse the full gallery, download your favorites, and share the memories!
-
-View Photos: ${galleryUrl}
-
----
-You're receiving this because you attended ${eventName}.
-Powered by CrowdStack - https://crowdstack.app
-  `.trim();
-
-  const response = await sendEmail({
-    from: "notifications@crowdstack.app",
+  // Use template system
+  // Note: eventId should be passed from the caller in metadata
+  const result = await sendTemplateEmail(
+    "photos_published",
     to,
-    subject,
-    htmlBody,
-    textBody,
-    tag: "photos-live",
-  });
+    recipientUserId,
+    {
+      event_name: eventName,
+      event_date: eventDate,
+      venue_name: venueName || "",
+      gallery_url: galleryUrl,
+      custom_message: customMessage || "",
+    },
+    {} // Metadata will be set by sendPhotosNotificationBatch
+  );
 
-  return response.MessageID;
+  if (!result.success || !result.messageId) {
+    throw new Error(result.error || "Failed to send photos email");
+  }
+
+  return result.messageId;
 }
 
 interface BatchNotificationResult {
@@ -184,7 +70,7 @@ interface BatchNotificationResult {
 /**
  * Send photos notification emails in batches
  * Handles rate limiting and error collection
- * Logs each email individually to message_logs for tracking
+ * Email logging is handled automatically by the template system
  */
 export async function sendPhotosNotificationBatch(
   recipients: Array<{ email: string; name?: string }>,
@@ -206,69 +92,44 @@ export async function sendPhotosNotificationBatch(
     errors: [],
   };
 
-  const serviceSupabase = createServiceRoleClient();
-  
-  // Generate subject with venue name if available
-  const subject = eventDetails.venueName 
-    ? `Photos from ${eventDetails.eventName} @ ${eventDetails.venueName} are now available!`
-    : `Photos from ${eventDetails.eventName} are now available!`;
-
   // Process in batches to avoid overwhelming the email service
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
     
     const promises = batch.map(async (recipient) => {
       try {
-        // Send email and get MessageID
-        const messageId = await sendPhotosLiveEmail({
-          to: recipient.email,
-          eventName: eventDetails.eventName,
-          eventDate: eventDetails.eventDate,
-          venueName: eventDetails.venueName,
-          galleryUrl: eventDetails.galleryUrl,
-          customMessage: eventDetails.customMessage,
-          thumbnailUrls: eventDetails.thumbnailUrls,
-        });
+        // Get recipient user ID for metadata
+        const serviceSupabase = createServiceRoleClient();
+        const { data: user } = await serviceSupabase
+          .from("attendees")
+          .select("id")
+          .eq("email", recipient.email)
+          .single();
 
-        // Log email to message_logs with tracking fields
-        await serviceSupabase
-          .from("message_logs")
-          .insert({
+        // Send email using template system with event_id in metadata
+        const { sendTemplateEmail } = await import("./template-renderer");
+        await sendTemplateEmail(
+          "photos_published",
+          recipient.email,
+          user?.id || null,
+          {
+            event_name: eventDetails.eventName,
+            event_date: eventDetails.eventDate,
+            venue_name: eventDetails.venueName || "",
+            gallery_url: eventDetails.galleryUrl,
+            custom_message: eventDetails.customMessage || "",
+          },
+          {
             event_id: eventDetails.eventId,
-            recipient: recipient.name || recipient.email,
-            email_recipient_email: recipient.email,
-            subject,
-            email_subject: subject,
-            email_message_type: "photo_notification",
-            status: "sent",
-            sent_at: new Date().toISOString(),
-            // Store Postmark MessageID for webhook matching (if column exists)
-            // We'll match webhook events by email_recipient_email + email_message_type
-          });
+            email_type: "photos_published",
+          }
+        );
 
         result.sent++;
       } catch (error: any) {
         result.failed++;
         result.errors.push(`${recipient.email}: ${error.message || "Unknown error"}`);
         console.error(`Failed to send photo notification to ${recipient.email}:`, error);
-
-        // Log failed email attempt
-        try {
-          await serviceSupabase
-            .from("message_logs")
-            .insert({
-              event_id: eventDetails.eventId,
-              recipient: recipient.name || recipient.email,
-              email_recipient_email: recipient.email,
-              subject,
-              email_subject: subject,
-              email_message_type: "photo_notification",
-              status: "failed",
-              error_message: error.message || "Unknown error",
-            });
-        } catch (logError) {
-          console.error("Failed to log email error:", logError);
-        }
       }
     });
 

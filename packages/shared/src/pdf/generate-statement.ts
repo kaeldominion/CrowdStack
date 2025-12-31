@@ -57,6 +57,16 @@ function generateStatementHTML(
     0
   );
 
+  const currency = (event as any).currency || "IDR";
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
   return `
 <!DOCTYPE html>
 <html>
@@ -144,7 +154,7 @@ function generateStatementHTML(
     </div>
     <div class="summary-row">
       <span class="summary-label">Total Payout:</span>
-      <span>$${totalAmount.toFixed(2)}</span>
+      <span>${formatCurrency(totalAmount)}</span>
     </div>
   </div>
 
@@ -163,7 +173,7 @@ function generateStatementHTML(
         <tr>
           <td>${line.promoter.name}</td>
           <td>${line.checkins_count}</td>
-          <td>$${Number(line.commission_amount).toFixed(2)}</td>
+          <td>${formatCurrency(Number(line.commission_amount))}</td>
         </tr>
       `
         )
@@ -171,7 +181,7 @@ function generateStatementHTML(
       <tr class="total-row">
         <td>Total</td>
         <td>${totalCheckins}</td>
-        <td>$${totalAmount.toFixed(2)}</td>
+        <td>${formatCurrency(totalAmount)}</td>
       </tr>
     </tbody>
   </table>

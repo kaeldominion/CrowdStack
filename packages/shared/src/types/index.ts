@@ -81,6 +81,9 @@ export interface Venue {
   default_commission_rules: Record<string, any> | null;
   default_message_templates: Record<string, any> | null;
   instagram_url: string | null;
+  instagram_handle?: string | null;
+  capacity?: number | null;
+  default_currency?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -95,6 +98,9 @@ export interface VenueGallery {
   is_hero: boolean;
   display_order: number;
   created_at: string;
+  // Legacy aliases
+  image_url?: string;
+  is_cover?: boolean;
 }
 
 export type VenueTagType = "music" | "dress_code" | "crowd_type" | "price_range";
@@ -105,6 +111,9 @@ export interface VenueTag {
   tag_type: VenueTagType;
   tag_value: string;
   created_at: string;
+  // Legacy aliases
+  category?: string;
+  value?: string;
 }
 
 // ============================================
@@ -145,6 +154,9 @@ export interface VenueUser {
   permissions: VenuePermissions;
   assigned_by: string | null;
   assigned_at: string;
+  // Flattened user fields for convenience
+  email?: string;
+  user_name?: string;
   user?: {
     id: string;
     email: string;
@@ -316,7 +328,7 @@ export interface Attendee {
   updated_at: string;
 }
 
-export type EventStatus = "draft" | "published" | "ended";
+export type EventStatus = "draft" | "published" | "ended" | "closed";
 
 export interface Event {
   id: string;
@@ -333,6 +345,11 @@ export interface Event {
   cover_image_url: string | null;
   timezone: string | null;
   show_photo_email_notice?: boolean;
+  currency?: string | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  closeout_notes?: string | null;
+  total_revenue?: number | null;
   created_at: string;
   updated_at: string;
   locked_at: string | null;
@@ -348,12 +365,38 @@ export interface CommissionConfig {
   }>;
 }
 
+export interface BonusTier {
+  threshold: number;
+  amount: number;
+  repeatable: boolean;
+  label?: string;
+}
+
 export interface EventPromoter {
   id: string;
   event_id: string;
   promoter_id: string;
-  commission_type: CommissionType;
+  commission_type: CommissionType | "enhanced";
   commission_config: CommissionConfig;
+  // Currency override (null = use event default)
+  currency?: string | null;
+  // Per head payment
+  per_head_rate?: number | null;
+  per_head_min?: number | null;
+  per_head_max?: number | null;
+  per_head_percent?: number | null;
+  // Fixed fee with minimum requirement
+  fixed_fee?: number | null;
+  minimum_guests?: number | null;
+  below_minimum_percent?: number | null;
+  // Legacy single bonus
+  bonus_threshold?: number | null;
+  bonus_amount?: number | null;
+  // Tiered/repeatable bonuses
+  bonus_tiers?: BonusTier[] | null;
+  // Manual adjustments
+  manual_adjustment_amount?: number | null;
+  manual_adjustment_reason?: string | null;
   created_at: string;
 }
 
@@ -548,12 +591,19 @@ export interface PayoutRun {
   statement_pdf_path: string | null;
 }
 
+export type PaymentStatus = "pending_payment" | "paid" | "confirmed";
+
 export interface PayoutLine {
   id: string;
   payout_run_id: string;
   promoter_id: string;
   checkins_count: number;
   commission_amount: number;
+  payment_status?: PaymentStatus;
+  payment_proof_path?: string | null;
+  payment_marked_by?: string | null;
+  payment_marked_at?: string | null;
+  payment_notes?: string | null;
   created_at: string;
 }
 
@@ -599,6 +649,7 @@ export interface AudienceMessage {
 
 export type OutboxEventType =
   | "event_created"
+  | "event_closed"
   | "registration_created"
   | "attendee_checked_in"
   | "photos_published"
@@ -749,5 +800,92 @@ export interface VenueSummary {
   events_count: number;
   total_checkins: number;
   repeat_attendance_percentage: number;
+}
+
+// ============================================
+// Promoter Payout System Types
+// ============================================
+
+export type EmailTemplateCategory =
+  | "auth_onboarding"
+  | "event_lifecycle"
+  | "payout"
+  | "bonus"
+  | "guest"
+  | "venue"
+  | "system";
+
+export type EmailSendStatus = "pending" | "sent" | "failed" | "bounced";
+
+export interface EmailTemplate {
+  id: string;
+  slug: string;
+  trigger: string;
+  category: EmailTemplateCategory;
+  target_roles: string[];
+  subject: string;
+  html_body: string;
+  text_body: string | null;
+  variables: Record<string, any>;
+  enabled: boolean;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
+export interface EmailSendLog {
+  id: string;
+  template_id: string | null;
+  template_slug: string;
+  recipient: string;
+  recipient_user_id: string | null;
+  subject: string;
+  status: EmailSendStatus;
+  sent_at: string | null;
+  opened_at: string | null;
+  clicked_at: string | null;
+  error_message: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface PromoterEventContract {
+  // Currency override
+  currency: string | null;
+  // Per head payment
+  per_head_rate: number | null;
+  per_head_min: number | null;
+  per_head_max: number | null;
+  per_head_percent: number | null;
+  // Fixed fee with minimum requirement
+  fixed_fee: number | null;
+  minimum_guests: number | null;
+  below_minimum_percent: number | null;
+  // Legacy single bonus
+  bonus_threshold: number | null;
+  bonus_amount: number | null;
+  // Tiered/repeatable bonuses
+  bonus_tiers: BonusTier[] | null;
+  // Manual adjustments
+  manual_adjustment_amount: number | null;
+  manual_adjustment_reason: string | null;
+}
+
+export interface CloseoutSummary {
+  event_id: string;
+  event_name: string;
+  promoters: Array<{
+    promoter_id: string;
+    promoter_name: string;
+    checkins_count: number;
+    calculated_payout: number;
+    manual_adjustment_amount: number | null;
+    manual_adjustment_reason: string | null;
+    final_payout: number;
+  }>;
+  total_checkins: number;
+  total_payout: number;
+  currency: string;
 }
 
