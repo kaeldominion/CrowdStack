@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Textarea, Card } from "@crowdstack/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 
 export default function VenueNewEventPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function VenueNewEventPage() {
     show_photo_email_notice: false,
     registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
     external_ticket_url: "",
+    music_tags: [] as string[],
   });
 
   useEffect(() => {
@@ -226,6 +228,45 @@ export default function VenueNewEventPage() {
             placeholder="Describe your event..."
             rows={4}
           />
+
+          {/* Music Tags */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-primary">Music Genres</label>
+            <div className="flex flex-wrap gap-2">
+              {VENUE_EVENT_GENRES.map((genre) => {
+                const isSelected = formData.music_tags.includes(genre);
+                return (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setFormData({
+                          ...formData,
+                          music_tags: formData.music_tags.filter((g) => g !== genre),
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          music_tags: [...formData.music_tags, genre],
+                        });
+                      }
+                    }}
+                    className={`px-3 py-1 text-sm border-2 transition-colors ${
+                      isSelected
+                        ? "bg-accent-secondary text-white border-accent-secondary"
+                        : "bg-glass text-primary border-border hover:border-accent-secondary/50"
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-secondary">
+              Select the music genres for this event
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <Input

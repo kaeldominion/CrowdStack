@@ -6,6 +6,7 @@ import { Button, Input, Textarea, Card, Select, Checkbox } from "@crowdstack/ui"
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { EventImageUpload } from "@/components/EventImageUpload";
+import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function NewEventPage() {
     show_photo_email_notice: false,
     registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
     external_ticket_url: "",
+    music_tags: [] as string[],
   });
   const [flierImageFile, setFlierImageFile] = useState<File | null>(null);
   const [flierVideoFile, setFlierVideoFile] = useState<File | null>(null);
@@ -195,6 +197,24 @@ export default function NewEventPage() {
       const data = await response.json();
       const eventId = data.event.id;
 
+      // Add music tags if selected
+      if (formData.music_tags.length > 0) {
+        try {
+          await Promise.all(
+            formData.music_tags.map((tag) =>
+              fetch(`/api/events/${eventId}/tags`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tag_type: "music", tag_value: tag }),
+              })
+            )
+          );
+        } catch (error) {
+          console.error("Failed to add music tags:", error);
+          // Continue even if tag creation fails
+        }
+      }
+
       // Upload flier image if provided
       if (flierImageFile) {
         try {
@@ -275,6 +295,45 @@ export default function NewEventPage() {
             placeholder="Describe your event..."
             rows={4}
           />
+
+          {/* Music Tags */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-primary">Music Genres</label>
+            <div className="flex flex-wrap gap-2">
+              {VENUE_EVENT_GENRES.map((genre) => {
+                const isSelected = formData.music_tags.includes(genre);
+                return (
+                  <button
+                    key={genre}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setFormData({
+                          ...formData,
+                          music_tags: formData.music_tags.filter((g) => g !== genre),
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          music_tags: [...formData.music_tags, genre],
+                        });
+                      }
+                    }}
+                    className={`px-3 py-1 text-sm border-2 transition-colors ${
+                      isSelected
+                        ? "bg-accent-secondary text-white border-accent-secondary"
+                        : "bg-glass text-primary border-border hover:border-accent-secondary/50"
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-secondary">
+              Select the music genres for this event
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <Input

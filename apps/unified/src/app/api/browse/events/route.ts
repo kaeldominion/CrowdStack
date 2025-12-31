@@ -337,21 +337,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Apply genre filter (if specified, filter by venue tags)
-    // Uses genre mapping: if user searches "Tech House", it maps to "House" and finds venues with "House" tag
+    // Apply genre filter (if specified, filter by event tags OR venue tags)
+    // Uses genre mapping: if user searches "Tech House", it maps to "House" and finds events/venues with "House" tag
     if (genre && events && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       
+      // Map the search genre to venue/event genre (e.g., "Tech House" → "House")
+      const venueEventGenre = getVenueEventGenre(genre) || genre;
+      
+      // Get events with matching genre tag
+      const { data: taggedEvents } = await supabase
+        .from("event_tags")
+        .select("event_id")
+        .in("event_id", eventIds)
+        .eq("tag_type", "music")
+        .eq("tag_value", venueEventGenre);
+
+      const matchingEventIds = new Set(taggedEvents?.map((t) => t.event_id) || []);
+
       // Get venues for these events
       const venueIds = events
         .map((e) => (e.venue as any)?.id)
         .filter(Boolean) as string[];
 
+      // Get venues with matching genre tag
+      let matchingVenueIds = new Set<string>();
       if (venueIds.length > 0) {
-        // Map the search genre to venue/event genre (e.g., "Tech House" → "House")
-        const venueEventGenre = getVenueEventGenre(genre) || genre;
-        
-        // Get venues with matching genre tag (using mapped genre)
         const { data: taggedVenues } = await supabase
           .from("venue_tags")
           .select("venue_id")
@@ -359,14 +370,15 @@ export async function GET(request: NextRequest) {
           .eq("tag_type", "music")
           .eq("tag_value", venueEventGenre);
 
-        const matchingVenueIds = new Set(taggedVenues?.map((t) => t.venue_id) || []);
-
-        // Filter events to only those with matching venue tags
-        events = events.filter((e) => {
-          const venueId = (e.venue as any)?.id;
-          return venueId && matchingVenueIds.has(venueId);
-        });
+        matchingVenueIds = new Set(taggedVenues?.map((t) => t.venue_id) || []);
       }
+
+      // Filter events to only those with matching event tags OR venue tags
+      events = events.filter((e) => {
+        const eventId = e.id;
+        const venueId = (e.venue as any)?.id;
+        return matchingEventIds.has(eventId) || (venueId && matchingVenueIds.has(venueId));
+      });
     }
 
     // Get total count before pagination (for stats)

@@ -97,21 +97,15 @@ export const VENUE_EVENT_GENRES = [
   // Urban
   "Hip-Hop",
   "R&B",
-  "Trap",
   
   // Latin
-  "Reggaeton",
   "Latin",
   
   // African & Caribbean
   "Afrobeats",
-  "Dancehall",
-  "Reggae",
   
   // Pop & Commercial
   "Pop",
-  "Top 40",
-  "Throwbacks",
   
   // Other
   "Open Format",
@@ -150,32 +144,32 @@ export const GENRE_MAPPING: Record<string, string> = {
   "UK Garage": "EDM",
   "Amapiano": "House",
   
-  // Urban → Hip-Hop/R&B/Trap
+  // Urban → Hip-Hop/R&B
   "Hip-Hop": "Hip-Hop",
   "R&B": "R&B",
-  "Trap": "Trap",
+  "Trap": "Hip-Hop", // Trap maps to Hip-Hop
   "UK Rap": "Hip-Hop",
   "Grime": "Hip-Hop",
   
-  // Latin → Reggaeton/Latin
-  "Reggaeton": "Reggaeton",
+  // Latin → Latin (Reggaeton, Dancehall, Reggae all map to Latin)
+  "Reggaeton": "Latin", // Reggaeton maps to Latin
   "Latin": "Latin",
   "Salsa": "Latin",
   "Bachata": "Latin",
-  "Dembow": "Reggaeton",
+  "Dembow": "Latin", // Dembow maps to Latin
+  "Dancehall": "Latin", // Dancehall maps to Latin
+  "Reggae": "Latin", // Reggae maps to Latin
+  "Soca": "Latin", // Soca maps to Latin
   
   // African & Caribbean
   "Afrobeats": "Afrobeats",
-  "Dancehall": "Dancehall",
-  "Reggae": "Reggae",
-  "Soca": "Reggae",
   
-  // Pop & Commercial
+  // Pop & Commercial → Pop (Top 40, Throwbacks map to Pop)
   "Pop": "Pop",
-  "Top 40": "Top 40",
+  "Top 40": "Pop", // Top 40 maps to Pop
   "Commercial": "Pop",
-  "Throwbacks": "Throwbacks",
-  "80s / 90s": "Throwbacks",
+  "Throwbacks": "Pop", // Throwbacks maps to Pop
+  "80s / 90s": "Pop", // 80s/90s maps to Pop
   
   // Other
   "Open Format": "Open Format",

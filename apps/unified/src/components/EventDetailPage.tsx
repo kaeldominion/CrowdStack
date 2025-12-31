@@ -78,6 +78,7 @@ import { EventImageUpload } from "@/components/EventImageUpload";
 import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
 
@@ -292,6 +293,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     created_at: string;
   }>>([]);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [eventTags, setEventTags] = useState<Array<{ id: string; tag_type: string; tag_value: string }>>([]);
+  const [savingTags, setSavingTags] = useState(false);
   
   // Photo confirmation modals
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
@@ -446,6 +449,50 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
+  const loadEventTags = async () => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/tags`);
+      if (response.ok) {
+        const data = await response.json();
+        setEventTags(data.tags || []);
+      }
+    } catch (error) {
+      console.error("Failed to load event tags:", error);
+    }
+  };
+
+  const handleTagToggle = async (tagValue: string) => {
+    if (!config.canEdit) return;
+    
+    const existingTag = eventTags.find((t) => t.tag_type === "music" && t.tag_value === tagValue);
+    setSavingTags(true);
+
+    try {
+      if (existingTag) {
+        // Remove tag
+        await fetch(`/api/events/${eventId}/tags?tagId=${existingTag.id}`, {
+          method: "DELETE",
+        });
+        setEventTags(eventTags.filter((t) => t.id !== existingTag.id));
+      } else {
+        // Add tag
+        const response = await fetch(`/api/events/${eventId}/tags`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tag_type: "music", tag_value: tagValue }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setEventTags([...eventTags, data.tag]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle tag:", error);
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
   const loadEventData = async (resetForm = true) => {
     try {
       const response = await fetch(config.eventApiEndpoint);
@@ -453,6 +500,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         const data = await response.json();
         console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
         setEvent(data.event);
+        // Load event tags
+        loadEventTags();
         // Set organizer ID for organizer role (for their own referral link)
         if (config.role === "organizer" && data.event.organizer_id) {
           setOrganizerId(data.event.organizer_id);
@@ -2702,6 +2751,38 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
                 </div>
               </Card>
+
+              {/* Music Tags */}
+              {config.canEdit && (
+                <Card>
+                  <h2 className="text-xl font-semibold text-primary mb-4">Music Genres</h2>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {VENUE_EVENT_GENRES.map((genre) => {
+                        const isSelected = eventTags.some((t) => t.tag_type === "music" && t.tag_value === genre);
+                        return (
+                          <button
+                            key={genre}
+                            type="button"
+                            onClick={() => handleTagToggle(genre)}
+                            disabled={savingTags}
+                            className={`px-3 py-1 text-sm border-2 transition-colors ${
+                              isSelected
+                                ? "bg-accent-secondary text-white border-accent-secondary"
+                                : "bg-glass text-primary border-border hover:border-accent-secondary/50"
+                            } ${savingTags ? "opacity-50 cursor-not-allowed" : ""}`}
+                          >
+                            {genre}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-secondary">
+                      Select the music genres for this event
+                    </p>
+                  </div>
+                </Card>
+              )}
             </TabsContent>
           )}
         </Tabs>
