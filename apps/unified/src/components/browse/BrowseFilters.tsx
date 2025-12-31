@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Select } from "@crowdstack/ui";
 import { X, Filter, ChevronDown } from "lucide-react";
 import { Badge } from "@crowdstack/ui";
-import { GENRES } from "@/lib/constants/genres";
+import { GENRES, VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 
 export interface BrowseFilters {
   search?: string;
@@ -41,8 +41,12 @@ interface BrowseFiltersProps {
 }
 
 export function BrowseFilters({ filters, onChange, variant = "sidebar", filterType = "events" }: BrowseFiltersProps) {
-  // Use shared genre constants instead of fetching
-  const genres = GENRES.map((genre) => ({ value: genre, label: genre }));
+  // Use different genre lists based on filter type
+  // DJs get detailed list, Events/Venues get curated list
+  const genres = (filterType === "djs" ? GENRES : VENUE_EVENT_GENRES).map((genre) => ({ 
+    value: genre, 
+    label: genre 
+  }));
   const countries = COUNTRIES.map((country) => ({ value: country, label: country }));
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

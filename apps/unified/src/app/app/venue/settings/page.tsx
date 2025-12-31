@@ -7,6 +7,7 @@ import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent
 import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin } from "lucide-react";
 import Image from "next/image";
 import { MapPreview } from "@/components/venue/MapPreview";
+import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 
 interface VenueSettingsData {
@@ -16,7 +17,7 @@ interface VenueSettingsData {
 }
 
 const TAG_OPTIONS = {
-  music: ["Electronic", "Hip-Hop", "House", "Techno", "R&B", "Pop", "Rock", "Jazz", "Latin", "Reggae"],
+  music: [...VENUE_EVENT_GENRES], // Use curated venue/event genres
   dress_code: ["Casual", "Smart Casual", "Dressy", "Formal", "Black Tie", "No Dress Code"],
   crowd_type: ["Young Professional", "College", "Mixed", "Mature", "LGBTQ+", "International"],
   price_range: ["$", "$$", "$$$", "$$$$"],

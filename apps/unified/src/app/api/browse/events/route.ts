@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getVenueEventGenre } from "@/lib/constants/genres";
 
 /**
  * GET /api/browse/events
@@ -337,6 +338,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply genre filter (if specified, filter by venue tags)
+    // Uses genre mapping: if user searches "Tech House", it maps to "House" and finds venues with "House" tag
     if (genre && events && events.length > 0) {
       const eventIds = events.map((e) => e.id);
       
@@ -346,13 +348,16 @@ export async function GET(request: NextRequest) {
         .filter(Boolean) as string[];
 
       if (venueIds.length > 0) {
-        // Get venues with matching genre tag
+        // Map the search genre to venue/event genre (e.g., "Tech House" → "House")
+        const venueEventGenre = getVenueEventGenre(genre) || genre;
+        
+        // Get venues with matching genre tag (using mapped genre)
         const { data: taggedVenues } = await supabase
           .from("venue_tags")
           .select("venue_id")
           .in("venue_id", venueIds)
           .eq("tag_type", "music")
-          .eq("tag_value", genre);
+          .eq("tag_value", venueEventGenre);
 
         const matchingVenueIds = new Set(taggedVenues?.map((t) => t.venue_id) || []);
 
