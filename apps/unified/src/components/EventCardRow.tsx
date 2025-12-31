@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Ticket, MapPin, Check, ExternalLink, Eye } from "lucide-react";
 import { Card, Badge } from "@crowdstack/ui";
 import { ShareButton } from "@/components/ShareButton";
+import { usePrefetch } from "@/lib/hooks/use-prefetch";
 
 interface Attendee {
   id: string;
@@ -67,6 +68,7 @@ export function EventCardRow({
 }: EventCardRowProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { prefetchEvent } = usePrefetch();
   const heroImage = event.flier_url || event.cover_image_url;
   const isAttending = !!registration;
   const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
@@ -164,7 +166,11 @@ export function EventCardRow({
     : `/e/${event.slug}`;
 
   return (
-    <Link href={`/e/${event.slug}`} className={`block group ${className}`}>
+    <Link 
+      href={`/e/${event.slug}`} 
+      className={`block group ${className}`}
+      onMouseEnter={() => prefetchEvent(event.slug)}
+    >
       <Card padding="none" hover className="flex gap-2.5 p-2.5">
         {/* Flier Image - 1:1 square aspect ratio */}
         <div className="relative w-16 sm:w-20 aspect-square rounded-lg overflow-hidden bg-glass flex-shrink-0">

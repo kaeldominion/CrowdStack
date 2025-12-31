@@ -7,6 +7,7 @@ import { Badge, ConfirmModal, InlineSpinner } from "@crowdstack/ui";
 import { QrCode, Check, X, Ticket, ExternalLink, Eye } from "lucide-react";
 import { ShareButton } from "@/components/ShareButton";
 import { useReferralUserId } from "@/components/ReferralTracker";
+import { usePrefetch } from "@/lib/hooks/use-prefetch";
 
 interface AttendeeEventCardProps {
   event: {
@@ -73,6 +74,7 @@ export function AttendeeEventCard({
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const userId = useReferralUserId();
+  const { prefetchEvent } = usePrefetch();
 
   const heroImage = event.flier_url || event.cover_image_url;
   const hasCheckedIn = registration?.checkins && registration.checkins.length > 0;
@@ -198,7 +200,7 @@ export function AttendeeEventCard({
           <div 
             className="relative rounded-2xl overflow-hidden group border border-accent-error/50 hover:border-accent-error transition-all shadow-soft hover:shadow-lg bg-void"
           >
-            <Link href={`/e/${event.slug}`} className="block">
+            <Link href={`/e/${event.slug}`} className="block" onMouseEnter={() => prefetchEvent(event.slug)}>
               {/* Full-bleed background image */}
               <div className="relative aspect-[3/4] min-h-[320px]">
                 {heroImage ? (
@@ -346,7 +348,7 @@ export function AttendeeEventCard({
     <div 
       className={`relative rounded-2xl overflow-hidden group border border-border-subtle hover:border-accent-primary/50 transition-all shadow-soft hover:shadow-lg ${className}`}
     >
-      <Link href={`/e/${event.slug}`} className="block">
+      <Link href={`/e/${event.slug}`} className="block" onMouseEnter={() => prefetchEvent(event.slug)}>
         {/* Full-bleed background image */}
         <div className="relative aspect-[3/4] min-h-[320px]">
           {heroImage ? (

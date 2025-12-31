@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@crowdstack/ui";
 import { QrCode, MapPin, MoreHorizontal, Ticket, ExternalLink, Eye } from "lucide-react";
+import { usePrefetch } from "@/lib/hooks/use-prefetch";
 
 interface EventCardCompactProps {
   event: {
@@ -60,6 +61,7 @@ export function EventCardCompact({
 }: EventCardCompactProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { prefetchEvent } = usePrefetch();
 
   const heroImage = event.flier_url || event.cover_image_url;
   const registrationCount = event.registration_count || 0;
@@ -117,6 +119,7 @@ export function EventCardCompact({
     <Link 
       href={`/e/${event.slug}`}
       className={`block group ${className}`}
+      onMouseEnter={() => prefetchEvent(event.slug)}
     >
       <div className="flex gap-4 p-4 rounded-2xl bg-glass border border-border-subtle hover:border-accent-primary/30 transition-all hover:shadow-soft">
         {/* Flier Image - 9:16 aspect ratio */}

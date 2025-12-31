@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MapPin, Navigation } from "lucide-react";
 import { Badge } from "@crowdstack/ui";
 import { formatVenueLocation } from "@/lib/utils/format-venue-location";
+import { usePrefetch } from "@/lib/hooks/use-prefetch";
 
 interface VenueCardProps {
   venue: {
@@ -35,8 +36,10 @@ export function VenueCard({
   layout = "portrait",
   className = "",
 }: VenueCardProps) {
+  const { prefetchVenue } = usePrefetch();
   const venueUrl = venue.slug ? `/v/${venue.slug}` : `/v/${venue.id}`;
   const heroImage = venue.cover_image_url || venue.logo_url;
+  const slugForPrefetch = venue.slug || venue.id;
   
   // Get standardized location string
   const location = formatVenueLocation({
@@ -56,6 +59,7 @@ export function VenueCard({
       <Link 
         href={venueUrl} 
         className={`block group relative rounded-xl overflow-hidden border border-border-subtle hover:border-accent-primary/50 transition-all shadow-soft hover:shadow-lg bg-void ${className}`}
+        onMouseEnter={() => prefetchVenue(slugForPrefetch)}
       >
         <div className="flex min-h-[96px]">
         {/* Image */}
@@ -111,6 +115,7 @@ export function VenueCard({
     <Link 
       href={venueUrl} 
       className={`block group relative rounded-2xl overflow-hidden border border-border-subtle hover:border-accent-primary/50 transition-all shadow-soft hover:shadow-lg bg-void ${className}`}
+      onMouseEnter={() => prefetchVenue(slugForPrefetch)}
     >
       {/* Card Container - Portrait orientation with explicit height */}
       <div className="relative h-[400px]">

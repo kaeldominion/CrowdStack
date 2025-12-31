@@ -2,4 +2,5 @@
 export * from './use-browse-data';
 export * from './use-dashboard-stats';
 export * from './use-event-data';
+export * from './use-prefetch';
 
