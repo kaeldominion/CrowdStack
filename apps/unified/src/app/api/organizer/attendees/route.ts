@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       has_check_in,
     });
 
-    return NextResponse.json(attendees);
+    return NextResponse.json({ attendees, organizerId });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch attendees" }, { status: 500 });
   }

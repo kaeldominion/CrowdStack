@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       min_strikes,
     });
 
-    return NextResponse.json(attendees);
+    return NextResponse.json({ attendees, venueId });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch attendees" }, { status: 500 });
   }

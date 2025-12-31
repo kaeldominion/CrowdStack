@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
-import { Search, Filter, Download, User } from "lucide-react";
+import { VipBadge } from "@crowdstack/ui";
+import { Search, Filter, Download, User, Crown, Sparkles } from "lucide-react";
 import type { OrganizerAttendee } from "@/lib/data/attendees-organizer";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
@@ -12,8 +13,10 @@ export default function OrganizerAttendeesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
+  const [organizerId, setOrganizerId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     has_check_in: undefined as boolean | undefined,
+    is_vip: undefined as boolean | undefined,
   });
 
   useEffect(() => {
@@ -29,7 +32,10 @@ export default function OrganizerAttendeesPage() {
       const response = await fetch("/api/organizer/attendees");
       if (!response.ok) throw new Error("Failed to load attendees");
       const data = await response.json();
-      setAttendees(data);
+      setAttendees(data.attendees || data); // Handle both old and new format
+      if (data.organizerId) {
+        setOrganizerId(data.organizerId);
+      }
     } catch (error) {
       console.error("Error loading attendees:", error);
     } finally {
@@ -56,7 +62,45 @@ export default function OrganizerAttendeesPage() {
       );
     }
 
+    // VIP filter
+    if (filters.is_vip !== undefined) {
+      filtered = filtered.filter((a) =>
+        filters.is_vip ? (a.is_organizer_vip || a.is_global_vip) : !a.is_organizer_vip && !a.is_global_vip
+      );
+    }
+
     setFilteredAttendees(filtered);
+  };
+
+  const toggleOrganizerVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
+    if (!organizerId) {
+      alert("Organizer ID not found");
+      return;
+    }
+
+    try {
+      if (isCurrentlyVip) {
+        // Remove VIP
+        const response = await fetch(
+          `/api/organizer/attendees/${attendeeId}/vip?organizerId=${organizerId}`,
+          { method: "DELETE" }
+        );
+        if (!response.ok) throw new Error("Failed to remove VIP");
+      } else {
+        // Add VIP
+        const response = await fetch(`/api/organizer/attendees/${attendeeId}/vip`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organizerId }),
+        });
+        if (!response.ok) throw new Error("Failed to add VIP");
+      }
+      // Reload attendees
+      await loadAttendees();
+    } catch (error) {
+      console.error("Error toggling VIP:", error);
+      alert("Failed to update VIP status");
+    }
   };
 
   if (loading) {
@@ -116,6 +160,18 @@ export default function OrganizerAttendeesPage() {
               <Filter className="h-4 w-4 mr-2" />
               Checked In
             </Button>
+            <Button
+              variant={filters.is_vip === true ? "primary" : "secondary"}
+              onClick={() =>
+                setFilters({
+                  ...filters,
+                  is_vip: filters.is_vip === true ? undefined : true,
+                })
+              }
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              VIP
+            </Button>
           </div>
         </div>
       </Card>
@@ -131,15 +187,17 @@ export default function OrganizerAttendeesPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>VIP</TableHead>
                 <TableHead>Events</TableHead>
                 <TableHead>Check-ins</TableHead>
                 <TableHead>Last Event</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAttendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-secondary">
+                  <TableCell colSpan={7} className="text-center py-8 text-secondary">
                     No attendees found
                   </TableCell>
                 </TableRow>
@@ -159,12 +217,44 @@ export default function OrganizerAttendeesPage() {
                         <div className="text-sm text-secondary">{attendee.phone}</div>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {attendee.is_global_vip && (
+                          <VipBadge level="global" variant="badge" size="xs" />
+                        )}
+                        {attendee.is_organizer_vip && (
+                          <VipBadge level="organizer" variant="badge" size="xs" />
+                        )}
+                        {!attendee.is_global_vip && !attendee.is_organizer_vip && (
+                          <span className="text-xs text-secondary">—</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{attendee.events_attended}</TableCell>
                     <TableCell>{attendee.total_check_ins}</TableCell>
                     <TableCell className="text-sm text-secondary">
                       {attendee.last_event_at
                         ? new Date(attendee.last_event_at).toLocaleDateString()
                         : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e?.stopPropagation();
+                            toggleOrganizerVip(attendee.id, attendee.is_organizer_vip);
+                          }}
+                          title={attendee.is_organizer_vip ? "Remove organizer VIP" : "Mark as organizer VIP"}
+                        >
+                          {attendee.is_organizer_vip ? (
+                            <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

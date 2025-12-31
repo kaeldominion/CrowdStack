@@ -18,6 +18,7 @@ import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { DJCard } from "@/components/dj/DJCard";
+import { XpProgressBar, type XpProgressData } from "@/components/XpProgressBar";
 
 interface Registration {
   id: string;
@@ -69,6 +70,7 @@ export default function MePage() {
   const [showProfileCta, setShowProfileCta] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("events");
   const [mobileEventsTab, setMobileEventsTab] = useState<MobileEventsTab>("upcoming");
+  const [xpData, setXpData] = useState<XpProgressData | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -105,12 +107,20 @@ export default function MePage() {
       const attendee = attendeeResult.data;
 
       let totalXp = 0;
+      let xpProgressData: XpProgressData | null = null;
       if (xpResult) {
         if (xpResult.ok) {
         try {
-          const xpData = await xpResult.json();
-            console.log("[ME] XP data received:", xpData);
-          totalXp = xpData.total_xp || 0;
+          const xpResponse = await xpResult.json();
+            console.log("[ME] XP data received:", xpResponse);
+          totalXp = xpResponse.total_xp || 0;
+          xpProgressData = {
+            total_xp: xpResponse.total_xp || 0,
+            level: xpResponse.level || 1,
+            xp_in_level: xpResponse.xp_in_level || 0,
+            xp_for_next_level: xpResponse.xp_for_next_level || 100,
+            progress_pct: xpResponse.progress_pct || 0,
+          };
           } catch (e) {
             console.error("[ME] Error parsing XP response:", e);
           }
@@ -120,6 +130,8 @@ export default function MePage() {
       } else {
         console.error("[ME] XP fetch returned null");
       }
+      
+      setXpData(xpProgressData);
 
       // Extract username from email
       const email = attendee?.email || currentUser.email || "";
@@ -328,21 +340,12 @@ export default function MePage() {
           </p>
         </div>
 
-        {/* XP Card - simplified, no levels yet */}
-        <div className="px-4 mt-6">
-          <Card padding="none">
-            <div className="px-4 py-4">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                  Experience Points
-                </span>
-                <span className="font-mono text-xl font-bold text-accent-primary">
-                  {profile?.xp_points ?? 0} XP
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
+        {/* XP Progress Bar */}
+        {xpData && (
+          <div className="px-4 mt-6">
+            <XpProgressBar data={xpData} />
+          </div>
+        )}
             
         {/* Stats Row - 3 columns like reference */}
         <div className="px-4 mt-4 grid grid-cols-3 gap-3">
@@ -600,19 +603,10 @@ export default function MePage() {
               </p>
             </div>
             
-            {/* XP Card - simplified, no levels yet */}
-            <Card padding="none">
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                    XP
-                  </span>
-                  <span className="font-mono text-xl font-bold text-accent-primary">
-                    {profile?.xp_points ?? 0} XP
-                  </span>
-                </div>
-              </div>
-            </Card>
+            {/* XP Progress Bar */}
+            {xpData && (
+              <XpProgressBar data={xpData} />
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-2 pt-2">

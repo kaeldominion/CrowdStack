@@ -13,6 +13,8 @@ export interface VenueAttendee {
   last_event_at: string | null;
   strike_count: number | null;
   is_banned: boolean;
+  is_venue_vip: boolean;
+  is_global_vip: boolean;
   created_at: string;
 }
 
@@ -97,6 +99,22 @@ export async function getVenueAttendees(
     flags?.map((f) => [f.attendee_id, { strikes: f.strike_count || 0, banned: f.permanent_ban || false }]) || []
   );
 
+  // Get VIP status for these attendees
+  const { data: venueVips } = await supabase
+    .from("venue_vips")
+    .select("attendee_id")
+    .eq("venue_id", venueId)
+    .in("attendee_id", filteredAttendeeIds);
+
+  const { data: globalVips } = await supabase
+    .from("attendees")
+    .select("id, is_global_vip")
+    .in("id", filteredAttendeeIds)
+    .eq("is_global_vip", true);
+
+  const venueVipSet = new Set(venueVips?.map((v) => v.attendee_id) || []);
+  const globalVipSet = new Set(globalVips?.map((a) => a.id) || []);
+
   // Get event details
   const { data: events } = await supabase
     .from("events")
@@ -129,6 +147,8 @@ export async function getVenueAttendees(
       last_event_at: eventTimes[0] || null,
       strike_count: flags.strikes,
       is_banned: flags.banned,
+      is_venue_vip: venueVipSet.has(attendee.id),
+      is_global_vip: globalVipSet.has(attendee.id),
       created_at: attendee.created_at,
     };
 

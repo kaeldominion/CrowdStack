@@ -16,6 +16,7 @@ interface ShareButtonProps {
   compact?: boolean; // Smaller size for inline layout
   iconOnly?: boolean; // Minimal circular icon button
   userId?: string; // Optional user ID to append as ?ref= parameter for referral tracking
+  eventId?: string; // Optional event ID for awarding share XP
 }
 
 // Helper to fetch media and convert to File for sharing
@@ -44,6 +45,7 @@ export function ShareButton({
   compact = false,
   iconOnly = false,
   userId: userIdProp,
+  eventId,
 }: ShareButtonProps) {
   // Automatically fetch userId if not provided
   const [currentUserId, setCurrentUserId] = useState<string | null>(userIdProp || null);
@@ -115,10 +117,27 @@ export function ShareButton({
     return () => {};
   }, [showMenu]);
 
+  // Award XP for sharing (non-blocking)
+  const awardShareXP = async (eventId: string) => {
+    if (!eventId) return;
+    try {
+      await fetch(`/api/events/${eventId}/share`, {
+        method: "POST",
+      });
+    } catch (error) {
+      // Silently fail - XP award is non-critical
+      console.warn("[ShareButton] Failed to award share XP:", error);
+    }
+  };
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      // Award XP for sharing (copy link counts as sharing)
+      if (eventId) {
+        awardShareXP(eventId);
+      }
       setTimeout(() => {
         setCopied(false);
         setShowMenu(false);
@@ -137,6 +156,10 @@ export function ShareButton({
     setLoadingAction("link");
     try {
       await navigator.share({ title, text, url: shareUrl });
+      // Award XP for successful share
+      if (eventId) {
+        awardShareXP(eventId);
+      }
     } catch (error: unknown) {
       if (error instanceof Error && error.name !== "AbortError" && error.name !== "NotAllowedError") {
         handleCopyLink();
@@ -160,6 +183,10 @@ export function ShareButton({
         const shareData = { files: [imageFile] };
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData);
+          // Award XP for successful share
+          if (eventId) {
+            awardShareXP(eventId);
+          }
         }
       }
     } catch (error: unknown) {
@@ -185,6 +212,10 @@ export function ShareButton({
         const shareData = { files: [videoFile] };
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData);
+          // Award XP for successful share
+          if (eventId) {
+            awardShareXP(eventId);
+          }
         }
       }
     } catch (error: unknown) {

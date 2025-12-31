@@ -33,6 +33,9 @@ export interface RecentCheckin {
   attendee_name: string;
   checked_in_at: string;
   promoter_name: string | null;
+  is_global_vip: boolean;
+  is_venue_vip: boolean;
+  is_organizer_vip: boolean;
 }
 
 export interface RecentRegistration {
@@ -41,6 +44,9 @@ export interface RecentRegistration {
   attendee_name: string;
   registered_at: string;
   promoter_name: string | null;
+  is_global_vip: boolean;
+  is_venue_vip: boolean;
+  is_organizer_vip: boolean;
 }
 
 export interface RecentActivity {
@@ -50,6 +56,9 @@ export interface RecentActivity {
   attendee_name: string;
   timestamp: string;
   promoter_name: string | null;
+  is_global_vip: boolean;
+  is_venue_vip: boolean;
+  is_organizer_vip: boolean;
 }
 
 export interface VIPArrival {
@@ -64,7 +73,7 @@ export interface VIPArrival {
 export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | null> {
   const supabase = createServiceRoleClient();
 
-  // Get event details with venue
+  // Get event details with venue and organizer
   const { data: event } = await supabase
     .from("events")
     .select(`
@@ -73,6 +82,8 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       capacity, 
       start_time, 
       end_time,
+      venue_id,
+      organizer_id,
       venue:venues(name)
     `)
     .eq("id", eventId)
@@ -188,18 +199,65 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     }));
 
   // Get recent check-ins (last 20)
-  const recentCheckins: RecentCheckin[] = (checkins || [])
+  const recentCheckinsData = (checkins || [])
     .sort((a: any, b: any) => new Date(b.checked_in_at).getTime() - new Date(a.checked_in_at).getTime())
-    .slice(0, 20)
-    .map((c: any) => ({
+    .slice(0, 20);
+
+  // Get attendee IDs for VIP lookup
+  const checkinAttendeeIds = recentCheckinsData
+    .map((c: any) => c.registrations?.attendee?.id)
+    .filter(Boolean);
+
+  // Fetch VIP status for check-in attendees (we'll fetch individually per attendee below)
+  // Skip this bulk fetch as we need to fetch per attendee anyway
+
+  // Get VIP status for all attendees using direct queries
+  const { data: globalVips } = checkinAttendeeIds.length > 0
+    ? await supabase
+        .from("attendees")
+        .select("id, is_global_vip")
+        .in("id", checkinAttendeeIds)
+        .eq("is_global_vip", true)
+    : { data: [] };
+
+  const eventVenueId = (event as any).venue_id;
+  const eventOrganizerId = (event as any).organizer_id;
+
+  const { data: venueVips } = eventVenueId && checkinAttendeeIds.length > 0
+    ? await supabase
+        .from("venue_vips")
+        .select("attendee_id")
+        .eq("venue_id", eventVenueId)
+        .in("attendee_id", checkinAttendeeIds)
+    : { data: [] };
+
+  const { data: organizerVips } = eventOrganizerId && checkinAttendeeIds.length > 0
+    ? await supabase
+        .from("organizer_vips")
+        .select("attendee_id")
+        .eq("organizer_id", eventOrganizerId)
+        .in("attendee_id", checkinAttendeeIds)
+    : { data: [] };
+
+  const globalVipSet = new Set(globalVips?.map((a) => a.id) || []);
+  const venueVipSet = new Set(venueVips?.map((v) => v.attendee_id) || []);
+  const organizerVipSet = new Set(organizerVips?.map((o) => o.attendee_id) || []);
+
+  const recentCheckins: RecentCheckin[] = recentCheckinsData.map((c: any) => {
+    const attendeeId = c.registrations?.attendee?.id || "";
+    return {
       id: c.id,
-      attendee_id: c.registrations?.attendee?.id || "",
+      attendee_id: attendeeId,
       attendee_name: c.registrations?.attendee?.name || "Unknown",
       checked_in_at: c.checked_in_at,
       promoter_name: c.registrations?.referral_promoter_id 
         ? promoterNameMap.get(c.registrations.referral_promoter_id) || null 
         : null,
-    }));
+      is_global_vip: globalVipSet.has(attendeeId),
+      is_venue_vip: venueVipSet.has(attendeeId),
+      is_organizer_vip: organizerVipSet.has(attendeeId),
+    };
+  });
 
   // Get recent registrations (last 50)
   const { data: recentRegistrationsData } = await supabase
@@ -244,16 +302,56 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     });
   }
 
+  // Get attendee IDs for registration VIP lookup
+  const registrationAttendeeIds = (recentRegistrationsData || [])
+    .map((r: any) => r.attendee?.id)
+    .filter(Boolean);
+
+  // Fetch VIP status for registration attendees
+  const { data: regGlobalVips } = registrationAttendeeIds.length > 0
+    ? await supabase
+        .from("attendees")
+        .select("id, is_global_vip")
+        .in("id", registrationAttendeeIds)
+        .eq("is_global_vip", true)
+    : { data: [] };
+
+  const { data: regVenueVips } = eventVenueId && registrationAttendeeIds.length > 0
+    ? await supabase
+        .from("venue_vips")
+        .select("attendee_id")
+        .eq("venue_id", eventVenueId)
+        .in("attendee_id", registrationAttendeeIds)
+    : { data: [] };
+
+  const { data: regOrganizerVips } = eventOrganizerId && registrationAttendeeIds.length > 0
+    ? await supabase
+        .from("organizer_vips")
+        .select("attendee_id")
+        .eq("organizer_id", eventOrganizerId)
+        .in("attendee_id", registrationAttendeeIds)
+    : { data: [] };
+
+  const regGlobalVipSet = new Set(regGlobalVips?.map((a) => a.id) || []);
+  const regVenueVipSet = new Set(regVenueVips?.map((v) => v.attendee_id) || []);
+  const regOrganizerVipSet = new Set(regOrganizerVips?.map((o) => o.attendee_id) || []);
+
   const recentRegistrations: RecentRegistration[] = (recentRegistrationsData || [])
-    .map((r: any) => ({
-      id: r.id,
-      attendee_id: r.attendee?.id || "",
-      attendee_name: r.attendee?.name || "Unknown",
-      registered_at: r.registered_at,
-      promoter_name: r.referral_promoter_id 
-        ? regPromoterMap.get(r.referral_promoter_id) || promoterNameMap.get(r.referral_promoter_id) || null 
-        : null,
-    }));
+    .map((r: any) => {
+      const attendeeId = r.attendee?.id || "";
+      return {
+        id: r.id,
+        attendee_id: attendeeId,
+        attendee_name: r.attendee?.name || "Unknown",
+        registered_at: r.registered_at,
+        promoter_name: r.referral_promoter_id 
+          ? regPromoterMap.get(r.referral_promoter_id) || promoterNameMap.get(r.referral_promoter_id) || null 
+          : null,
+        is_global_vip: regGlobalVipSet.has(attendeeId),
+        is_venue_vip: regVenueVipSet.has(attendeeId),
+        is_organizer_vip: regOrganizerVipSet.has(attendeeId),
+      };
+    });
 
   // Combine recent check-ins and registrations into unified activity feed
   const recentActivity: RecentActivity[] = [
@@ -264,6 +362,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       attendee_name: c.attendee_name,
       timestamp: c.checked_in_at,
       promoter_name: c.promoter_name,
+      is_global_vip: c.is_global_vip,
+      is_venue_vip: c.is_venue_vip,
+      is_organizer_vip: c.is_organizer_vip,
     })),
     ...recentRegistrations.map((r) => ({
       id: `registration-${r.id}`,
@@ -272,6 +373,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       attendee_name: r.attendee_name,
       timestamp: r.registered_at,
       promoter_name: r.promoter_name,
+      is_global_vip: r.is_global_vip,
+      is_venue_vip: r.is_venue_vip,
+      is_organizer_vip: r.is_organizer_vip,
     })),
   ]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

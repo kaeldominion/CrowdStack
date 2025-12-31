@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Card, Badge, Logo, Button, Input, Modal, LoadingSpinner } from "@crowdstack/ui";
+import { Card, Badge, Logo, Button, Input, Modal, LoadingSpinner, VipStatus } from "@crowdstack/ui";
 import { Users, Activity, Trophy, Clock, TrendingUp, MessageSquare, Send, Edit2, Trash2, User, Mail, Phone, Instagram, ExternalLink } from "lucide-react";
 import type { LiveMetrics } from "@/lib/data/live-metrics";
 import { Avatar } from "@/components/Avatar";
@@ -434,16 +434,26 @@ export default function OrganizerLiveMissionControlPage() {
                       <div className="h-2 w-2 rounded-full bg-accent-secondary" />
                     )}
                     <div>
-                      {activity.attendee_id ? (
-                        <button
-                          onClick={() => handleAttendeeClick(activity.attendee_id)}
-                          className="text-sm font-medium text-primary hover:text-accent-secondary transition-colors cursor-pointer text-left"
-                        >
-                          {activity.attendee_name}
-                        </button>
-                      ) : (
-                        <p className="text-sm font-medium text-primary">{activity.attendee_name}</p>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {activity.attendee_id ? (
+                          <button
+                            onClick={() => handleAttendeeClick(activity.attendee_id)}
+                            className="text-sm font-medium text-primary hover:text-accent-secondary transition-colors cursor-pointer text-left"
+                          >
+                            {activity.attendee_name}
+                          </button>
+                        ) : (
+                          <p className="text-sm font-medium text-primary">{activity.attendee_name}</p>
+                        )}
+                        <VipStatus
+                          isGlobalVip={activity.is_global_vip}
+                          isVenueVip={activity.is_venue_vip}
+                          isOrganizerVip={activity.is_organizer_vip}
+                          variant="badge"
+                          size="xs"
+                          showHighestOnly
+                        />
+                      </div>
                       <div className="flex items-center gap-2">
                         <p className="text-xs text-secondary">
                           {activity.type === "checkin" ? "Checked in" : "Registered"}

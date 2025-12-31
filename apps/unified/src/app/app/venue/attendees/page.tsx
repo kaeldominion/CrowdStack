@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
-import { Search, Filter, Download, Flag, User, UserCheck } from "lucide-react";
+import { VipBadge } from "@crowdstack/ui";
+import { Search, Filter, Download, Flag, User, UserCheck, Crown, Star } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
@@ -12,9 +13,11 @@ export default function VenueAttendeesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
+  const [venueId, setVenueId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     has_check_in: undefined as boolean | undefined,
     is_flagged: undefined as boolean | undefined,
+    is_vip: undefined as boolean | undefined,
   });
 
   useEffect(() => {
@@ -30,7 +33,10 @@ export default function VenueAttendeesPage() {
       const response = await fetch("/api/venue/attendees");
       if (!response.ok) throw new Error("Failed to load attendees");
       const data = await response.json();
-      setAttendees(data);
+      setAttendees(data.attendees || data); // Handle both old and new format
+      if (data.venueId) {
+        setVenueId(data.venueId);
+      }
     } catch (error) {
       console.error("Error loading attendees:", error);
     } finally {
@@ -66,6 +72,13 @@ export default function VenueAttendeesPage() {
       );
     }
 
+    // VIP filter
+    if (filters.is_vip !== undefined) {
+      filtered = filtered.filter((a) =>
+        filters.is_vip ? (a.is_venue_vip || a.is_global_vip) : !a.is_venue_vip && !a.is_global_vip
+      );
+    }
+
     setFilteredAttendees(filtered);
   };
 
@@ -75,6 +88,37 @@ export default function VenueAttendeesPage() {
     if (strikes === 2) return <Badge variant="warning">2 Strikes</Badge>;
     if (strikes >= 3) return <Badge variant="error">Banned</Badge>;
     return null;
+  };
+
+  const toggleVenueVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
+    if (!venueId) {
+      alert("Venue ID not found");
+      return;
+    }
+
+    try {
+      if (isCurrentlyVip) {
+        // Remove VIP
+        const response = await fetch(
+          `/api/venue/attendees/${attendeeId}/vip?venueId=${venueId}`,
+          { method: "DELETE" }
+        );
+        if (!response.ok) throw new Error("Failed to remove VIP");
+      } else {
+        // Add VIP
+        const response = await fetch(`/api/venue/attendees/${attendeeId}/vip`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ venueId }),
+        });
+        if (!response.ok) throw new Error("Failed to add VIP");
+      }
+      // Reload attendees
+      await loadAttendees();
+    } catch (error) {
+      console.error("Error toggling VIP:", error);
+      alert("Failed to update VIP status");
+    }
   };
 
   if (loading) {
@@ -147,6 +191,18 @@ export default function VenueAttendeesPage() {
               <Flag className="h-4 w-4 mr-2" />
               Flagged
             </Button>
+            <Button
+              variant={filters.is_vip === true ? "primary" : "secondary"}
+              onClick={() =>
+                setFilters({
+                  ...filters,
+                  is_vip: filters.is_vip === true ? undefined : true,
+                })
+              }
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              VIP
+            </Button>
           </div>
         </div>
       </Card>
@@ -164,6 +220,7 @@ export default function VenueAttendeesPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>VIP</TableHead>
                 <TableHead>Account</TableHead>
                 <TableHead>Events</TableHead>
                 <TableHead>Check-ins</TableHead>
@@ -196,6 +253,19 @@ export default function VenueAttendeesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      <div className="flex items-center gap-1">
+                        {attendee.is_global_vip && (
+                          <VipBadge level="global" variant="badge" size="xs" />
+                        )}
+                        {attendee.is_venue_vip && (
+                          <VipBadge level="venue" variant="badge" size="xs" />
+                        )}
+                        {!attendee.is_global_vip && !attendee.is_venue_vip && (
+                          <span className="text-xs text-secondary">—</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       {attendee.user_id ? (
                         <div className="flex items-center gap-1">
                           <UserCheck className="h-4 w-4 text-success" />
@@ -214,13 +284,29 @@ export default function VenueAttendeesPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <div onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {/* Flag attendee - TODO: implement flag modal */}}
+                          title="Flag attendee"
                         >
                           <Flag className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e?.stopPropagation();
+                            toggleVenueVip(attendee.id, attendee.is_venue_vip);
+                          }}
+                          title={attendee.is_venue_vip ? "Remove venue VIP" : "Mark as venue VIP"}
+                        >
+                          {attendee.is_venue_vip ? (
+                            <Star className="h-4 w-4 text-accent-primary fill-accent-primary" />
+                          ) : (
+                            <Star className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>

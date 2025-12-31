@@ -398,6 +398,7 @@ export function EventPageContent({
               text={`🎉 ${event.name}\n📅 ${startDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}${event.venue?.name ? ` @ ${event.venue.name}` : ""}`}
                       url={shareUrl}
                       userId={userId}
+                      eventId={event.id}
                       imageUrl={event.flier_url || undefined}
                       videoUrl={event.flier_video_url || undefined}
                       compact={true}

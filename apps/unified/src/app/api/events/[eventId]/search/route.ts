@@ -75,15 +75,63 @@ export async function GET(
 
     const checkedInIds = new Set(checkins?.map((c) => c.registration_id) || []);
 
+    // Get event details for VIP lookup
+    const { data: event } = await serviceSupabase
+      .from("events")
+      .select("venue_id, organizer_id")
+      .eq("id", params.eventId)
+      .single();
+
+    // Get attendee IDs for VIP lookup
+    const attendeeIds = filtered
+      .map((reg) => {
+        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+        return attendee?.id;
+      })
+      .filter(Boolean);
+
+    // Fetch VIP status
+    const { data: globalVips } = attendeeIds.length > 0
+      ? await serviceSupabase
+          .from("attendees")
+          .select("id, is_global_vip")
+          .in("id", attendeeIds)
+          .eq("is_global_vip", true)
+      : { data: [] };
+
+    const { data: venueVips } = event?.venue_id && attendeeIds.length > 0
+      ? await serviceSupabase
+          .from("venue_vips")
+          .select("attendee_id")
+          .eq("venue_id", event.venue_id)
+          .in("attendee_id", attendeeIds)
+      : { data: [] };
+
+    const { data: organizerVips } = event?.organizer_id && attendeeIds.length > 0
+      ? await serviceSupabase
+          .from("organizer_vips")
+          .select("attendee_id")
+          .eq("organizer_id", event.organizer_id)
+          .in("attendee_id", attendeeIds)
+      : { data: [] };
+
+    const globalVipSet = new Set(globalVips?.map((a) => a.id) || []);
+    const venueVipSet = new Set(venueVips?.map((v) => v.attendee_id) || []);
+    const organizerVipSet = new Set(organizerVips?.map((o) => o.attendee_id) || []);
+
     const results = filtered.map((reg) => {
       const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+      const attendeeId = attendee?.id || null;
       return {
         registration_id: reg.id,
-        attendee_id: attendee?.id || null,
+        attendee_id: attendeeId,
         attendee_name: attendee?.name || "Unknown",
         attendee_email: attendee?.email || null,
         attendee_phone: attendee?.phone || null,
         checked_in: checkedInIds.has(reg.id),
+        is_global_vip: attendeeId ? globalVipSet.has(attendeeId) : false,
+        is_venue_vip: attendeeId ? venueVipSet.has(attendeeId) : false,
+        is_organizer_vip: attendeeId ? organizerVipSet.has(attendeeId) : false,
       };
     });
 

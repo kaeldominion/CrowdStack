@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Input, Modal, Card, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, LoadingSpinner, InlineSpinner } from "@crowdstack/ui";
+import { Button, Input, Modal, Card, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, LoadingSpinner, InlineSpinner, VipStatus } from "@crowdstack/ui";
 import { 
   QrCode, 
   Search, 
@@ -55,6 +55,9 @@ interface SearchResult {
   attendee_phone: string | null;
   checked_in: boolean;
   checked_in_at?: string | null;
+  is_global_vip?: boolean;
+  is_venue_vip?: boolean;
+  is_organizer_vip?: boolean;
 }
 
 interface AttendeeProfile {
@@ -666,59 +669,73 @@ export default function DoorScannerPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>VIP</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {searchResults.map((result) => (
-                  <TableRow 
-                    key={result.registration_id}
-                    hover
-                    className="cursor-pointer"
-                    onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
-                  >
-                    <TableCell className="font-medium">{result.attendee_name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {result.attendee_email && (
-                          <div className="text-sm text-secondary">{result.attendee_email}</div>
+                {searchResults.map((result) => {
+                  const isVip = result.is_global_vip || result.is_venue_vip || result.is_organizer_vip;
+                  return (
+                    <TableRow 
+                      key={result.registration_id}
+                      hover
+                      className={`cursor-pointer ${isVip ? 'bg-amber-500/5 border-l-2 border-l-amber-400' : ''}`}
+                      onClick={() => loadAttendeeProfile(result.attendee_id, result.registration_id)}
+                    >
+                      <TableCell className="font-medium">{result.attendee_name}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {result.attendee_email && (
+                            <div className="text-sm text-secondary">{result.attendee_email}</div>
+                          )}
+                          {result.attendee_phone && (
+                            <div className="text-sm text-secondary">{result.attendee_phone}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <VipStatus
+                          isGlobalVip={result.is_global_vip}
+                          isVenueVip={result.is_venue_vip}
+                          isOrganizerVip={result.is_organizer_vip}
+                          variant="badge"
+                          size="xs"
+                          showHighestOnly
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {result.checked_in ? (
+                          <Badge variant="success" className="flex items-center gap-1 w-fit">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Checked In
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Not Checked In</Badge>
                         )}
-                        {result.attendee_phone && (
-                          <div className="text-sm text-secondary">{result.attendee_phone}</div>
+                      </TableCell>
+                      <TableCell>
+                        {!result.checked_in ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={(e) => {
+                              e?.stopPropagation();
+                              handleCheckIn(result.registration_id);
+                            }}
+                          >
+                            Check In
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-muted">
+                            {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
+                          </span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {result.checked_in ? (
-                        <Badge variant="success" className="flex items-center gap-1 w-fit">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Checked In
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">Not Checked In</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {!result.checked_in ? (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={(e) => {
-                            e?.stopPropagation();
-                            handleCheckIn(result.registration_id);
-                          }}
-                        >
-                          Check In
-                        </Button>
-                      ) : (
-                        <span className="text-sm text-muted">
-                          {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

@@ -92,22 +92,52 @@ export async function GET(request: NextRequest) {
       return totalXp;
     };
 
-    // Skip RPC functions (they may be out of sync), always use direct ledger query
+    // Get total XP from ledger
     const totalXp = await getXpFromLedger();
-    const level = Math.floor(totalXp / 100) + 1;
-    const xpInLevel = totalXp % 100;
     
-    viewResult = {
-      total_xp: totalXp,
-      level: level,
-      xp_in_level: xpInLevel,
-      xp_for_next_level: 100,
-      progress_pct: xpInLevel,
-      attendee_xp: totalXp,
-      trust_score: totalXp, // for organizers
-      performance_score: totalXp, // for promoters
-      recent_activity: [],
-    };
+    // Use calculate_level function to get accurate level info
+    const { data: levelData, error: levelError } = await serviceSupabase
+      .rpc('calculate_level', { total_xp: totalXp })
+      .single();
+    
+    if (levelError || !levelData) {
+      console.error("[XP/me] Error calculating level:", levelError);
+      // Fallback to simple calculation
+      const fallbackLevel = totalXp >= 100000 ? 10 : 
+                           totalXp >= 50000 ? 9 :
+                           totalXp >= 35000 ? 8 :
+                           totalXp >= 20000 ? 7 :
+                           totalXp >= 10000 ? 6 :
+                           totalXp >= 2500 ? 5 :
+                           totalXp >= 1000 ? 4 :
+                           totalXp >= 500 ? 3 :
+                           totalXp >= 250 ? 2 : 1;
+      
+      viewResult = {
+        total_xp: totalXp,
+        level: fallbackLevel,
+        xp_in_level: totalXp,
+        xp_for_next_level: 100,
+        progress_pct: 0,
+        attendee_xp: totalXp,
+        trust_score: totalXp,
+        performance_score: totalXp,
+        recent_activity: [],
+      };
+    } else {
+      const levelInfo = levelData as { level?: number; xp_in_level?: number; xp_for_next_level?: number; progress_pct?: number };
+      viewResult = {
+        total_xp: totalXp,
+        level: levelInfo.level || 1,
+        xp_in_level: levelInfo.xp_in_level || 0,
+        xp_for_next_level: levelInfo.xp_for_next_level || 100,
+        progress_pct: Number(levelInfo.progress_pct) || 0,
+        attendee_xp: totalXp,
+        trust_score: totalXp, // for organizers
+        performance_score: totalXp, // for promoters
+        recent_activity: [],
+      };
+    }
     
     console.log("[XP/me] Final XP result:", viewResult);
 

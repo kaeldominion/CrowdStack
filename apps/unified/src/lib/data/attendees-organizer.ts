@@ -10,6 +10,8 @@ export interface OrganizerAttendee {
   events_attended: number;
   total_check_ins: number;
   last_event_at: string | null;
+  is_organizer_vip: boolean;
+  is_global_vip: boolean;
   created_at: string;
 }
 
@@ -88,6 +90,23 @@ export async function getOrganizerAttendees(
 
   const eventsMap = new Map(events?.map((e) => [e.id, e]) || []);
 
+  // Get VIP status for these attendees
+  const filteredAttendeeIds = data?.map((a) => a.id) || [];
+  const { data: organizerVips } = await supabase
+    .from("organizer_vips")
+    .select("attendee_id")
+    .eq("organizer_id", organizerId)
+    .in("attendee_id", filteredAttendeeIds);
+
+  const { data: globalVips } = await supabase
+    .from("attendees")
+    .select("id, is_global_vip")
+    .in("id", filteredAttendeeIds)
+    .eq("is_global_vip", true);
+
+  const organizerVipSet = new Set(organizerVips?.map((v) => v.attendee_id) || []);
+  const globalVipSet = new Set(globalVips?.map((a) => a.id) || []);
+
   // Transform and aggregate data
   const attendeesMap = new Map<string, OrganizerAttendee>();
 
@@ -108,6 +127,8 @@ export async function getOrganizerAttendees(
       events_attended: attendeeRegs.length,
       total_check_ins: checkins.length,
       last_event_at: eventTimes[0] || null,
+      is_organizer_vip: organizerVipSet.has(attendee.id),
+      is_global_vip: globalVipSet.has(attendee.id),
       created_at: attendee.created_at,
     };
 
