@@ -1360,22 +1360,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
   return (
     <div className="relative min-h-screen">
-      {/* Blurred Flyer Background */}
-      {event.flier_url && (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
-            style={{
-              backgroundImage: `url(${event.flier_url})`,
-              filter: "blur(60px) saturate(1.2)",
-              opacity: 0.15,
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
-        </div>
-      )}
-
-      <div className="relative z-10 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="space-y-4">
           {/* Back Button */}
@@ -1648,7 +1633,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {config.role === "promoter" ? (
             <>
               {/* Your Stats Section */}
-              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <Card>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-secondary uppercase tracking-wide">My Referrals</p>
@@ -1666,7 +1651,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </div>
                 </div>
               </Card>
-              <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+              <Card>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-secondary uppercase tracking-wide">My Check-ins</p>
@@ -1684,7 +1669,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
               
               {/* Leaderboard Position */}
-              <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
+              <Card>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-secondary uppercase tracking-wide">Leaderboard</p>
@@ -1704,7 +1689,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
 
               {/* Overall Event Stats */}
-              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+              <Card>
                 <div className="space-y-2">
                   <p className="text-xs text-secondary uppercase tracking-wide">Event Overall</p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
@@ -1786,7 +1771,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       {/* Tabs */}
       {tabs.length > 0 ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue={tabs[0]?.value}>
-          <TabsList>
+          <TabsList className="flex flex-wrap h-auto">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value}>
                 {tab.value === "media" && <Video className="h-4 w-4 mr-1" />}
@@ -1800,7 +1785,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           <TabsContent value="overview" className="space-y-6">
             {/* Event Details */}
-            <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+            <Card>
               <div className="flex flex-col sm:flex-row gap-6">
                 {/* Flyer - Larger */}
                 {event.flier_url && (
@@ -1904,7 +1889,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             {/* Share Links and Charts - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Share Event Card */}
-              <Card className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20 backdrop-blur-sm">
+              <Card>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Share className="h-5 w-5 text-primary" />
@@ -2015,7 +2000,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
 
               {/* Activity Chart - For all roles */}
-              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+              <Card>
                 <h3 className="text-lg font-semibold text-primary mb-4">
                   {config.role === "promoter" ? "Your Referral Activity" : "Event Activity"}
                 </h3>
@@ -2049,7 +2034,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
             {/* Promoter Performance Chart (for organizer/venue only) */}
             {config.role !== "promoter" && config.canViewStats && stats?.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
-              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+              <Card>
                 <h3 className="text-lg font-semibold text-primary mb-4">
                   Promoter Performance
                 </h3>
@@ -2526,7 +2511,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {/* Media Tab */}
           {config.canViewPhotos && (
             <TabsContent value="media" className="space-y-6">
-              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+              <Card>
                 <div className="space-y-6">
                   <h2 className="text-xl font-semibold text-primary">Event Media</h2>
                   
@@ -2789,7 +2774,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard" className="space-y-4">
-              <Card className="bg-void/60 backdrop-blur-sm border-border/50">
+              <Card>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-warning" />
