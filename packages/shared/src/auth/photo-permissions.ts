@@ -33,7 +33,7 @@ export async function canUploadPhotosToEvent(eventId: string): Promise<boolean> 
     return false;
   }
 
-  // Check if user is the organizer
+  // Check if user is the organizer owner
   const { data: organizer } = await supabase
     .from("organizers")
     .select("id")
@@ -43,6 +43,20 @@ export async function canUploadPhotosToEvent(eventId: string): Promise<boolean> 
 
   if (organizer) {
     return true;
+  }
+
+  // Check if user is a team member of the organizer
+  if (event.organizer_id) {
+    const { data: organizerUser } = await supabase
+      .from("organizer_users")
+      .select("id")
+      .eq("organizer_id", event.organizer_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (organizerUser) {
+      return true;
+    }
   }
 
   // Check if user is a promoter assigned to this event
