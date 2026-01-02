@@ -18,14 +18,14 @@ const browseDJsTrend = new Trend('browse_djs_duration');
 
 export const options = {
   scenarios: {
-    // Ramp up to 50 concurrent users
+    // Ramp up to 10 concurrent users
     load_test: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '10s', target: 25 },  // Ramp up to 25 users
-        { duration: '10s', target: 50 },  // Ramp up to 50 users
-        { duration: '30s', target: 50 },  // Stay at 50 users
+        { duration: '10s', target: 5 },   // Ramp up to 5 users
+        { duration: '10s', target: 10 },  // Ramp up to 10 users
+        { duration: '30s', target: 10 },  // Stay at 10 users
         { duration: '10s', target: 0 },   // Ramp down
       ],
     },

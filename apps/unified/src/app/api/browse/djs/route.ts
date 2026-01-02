@@ -29,36 +29,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient();
 
-    // Get all DJ IDs with their follower counts (for sorting by popularity)
-    const { data: allFollows } = await supabase
-      .from("dj_follows")
-      .select("dj_id");
-    
-    const djFollowCounts: Record<string, number> = {};
-    allFollows?.forEach((follow) => {
-      djFollowCounts[follow.dj_id] = (djFollowCounts[follow.dj_id] || 0) + 1;
-    });
-
-    // Get DJ IDs with their event counts from lineups
-    const { data: allLineups } = await supabase
-      .from("event_lineups")
-      .select("dj_id");
-    
-    const djEventCounts: Record<string, number> = {};
-    allLineups?.forEach((lineup) => {
-      djEventCounts[lineup.dj_id] = (djEventCounts[lineup.dj_id] || 0) + 1;
-    });
-    
-    const djIdsWithEvents = new Set(Object.keys(djEventCounts));
-
-    // Build the base query - only show DJs with profile images (completed profiles)
-    // Filter out both null AND empty string values
+    // Build the base query with counts via relations
+    // Only show DJs with profile images (completed profiles)
     let query = supabase
       .from("djs")
-      .select("id, name, handle, bio, genres, location, profile_image_url, cover_image_url", { count: "exact" })
+      .select(`
+        id, 
+        name, 
+        handle, 
+        bio, 
+        genres, 
+        location, 
+        profile_image_url, 
+        cover_image_url,
+        event_lineups(count),
+        dj_follows(count)
+      `, { count: "exact" })
       .not("profile_image_url", "is", null)
       .neq("profile_image_url", "");
 
+    // When browsing (no search), only show DJs with at least one event
+    // We'll filter this after the query since Supabase can't filter on aggregates
+    
     // Search by name, bio, or handle
     if (search) {
       query = query.or(`name.ilike.%${search}%,bio.ilike.%${search}%,handle.ilike.%${search}%`);
@@ -74,47 +66,52 @@ export async function GET(request: NextRequest) {
       query = query.ilike("location", `%${country}%`);
     }
 
-    // Get all matching DJs first (we'll sort by follower count in JS)
-    const { data: allDjs, error } = await query;
+    // Order by name for consistent results
+    query = query.order("name", { ascending: true });
+
+    // Get DJs with counts included
+    const { data: allDjs, error, count: totalCount } = await query;
 
     if (error) {
       console.error("[Browse DJs] Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Filter DJs based on whether they have events
-    // When searching, show all DJs (helps find new DJs)
-    // When browsing (no search), require at least one event
-    const filteredDjs = (allDjs || []).filter(dj => {
+    // Transform and filter DJs
+    const transformedDjs = (allDjs || []).map((dj: any) => ({
+      id: dj.id,
+      name: dj.name,
+      handle: dj.handle,
+      bio: dj.bio,
+      genres: dj.genres,
+      location: dj.location,
+      profile_image_url: dj.profile_image_url,
+      cover_image_url: dj.cover_image_url,
+      event_count: dj.event_lineups?.[0]?.count || 0,
+      follower_count: dj.dj_follows?.[0]?.count || 0,
+    }));
+
+    // Filter DJs based on whether they have events (unless searching)
+    const filteredDjs = transformedDjs.filter(dj => {
       if (search) {
         // When searching, show all DJs with profile images
         return true;
       }
       // When browsing, require at least one event
-      return djIdsWithEvents.has(dj.id);
+      return dj.event_count > 0;
     });
 
     // Sort by follower count (most popular first), then by name
     const sortedDjs = filteredDjs.sort((a, b) => {
-      const aFollowers = djFollowCounts[a.id] || 0;
-      const bFollowers = djFollowCounts[b.id] || 0;
-      
-      // Sort by followers descending, then by name ascending
-      if (bFollowers !== aFollowers) {
-        return bFollowers - aFollowers;
+      if (b.follower_count !== a.follower_count) {
+        return b.follower_count - a.follower_count;
       }
       return a.name.localeCompare(b.name);
     });
 
     // Apply pagination after sorting
     const paginatedDjs = sortedDjs.slice(offset, offset + limit);
-
-    // Add follower_count and event_count to each DJ for display
-    const djsWithStats = paginatedDjs.map(dj => ({
-      ...dj,
-      follower_count: djFollowCounts[dj.id] || 0,
-      event_count: djEventCounts[dj.id] || 0,
-    }));
+    const djsWithStats = paginatedDjs;
 
     return NextResponse.json(
       {
