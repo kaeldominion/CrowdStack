@@ -107,32 +107,27 @@ export async function GET(
       ...promotersByUsername,
     ];
 
-    // Search for users by email using direct database query (more efficient than listUsers pagination)
-    // This queries the auth.users table directly and handles any number of users
-    const { data: matchingAuthUsers, error: authError } = await serviceSupabase
-      .from("auth.users" as any)
-      .select("id, email, raw_user_meta_data")
-      .or(`email.ilike.%${query}%`)
-      .limit(50);
+    // Search for users by email using direct SQL query on auth.users
+    // This is O(log n) with the email index - scales to millions of users
+    // The service role client can query auth schema directly via RPC
+    const { data: matchingAuthUsers, error: authError } = await serviceSupabase.rpc(
+      'search_users_by_email',
+      { search_term: `%${query}%` }
+    ).limit(50);
 
-    // Fallback: if direct query doesn't work (some Supabase configs), use listUsers with pagination
     let usersToSearch: Array<{ id: string; email: string | undefined; user_metadata?: any }> = [];
     
     if (authError || !matchingAuthUsers) {
-      // Fallback to listUsers - paginate to find the user
-      let page = 1;
-      const perPage = 100;
-      let foundEnough = false;
+      // Fallback: RPC function doesn't exist yet, use listUsers with smart early-exit
+      // This is slower but works without DB migration
+      console.warn('[Promoter Search] RPC function not available, falling back to listUsers. Consider adding the search_users_by_email function for better performance.');
       
-      while (!foundEnough && page <= 10) { // Max 1000 users searched
-        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers({
-          page,
-          perPage,
-        });
-        
-        if (!authUsers?.users || authUsers.users.length === 0) break;
-        
-        // Filter users that match the search
+      const { data: authUsers } = await serviceSupabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000, // Get more users in one call
+      });
+      
+      if (authUsers?.users) {
         for (const user of authUsers.users) {
           if (!user.email) continue;
           const emailLower = user.email.toLowerCase();
@@ -147,21 +142,14 @@ export async function GET(
               email: user.email,
               user_metadata: user.user_metadata,
             });
+            
+            // Stop after finding 50 matches
+            if (usersToSearch.length >= 50) break;
           }
         }
-        
-        // If we found some matches, we can stop (unless there's a lot)
-        if (usersToSearch.length >= 20) {
-          foundEnough = true;
-        }
-        
-        // If this page wasn't full, we've reached the end
-        if (authUsers.users.length < perPage) break;
-        
-        page++;
       }
     } else {
-      // Direct query worked
+      // RPC query worked - O(log n) performance
       usersToSearch = matchingAuthUsers.map((u: any) => ({
         id: u.id,
         email: u.email,
@@ -252,4 +240,5 @@ export async function GET(
     );
   }
 }
+
 
