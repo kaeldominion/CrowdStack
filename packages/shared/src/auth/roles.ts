@@ -193,6 +193,113 @@ export async function assignUserRole(
   if (process.env.NODE_ENV === "development") {
     console.log(`Successfully assigned role ${role} to user ${userId} via RPC`);
   }
+
+  // Send role-specific welcome email (non-blocking)
+  try {
+    await sendRoleWelcomeEmail(userId, role, metadata);
+  } catch (emailError) {
+    console.error(`Failed to send role welcome email for ${role}:`, emailError);
+    // Don't throw - email failure shouldn't break role assignment
+  }
+}
+
+/**
+ * Send role-specific welcome email when a role is assigned
+ */
+async function sendRoleWelcomeEmail(
+  userId: string,
+  role: UserRole,
+  metadata: Record<string, any>
+): Promise<void> {
+  const supabase = createServiceRoleClient();
+  const { sendTemplateEmail } = await import("../email/template-renderer");
+
+  // Get user details
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  if (!userData?.user?.email) return;
+
+  const userEmail = userData.user.email;
+  const userName = userData.user.email?.split("@")[0] || "there";
+  const appUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app";
+
+  // Send role-specific email based on role type
+  if (role === "venue_admin" && metadata?.venue_id) {
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("name")
+      .eq("id", metadata.venue_id)
+      .single();
+
+    if (venue) {
+      await sendTemplateEmail(
+        "venue_admin_welcome",
+        userEmail,
+        userId,
+        {
+          user_name: userName,
+          venue_name: venue.name,
+          venue_dashboard_url: `${appUrl}/app/venue`,
+        }
+      );
+    }
+  } else if (role === "event_organizer" && metadata?.organizer_id) {
+    const { data: organizer } = await supabase
+      .from("organizers")
+      .select("name")
+      .eq("id", metadata.organizer_id)
+      .single();
+
+    if (organizer) {
+      await sendTemplateEmail(
+        "event_organizer_welcome",
+        userEmail,
+        userId,
+        {
+          user_name: userName,
+          organizer_name: organizer.name,
+          organizer_dashboard_url: `${appUrl}/app/organizer`,
+        }
+      );
+    }
+  } else if (role === "promoter" && metadata?.promoter_id) {
+    const { data: promoter } = await supabase
+      .from("promoters")
+      .select("name")
+      .eq("id", metadata.promoter_id)
+      .single();
+
+    if (promoter) {
+      await sendTemplateEmail(
+        "promoter_welcome",
+        userEmail,
+        userId,
+        {
+          user_name: userName,
+          promoter_name: promoter.name,
+          promoter_dashboard_url: `${appUrl}/app/promoter`,
+        }
+      );
+    }
+  } else if (role === "dj" && metadata?.dj_id) {
+    const { data: dj } = await supabase
+      .from("djs")
+      .select("name, handle")
+      .eq("id", metadata.dj_id)
+      .single();
+
+    if (dj) {
+      await sendTemplateEmail(
+        "dj_welcome",
+        userEmail,
+        userId,
+        {
+          dj_name: dj.name || dj.handle,
+          dj_handle: dj.handle,
+          dj_dashboard_url: `${appUrl}/app/dj`,
+        }
+      );
+    }
+  }
 }
 
 /**

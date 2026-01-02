@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { generateQRPassToken } from "@crowdstack/shared/qr/generate";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
+import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 import type { RegisterEventRequest } from "@crowdstack/shared";
 import { trackEventRegistration } from "@/lib/analytics/server";
 
@@ -495,6 +496,65 @@ export async function POST(
       );
     } catch (analyticsError) {
       console.warn("[Register API] Failed to track analytics event:", analyticsError);
+    }
+
+    // Send registration confirmation email
+    try {
+      if (attendee.email) {
+        // Get venue details
+        let venueName = "Venue TBA";
+        let venueAddress: string | null = null;
+        
+        if (event.venue_id) {
+          const { data: venue } = await serviceSupabase
+            .from("venues")
+            .select("name, address, city, state")
+            .eq("id", event.venue_id)
+            .single();
+          
+          if (venue) {
+            venueName = venue.name;
+            if (venue.address) {
+              venueAddress = `${venue.address}${venue.city ? `, ${venue.city}` : ""}${venue.state ? `, ${venue.state}` : ""}`;
+            }
+          }
+        }
+
+        const startTime = event.start_time ? new Date(event.start_time) : null;
+        const eventDate = startTime
+          ? startTime.toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : "TBA";
+        const eventTime = startTime
+          ? startTime.toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+            })
+          : "TBA";
+
+        await sendTemplateEmail(
+          "registration_confirmation",
+          attendee.email,
+          attendee.user_id,
+          {
+            attendee_name: attendee.name || "there",
+            event_name: event.name,
+            event_date: eventDate,
+            event_time: eventTime,
+            venue_name: venueName,
+            venue_address: venueAddress,
+            event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}`,
+          },
+          { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
+        );
+      }
+    } catch (emailError) {
+      console.error("[Register API] Failed to send registration confirmation email:", emailError);
+      // Don't fail the registration if email fails
     }
 
     // Get venue and organizer details for success screen
