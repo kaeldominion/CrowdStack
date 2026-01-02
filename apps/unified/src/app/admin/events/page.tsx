@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
 import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert, Globe, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { EventStatusBadge, EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
 
 export default function AdminEventsPage() {
   const router = useRouter();
@@ -56,18 +57,7 @@ export default function AdminEventsPage() {
     setFilteredEvents(filtered);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "published":
-        return <Badge variant="success">Published</Badge>;
-      case "draft":
-        return <Badge variant="warning">Draft</Badge>;
-      case "ended":
-        return <Badge variant="default">Ended</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
+  // Using EventStatusBadge component from EventStatusStepper
 
   const getApprovalBadge = (approvalStatus: string | null, hasVenue: boolean) => {
     if (!hasVenue) {
@@ -175,6 +165,7 @@ export default function AdminEventsPage() {
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                   <option value="ended">Ended</option>
+                  <option value="closed">Closed</option>
                 </select>
               </div>
             </div>
@@ -242,7 +233,9 @@ export default function AdminEventsPage() {
                         <TableCell>{event.registrations_count || 0}</TableCell>
                         <TableCell>{event.checkins_count || 0}</TableCell>
                         <TableCell>{getApprovalBadge(event.venue_approval_status, !!event.venue_id)}</TableCell>
-                        <TableCell>{getStatusBadge(event.status)}</TableCell>
+                        <TableCell>
+                          <EventStatusBadge status={(event.status || "draft") as EventStatus} />
+                        </TableCell>
                         <TableCell>
                           <div 
                             className="flex items-center gap-2"

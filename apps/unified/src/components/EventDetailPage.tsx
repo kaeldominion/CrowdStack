@@ -79,6 +79,7 @@ import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
+import { EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
 
@@ -1434,6 +1435,22 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         </div>
       </div>
 
+      {/* Event Lifecycle Stepper - Show for organizers and admins */}
+      {(config.role === "organizer" || config.role === "admin") && (
+        <Card className="p-4 overflow-x-auto">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Event Lifecycle
+            </span>
+          </div>
+          <EventStatusStepper
+            status={(event.status || "draft") as EventStatus}
+            size="md"
+            showLabels={true}
+          />
+        </Card>
+      )}
+
       {/* Venue Approval Status (for organizers) */}
       {config.role === "organizer" && config.showVenueApproval && event.venue_approval_status && (
         <Card className="p-6 border-l-4 border-l-warning">
@@ -2751,16 +2768,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <Badge variant="default">{event.promoter_access_type}</Badge>
                     </div>
                   )}
-                  {config.role === "organizer" && (
-                    <div className="flex items-center gap-2">
+                  {/* Quick Actions - available to owners (organizer, venue) and admin */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {config.role === "organizer" && (
                       <Link href={`/app/organizer/events/${eventId}/invites`}>
                         <Button variant="secondary">
                           <QrCode className="h-4 w-4 mr-2" />
                           Manage Invite Codes
                         </Button>
                       </Link>
-                    </div>
-                  )}
+                    )}
+                    {(config.role === "organizer" || config.role === "admin") && (
+                      <Link href={`/app/organizer/events/${eventId}/closeout`}>
+                        <Button variant="secondary">
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Closeout & Payouts
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </Card>
 

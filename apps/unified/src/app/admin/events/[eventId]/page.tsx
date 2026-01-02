@@ -24,7 +24,7 @@ export default function AdminEventDetailPage() {
         attendeesApiEndpoint: `/api/events/${eventId}/attendees`,
         canViewPromoters: true,
         canViewPhotos: true,
-        canViewSettings: false,
+        canViewSettings: true,
         canViewStats: true,
         canApprove: true,
         canPublish: true,
