@@ -10,9 +10,13 @@ import { isEventOwner } from "@crowdstack/shared/auth/event-permissions";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: { eventId: string } | Promise<{ eventId: string }> }
 ) {
   try {
+    // Handle params as Promise (Next.js 15+) or direct object
+    const resolvedParams = await Promise.resolve(params);
+    const eventId = resolvedParams.eventId;
+
     const userId = await getUserId();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,7 +45,7 @@ export async function POST(
     const isAdmin = roleList.includes("admin");
 
     // Check if current user can transfer ownership (owner, superadmin, or admin)
-    const canTransfer = await isEventOwner(userId, params.eventId) || isSuperadmin || isAdmin;
+    const canTransfer = await isEventOwner(userId, eventId) || isSuperadmin || isAdmin;
     if (!canTransfer) {
       return NextResponse.json(
         { error: "Only the event owner, superadmin, or admin can transfer ownership" },
@@ -78,7 +82,7 @@ export async function POST(
     const { data: event } = await serviceSupabase
       .from("events")
       .select("name, owner_user_id")
-      .eq("id", params.eventId)
+      .eq("id", eventId)
       .single();
 
     if (!event) {
@@ -89,7 +93,7 @@ export async function POST(
     const { error: updateError } = await serviceSupabase
       .from("events")
       .update({ owner_user_id: new_owner_user_id })
-      .eq("id", params.eventId);
+      .eq("id", eventId);
 
     if (updateError) {
       throw updateError;
@@ -100,7 +104,7 @@ export async function POST(
       user_id: userId,
       action_type: "ownership_transfer",
       resource_type: "event",
-      resource_id: params.eventId,
+      resource_id: eventId,
       metadata: {
         event_name: event.name,
         previous_owner_id: event.owner_user_id,
