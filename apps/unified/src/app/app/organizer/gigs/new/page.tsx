@@ -201,7 +201,7 @@ export default function NewGigPostingPage() {
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={formData.show_payment}
-                onChange={(checked) => setFormData({ ...formData, show_payment: checked })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, show_payment: e.target.checked })}
               />
               <label className="text-sm text-primary">Show payment amount to DJs</label>
             </div>
@@ -324,7 +324,7 @@ export default function NewGigPostingPage() {
               Create Gig Posting
             </Button>
             <Link href="/app/organizer/gigs">
-              <Button variant="outline">Cancel</Button>
+              <Button variant="secondary">Cancel</Button>
             </Link>
           </div>
         </form>

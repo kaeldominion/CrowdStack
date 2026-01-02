@@ -916,7 +916,7 @@ function TemplateFormModal({
             <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
-                checked={useTieredBonuses}
+                checked={useTieredBonuses || false}
                 onChange={(e) => setUseTieredBonuses(e.target.checked)}
                 className="rounded border-border"
               />

@@ -331,7 +331,7 @@ export default function OrganizerGigsPage() {
 
                 <div className="flex items-center gap-2">
                   <Link href={`/app/organizer/gigs/${gig.id}`}>
-                    <Button variant={needsAttention ? "primary" : "outline"} size="sm">
+                    <Button variant={needsAttention ? "primary" : "secondary"} size="sm">
                       <Eye className="w-4 h-4 mr-2" />
                       {needsAttention ? "Review Responses" : "View"}
                     </Button>

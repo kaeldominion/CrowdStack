@@ -218,7 +218,7 @@ export default function DJQRCodesPage() {
                       />
                       <div className="flex items-center gap-2">
                         <Button onClick={createInviteQR}>Create QR Code</Button>
-                        <Button variant="outline" onClick={() => setShowCreate(false)}>
+                        <Button variant="secondary" onClick={() => setShowCreate(false)}>
                           Cancel
                         </Button>
                       </div>
@@ -265,7 +265,7 @@ export default function DJQRCodesPage() {
 
                           <div className="flex items-center gap-2">
                             <Button
-                              variant="outline"
+                              variant="secondary"
                               size="sm"
                               onClick={() => copyInviteLink(code.invite_code, selectedEvent.slug)}
                               className="flex-1"

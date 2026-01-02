@@ -9,6 +9,7 @@ interface DJProfile {
   name: string;
   handle: string;
   profile_image_url: string | null;
+  is_selected?: boolean;
 }
 
 interface DJProfileSelectorProps {
@@ -90,13 +91,11 @@ export function DJProfileSelector({
         value={selectedId || ""}
         onChange={(e) => handleChange(e.target.value)}
         className="w-full"
-      >
-        {profiles.map((profile) => (
-          <option key={profile.id} value={profile.id}>
-            {profile.name} {profile.handle && `(@${profile.handle})`}
-          </option>
-        ))}
-      </Select>
+        options={profiles.map((profile) => ({
+          value: profile.id,
+          label: `${profile.name} ${profile.handle ? `(@${profile.handle})` : ""}`.trim(),
+        }))}
+      />
     </div>
   );
 }
