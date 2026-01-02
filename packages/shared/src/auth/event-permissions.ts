@@ -142,7 +142,7 @@ export async function getEventAccess(
     };
   }
 
-  // Check if superadmin
+  // Check if superadmin or admin (both have full access)
   const { data: userRoles } = await supabase
     .from("user_roles")
     .select("role")
@@ -150,12 +150,13 @@ export async function getEventAccess(
 
   const roles = userRoles?.map((r) => r.role) || [];
   const isSuperadmin = roles.includes("superadmin");
+  const isAdmin = roles.includes("admin");
 
-  if (isSuperadmin) {
+  if (isSuperadmin || isAdmin) {
     return {
       hasAccess: true,
       isOwner: false,
-      isSuperadmin: true,
+      isSuperadmin: true, // Treat admin same as superadmin for permission purposes
       accessSource: "superadmin",
       permissions: { full_admin: true },
       isOwningEntity: true,

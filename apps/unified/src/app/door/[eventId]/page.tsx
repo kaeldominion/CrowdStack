@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+ import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 interface CheckInResult {
   id: string;
@@ -814,21 +815,19 @@ export default function DoorScannerPage() {
               Scan this QR code to register for the event. Registrations will be attributed to the venue.
             </p>
             
-            <div className="flex flex-col items-center justify-center p-4 bg-raised rounded-lg">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-                  (() => {
-                    const baseUrl = typeof window !== "undefined" 
-                      ? `${window.location.origin}/e/${eventInfo.slug}/register`
-                      : `/e/${eventInfo.slug}/register`;
-                    if (eventInfo.venue?.id) {
-                      return `${baseUrl}?ref=venue_${eventInfo.venue.id}`;
-                    }
-                    return baseUrl;
-                  })()
-                )}`}
-                alt="Event Registration QR Code"
-                className="w-64 h-64"
+            <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg">
+              <BeautifiedQRCode
+                url={(() => {
+                  const baseUrl = typeof window !== "undefined" 
+                    ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                    : `/e/${eventInfo.slug}/register`;
+                  if (eventInfo.venue?.id) {
+                    return `${baseUrl}?ref=venue_${eventInfo.venue.id}`;
+                  }
+                  return baseUrl;
+                })()}
+                size={256}
+                logoSize={50}
               />
             </div>
             

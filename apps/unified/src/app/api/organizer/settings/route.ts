@@ -63,7 +63,7 @@ export async function GET() {
       allUserIds.add(ou.user_id);
     });
 
-    // Get user details from auth.users and profiles
+    // Get user details from auth.users, profiles, and attendees
     const userIdsArray = Array.from(allUserIds);
     const userMap = new Map<string, { email: string; name: string; avatar_url: string | null }>();
 
@@ -82,15 +82,41 @@ export async function GET() {
         profileMap.set(profile.id, profile.avatar_url);
       });
 
+      // Get attendee names (which have the actual user names)
+      const { data: attendees } = await serviceSupabase
+        .from("attendees")
+        .select("user_id, name, surname, avatar_url")
+        .in("user_id", userIdsArray);
+
+      const attendeeMap = new Map<string, { name: string; avatar_url: string | null }>();
+      (attendees || []).forEach((attendee: any) => {
+        const fullName = attendee.surname 
+          ? `${attendee.name} ${attendee.surname}`.trim()
+          : attendee.name;
+        attendeeMap.set(attendee.user_id, { 
+          name: fullName, 
+          avatar_url: attendee.avatar_url || null 
+        });
+      });
+
       if (authUsers?.users) {
         authUsers.users.forEach((authUser) => {
           if (allUserIds.has(authUser.id)) {
             const email = authUser.email || "";
-            const name = authUser.user_metadata?.name || 
+            
+            // Try to get name from attendees first (most reliable), then user_metadata, then email
+            const attendeeInfo = attendeeMap.get(authUser.id);
+            const name = attendeeInfo?.name ||
+                        authUser.user_metadata?.name || 
                         authUser.user_metadata?.full_name || 
                         email.split("@")[0] || 
                         "Unknown";
-            const avatar_url = profileMap.get(authUser.id) || null;
+            
+            // Prefer attendee avatar, then profile avatar
+            const avatar_url = attendeeInfo?.avatar_url || 
+                              profileMap.get(authUser.id) || 
+                              null;
+            
             userMap.set(authUser.id, { email, name, avatar_url });
           }
         });

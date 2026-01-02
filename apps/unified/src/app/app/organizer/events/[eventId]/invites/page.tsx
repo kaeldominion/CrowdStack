@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Card, Button, Input, Badge, Select } from "@crowdstack/ui";
 import { QrCode, Plus, Copy, Check, Trash2 } from "lucide-react";
 import type { InviteQRCode } from "@/lib/data/invite-codes";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 export default function EventInvitesPage() {
   const params = useParams();
@@ -111,8 +112,7 @@ export default function EventInvitesPage() {
     } else {
       targetUrl = `${window.location.origin}/i/${inviteCode}`;
     }
-    // Generate QR code URL (using a QR code service or library)
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(targetUrl)}`;
+    return targetUrl;
   };
 
   const handleDelete = async (inviteQRId: string) => {
@@ -268,8 +268,12 @@ export default function EventInvitesPage() {
                 </div>
               )}
 
-              <div className="flex items-center justify-center p-4 bg-void rounded-md">
-                <img src={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id, inviteQR.self_promote)} alt="QR Code" className="w-32 h-32" />
+              <div className="flex items-center justify-center p-4 bg-white rounded-md">
+                <BeautifiedQRCode
+                  url={getQRCodeUrl(inviteQR.invite_code, inviteQR.promoter_id, inviteQR.self_promote)}
+                  size={128}
+                  logoSize={25}
+                />
               </div>
 
               <div className="space-y-2">

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { QrCode } from "lucide-react";
+import { BeautifiedQRCode } from "./BeautifiedQRCode";
 
 interface EventQRCodeProps {
   eventSlug: string;
 }
 
 export function EventQRCode({ eventSlug }: EventQRCodeProps) {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [registrationUrl, setRegistrationUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,10 +20,6 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
           const data = await response.json();
           if (data.qr_url) {
             setRegistrationUrl(data.qr_url);
-            // Generate QR code image URL using qrserver.com API
-            const qrData = encodeURIComponent(data.qr_url);
-            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
-            setQrCodeUrl(qrImageUrl);
           }
         }
       } catch (error) {
@@ -46,7 +42,7 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
     );
   }
 
-  if (!qrCodeUrl || !registrationUrl) {
+  if (!registrationUrl) {
     return null;
   }
 
@@ -59,11 +55,10 @@ export function EventQRCode({ eventSlug }: EventQRCodeProps) {
         </h3>
         <div className="flex flex-col items-center space-y-3">
           <div className="bg-white p-4 rounded-lg border-2 border-border shadow-lg">
-            <img 
-              src={qrCodeUrl} 
-              alt="Event Promotion QR Code" 
-              className="w-48 h-48"
-              style={{ imageRendering: "pixelated" }}
+            <BeautifiedQRCode
+              url={registrationUrl}
+              size={192}
+              logoSize={38}
             />
           </div>
           <div className="space-y-2">

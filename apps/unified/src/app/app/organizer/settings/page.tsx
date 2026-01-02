@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Plus, Check } from "lucide-react";
+import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Modal } from "@crowdstack/ui";
+import { Save, Upload, X, Trash2, Plus, Check, Settings } from "lucide-react";
 import Image from "next/image";
-import type { Organizer, OrganizerTeamMember } from "@crowdstack/shared/types";
+import type { Organizer, OrganizerTeamMember, OrganizerPermissions } from "@crowdstack/shared/types";
 import { OrganizerLogo } from "@/components/organizer/OrganizerLogo";
 import { TeamMemberCard } from "@/components/organizer/TeamMemberCard";
 import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
+import { PermissionsEditor } from "@/components/PermissionsEditor";
 
 interface OrganizerSettingsData {
   organizer: Organizer;
@@ -23,6 +24,8 @@ export default function OrganizerSettingsPage() {
   const [savedTab, setSavedTab] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<OrganizerTeamMember | null>(null);
   const [showMemberForm, setShowMemberForm] = useState(false);
+  const [editingPermissions, setEditingPermissions] = useState<OrganizerTeamMember | null>(null);
+  const [permissions, setPermissions] = useState<OrganizerPermissions | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -178,6 +181,54 @@ export default function OrganizerSettingsPage() {
     }
   };
 
+  const handleEditPermissions = (member: OrganizerTeamMember) => {
+    if (member.is_owner) return; // Owners have all permissions
+    setEditingPermissions(member);
+    setPermissions(member.permissions || {
+      manage_users: false,
+      edit_profile: false,
+      add_events: false,
+      edit_events: false,
+      delete_events: false,
+      view_reports: false,
+      manage_promoters: false,
+      publish_photos: false,
+      manage_payouts: false,
+      full_admin: false,
+      closeout_event: false,
+      view_settings: false,
+      manage_door_staff: false,
+      view_financials: false,
+    });
+  };
+
+  const handleSavePermissions = async () => {
+    if (!editingPermissions || !permissions) return;
+
+    try {
+      const response = await fetch("/api/organizer/team/permissions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: editingPermissions.user_id,
+          permissions: permissions,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update permissions");
+      }
+
+      await loadSettings();
+      setEditingPermissions(null);
+      setPermissions(null);
+    } catch (error: any) {
+      console.error("Failed to update permissions:", error);
+      alert(error.message || "Failed to update permissions");
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-8 pt-4">
@@ -245,12 +296,7 @@ export default function OrganizerSettingsPage() {
                 value={data.organizer.name || ""}
                 onChange={(e) => updateOrganizerField("name", e.target.value)}
                 required
-              />
-
-              <Input
-                label="Company Name"
-                value={data.organizer.company_name || ""}
-                onChange={(e) => updateOrganizerField("company_name", e.target.value)}
+                helperText="This is the name that will appear on your events and profile"
               />
 
               <Textarea
@@ -377,6 +423,16 @@ export default function OrganizerSettingsPage() {
                     >
                       <TeamMemberCard member={member} size="md" showDetails={true} />
                       <div className="flex items-center gap-2">
+                        {!member.is_owner && member.user_id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPermissions(member)}
+                            title="Edit permissions"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        )}
                         {!member.is_owner && (
                           <Button
                             variant="ghost"
@@ -404,6 +460,47 @@ export default function OrganizerSettingsPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Permissions Editor Modal */}
+      {editingPermissions && permissions && (
+        <Modal
+          isOpen={!!editingPermissions}
+          onClose={() => {
+            setEditingPermissions(null);
+            setPermissions(null);
+          }}
+          title={`Edit Permissions - ${editingPermissions.name}`}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-secondary">
+              Configure what this team member can access and manage for your organizer account.
+            </p>
+            <PermissionsEditor
+              permissions={permissions}
+              onChange={(p) => setPermissions(p as OrganizerPermissions)}
+              type="organizer"
+            />
+            <div className="flex justify-end gap-2 pt-4 border-t border-border">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setEditingPermissions(null);
+                  setPermissions(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSavePermissions}
+              >
+                Save Permissions
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

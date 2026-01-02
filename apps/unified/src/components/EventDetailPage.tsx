@@ -98,6 +98,7 @@ import { PromoterManagementModal } from "@/components/PromoterManagementModal";
 import { PhotoUploader } from "@/components/PhotoUploader";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { EmailStats } from "@/components/EmailStats";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { EventImageUpload } from "@/components/EventImageUpload";
 import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
@@ -145,6 +146,7 @@ interface EventData {
   promoter_access_type?: string;
   organizer_id: string;
   venue_id: string | null;
+  owner_user_id: string | null; // The user who owns this event
   venue_approval_status?: string | null;
   venue_approval_at?: string | null;
   venue_rejection_reason?: string | null;
@@ -487,10 +489,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         webUrl = origin;
       }
     }
-    return `${webUrl}/e/${event.slug}?ref=${refCode}`;
+    return `${webUrl}/e/${event.slug}/register?ref=${refCode}`;
   };
 
-  // Generate QR code URL
+  // Generate QR code URL (deprecated - using BeautifiedQRCode component instead)
   const getQRCodeUrl = () => {
     const link = getReferralLink();
     if (!link) return null;
@@ -2917,32 +2919,57 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 </Card>
               )}
 
-              {/* Ownership Transfer - only visible to event owners and superadmins */}
+              {/* Ownership Transfer - visible to event owners and superadmins/admins */}
               {(effectivePermissions.isOwner || effectivePermissions.isSuperadmin) && (
                 <Card>
                   <h2 className="text-xl font-semibold text-primary mb-4">Event Ownership</h2>
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
-                        <ShieldCheck className="h-5 w-5 text-accent-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-secondary">Current Owner</p>
-                        <p className="font-medium text-primary">
-                          {effectivePermissions.isOwner ? "You" : "Another user"}
+                    {event.owner_user_id ? (
+                      // Event has an owner
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
+                            <ShieldCheck className="h-5 w-5 text-accent-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-secondary">Current Owner</p>
+                            <p className="font-medium text-primary">
+                              {effectivePermissions.isOwner ? "You" : "Another user"}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-secondary">
+                          The event owner has full control over all settings, including the ability to transfer ownership to another user.
                         </p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-secondary">
-                      The event owner has full control over all settings, including the ability to transfer ownership to another user.
-                    </p>
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowTransferModal(true)}
-                    >
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Transfer Ownership
-                    </Button>
+                        <Button
+                          variant="secondary"
+                          onClick={() => setShowTransferModal(true)}
+                        >
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Transfer Ownership
+                        </Button>
+                      </>
+                    ) : (
+                      // Legacy event - no owner assigned
+                      <>
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                          <AlertCircle className="h-5 w-5 text-warning" />
+                          <div>
+                            <p className="font-medium text-primary">No Owner Assigned</p>
+                            <p className="text-sm text-secondary">
+                              This is a legacy event without an owner. Assign an owner to enable ownership features.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="primary"
+                          onClick={() => setShowTransferModal(true)}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Assign Owner
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </Card>
               )}
@@ -3609,12 +3636,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           setTransferEmail("");
           setFoundUser(null);
         }}
-        title="Transfer Event Ownership"
+        title={event.owner_user_id ? "Transfer Event Ownership" : "Assign Event Owner"}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-secondary text-sm">
-            Transfer ownership of this event to another user. The new owner will have full control over all event settings.
+            {event.owner_user_id 
+              ? "Transfer ownership of this event to another user. The new owner will have full control over all event settings."
+              : "Assign an owner to this event. The owner will have full control over all event settings."
+            }
           </p>
           
           <div className="space-y-2">
@@ -3671,15 +3701,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </div>
           )}
 
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
-            <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-primary">Warning</p>
-              <p className="text-xs text-secondary">
-                Once transferred, you will lose owner-level access to this event unless you are a team member or superadmin.
-              </p>
+          {event.owner_user_id && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
+              <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-primary">Warning</p>
+                <p className="text-xs text-secondary">
+                  Once transferred, you will lose owner-level access to this event unless you are a team member or superadmin.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
@@ -3722,7 +3754,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               loading={transferring}
               disabled={!foundUser}
             >
-              Transfer Ownership
+              {event.owner_user_id ? "Transfer Ownership" : "Assign Owner"}
             </Button>
           </div>
         </div>
@@ -3838,12 +3870,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </p>
 
             <div className="flex flex-col items-center py-4">
-              {getQRCodeUrl() ? (
+              {getReferralLink() ? (
                 <div className="bg-white p-4 rounded-lg">
-                  <img
-                    src={getQRCodeUrl()!}
-                    alt="Your Referral QR Code"
-                    className="w-64 h-64"
+                  <BeautifiedQRCode
+                    url={getReferralLink()!}
+                    size={256}
+                    logoSize={50}
                   />
                 </div>
               ) : (
@@ -3881,13 +3913,68 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <Button
                   variant="secondary"
                   className="flex-1"
-                  onClick={() => {
-                    const qrUrl = getQRCodeUrl();
-                    if (qrUrl) {
-                      const link = document.createElement("a");
-                      link.href = qrUrl;
-                      link.download = `${event.slug}-referral-qr.png`;
-                      link.click();
+                  onClick={async () => {
+                    const link = getReferralLink();
+                    if (!link) return;
+                    
+                    try {
+                      // Generate QR code with logo for download
+                      const QRCode = (await import("qrcode")).default;
+                      const canvas = document.createElement("canvas");
+                      const size = 512; // Higher resolution for download
+                      const logoSize = 100;
+                      
+                      await QRCode.toCanvas(canvas, link, {
+                        width: size,
+                        margin: 2,
+                        color: {
+                          dark: "#000000",
+                          light: "#FFFFFF",
+                        },
+                        errorCorrectionLevel: "H",
+                      });
+                      
+                      const ctx = canvas.getContext("2d");
+                      if (ctx) {
+                        // Load and draw logo
+                        const logo = new Image();
+                        logo.crossOrigin = "anonymous";
+                        
+                        await new Promise((resolve, reject) => {
+                          logo.onload = () => {
+                            const centerX = size / 2;
+                            const centerY = size / 2;
+                            const logoX = centerX - logoSize / 2;
+                            const logoY = centerY - logoSize / 2;
+                            
+                            // White background circle
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.beginPath();
+                            ctx.arc(centerX, centerY, logoSize / 2 + 8, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // Draw logo
+                            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+                            resolve(null);
+                          };
+                          logo.onerror = reject;
+                          logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+                        });
+                      }
+                      
+                      // Download
+                      canvas.toBlob((blob) => {
+                        if (blob) {
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `${event.slug}-referral-qr.png`;
+                          link.click();
+                          URL.revokeObjectURL(url);
+                        }
+                      });
+                    } catch (error) {
+                      console.error("Error downloading QR code:", error);
                     }
                   }}
                 >

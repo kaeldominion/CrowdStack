@@ -96,7 +96,7 @@ export async function GET(
                    process.env.NEXT_PUBLIC_APP_URL || 
                    "https://crowdstack.app";
     
-    let registrationUrl = `${origin}/e/${event.slug}`;
+    let registrationUrl = `${origin}/e/${event.slug}/register`;
     if (promoterId) {
       registrationUrl += `?ref=${promoterId}`;
     }
