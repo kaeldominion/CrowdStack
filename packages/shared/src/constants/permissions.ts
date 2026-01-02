@@ -14,6 +14,11 @@ export const DEFAULT_VENUE_PERMISSIONS: VenuePermissions = {
   manage_organizers: false,
   manage_guests: false,
   full_admin: false,
+  // Event-specific permissions
+  closeout_event: false,
+  view_settings: false,
+  manage_door_staff: false,
+  view_financials: false,
 };
 
 export const FULL_ADMIN_VENUE_PERMISSIONS: VenuePermissions = {
@@ -27,6 +32,11 @@ export const FULL_ADMIN_VENUE_PERMISSIONS: VenuePermissions = {
   manage_organizers: true,
   manage_guests: true,
   full_admin: true,
+  // Event-specific permissions
+  closeout_event: true,
+  view_settings: true,
+  manage_door_staff: true,
+  view_financials: true,
 };
 
 export const DEFAULT_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
@@ -40,6 +50,11 @@ export const DEFAULT_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
   publish_photos: false,
   manage_payouts: false,
   full_admin: false,
+  // Event-specific permissions
+  closeout_event: false,
+  view_settings: false,
+  manage_door_staff: false,
+  view_financials: false,
 };
 
 export const FULL_ADMIN_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
@@ -53,6 +68,11 @@ export const FULL_ADMIN_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
   publish_photos: true,
   manage_payouts: true,
   full_admin: true,
+  // Event-specific permissions
+  closeout_event: true,
+  view_settings: true,
+  manage_door_staff: true,
+  view_financials: true,
 };
 
 

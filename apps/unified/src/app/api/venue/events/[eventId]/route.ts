@@ -39,6 +39,7 @@ export async function GET(
         created_at,
         venue_id,
         organizer_id,
+        owner_user_id,
         organizer:organizers(id, name, email),
         venue:venues(id, name, slug, address, city),
         event_promoters(

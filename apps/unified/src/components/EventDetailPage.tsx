@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 import {
   Card,
   Button,
@@ -26,6 +27,29 @@ import {
   useToast,
 } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+
+// Fetcher for SWR
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+// Types for event permissions
+interface EventPermissions {
+  hasAccess: boolean;
+  isOwner: boolean;
+  isSuperadmin: boolean;
+  accessSource: string;
+  permissions: {
+    full_admin: boolean;
+    edit_events: boolean;
+    manage_promoters: boolean;
+    view_reports: boolean;
+    view_settings: boolean;
+    closeout_event: boolean;
+    manage_door_staff: boolean;
+    view_financials: boolean;
+    publish_photos: boolean;
+    manage_payouts: boolean;
+  };
+}
 import {
   ArrowLeft,
   Calendar,
@@ -333,6 +357,37 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     external_ticket_url: "",
   });
 
+  // Ownership transfer state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
+  const [transferring, setTransferring] = useState(false);
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [foundUser, setFoundUser] = useState<{ id: string; email: string } | null>(null);
+
+  // Fetch dynamic user permissions for this event
+  const { data: eventPermissions } = useSWR<EventPermissions>(
+    `/api/events/${eventId}/my-permissions`,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  // Compute effective permissions by merging config with dynamic permissions
+  // Dynamic permissions override static config when available
+  const effectivePermissions = useMemo(() => {
+    const perms = eventPermissions?.permissions;
+    return {
+      canEdit: perms?.edit_events ?? config.canEdit ?? false,
+      canManagePromoters: perms?.manage_promoters ?? config.canManagePromoters ?? false,
+      canManageDoorStaff: perms?.manage_door_staff ?? config.canManageDoorStaff ?? false,
+      canViewSettings: perms?.view_settings ?? config.canViewSettings ?? false,
+      canCloseoutEvent: perms?.closeout_event ?? false,
+      canViewFinancials: perms?.view_financials ?? false,
+      canPublishPhotos: perms?.publish_photos ?? false,
+      isOwner: eventPermissions?.isOwner ?? false,
+      isSuperadmin: eventPermissions?.isSuperadmin ?? false,
+    };
+  }, [eventPermissions, config.canEdit, config.canManagePromoters, config.canManageDoorStaff, config.canViewSettings]);
+
   useEffect(() => {
     loadEventData();
     if (config.statsApiEndpoint) {
@@ -465,7 +520,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   };
 
   const handleTagToggle = async (tagValue: string) => {
-    if (!config.canEdit) return;
+    if (!effectivePermissions.canEdit) return;
     
     const existingTag = eventTags.find((t) => t.tag_type === "music" && t.tag_value === tagValue);
     setSavingTags(true);
@@ -535,7 +590,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           setOrganizerId(data.event.organizer_id);
         }
         // Only reset the form if requested (don't reset during image uploads while modal is open)
-        if (config.canEdit && resetForm) {
+        if (effectivePermissions.canEdit && resetForm) {
           setEditForm({
             name: data.event.name || "",
             slug: data.event.slug || "",
@@ -1249,7 +1304,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     );
   }
 
-  // Determine which tabs to show
+  // Determine which tabs to show based on effective permissions
   const tabs: Array<{ value: string; label: string }> = [];
   if (config.canViewStats || config.role === "promoter") {
     tabs.push({ value: "overview", label: "Overview" });
@@ -1257,11 +1312,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (config.canViewAttendees) {
     tabs.push({ value: "attendees", label: `Attendees (${attendees.length})` });
   }
-  if (config.canViewPromoters) {
+  if (config.canViewPromoters || effectivePermissions.canManagePromoters) {
     tabs.push({ value: "promoters", label: "Promoters" });
   }
   // Leaderboard tab - show for promoters and organizers/venues with promoters
-  if (config.role === "promoter" || config.canViewPromoters) {
+  if (config.role === "promoter" || config.canViewPromoters || effectivePermissions.canManagePromoters) {
     tabs.push({ value: "leaderboard", label: "Leaderboard" });
   }
   if (config.canViewPhotos) {
@@ -1272,11 +1327,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "email-stats", label: "Email Stats" });
   }
-  if (config.canViewSettings) {
+  // Settings tab - uses dynamic permissions
+  if (effectivePermissions.canViewSettings) {
     tabs.push({ value: "settings", label: "Settings" });
   }
-  // Lineup tab - show for organizers, venues, and admins who can edit
-  if (config.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
+  // Lineup tab - show for those who can edit
+  if (effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "lineup", label: "Lineup" });
   }
 
@@ -1337,7 +1393,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Button>
             </Link>
           )}
-          {config.canManageDoorStaff && (
+          {effectivePermissions.canManageDoorStaff && (
             <Button variant="secondary" onClick={() => setShowDoorStaffModal(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Door Staff
@@ -1349,7 +1405,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               Edit History
             </Button>
           )}
-          {config.canEdit && (
+          {effectivePermissions.canEdit && (
             <Button variant="secondary" onClick={() => setShowEditModal(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Event
@@ -2274,7 +2330,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <TabsContent value="promoters" className="space-y-4">
               {/* Pending Promoter Requests */}
               {/* Debug: Show request count */}
-              {config.canManagePromoters && (
+              {effectivePermissions.canManagePromoters && (
                 <div className="text-xs text-secondary mb-2">
                   Total requests loaded: {promoterRequests.length} | Pending: {promoterRequests.filter(r => r.status === "pending").length}
                 </div>
@@ -2360,7 +2416,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-primary">Assigned Promoters</h2>
                   <div className="flex gap-2">
-                    {config.canManagePromoters && (
+                    {effectivePermissions.canManagePromoters && (
                       <Button variant="primary" onClick={() => setShowPromoterModal(true)}>
                         <UserPlus className="h-4 w-4 mr-2" />
                         Add Promoter
@@ -2389,7 +2445,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             <TableHead>Check-ins</TableHead>
                           </>
                         )}
-                        {config.canManagePromoters && (
+                        {effectivePermissions.canManagePromoters && (
                           <TableHead className="w-16">Actions</TableHead>
                         )}
                       </TableRow>
@@ -2414,7 +2470,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                 <TableCell>{promoterStats?.check_ins || 0}</TableCell>
                               </>
                             )}
-                            {config.canManagePromoters && (
+                            {effectivePermissions.canManagePromoters && (
                               <TableCell>
                                 <Button
                                   variant="ghost"
@@ -2434,7 +2490,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 ) : (
                   <div className="text-center text-secondary py-8">
                     No promoters assigned to this event yet.
-                    {config.canManagePromoters && (
+                    {effectivePermissions.canManagePromoters && (
                       <p className="text-sm mt-2">
                         Click &quot;Add Promoter&quot; to assign promoters, or wait for promoters to request access.
                       </p>
@@ -2538,7 +2594,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <div className="text-center py-8 text-secondary">
                       <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>No media uploaded for this event</p>
-                      {config.canEdit && (
+                      {effectivePermissions.canEdit && (
                         <p className="text-sm mt-2">Upload media in the Settings tab</p>
                       )}
                     </div>
@@ -2791,12 +2847,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
           </TabsContent>
 
-          {(config.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") && (
+          {(effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") && (
             <TabsContent value="lineup" className="space-y-4">
               <EventLineupManagement eventId={eventId} />
             </TabsContent>
           )}
-          {config.canViewSettings && (
+          {effectivePermissions.canViewSettings && (
             <TabsContent value="settings" className="space-y-4">
               <Card>
                 <h2 className="text-xl font-semibold text-primary mb-4">Event Settings</h2>
@@ -2807,7 +2863,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <Badge variant="default">{event.promoter_access_type}</Badge>
                     </div>
                   )}
-                  {/* Quick Actions - available to owners (organizer, venue) and admin */}
+                  {/* Quick Actions - available to event owners and those with closeout permissions */}
                   <div className="flex flex-wrap items-center gap-2">
                     {config.role === "organizer" && (
                       <Link href={`/app/organizer/events/${eventId}/invites`}>
@@ -2817,7 +2873,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                         </Button>
                       </Link>
                     )}
-                    {(config.role === "organizer" || config.role === "admin") && (
+                    {effectivePermissions.canCloseoutEvent && (
                       <Link href={`/app/organizer/events/${eventId}/closeout`}>
                         <Button variant="secondary">
                           <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -2830,7 +2886,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
 
               {/* Music Tags */}
-              {config.canEdit && (
+              {effectivePermissions.canEdit && (
                 <Card>
                   <h2 className="text-xl font-semibold text-primary mb-4">Music Genres</h2>
                   <div className="space-y-2">
@@ -2857,6 +2913,36 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <p className="text-xs text-secondary">
                       Select the music genres for this event
                     </p>
+                  </div>
+                </Card>
+              )}
+
+              {/* Ownership Transfer - only visible to event owners and superadmins */}
+              {(effectivePermissions.isOwner || effectivePermissions.isSuperadmin) && (
+                <Card>
+                  <h2 className="text-xl font-semibold text-primary mb-4">Event Ownership</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
+                        <ShieldCheck className="h-5 w-5 text-accent-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-secondary">Current Owner</p>
+                        <p className="font-medium text-primary">
+                          {effectivePermissions.isOwner ? "You" : "Another user"}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-secondary">
+                      The event owner has full control over all settings, including the ability to transfer ownership to another user.
+                    </p>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowTransferModal(true)}
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Transfer Ownership
+                    </Button>
                   </div>
                 </Card>
               )}
@@ -2994,7 +3080,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       />
 
       {/* Edit Modal */}
-      {config.canEdit && (
+      {effectivePermissions.canEdit && (
         <Modal
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
@@ -3493,7 +3579,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       )}
 
       {/* Door Staff Modal */}
-      {config.canManageDoorStaff && event && (
+      {effectivePermissions.canManageDoorStaff && event && (
         <DoorStaffModal
           isOpen={showDoorStaffModal}
           onClose={() => setShowDoorStaffModal(false)}
@@ -3505,7 +3591,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       )}
 
       {/* Promoter Management Modal */}
-      {config.canManagePromoters && event && (
+      {effectivePermissions.canManagePromoters && event && (
         <PromoterManagementModal
           isOpen={showPromoterModal}
           onClose={() => setShowPromoterModal(false)}
@@ -3514,6 +3600,133 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           onUpdate={loadEventData}
         />
       )}
+
+      {/* Ownership Transfer Modal */}
+      <Modal
+        isOpen={showTransferModal}
+        onClose={() => {
+          setShowTransferModal(false);
+          setTransferEmail("");
+          setFoundUser(null);
+        }}
+        title="Transfer Event Ownership"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-secondary text-sm">
+            Transfer ownership of this event to another user. The new owner will have full control over all event settings.
+          </p>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-primary">
+              New Owner Email
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                value={transferEmail}
+                onChange={(e) => {
+                  setTransferEmail(e.target.value);
+                  setFoundUser(null);
+                }}
+                placeholder="Enter user email"
+                className="flex-1"
+              />
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  if (!transferEmail) return;
+                  setSearchingUser(true);
+                  try {
+                    const res = await fetch(`/api/admin/users/search?email=${encodeURIComponent(transferEmail)}`);
+                    const data = await res.json();
+                    if (data.users && data.users.length > 0) {
+                      setFoundUser({ id: data.users[0].id, email: data.users[0].email });
+                    } else {
+                      toast.error("User not found", "No user found with that email address.");
+                      setFoundUser(null);
+                    }
+                  } catch (error) {
+                    toast.error("Search failed", "Could not search for user.");
+                  } finally {
+                    setSearchingUser(false);
+                  }
+                }}
+                loading={searchingUser}
+                disabled={!transferEmail}
+              >
+                Search
+              </Button>
+            </div>
+          </div>
+
+          {foundUser && (
+            <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-success" />
+                <span className="text-sm text-primary">
+                  Found user: <strong>{foundUser.email}</strong>
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
+            <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-primary">Warning</p>
+              <p className="text-xs text-secondary">
+                Once transferred, you will lose owner-level access to this event unless you are a team member or superadmin.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowTransferModal(false);
+                setTransferEmail("");
+                setFoundUser(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                if (!foundUser) return;
+                setTransferring(true);
+                try {
+                  const res = await fetch(`/api/events/${eventId}/transfer-ownership`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ new_owner_user_id: foundUser.id }),
+                  });
+                  if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || "Failed to transfer ownership");
+                  }
+                  toast.success("Ownership transferred", "Event ownership has been successfully transferred.");
+                  setShowTransferModal(false);
+                  setTransferEmail("");
+                  setFoundUser(null);
+                  // Reload event data and permissions
+                  loadEventData();
+                } catch (error: any) {
+                  toast.error("Transfer failed", error.message);
+                } finally {
+                  setTransferring(false);
+                }
+              }}
+              loading={transferring}
+              disabled={!foundUser}
+            >
+              Transfer Ownership
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Approval Modal */}
       {config.canApprove && (

@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         venue_id: venueId,
         organizer_id: organizerId,
+        owner_user_id: userId, // User who creates the event is the owner
         start_time: body.start_time,
         end_time: body.end_time || null,
         capacity: body.capacity || null,

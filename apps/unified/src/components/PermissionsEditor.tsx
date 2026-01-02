@@ -22,6 +22,11 @@ const VENUE_PERMISSION_LABELS: Record<keyof VenuePermissions, string> = {
   manage_organizers: "Manage Organizers",
   manage_guests: "Manage Guests",
   full_admin: "Full Admin (All Permissions)",
+  // Event-specific permissions
+  closeout_event: "Close Events & Finalize Payouts",
+  view_settings: "View Event Settings",
+  manage_door_staff: "Manage Door Staff",
+  view_financials: "View Financial Details",
 };
 
 const ORGANIZER_PERMISSION_LABELS: Record<keyof OrganizerPermissions, string> = {
@@ -35,6 +40,11 @@ const ORGANIZER_PERMISSION_LABELS: Record<keyof OrganizerPermissions, string> = 
   publish_photos: "Publish Photos",
   manage_payouts: "Manage Payouts",
   full_admin: "Full Admin (All Permissions)",
+  // Event-specific permissions
+  closeout_event: "Close Events & Finalize Payouts",
+  view_settings: "View Event Settings",
+  manage_door_staff: "Manage Door Staff",
+  view_financials: "View Financial Details",
 };
 
 export function PermissionsEditor({

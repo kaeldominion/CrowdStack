@@ -131,6 +131,11 @@ export interface VenuePermissions {
   manage_organizers: boolean;
   manage_guests: boolean;
   full_admin: boolean;
+  // Event-specific permissions
+  closeout_event: boolean;
+  view_settings: boolean;
+  manage_door_staff: boolean;
+  view_financials: boolean;
 }
 
 export interface OrganizerPermissions {
@@ -144,6 +149,11 @@ export interface OrganizerPermissions {
   publish_photos: boolean;
   manage_payouts: boolean;
   full_admin: boolean;
+  // Event-specific permissions
+  closeout_event: boolean;
+  view_settings: boolean;
+  manage_door_staff: boolean;
+  view_financials: boolean;
 }
 
 export interface VenueUser {
