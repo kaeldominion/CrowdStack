@@ -135,3 +135,45 @@ export async function canDeletePhoto(photoId: string): Promise<boolean> {
   return false;
 }
 
+/**
+ * Check if user can manage photos for an event (delete, feature, etc.)
+ * Allows: superadmin, organizer
+ * More restrictive than canUploadPhotosToEvent - only organizers can manage photos
+ */
+export async function canManageEventPhotos(eventId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  // Superadmin can manage photos for any event
+  if (await userHasRole("superadmin")) {
+    return true;
+  }
+
+  // Get event details
+  const { data: event } = await supabase
+    .from("events")
+    .select("organizer_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) {
+    return false;
+  }
+
+  // Check if user is the organizer
+  const { data: organizer } = await supabase
+    .from("organizers")
+    .select("id")
+    .eq("created_by", user.id)
+    .eq("id", event.organizer_id)
+    .single();
+
+  return !!organizer;
+}
+

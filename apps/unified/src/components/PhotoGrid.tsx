@@ -313,9 +313,7 @@ function PhotoItem({
           {onDelete && (
             <button
               onClick={() => {
-                if (confirm("Delete this photo?")) {
-                  onDelete(photo.id);
-                }
+                onDelete(photo.id);
               }}
               className="p-2 rounded-full bg-accent-error/80 hover:bg-accent-error text-white"
             >

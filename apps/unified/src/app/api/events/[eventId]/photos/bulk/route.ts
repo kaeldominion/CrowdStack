@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permissions";
+import { canManageEventPhotos } from "@crowdstack/shared/auth/photo-permissions";
 
 /**
  * POST /api/events/[eventId]/photos/bulk
@@ -20,8 +20,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check permissions
-    if (!(await canUploadPhotosToEvent(params.eventId))) {
+    // Check permissions - only organizers and superadmins can manage photos
+    if (!(await canManageEventPhotos(params.eventId))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
