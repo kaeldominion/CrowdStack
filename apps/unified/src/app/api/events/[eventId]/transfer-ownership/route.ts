@@ -6,7 +6,7 @@ import { isEventOwner } from "@crowdstack/shared/auth/event-permissions";
 /**
  * POST /api/events/[eventId]/transfer-ownership
  * Transfer event ownership to another user
- * Only the current owner or superadmin can transfer ownership
+ * Only the current owner, superadmin, or admin can transfer ownership
  */
 export async function POST(
   request: NextRequest,
@@ -28,16 +28,26 @@ export async function POST(
       );
     }
 
-    // Check if current user can transfer ownership
-    const canTransfer = await isEventOwner(userId, params.eventId);
+    const serviceSupabase = createServiceRoleClient();
+    
+    // Check if user is admin or superadmin
+    const { data: roles } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    
+    const roleList = roles?.map((r: { role: string }) => r.role) || [];
+    const isSuperadmin = roleList.includes("superadmin");
+    const isAdmin = roleList.includes("admin");
+
+    // Check if current user can transfer ownership (owner, superadmin, or admin)
+    const canTransfer = await isEventOwner(userId, params.eventId) || isSuperadmin || isAdmin;
     if (!canTransfer) {
       return NextResponse.json(
-        { error: "Only the event owner or superadmin can transfer ownership" },
+        { error: "Only the event owner, superadmin, or admin can transfer ownership" },
         { status: 403 }
       );
     }
-
-    const serviceSupabase = createServiceRoleClient();
 
     // Verify the new owner exists
     const { data: newOwner, error: userError } = await serviceSupabase
