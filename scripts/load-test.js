@@ -39,7 +39,7 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
-// Helper to check response
+// Helper to check response - log all failures for debugging
 function checkResponse(res, name) {
   const success = check(res, {
     [`${name} status 200`]: (r) => r.status === 200,
@@ -48,7 +48,10 @@ function checkResponse(res, name) {
   
   if (!success) {
     errorRate.add(1);
-    console.log(`❌ ${name} failed: ${res.status} - ${res.body?.substring(0, 100)}`);
+    // Only log first few failures to avoid spam
+    if (__ITER < 10) {
+      console.log(`❌ ${name} failed: status=${res.status}, time=${res.timings.duration}ms`);
+    }
   } else {
     errorRate.add(0);
   }
@@ -57,56 +60,37 @@ function checkResponse(res, name) {
 }
 
 export default function () {
-  // Simulate real user behavior with random endpoint selection
+  // Test only the core browse endpoints for accurate performance metrics
   const scenario = Math.random();
   
-  if (scenario < 0.4) {
-    // 40% - Browse events (most common)
+  if (scenario < 0.5) {
+    // 50% - Browse events (most common)
     group('Browse Events', function () {
       const start = Date.now();
       const res = http.get(`${BASE_URL}/api/browse/events?limit=12`);
       browseEventsTrend.add(Date.now() - start);
       checkResponse(res, 'browse-events');
     });
-  } else if (scenario < 0.6) {
-    // 20% - Browse venues
+  } else if (scenario < 0.75) {
+    // 25% - Browse venues
     group('Browse Venues', function () {
       const start = Date.now();
       const res = http.get(`${BASE_URL}/api/browse/venues?limit=12`);
       browseVenuesTrend.add(Date.now() - start);
       checkResponse(res, 'browse-venues');
     });
-  } else if (scenario < 0.75) {
-    // 15% - Browse DJs
+  } else {
+    // 25% - Browse DJs
     group('Browse DJs', function () {
       const start = Date.now();
       const res = http.get(`${BASE_URL}/api/browse/djs?limit=12`);
       browseDJsTrend.add(Date.now() - start);
       checkResponse(res, 'browse-djs');
     });
-  } else if (scenario < 0.85) {
-    // 10% - Venue page API
-    group('Venue API', function () {
-      // Using a common slug pattern - adjust if you have real slugs
-      const res = http.get(`${BASE_URL}/api/venues/by-slug/test-venue`);
-      // 404 is acceptable if venue doesn't exist
-      check(res, {
-        'venue-api status ok': (r) => r.status === 200 || r.status === 404,
-      });
-    });
-  } else {
-    // 15% - Event page API  
-    group('Event API', function () {
-      const res = http.get(`${BASE_URL}/api/events/by-slug/test-event`);
-      // 404 is acceptable if event doesn't exist
-      check(res, {
-        'event-api status ok': (r) => r.status === 200 || r.status === 404,
-      });
-    });
   }
 
-  // Simulate user think time (1-3 seconds)
-  sleep(Math.random() * 2 + 1);
+  // Simulate user think time (1-2 seconds)
+  sleep(Math.random() + 1);
 }
 
 export function handleSummary(data) {

@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Debug counts removed for performance - were making 3 extra queries per request
 
-    // Build base query
+    // Build base query - include registration count via relation
     let query = supabase
       .from("events")
       .select(`
@@ -94,8 +94,9 @@ export async function GET(request: NextRequest) {
             name,
             handle
           )
-        )
-      `)
+        ),
+        registrations(count)
+      `, { count: 'exact' })
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"]);
 
@@ -170,13 +171,15 @@ export async function GET(request: NextRequest) {
     let events: any[] | null = null;
     let eventsError: any = null;
     
+    let totalCount = 0;
     if (!featured) {
-      // Regular query for non-featured requests
+      // Regular query for non-featured requests - count included
       const result = await query
         .limit(fetchLimit)
         .range(offset, offset + fetchLimit - 1);
       events = result.data;
       eventsError = result.error;
+      totalCount = result.count || 0;
     }
     // For featured=true, we skip the main query and go straight to fallback below
 
@@ -221,9 +224,8 @@ export async function GET(request: NextRequest) {
       // Include both future events AND currently live events (started in last 12 hours)
       const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
       
-      // Build fallback query - same as base query but without is_featured filter
-      // Also filter out external_link events for featured/landing page display
-      const { data: fallbackEvents, error: fallbackError } = await supabase
+      // Build fallback query - include registrations count via relation
+      const { data: fallbackEvents, error: fallbackError, count: fallbackCount } = await supabase
         .from("events")
         .select(`
           id,
@@ -250,8 +252,9 @@ export async function GET(request: NextRequest) {
               name,
               handle
             )
-          )
-        `)
+          ),
+          registrations(count)
+        `, { count: 'exact' })
         .eq("status", "published")
         .in("venue_approval_status", ["approved", "not_required"])
         .gte("start_time", twelveHoursAgo.toISOString())
@@ -260,30 +263,13 @@ export async function GET(request: NextRequest) {
         .limit(limit);
 
       if (!fallbackError && fallbackEvents && fallbackEvents.length > 0) {
-        // Get registration counts for fallback events
-        const fallbackEventIds = fallbackEvents.map((e: any) => e.id);
-        let fallbackRegistrationCounts: Record<string, number> = {};
-
-        if (fallbackEventIds.length > 0) {
-          const { data: fallbackRegistrations } = await supabase
-            .from("registrations")
-            .select("event_id")
-            .in("event_id", fallbackEventIds);
-
-          fallbackRegistrationCounts = (fallbackRegistrations || []).reduce(
-            (acc, reg) => {
-              acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
-              return acc;
-            },
-            {} as Record<string, number>
-          );
-        }
-
-        // Shuffle for variety, then add registration counts
+        totalCount = fallbackCount || 0;
+        // Shuffle for variety, then transform registration counts
         const shuffled = [...fallbackEvents].sort(() => Math.random() - 0.5);
         events = shuffled.slice(0, limit).map((event: any) => ({
           ...event,
-          registration_count: fallbackRegistrationCounts[event.id] || 0,
+          registration_count: event.registrations?.[0]?.count || 0,
+          registrations: undefined,
         }));
       }
     }
@@ -332,66 +318,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get total count before pagination (for stats)
-    // We need to count all matching events, not just the paginated ones
-    const totalCountQuery = supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "published")
-      .in("venue_approval_status", ["approved", "not_required"]);
-
-    // Apply same live/future filter for count
-    if (live) {
-      totalCountQuery
-        .lte("start_time", now.toISOString())
-        .or(`end_time.is.null,end_time.gte.${now.toISOString()}`);
-    } else {
-      totalCountQuery.gte("start_time", now.toISOString());
-    }
-
-    // Apply same filters for count
-    if (venueId) {
-      totalCountQuery.eq("venue_id", venueId);
-    }
-    if (cityVenueIds) {
-      totalCountQuery.in("venue_id", cityVenueIds);
-    }
-    if (startDate) {
-      totalCountQuery.gte("start_time", startDate.toISOString());
-    }
-    if (endDate) {
-      totalCountQuery.lte("start_time", endDate.toISOString());
-    }
-
-    const { count: totalCount } = await totalCountQuery;
+    // Total count is now included in the main query via { count: 'exact' }
 
     // Apply pagination after filtering
     const paginatedEvents = (events || []).slice(0, limit);
     const filteredCount = events?.length || 0;
 
-    // Get registration counts for paginated events
-    const eventIds = paginatedEvents.map((e: any) => e.id);
-    let registrationCounts: Record<string, number> = {};
-
-    if (eventIds.length > 0) {
-      const { data: registrations } = await supabase
-        .from("registrations")
-        .select("event_id")
-        .in("event_id", eventIds);
-
-      registrationCounts = (registrations || []).reduce(
-        (acc, reg) => {
-          acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>
-      );
-    }
-
-    // Add registration_count to each event
+    // Transform events to include registration_count from relation
     const eventsWithCounts = paginatedEvents.map((event: any) => ({
       ...event,
-      registration_count: registrationCounts[event.id] || 0,
+      registration_count: event.registrations?.[0]?.count || 0,
+      registrations: undefined, // Remove raw relation data
     }));
 
     return NextResponse.json(
