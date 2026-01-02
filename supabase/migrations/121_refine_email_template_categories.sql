@@ -2,10 +2,14 @@
 -- Add more specific categories to better organize email templates
 -- ============================================
 
--- IMPORTANT: Update existing rows FIRST before changing the constraint
--- This ensures all data is valid before the new constraint is applied
+-- IMPORTANT: We must drop the constraint FIRST, then update data, then add new constraint
+-- This is safe because it's all in one transaction
 
--- Update existing templates to use new categories
+-- Step 1: Drop the existing check constraint (allows us to update to new categories)
+ALTER TABLE public.email_templates
+DROP CONSTRAINT IF EXISTS email_templates_category_check;
+
+-- Step 2: Update existing templates to use new categories
 UPDATE public.email_templates
 SET category = 'event_registration'
 WHERE slug = 'registration_confirmation';
@@ -20,7 +24,7 @@ WHERE slug IN ('dj_gig_invitation', 'dj_gig_confirmed', 'dj_gig_reminder_24h', '
 
 UPDATE public.email_templates
 SET category = 'event_photos'
-WHERE slug = 'photo_notification';
+WHERE slug IN ('photo_notification', 'photos_published');
 
 UPDATE public.email_templates
 SET category = 'event_invites'
@@ -36,11 +40,7 @@ UPDATE public.email_templates
 SET category = 'event_invites'
 WHERE category = 'event_lifecycle';
 
--- Now drop the existing check constraint
-ALTER TABLE public.email_templates
-DROP CONSTRAINT IF EXISTS email_templates_category_check;
-
--- Add new check constraint with refined categories
+-- Step 3: Add new check constraint with refined categories
 ALTER TABLE public.email_templates
 ADD CONSTRAINT email_templates_category_check CHECK (category IN (
   'auth_onboarding',      -- Welcome emails, role assignments
