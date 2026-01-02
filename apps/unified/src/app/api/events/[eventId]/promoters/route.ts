@@ -145,15 +145,17 @@ export async function POST(
         promoter = existingPromoter;
       } else {
         // Get user details to create promoter profile
-        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
-        const user = authUsers.users.find((u) => u.id === user_id);
+        // Use getUserById for direct lookup instead of paginated listUsers
+        const { data: userData, error: userError } = await serviceSupabase.auth.admin.getUserById(user_id);
         
-        if (!user) {
+        if (userError || !userData?.user) {
           return NextResponse.json(
             { error: "User not found" },
             { status: 404 }
           );
         }
+        
+        const user = userData.user;
 
         // Get attendee name if available
         const { data: attendee } = await serviceSupabase
@@ -206,22 +208,42 @@ export async function POST(
       
       // If promoter has email but no linked user, try to find and link the user
       if (!fetchedPromoter.created_by && fetchedPromoter.email) {
-        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
-        const matchingUser = authUsers?.users?.find(
-          (u) => u.email?.toLowerCase() === fetchedPromoter.email?.toLowerCase()
-        );
+        // Use RPC function for scalable email lookup, fallback to listUsers
+        let matchingUserId: string | null = null;
         
-        if (matchingUser) {
+        const { data: rpcResults } = await serviceSupabase.rpc(
+          'search_users_by_email',
+          { search_term: fetchedPromoter.email.toLowerCase() }
+        ).limit(1);
+        
+        if (rpcResults && rpcResults.length > 0) {
+          // RPC found the user
+          matchingUserId = rpcResults[0].id;
+        } else {
+          // Fallback: try listUsers with higher limit
+          const { data: authUsers } = await serviceSupabase.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+          const matchingUser = authUsers?.users?.find(
+            (u) => u.email?.toLowerCase() === fetchedPromoter.email?.toLowerCase()
+          );
+          if (matchingUser) {
+            matchingUserId = matchingUser.id;
+          }
+        }
+        
+        if (matchingUserId) {
           // Link the promoter to the user account
           await serviceSupabase
             .from("promoters")
-            .update({ created_by: matchingUser.id })
+            .update({ created_by: matchingUserId })
             .eq("id", fetchedPromoter.id);
           
           // Update local reference for role assignment
-          promoter = { ...fetchedPromoter, created_by: matchingUser.id };
+          promoter = { ...fetchedPromoter, created_by: matchingUserId };
           
-          console.log(`[Promoters API] Linked promoter ${promoter.id} to user ${matchingUser.id}`);
+          console.log(`[Promoters API] Linked promoter ${promoter.id} to user ${matchingUserId}`);
         }
       }
     }
