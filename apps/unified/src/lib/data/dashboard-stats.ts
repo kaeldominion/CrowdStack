@@ -155,15 +155,22 @@ export async function getOrganizerChartData(): Promise<ChartDataPoint[]> {
 }
 
 /**
- * Get promoter dashboard stats
+ * Get promoter dashboard stats with earnings breakdown
  */
 export async function getPromoterDashboardStats(): Promise<{
   totalCheckIns: number;
   conversionRate: number;
   totalEarnings: number;
+  earnings: {
+    confirmed: number;      // Paid or confirmed by organizer
+    pending: number;        // Awaiting payment from organizer
+    estimated: number;      // From active/unclosed events
+    total: number;          // Sum of all
+  };
   rank: number;
   referrals: number;
   avgPerEvent: number;
+  eventsCount: number;
 }> {
   const promoterId = await getUserPromoterId();
   if (!promoterId) {
@@ -171,9 +178,11 @@ export async function getPromoterDashboardStats(): Promise<{
       totalCheckIns: 0,
       conversionRate: 0,
       totalEarnings: 0,
+      earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
       rank: 0,
       referrals: 0,
       avgPerEvent: 0,
+      eventsCount: 0,
     };
   }
 
@@ -211,16 +220,117 @@ export async function getPromoterDashboardStats(): Promise<{
   const conversionRate = referralCount && referralCount > 0 ? Math.round((checkinCount / referralCount) * 100) : 0;
   const avgPerEvent = eventPromoters && eventPromoters.length > 0 ? Math.round(checkinCount / eventPromoters.length) : 0;
 
-  // TODO: Calculate earnings from payout_lines
-  // TODO: Calculate rank
+  // Calculate earnings from payout_lines with payment status breakdown
+  const { data: payoutLines } = await supabase
+    .from("payout_lines")
+    .select("commission_amount, payment_status")
+    .eq("promoter_id", promoterId);
+
+  let confirmedEarnings = 0;
+  let pendingEarnings = 0;
+
+  if (payoutLines) {
+    for (const line of payoutLines) {
+      const amount = parseFloat(line.commission_amount || "0");
+      if (line.payment_status === "paid" || line.payment_status === "confirmed") {
+        confirmedEarnings += amount;
+      } else {
+        pendingEarnings += amount;
+      }
+    }
+  }
+
+  // Calculate estimated earnings from active/unclosed events
+  // Get events this promoter is assigned to that haven't been closed yet
+  const { data: activeEventPromoters } = await supabase
+    .from("event_promoters")
+    .select(`
+      event_id,
+      commission_type,
+      commission_config,
+      per_head_rate,
+      events!inner(
+        id,
+        status,
+        closed_at
+      )
+    `)
+    .eq("promoter_id", promoterId)
+    .is("events.closed_at", null);
+
+  let estimatedEarnings = 0;
+
+  if (activeEventPromoters) {
+    for (const ep of activeEventPromoters) {
+      // Get check-ins for this event from this promoter's referrals
+      const { data: eventRegs } = await supabase
+        .from("registrations")
+        .select("id")
+        .eq("event_id", ep.event_id)
+        .eq("referral_promoter_id", promoterId);
+
+      if (eventRegs && eventRegs.length > 0) {
+        const eventRegIds = eventRegs.map((r) => r.id);
+        const { count: eventCheckins } = await supabase
+          .from("checkins")
+          .select("*", { count: "exact", head: true })
+          .in("registration_id", eventRegIds)
+          .is("undo_at", null);
+
+        const checkinsCount = eventCheckins || 0;
+
+        // Calculate based on commission type
+        if (ep.per_head_rate) {
+          // New enhanced payout model
+          estimatedEarnings += checkinsCount * parseFloat(ep.per_head_rate);
+        } else if (ep.commission_type === "flat_per_head" && ep.commission_config) {
+          const perHead = ep.commission_config.amount_per_head || ep.commission_config.flat_per_head || 0;
+          estimatedEarnings += checkinsCount * perHead;
+        }
+      }
+    }
+  }
+
+  const totalEarnings = confirmedEarnings + pendingEarnings + estimatedEarnings;
+
+  // Calculate rank among all promoters (based on total check-ins)
+  const { data: allPromoterStats } = await supabase
+    .from("registrations")
+    .select("referral_promoter_id")
+    .not("referral_promoter_id", "is", null);
+
+  let rank = 0;
+  if (allPromoterStats) {
+    // Count check-ins per promoter
+    const promoterCounts: Record<string, number> = {};
+    for (const reg of allPromoterStats) {
+      if (reg.referral_promoter_id) {
+        promoterCounts[reg.referral_promoter_id] = (promoterCounts[reg.referral_promoter_id] || 0) + 1;
+      }
+    }
+    
+    // Sort by count and find rank
+    const sortedPromoters = Object.entries(promoterCounts)
+      .sort(([, a], [, b]) => b - a);
+    
+    const myIndex = sortedPromoters.findIndex(([id]) => id === promoterId);
+    rank = myIndex >= 0 ? myIndex + 1 : 0;
+  }
 
   return {
     totalCheckIns: checkinCount,
     conversionRate,
-    totalEarnings: 0,
-    rank: 0,
+    totalEarnings,
+    earnings: {
+      confirmed: confirmedEarnings,
+      pending: pendingEarnings,
+      estimated: estimatedEarnings,
+      total: totalEarnings,
+    },
+    rank,
     referrals: referralCount || 0,
     avgPerEvent,
+    eventsCount: eventPromoters?.length || 0,
   };
 }
 

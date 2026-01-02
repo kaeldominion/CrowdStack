@@ -90,9 +90,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     totalCheckIns: 0,
     conversionRate: 0,
     totalEarnings: 0,
+    earnings: {
+      confirmed: 0,
+      pending: 0,
+      estimated: 0,
+      total: 0,
+    },
     rank: 0,
     referrals: 0,
     avgPerEvent: 0,
+    eventsCount: 0,
   });
   const [organizerChartData, setOrganizerChartData] = useState<Array<{ date: string; registrations: number; checkins: number }>>([]);
   const [promoterChartData, setPromoterChartData] = useState<Array<{ date: string; earnings: number }>>([]);
@@ -959,15 +966,29 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 <TrendingUp className="h-5 w-5 text-white/40" />
               </div>
             </BentoCard>
-            <BentoCard>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Earnings</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white font-mono">${promoterStats.totalEarnings}</p>
+            <Link href="/app/promoter/earnings">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Earnings</p>
+                    <p className="text-3xl font-bold tracking-tighter text-white font-mono">
+                      ${promoterStats.earnings?.total || promoterStats.totalEarnings || 0}
+                    </p>
+                    {promoterStats.earnings && (promoterStats.earnings.confirmed > 0 || promoterStats.earnings.pending > 0) && (
+                      <div className="flex gap-2 mt-1 text-[10px]">
+                        {promoterStats.earnings.confirmed > 0 && (
+                          <span className="text-green-400">✓${promoterStats.earnings.confirmed}</span>
+                        )}
+                        {promoterStats.earnings.pending > 0 && (
+                          <span className="text-amber-400">⏳${promoterStats.earnings.pending}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <DollarSign className="h-5 w-5 text-white/40" />
                 </div>
-                <DollarSign className="h-5 w-5 text-white/40" />
-              </div>
-            </BentoCard>
+              </BentoCard>
+            </Link>
           </div>
 
           {/* Live Events */}
