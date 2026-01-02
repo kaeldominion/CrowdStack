@@ -63,14 +63,21 @@ export async function GET(
       // Map gig info to lineups
       const gigMap = new Map();
       gigResponses?.forEach((gr: any) => {
-        gigMap.set(gr.dj_id, {
-          gig_posting_id: gr.dj_gig_postings.id,
-          gig_title: gr.dj_gig_postings.title,
-          payment_amount: gr.dj_gig_postings.payment_amount,
-          payment_currency: gr.dj_gig_postings.payment_currency,
-          show_payment: gr.dj_gig_postings.show_payment,
-          confirmed_at: gr.confirmed_at,
-        });
+        // Supabase returns relations as arrays, so we need to access the first element
+        const gigPosting = Array.isArray(gr.dj_gig_postings) 
+          ? gr.dj_gig_postings[0] 
+          : gr.dj_gig_postings;
+        
+        if (gigPosting) {
+          gigMap.set(gr.dj_id, {
+            gig_posting_id: gigPosting.id,
+            gig_title: gigPosting.title,
+            payment_amount: gigPosting.payment_amount,
+            payment_currency: gigPosting.payment_currency,
+            show_payment: gigPosting.show_payment,
+            confirmed_at: gr.confirmed_at,
+          });
+        }
       });
 
       // Add gig info to each lineup item
@@ -461,7 +468,14 @@ export async function DELETE(
       .eq("status", "confirmed")
       .single();
 
-    if (gigResponse && gigResponse.dj_gig_postings?.event_id === eventId) {
+    // Supabase returns relations as arrays, so we need to access the first element
+    const gigPosting = gigResponse?.dj_gig_postings
+      ? (Array.isArray(gigResponse.dj_gig_postings) 
+          ? gigResponse.dj_gig_postings[0] 
+          : gigResponse.dj_gig_postings)
+      : null;
+
+    if (gigResponse && gigPosting?.event_id === eventId) {
       // Update gig response status - mark as interested (removed from lineup)
       await serviceSupabase
         .from("dj_gig_responses")
@@ -485,7 +499,7 @@ export async function DELETE(
           user_id: dj.user_id,
           type: "dj_gig_cancelled",
           title: "Removed from Lineup",
-          message: `You have been removed from the lineup for "${gigResponse.dj_gig_postings?.title || "this gig"}"`,
+          message: `You have been removed from the lineup for "${gigPosting?.title || "this gig"}"`,
           link: `/app/dj/gigs`,
           metadata: {
             event_id: eventId,
