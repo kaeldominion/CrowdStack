@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         confirmed_at: response.confirmed_at,
         // Payment status: For now, all are "pending" until organizer marks as paid
         // This could be enhanced with a dj_gig_payments table in the future
-        payment_status: "pending" as const,
+        payment_status: "pending" as "pending" | "confirmed" | "paid",
       };
     });
 
