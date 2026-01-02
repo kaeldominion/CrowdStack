@@ -79,13 +79,23 @@ export async function POST(
     }
 
     // Get current event details for audit
-    const { data: event } = await serviceSupabase
+    const { data: event, error: eventError } = await serviceSupabase
       .from("events")
       .select("name, owner_user_id")
       .eq("id", eventId)
       .single();
 
+    if (eventError) {
+      console.error("[transfer-ownership] Event query error:", eventError);
+      console.error("[transfer-ownership] EventId:", eventId);
+      return NextResponse.json(
+        { error: `Event not found: ${eventError.message}` },
+        { status: 404 }
+      );
+    }
+
     if (!event) {
+      console.error("[transfer-ownership] Event not found, eventId:", eventId);
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
