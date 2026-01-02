@@ -107,8 +107,67 @@ export async function GET(
       ...promotersByUsername,
     ];
 
-    // Search for users by email (fuzzy matching)
-    const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
+    // Search for users by email using direct database query (more efficient than listUsers pagination)
+    // This queries the auth.users table directly and handles any number of users
+    const { data: matchingAuthUsers, error: authError } = await serviceSupabase
+      .from("auth.users" as any)
+      .select("id, email, raw_user_meta_data")
+      .or(`email.ilike.%${query}%`)
+      .limit(50);
+
+    // Fallback: if direct query doesn't work (some Supabase configs), use listUsers with pagination
+    let usersToSearch: Array<{ id: string; email: string | undefined; user_metadata?: any }> = [];
+    
+    if (authError || !matchingAuthUsers) {
+      // Fallback to listUsers - paginate to find the user
+      let page = 1;
+      const perPage = 100;
+      let foundEnough = false;
+      
+      while (!foundEnough && page <= 10) { // Max 1000 users searched
+        const { data: authUsers } = await serviceSupabase.auth.admin.listUsers({
+          page,
+          perPage,
+        });
+        
+        if (!authUsers?.users || authUsers.users.length === 0) break;
+        
+        // Filter users that match the search
+        for (const user of authUsers.users) {
+          if (!user.email) continue;
+          const emailLower = user.email.toLowerCase();
+          
+          if (
+            emailLower === searchLower ||
+            emailLower.includes(searchLower) ||
+            emailLower.split("@")[0].includes(searchLower)
+          ) {
+            usersToSearch.push({
+              id: user.id,
+              email: user.email,
+              user_metadata: user.user_metadata,
+            });
+          }
+        }
+        
+        // If we found some matches, we can stop (unless there's a lot)
+        if (usersToSearch.length >= 20) {
+          foundEnough = true;
+        }
+        
+        // If this page wasn't full, we've reached the end
+        if (authUsers.users.length < perPage) break;
+        
+        page++;
+      }
+    } else {
+      // Direct query worked
+      usersToSearch = matchingAuthUsers.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        user_metadata: u.raw_user_meta_data,
+      }));
+    }
     
     const matchingUsers: Array<{
       id: string;
@@ -118,56 +177,30 @@ export async function GET(
       promoterId?: string;
     }> = [];
 
-    for (const user of authUsers.users) {
+    for (const user of usersToSearch) {
       if (!user.email) continue;
 
-      const emailLower = user.email.toLowerCase();
-      let matches = false;
+      // Check if user is already a promoter
+      const { data: promoter } = await serviceSupabase
+        .from("promoters")
+        .select("id")
+        .eq("created_by", user.id)
+        .maybeSingle();
 
-      // Exact match
-      if (emailLower === searchLower) {
-        matches = true;
-      }
-      // Email contains search term
-      else if (emailLower.includes(searchLower)) {
-        matches = true;
-      }
-      // Username part matches
-      else if (searchLower.includes("@")) {
-        const usernamePart = searchLower.split("@")[0];
-        if (emailLower.split("@")[0].includes(usernamePart)) {
-          matches = true;
-        }
-      } else {
-        // Search in username part
-        if (emailLower.split("@")[0].includes(searchLower)) {
-          matches = true;
-        }
-      }
+      // Get attendee name if available
+      const { data: attendee } = await serviceSupabase
+        .from("attendees")
+        .select("name")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (matches) {
-        // Check if user is already a promoter
-        const { data: promoter } = await serviceSupabase
-          .from("promoters")
-          .select("id")
-          .eq("created_by", user.id)
-          .maybeSingle();
-
-        // Get attendee name if available
-        const { data: attendee } = await serviceSupabase
-          .from("attendees")
-          .select("name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        matchingUsers.push({
-          id: user.id,
-          email: user.email,
-          name: attendee?.name || user.user_metadata?.full_name || user.email.split("@")[0],
-          isPromoter: !!promoter,
-          promoterId: promoter?.id,
-        });
-      }
+      matchingUsers.push({
+        id: user.id,
+        email: user.email,
+        name: attendee?.name || user.user_metadata?.full_name || user.email.split("@")[0],
+        isPromoter: !!promoter,
+        promoterId: promoter?.id,
+      });
     }
 
     // Combine and deduplicate: if a user is already a promoter, prefer the promoter entry
