@@ -12,10 +12,10 @@
       <stop offset="100%" style="stop-color:#60A5FA"/>
     </linearGradient>
   </defs>
-  <!-- White 3D panel/parallelogram at top (like stack layer) -->
-  <path d="M40 45L90 22L140 45L90 68Z" fill="white" stroke="white" stroke-width="6" stroke-linejoin="round"/>
-  <!-- Top chevron (purple) -->
-  <path d="M30 82L90 130L150 82" stroke="url(#purpleGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <!-- Bottom chevron (blue) -->
-  <path d="M30 122L90 170L150 122" stroke="url(#blueGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Top layer (white) - scaled for 180x180 viewBox -->
+  <path d="M90 30L30 60L90 90L150 60L90 30Z" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Middle layer (purple) -->
+  <path d="M30 120L90 150L150 120" stroke="url(#purpleGradient)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Bottom layer (blue) -->
+  <path d="M30 150L90 180L150 150" stroke="url(#blueGradient)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

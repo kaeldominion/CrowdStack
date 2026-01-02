@@ -163,7 +163,8 @@ export default function BrandAssetsPage() {
   const downloadFullLogo = (
     theme: WordmarkTheme,
     variant: WordmarkVariant,
-    transparent: boolean = false
+    transparent: boolean = false,
+    iconOnly: boolean = false
   ) => {
     const width = 1600;
     const height = 300;
@@ -194,17 +195,22 @@ export default function BrandAssetsPage() {
     }
 
     // SVG construction
+    const iconSvg = iconOnly ? "" : `
+        <g transform="translate(20, 8) scale(1.8)">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="none" stroke="${s1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 17L12 22L22 17" fill="none" stroke="${s3}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M2 12L12 17L22 12" fill="none" stroke="${s2}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </g>`;
+    
+    const textX = iconOnly ? "20" : "76";
+    
     const svgString = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="${width}" height="${height}">
         <style>
             .text { font-family: system-ui, -apple-system, sans-serif; font-weight: 900; font-size: 28px; letter-spacing: -1px; }
         </style>
-        <g transform="translate(20, 8) scale(1.8)">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="none" stroke="${s1}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M2 17L12 22L22 17" fill="none" stroke="${s3}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M2 12L12 17L22 12" fill="none" stroke="${s2}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        </g>
-        <text x="76" y="40" class="text" fill="${textColor}">CROWDSTACK<tspan fill="${dotColor}">.</tspan></text>
+        ${iconSvg}
+        <text x="${textX}" y="40" class="text" fill="${textColor}">CROWDSTACK<tspan fill="${dotColor}">.</tspan></text>
     </svg>`;
 
     const img = new Image();
@@ -216,7 +222,7 @@ export default function BrandAssetsPage() {
       const pngUrl = canvas.toDataURL("image/png");
       const downloadLink = document.createElement("a");
       downloadLink.href = pngUrl;
-      downloadLink.download = `crowdstack-wordmark-${theme}-${variant}${transparent ? "-transparent" : ""}.png`;
+      downloadLink.download = `crowdstack-wordmark-${theme}-${variant}${iconOnly ? "-wordmark-only" : ""}${transparent ? "-transparent" : ""}.png`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
@@ -587,6 +593,70 @@ export default function BrandAssetsPage() {
                     size="sm"
                     variant="secondary"
                     onClick={() => downloadFullLogo("light", "mono", true)}
+                  >
+                    Transparent
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Light Standard - Wordmark Only */}
+            <Card className="!p-6">
+              <div className="w-full aspect-[3/1] bg-white rounded-xl border border-border-subtle flex items-center justify-center mb-4">
+                <span className="font-black text-xl text-black tracking-tighter">
+                  CROWDSTACK<span className="text-purple-500">.</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-primary font-bold">Light Standard</h3>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">
+                    Wordmark Only
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => downloadFullLogo("light", "standard", false, true)}
+                  >
+                    BG
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => downloadFullLogo("light", "standard", true, true)}
+                  >
+                    Transparent
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Light Mono - Wordmark Only */}
+            <Card className="!p-6">
+              <div className="w-full aspect-[3/1] bg-white rounded-xl border border-border-subtle flex items-center justify-center mb-4">
+                <span className="font-black text-xl text-black tracking-tighter">
+                  CROWDSTACK.
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-primary font-bold">Light Mono</h3>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">
+                    Wordmark Only
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => downloadFullLogo("light", "mono", false, true)}
+                  >
+                    BG
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => downloadFullLogo("light", "mono", true, true)}
                   >
                     Transparent
                   </Button>

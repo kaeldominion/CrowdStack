@@ -89,7 +89,7 @@ export function LoadingSpinner({
       {/* Animated tricolor logo */}
       <div className="relative" style={{ width: iconSize, height: iconSize }}>
         <svg
-          viewBox="0 0 32 32"
+          viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           style={{ width: iconSize, height: iconSize }}
@@ -105,12 +105,13 @@ export function LoadingSpinner({
             </linearGradient>
           </defs>
           
-          {/* White 3D panel/parallelogram (like stack layer) */}
+          {/* Top layer (white) - pulsing */}
           <motion.path
-            d="M6 6L16 2L26 6L16 10Z"
-            fill="white"
+            d="M12 2L2 7L12 12L22 7L12 2Z"
+            fill="none"
             stroke="white"
-            strokeWidth="1.5"
+            strokeWidth="2"
+            strokeLinecap="round"
             strokeLinejoin="round"
             animate={{
               opacity: [0.6, 1, 0.6],
@@ -119,14 +120,15 @@ export function LoadingSpinner({
               duration: 1,
               repeat: Infinity,
               ease: "easeInOut",
+              delay: 0,
             }}
           />
           
-          {/* Top chevron (purple) - pulsing */}
+          {/* Middle layer (purple) - pulsing */}
           <motion.path
-            d="M4 13L16 21L28 13"
+            d="M2 12L12 17L22 12"
             stroke="url(#loadingPurpleGradient)"
-            strokeWidth="3.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
@@ -137,15 +139,15 @@ export function LoadingSpinner({
               duration: 1,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 0.1,
+              delay: 0.15,
             }}
           />
           
-          {/* Bottom chevron (blue) - pulsing with delay */}
+          {/* Bottom layer (blue) - pulsing with delay */}
           <motion.path
-            d="M4 21L16 29L28 21"
+            d="M2 17L12 22L22 17"
             stroke="url(#loadingBlueGradient)"
-            strokeWidth="3.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
@@ -156,7 +158,7 @@ export function LoadingSpinner({
               duration: 1,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 0.2,
+              delay: 0.3,
             }}
           />
         </svg>
