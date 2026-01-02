@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Badge, LoadingSpinner } from "@crowdstack/ui";
+import { Card, Badge, LoadingSpinner, Button } from "@crowdstack/ui";
 import { 
   DollarSign, 
   CheckCircle2, 
@@ -287,7 +287,7 @@ export default function DJEarningsPage() {
                 </div>
                 <div className="flex gap-2">
                   <Link href={`/e/${event.event_slug || event.event_id}`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="secondary" size="sm">
                       View Event
                       <ChevronRight className="w-4 h-4 ml-2" />
                     </Button>
