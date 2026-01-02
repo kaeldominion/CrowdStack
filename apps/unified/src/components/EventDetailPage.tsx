@@ -3688,10 +3688,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   if (!transferEmail) return;
                   setSearchingUser(true);
                   try {
-                    const res = await fetch(`/api/admin/users/search?email=${encodeURIComponent(transferEmail)}`);
+                    // Use q= param and type=user to search by email
+                    const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(transferEmail)}&type=user`);
                     const data = await res.json();
-                    if (data.users && data.users.length > 0) {
-                      setFoundUser({ id: data.users[0].id, email: data.users[0].email });
+                    if (data.results && data.results.length > 0) {
+                      // Find exact email match first, or use first result
+                      const exactMatch = data.results.find((r: any) => r.email?.toLowerCase() === transferEmail.toLowerCase());
+                      const user = exactMatch || data.results[0];
+                      setFoundUser({ id: user.id, email: user.email });
                     } else {
                       toast.error("User not found", "No user found with that email address.");
                       setFoundUser(null);
