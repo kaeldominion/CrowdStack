@@ -50,7 +50,12 @@ export async function POST(request: NextRequest) {
     const gigs4h: any[] = [];
 
     for (const response of allConfirmedResponses || []) {
-      if (!response.dj_gig_postings?.event_id) continue;
+      // Supabase returns relations as arrays, so we need to access the first element
+      const gigPosting = Array.isArray(response.dj_gig_postings) 
+        ? response.dj_gig_postings[0] 
+        : response.dj_gig_postings;
+      
+      if (!gigPosting?.event_id) continue;
 
       // Get event details
       const { data: event } = await supabase
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
           start_time,
           venues(name, address, city, state)
         `)
-        .eq("id", response.dj_gig_postings.event_id)
+        .eq("id", gigPosting.event_id)
         .single();
 
       if (!event || !event.start_time) continue;
@@ -75,6 +80,7 @@ export async function POST(request: NextRequest) {
       if (hoursUntilEvent >= 23 && hoursUntilEvent <= 25) {
         gigs24h.push({
           ...response,
+          dj_gig_postings: gigPosting,
           event,
         });
       }
@@ -83,6 +89,7 @@ export async function POST(request: NextRequest) {
       if (hoursUntilEvent >= 3.5 && hoursUntilEvent <= 4.5) {
         gigs4h.push({
           ...response,
+          dj_gig_postings: gigPosting,
           event,
         });
       }
