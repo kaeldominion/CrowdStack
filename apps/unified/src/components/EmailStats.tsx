@@ -63,10 +63,16 @@ export function EmailStats({ eventId }: EmailStatsProps) {
       photo_notification: "Photo Notifications",
       event_invite: "Event Invites",
       registration_confirmation: "Registration Confirmations",
+      event_reminder_6h: "Event Reminders (6h)",
       dj_gig_invitation: "DJ Gig Invitations",
       dj_gig_confirmed: "DJ Gig Confirmations",
       dj_gig_reminder_24h: "DJ Gig Reminders (24h)",
       dj_gig_reminder_4h: "DJ Gig Reminders (4h)",
+      welcome: "Welcome Emails",
+      venue_admin_welcome: "Venue Admin Welcome",
+      event_organizer_welcome: "Event Organizer Welcome",
+      promoter_welcome: "Promoter Welcome",
+      dj_welcome: "DJ Welcome",
     };
     return labels[type] || type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };

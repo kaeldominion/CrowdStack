@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getInviteToken, acceptInviteToken } from "@crowdstack/shared/auth/invites";
+import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 
 /**
  * POST /api/invites/[token]/signup
@@ -94,6 +95,86 @@ export async function POST(
 
     // Accept the invite token (assigns role and links to entity)
     const { role, metadata } = await acceptInviteToken(params.token, userId);
+
+    // Send welcome email and role-specific email
+    try {
+      const userName = newUser.user.email?.split("@")[0] || "there";
+      const appUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app";
+
+      // Send general welcome email
+      await sendTemplateEmail(
+        "welcome",
+        newUser.user.email!,
+        userId,
+        {
+          user_name: userName,
+          app_url: `${appUrl}/app`,
+        }
+      );
+
+      // Send role-specific welcome email
+      if (role === "venue_admin" && metadata?.venue_id) {
+        const { data: venue } = await serviceSupabase
+          .from("venues")
+          .select("name")
+          .eq("id", metadata.venue_id)
+          .single();
+
+        if (venue) {
+          await sendTemplateEmail(
+            "venue_admin_welcome",
+            newUser.user.email!,
+            userId,
+            {
+              user_name: userName,
+              venue_name: venue.name,
+              venue_dashboard_url: `${appUrl}/app/venue`,
+            }
+          );
+        }
+      } else if (role === "event_organizer" && metadata?.organizer_id) {
+        const { data: organizer } = await serviceSupabase
+          .from("organizers")
+          .select("name")
+          .eq("id", metadata.organizer_id)
+          .single();
+
+        if (organizer) {
+          await sendTemplateEmail(
+            "event_organizer_welcome",
+            newUser.user.email!,
+            userId,
+            {
+              user_name: userName,
+              organizer_name: organizer.name,
+              organizer_dashboard_url: `${appUrl}/app/organizer`,
+            }
+          );
+        }
+      } else if (role === "promoter" && metadata?.promoter_id) {
+        const { data: promoter } = await serviceSupabase
+          .from("promoters")
+          .select("name")
+          .eq("id", metadata.promoter_id)
+          .single();
+
+        if (promoter) {
+          await sendTemplateEmail(
+            "promoter_welcome",
+            newUser.user.email!,
+            userId,
+            {
+              user_name: userName,
+              promoter_name: promoter.name,
+              promoter_dashboard_url: `${appUrl}/app/promoter`,
+            }
+          );
+        }
+      }
+    } catch (emailError) {
+      console.error("[Invite Signup] Failed to send welcome emails:", emailError);
+      // Don't fail the signup if email fails
+    }
 
     // Determine redirect URL based on role
     const appUrl = request.nextUrl.origin;

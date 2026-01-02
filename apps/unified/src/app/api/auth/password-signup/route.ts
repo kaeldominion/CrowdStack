@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 
 /**
  * POST /api/auth/password-signup
@@ -102,6 +103,23 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[Password Signup] User created successfully:", newUser.user.id);
+
+    // Send welcome email
+    try {
+      const userName = newUser.user.email?.split("@")[0] || "there";
+      await sendTemplateEmail(
+        "welcome",
+        newUser.user.email!,
+        newUser.user.id,
+        {
+          user_name: userName,
+          app_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/app`,
+        }
+      );
+    } catch (emailError) {
+      console.error("[Password Signup] Failed to send welcome email:", emailError);
+      // Don't fail the signup if email fails
+    }
 
     // Return user info (client will sign in with password after a brief delay)
     return NextResponse.json({
