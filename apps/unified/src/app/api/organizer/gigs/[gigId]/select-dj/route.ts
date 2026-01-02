@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
-import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 
 /**
@@ -237,12 +236,8 @@ export async function POST(
       // Don't fail the request
     }
 
-    // Emit outbox event
-    await emitOutboxEvent("dj_gig_confirmed", {
-      gig_posting_id: gigId,
-      event_id: eventId,
-      dj_id,
-    });
+    // Note: Outbox event removed - email notification is sent above
+    // If outbox events are needed for DJ gig confirmations, add "dj_gig_confirmed" to OutboxEventType
 
     return NextResponse.json({
       success: true,
