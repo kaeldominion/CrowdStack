@@ -64,30 +64,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Debug: First check total published events
-    const { count: totalPublished } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "published");
-    
-    const { count: totalApproved } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "published")
-      .in("venue_approval_status", ["approved", "not_required"]);
-    
-    const { count: totalFuture } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "published")
-      .in("venue_approval_status", ["approved", "not_required"])
-      .gte("start_time", now.toISOString());
-
-    console.log("[Browse Events] Debug counts:", {
-      totalPublished,
-      totalApproved,
-      totalFuture,
-    });
+    // Debug counts removed for performance - were making 3 extra queries per request
 
     // Build base query
     let query = supabase
@@ -140,19 +117,7 @@ export async function GET(request: NextRequest) {
       query = query.order("start_time", { ascending: true });
     }
 
-    console.log("[Browse Events] Query params:", {
-      search,
-      dateFilter,
-      city,
-      genre,
-      venueId,
-      featured,
-      live,
-      past,
-      limit,
-      offset,
-      now: now.toISOString(),
-    });
+    // Query params logging removed for performance
 
     // Apply featured filter - skip for now since column may not exist
     // When featured=true, we'll use the fallback logic below to return regular events
@@ -215,12 +180,6 @@ export async function GET(request: NextRequest) {
     }
     // For featured=true, we skip the main query and go straight to fallback below
 
-    console.log("[Browse Events] Query result:", {
-      eventsCount: events?.length || 0,
-      error: eventsError?.message,
-      hasError: !!eventsError,
-      featured,
-    });
 
     if (eventsError) {
       console.error("[Browse Events] Error fetching:", eventsError);
@@ -230,8 +189,6 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Debug: Check if we have events before filtering
-    console.log("[Browse Events] Events before filtering:", events?.length || 0);
 
     // Apply search filter after fetching (due to join limitations)
     if (search && events) {
@@ -259,7 +216,7 @@ export async function GET(request: NextRequest) {
     // This ensures the landing page always shows events, even if is_featured column doesn't exist
     // TODO: Once migration 068 is applied, check for featured events first, then fall back if none exist
     if (featured) {
-      console.log("[Browse Events] No featured events found, falling back to regular events");
+      // Using regular events as fallback for featured requests
       
       // Include both future events AND currently live events (started in last 12 hours)
       const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
@@ -328,13 +285,6 @@ export async function GET(request: NextRequest) {
           ...event,
           registration_count: fallbackRegistrationCounts[event.id] || 0,
         }));
-        
-        console.log("[Browse Events] Fallback returned", events.length, "events");
-      } else {
-        console.log("[Browse Events] Fallback also returned no events:", {
-          fallbackError: fallbackError?.message,
-          fallbackEventsCount: fallbackEvents?.length || 0,
-        });
       }
     }
 
@@ -443,12 +393,6 @@ export async function GET(request: NextRequest) {
       ...event,
       registration_count: registrationCounts[event.id] || 0,
     }));
-
-    console.log("[Browse Events] Final result:", {
-      paginatedCount: eventsWithCounts.length,
-      filteredCount,
-      totalCount,
-    });
 
     return NextResponse.json(
       {
