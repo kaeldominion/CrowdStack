@@ -45,25 +45,40 @@ export function PhotoUploader({
       }
 
       const fileArray = Array.from(selectedFiles);
-      const validFiles = fileArray.filter((file) => {
-        const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-        const maxSize = 10 * 1024 * 1024; // 10MB
-
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+      const maxSizeBeforeCompression = 100 * 1024 * 1024; // 100MB - allow large files, we'll compress them
+      
+      // Filter by type only, allow large files (we'll compress them)
+      const typeValidFiles = fileArray.filter((file) => {
         if (!validTypes.includes(file.type)) {
+          // Add error state for invalid type
+          setFiles((prev) => [...prev, {
+            file,
+            progress: 0,
+            status: "error" as const,
+            error: `${file.name}: Invalid file type. Only JPEG, PNG, and WebP are allowed.`,
+          }]);
           return false;
         }
-        if (file.size > maxSize) {
+        if (file.size > maxSizeBeforeCompression) {
+          // Add error state for files too large even before compression
+          setFiles((prev) => [...prev, {
+            file,
+            progress: 0,
+            status: "error" as const,
+            error: `${file.name}: File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 100MB before compression.`,
+          }]);
           return false;
         }
         return true;
       });
 
-      if (validFiles.length === 0) {
+      if (typeValidFiles.length === 0) {
         return;
       }
 
-      // Add files to state
-      const newFiles: UploadProgress[] = validFiles.map((file) => ({
+      // Add files to state (will be compressed before upload)
+      const newFiles: UploadProgress[] = typeValidFiles.map((file) => ({
         file,
         progress: 0,
         status: "pending" as const,
@@ -71,10 +86,10 @@ export function PhotoUploader({
 
       setFiles((prev) => [...prev, ...newFiles]);
 
-      // Upload files
+      // Upload files (compression happens in uploadFile)
       for (let i = 0; i < newFiles.length; i++) {
         const fileIndex = files.length + i;
-        await uploadFile(validFiles[i], fileIndex);
+        await uploadFile(typeValidFiles[i], fileIndex);
       }
     },
     [eventId, files.length, albumStatus, onNeedUnpublish]
@@ -90,15 +105,16 @@ export function PhotoUploader({
     try {
       // Compress image before upload for faster uploads and smaller storage
       let fileToUpload = file;
-      const maxSizeMB = 2; // Compress to max 2MB (will be further optimized by Supabase)
+      const maxSizeMB = 8; // Compress to max 8MB (server limit is 10MB)
       const maxWidthOrHeight = 1920; // Max dimension for web display
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB server limit
       
-      // Only compress if file is larger than 1MB or dimensions are too large
-      if (file.size > 1024 * 1024 || file.type.startsWith("image/")) {
+      // Always try to compress images (especially large ones)
+      if (file.type.startsWith("image/")) {
         try {
           setFiles((prev) => {
             const updated = [...prev];
-            updated[index] = { ...updated[index], progress: 20 };
+            updated[index] = { ...updated[index], progress: 20, status: "uploading" };
             return updated;
           });
 
@@ -107,20 +123,34 @@ export function PhotoUploader({
             maxWidthOrHeight,
             useWebWorker: true,
             fileType: file.type,
-            initialQuality: 0.85, // High quality but smaller file
+            initialQuality: file.size > 5 * 1024 * 1024 ? 0.75 : 0.85, // Lower quality for very large files
           };
 
           fileToUpload = await imageCompression(file, compressionOptions);
+          
+          // Check if compressed file is still too large
+          if (fileToUpload.size > MAX_FILE_SIZE) {
+            throw new Error(`File ${file.name} is still too large after compression (${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB). Please use a smaller image.`);
+          }
           
           setFiles((prev) => {
             const updated = [...prev];
             updated[index] = { ...updated[index], progress: 40 };
             return updated;
           });
-        } catch (compressionError) {
+        } catch (compressionError: any) {
+          console.error("Image compression failed:", compressionError);
+          
+          // If compression fails and original is too large, show error
+          if (file.size > MAX_FILE_SIZE) {
+            throw new Error(compressionError.message || `File ${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB) and compression failed. Maximum size is 10MB.`);
+          }
+          
+          // If original is small enough, use it
           console.warn("Image compression failed, uploading original:", compressionError);
-          // Continue with original file if compression fails
         }
+      } else if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`File ${file.name} is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
       }
 
       const formData = new FormData();
@@ -254,7 +284,7 @@ export function PhotoUploader({
           Drop photos here or click to browse
         </p>
         <p className="text-sm text-secondary mb-4">
-          JPEG, PNG, or WebP up to 10MB each
+          JPEG, PNG, or WebP (up to 100MB - will be compressed automatically)
         </p>
         <Button
           variant="secondary"
@@ -296,8 +326,8 @@ export function PhotoUploader({
               {errorCount > 0 && `, ${errorCount} failed`}
             </span>
             {errorCount > 0 && (
-              <div className="text-xs text-red-500 max-w-md">
-                {files.find(f => f.status === "error")?.error || "Upload failed"}
+              <div className="text-xs text-accent-error max-w-md">
+                {errorCount} file{errorCount > 1 ? "s" : ""} failed - see details below
               </div>
             )}
             {files.length > 0 && (
