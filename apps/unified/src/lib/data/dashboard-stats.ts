@@ -154,8 +154,15 @@ export async function getOrganizerChartData(): Promise<ChartDataPoint[]> {
   return chartData;
 }
 
+interface CurrencyEarnings {
+  confirmed: number;
+  pending: number;
+  estimated: number;
+  total: number;
+}
+
 /**
- * Get promoter dashboard stats with earnings breakdown
+ * Get promoter dashboard stats with earnings breakdown by currency
  */
 export async function getPromoterDashboardStats(): Promise<{
   totalCheckIns: number;
@@ -167,6 +174,7 @@ export async function getPromoterDashboardStats(): Promise<{
     estimated: number;      // From active/unclosed events
     total: number;          // Sum of all
   };
+  earningsByCurrency: Record<string, CurrencyEarnings>;
   rank: number;
   referrals: number;
   avgPerEvent: number;
@@ -179,6 +187,7 @@ export async function getPromoterDashboardStats(): Promise<{
       conversionRate: 0,
       totalEarnings: 0,
       earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
+      earningsByCurrency: {},
       rank: 0,
       referrals: 0,
       avgPerEvent: 0,
@@ -220,22 +229,44 @@ export async function getPromoterDashboardStats(): Promise<{
   const conversionRate = referralCount && referralCount > 0 ? Math.round((checkinCount / referralCount) * 100) : 0;
   const avgPerEvent = eventPromoters && eventPromoters.length > 0 ? Math.round(checkinCount / eventPromoters.length) : 0;
 
+  // Track earnings by currency
+  const earningsByCurrency: Record<string, CurrencyEarnings> = {};
+
+  const ensureCurrency = (currency: string) => {
+    if (!earningsByCurrency[currency]) {
+      earningsByCurrency[currency] = { confirmed: 0, pending: 0, estimated: 0, total: 0 };
+    }
+  };
+
   // Calculate earnings from payout_lines with payment status breakdown
+  // Include currency from the event via payout_runs
   const { data: payoutLines } = await supabase
     .from("payout_lines")
-    .select("commission_amount, payment_status")
+    .select(`
+      commission_amount,
+      payment_status,
+      payout_runs(
+        events(
+          currency
+        )
+      )
+    `)
     .eq("promoter_id", promoterId);
-
-  let confirmedEarnings = 0;
-  let pendingEarnings = 0;
 
   if (payoutLines) {
     for (const line of payoutLines) {
       const amount = parseFloat(line.commission_amount || "0");
+      // Get currency from event, default to USD
+      const payoutRun = line.payout_runs as any;
+      const event = Array.isArray(payoutRun?.events) ? payoutRun.events[0] : payoutRun?.events;
+      const currency = event?.currency || "USD";
+      
+      ensureCurrency(currency);
+      
       if (line.payment_status === "paid" || line.payment_status === "confirmed") {
-        confirmedEarnings += amount;
+        earningsByCurrency[currency].confirmed += amount;
       } else {
-        pendingEarnings += amount;
+        earningsByCurrency[currency].pending += amount;
       }
     }
   }
@@ -249,19 +280,22 @@ export async function getPromoterDashboardStats(): Promise<{
       commission_type,
       commission_config,
       per_head_rate,
+      currency,
       events!inner(
         id,
         status,
-        closed_at
+        closed_at,
+        currency
       )
     `)
     .eq("promoter_id", promoterId)
     .is("events.closed_at", null);
 
-  let estimatedEarnings = 0;
-
   if (activeEventPromoters) {
     for (const ep of activeEventPromoters) {
+      const event = Array.isArray(ep.events) ? ep.events[0] : ep.events;
+      const currency = (ep as any).currency || event?.currency || "USD";
+      
       // Get check-ins for this event from this promoter's referrals
       const { data: eventRegs } = await supabase
         .from("registrations")
@@ -278,20 +312,41 @@ export async function getPromoterDashboardStats(): Promise<{
           .is("undo_at", null);
 
         const checkinsCount = eventCheckins || 0;
+        let estimatedAmount = 0;
 
         // Calculate based on commission type
         if (ep.per_head_rate) {
           // New enhanced payout model
-          estimatedEarnings += checkinsCount * parseFloat(ep.per_head_rate);
+          estimatedAmount = checkinsCount * parseFloat(ep.per_head_rate);
         } else if (ep.commission_type === "flat_per_head" && ep.commission_config) {
           const perHead = ep.commission_config.amount_per_head || ep.commission_config.flat_per_head || 0;
-          estimatedEarnings += checkinsCount * perHead;
+          estimatedAmount = checkinsCount * perHead;
+        }
+
+        if (estimatedAmount > 0) {
+          ensureCurrency(currency);
+          earningsByCurrency[currency].estimated += estimatedAmount;
         }
       }
     }
   }
 
-  const totalEarnings = confirmedEarnings + pendingEarnings + estimatedEarnings;
+  // Calculate totals for each currency
+  for (const currency of Object.keys(earningsByCurrency)) {
+    const c = earningsByCurrency[currency];
+    c.total = c.confirmed + c.pending + c.estimated;
+  }
+
+  // Calculate aggregate totals (for backwards compatibility, but note these mix currencies!)
+  let totalConfirmed = 0;
+  let totalPending = 0;
+  let totalEstimated = 0;
+  for (const c of Object.values(earningsByCurrency)) {
+    totalConfirmed += c.confirmed;
+    totalPending += c.pending;
+    totalEstimated += c.estimated;
+  }
+  const totalEarnings = totalConfirmed + totalPending + totalEstimated;
 
   // Calculate rank among all promoters (based on total check-ins)
   const { data: allPromoterStats } = await supabase
@@ -322,11 +377,12 @@ export async function getPromoterDashboardStats(): Promise<{
     conversionRate,
     totalEarnings,
     earnings: {
-      confirmed: confirmedEarnings,
-      pending: pendingEarnings,
-      estimated: estimatedEarnings,
+      confirmed: totalConfirmed,
+      pending: totalPending,
+      estimated: totalEstimated,
       total: totalEarnings,
     },
+    earningsByCurrency,
     rank,
     referrals: referralCount || 0,
     avgPerEvent,
@@ -529,4 +585,5 @@ export async function getVenueDashboardStats(): Promise<{
     } : null,
   };
 }
+
 

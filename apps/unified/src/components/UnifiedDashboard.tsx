@@ -96,6 +96,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       estimated: 0,
       total: 0,
     },
+    earningsByCurrency: {} as Record<string, { confirmed: number; pending: number; estimated: number; total: number }>,
     rank: 0,
     referrals: 0,
     avgPerEvent: 0,
@@ -969,23 +970,36 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <Link href="/app/promoter/earnings">
               <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Earnings</p>
-                    <p className="text-3xl font-bold tracking-tighter text-white font-mono">
-                      ${promoterStats.earnings?.total || promoterStats.totalEarnings || 0}
-                    </p>
-                    {promoterStats.earnings && (promoterStats.earnings.confirmed > 0 || promoterStats.earnings.pending > 0) && (
-                      <div className="flex gap-2 mt-1 text-[10px]">
-                        {promoterStats.earnings.confirmed > 0 && (
-                          <span className="text-green-400">✓${promoterStats.earnings.confirmed}</span>
-                        )}
-                        {promoterStats.earnings.pending > 0 && (
-                          <span className="text-amber-400">⏳${promoterStats.earnings.pending}</span>
-                        )}
+                    {Object.keys(promoterStats.earningsByCurrency || {}).length > 0 ? (
+                      <div className="space-y-1">
+                        {Object.entries(promoterStats.earningsByCurrency).map(([currency, amounts]) => (
+                          <div key={currency} className="flex items-baseline gap-2">
+                            <span className="text-xl font-bold tracking-tighter text-white font-mono">
+                              {new Intl.NumberFormat("en-US", {
+                                style: "currency",
+                                currency,
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                              }).format(amounts.total)}
+                            </span>
+                            <div className="flex gap-1.5 text-[9px]">
+                              {amounts.confirmed > 0 && (
+                                <span className="text-green-400">✓{amounts.confirmed.toLocaleString()}</span>
+                              )}
+                              {amounts.pending > 0 && (
+                                <span className="text-amber-400">⏳{amounts.pending.toLocaleString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    ) : (
+                      <p className="text-2xl font-bold tracking-tighter text-white/50 font-mono">$0</p>
                     )}
                   </div>
-                  <DollarSign className="h-5 w-5 text-white/40" />
+                  <DollarSign className="h-5 w-5 text-white/40 flex-shrink-0" />
                 </div>
               </BentoCard>
             </Link>
