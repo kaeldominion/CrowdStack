@@ -2939,8 +2939,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 </Card>
               )}
 
-              {/* Ownership Transfer - visible to event owners and superadmins/admins */}
-              {(effectivePermissions.isOwner || effectivePermissions.isSuperadmin) && (
+              {/* Ownership Transfer - visible to event owners, superadmins, or admin role pages */}
+              {(effectivePermissions.isOwner || effectivePermissions.isSuperadmin || config.role === "admin") && (
                 <Card>
                   <h2 className="text-xl font-semibold text-primary mb-4">Event Ownership</h2>
                   <div className="space-y-4">
