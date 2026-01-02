@@ -2,6 +2,12 @@
   "buildCommand": "cd ../.. && npx -y pnpm@8.15.0 build:unified",
   "devCommand": "cd ../.. && pnpm dev:unified",
   "installCommand": "cd ../.. && npx -y pnpm@8.15.0 install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/dj-gig-reminders",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
 
