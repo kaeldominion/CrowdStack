@@ -8,9 +8,15 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * Should be called by a cron job (e.g., every hour)
  */
 export async function POST(request: NextRequest) {
-  // Verify cron secret if needed
+  // Verify cron secret or Vercel cron header
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const vercelCronHeader = request.headers.get("x-vercel-cron");
+  
+  // Allow if called by Vercel cron job OR if CRON_SECRET matches
+  const isVercelCron = vercelCronHeader === "1";
+  const isValidSecret = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  
+  if (!isVercelCron && !isValidSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
