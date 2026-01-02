@@ -16,7 +16,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'dj_gig_invitation',
   'dj_gig.invited',
-  'event_lifecycle',
+  'dj_gigs',
   ARRAY['dj'],
   '🎧 New Gig Invitation: {{gig_title}}',
   '<!DOCTYPE html>
@@ -148,7 +148,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'dj_gig_confirmed',
   'dj_gig.confirmed',
-  'event_lifecycle',
+  'dj_gigs',
   ARRAY['dj'],
   '✅ Gig Confirmed: {{gig_title}}',
   '<!DOCTYPE html>
@@ -268,7 +268,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'dj_gig_reminder_24h',
   'dj_gig.24h_before',
-  'event_lifecycle',
+  'dj_gigs',
   ARRAY['dj'],
   '⏰ Reminder: Your gig is tomorrow - {{gig_title}}',
   '<!DOCTYPE html>
@@ -388,7 +388,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'dj_gig_reminder_4h',
   'dj_gig.4h_before',
-  'event_lifecycle',
+  'dj_gigs',
   ARRAY['dj'],
   '🚀 Final Reminder: Your gig starts in 4 hours - {{gig_title}}',
   '<!DOCTYPE html>

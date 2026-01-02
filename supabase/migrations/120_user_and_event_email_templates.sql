@@ -633,7 +633,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'registration_confirmation',
   'event.registered',
-  'event_lifecycle',
+  'event_registration',
   ARRAY[]::user_role[],
   'You''re Registered: {{event_name}} 🎟️',
   '<!DOCTYPE html>
@@ -758,7 +758,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'event_reminder_6h',
   'event.reminder',
-  'event_lifecycle',
+  'event_reminders',
   ARRAY[]::user_role[],
   'Reminder: {{event_name}} starts in 6 hours! ⏰',
   '<!DOCTYPE html>
