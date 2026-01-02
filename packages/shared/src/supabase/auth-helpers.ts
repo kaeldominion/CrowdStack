@@ -55,7 +55,7 @@ function calculateDelay(attempt: number): number {
 export async function getUserWithRetry(
   supabase: SupabaseClient,
   retries = RETRY_CONFIG.maxRetries
-): Promise<{ data: { user: any } | null; error: any }> {
+): Promise<{ data: { user: any | null }; error: any }> {
   let lastError: any = null;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
