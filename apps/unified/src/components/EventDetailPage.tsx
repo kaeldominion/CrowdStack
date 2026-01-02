@@ -2887,7 +2887,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
                   {/* Quick Actions - available to event owners and those with closeout permissions */}
                   <div className="flex flex-wrap items-center gap-2">
-                    {config.role === "organizer" && (
+                  {config.role === "organizer" && (
                       <Link href={`/app/organizer/events/${eventId}/invites`}>
                         <Button variant="secondary">
                           <QrCode className="h-4 w-4 mr-2" />
@@ -2903,7 +2903,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                         </Button>
                       </Link>
                     )}
-                  </div>
+                    </div>
                 </div>
               </Card>
 
@@ -3691,6 +3691,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     // Use q= param and type=user to search by email
                     const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(transferEmail)}&type=user`);
                     const data = await res.json();
+                    
+                    if (!res.ok) {
+                      toast.error("Search failed", data.error || `Error: ${res.status}`);
+                      setFoundUser(null);
+                      return;
+                    }
+                    
                     if (data.results && data.results.length > 0) {
                       // Find exact email match first, or use first result
                       const exactMatch = data.results.find((r: any) => r.email?.toLowerCase() === transferEmail.toLowerCase());
@@ -3700,8 +3707,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       toast.error("User not found", "No user found with that email address.");
                       setFoundUser(null);
                     }
-                  } catch (error) {
-                    toast.error("Search failed", "Could not search for user.");
+                  } catch (error: any) {
+                    toast.error("Search failed", error.message || "Could not search for user.");
+                    setFoundUser(null);
                   } finally {
                     setSearchingUser(false);
                   }
@@ -3990,10 +3998,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       canvas.toBlob((blob) => {
                         if (blob) {
                           const url = URL.createObjectURL(blob);
-                          const link = document.createElement("a");
+                      const link = document.createElement("a");
                           link.href = url;
-                          link.download = `${event.slug}-referral-qr.png`;
-                          link.click();
+                      link.download = `${event.slug}-referral-qr.png`;
+                      link.click();
                           URL.revokeObjectURL(url);
                         }
                       });

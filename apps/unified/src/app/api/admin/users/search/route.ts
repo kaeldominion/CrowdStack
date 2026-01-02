@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServiceRoleClient();
+    // Use regular client to get authenticated user
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -12,14 +13,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is superadmin
-    const { data: roles } = await supabase
+    // Check if user is superadmin or admin (use service role for query)
+    const serviceSupabase = createServiceRoleClient();
+    const { data: roles } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id);
 
-    const isSuperadmin = roles?.some((r: { role: string }) => r.role === "superadmin");
-    if (!isSuperadmin) {
+    const roleList = roles?.map((r: { role: string }) => r.role) || [];
+    const isSuperadmin = roleList.includes("superadmin");
+    const isAdmin = roleList.includes("admin");
+    if (!isSuperadmin && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -31,13 +35,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
-    const admin = createServiceRoleClient();
     const results: any[] = [];
 
     if (type === "user") {
       // Search users by email - use admin API to list users
       const { data: usersData, error: usersError } =
-        await admin.auth.admin.listUsers({ perPage: 100 });
+        await serviceSupabase.auth.admin.listUsers({ perPage: 100 });
 
       if (!usersError && usersData?.users) {
         const matchingUsers = usersData.users.filter(
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
 
         // Get profile info for matching users
         for (const authUser of matchingUsers.slice(0, 20)) {
-          const { data: profile } = await supabase
+          const { data: profile } = await serviceSupabase
             .from("user_profiles")
             .select("name, surname")
             .eq("id", authUser.id)
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
       // Get all users once to avoid multiple API calls (shared across all entity searches)
       let allAuthUsers: any[] = [];
       try {
-        const { data: usersData, error: usersError } = await admin.auth.admin.listUsers({ perPage: 1000 });
+        const { data: usersData, error: usersError } = await serviceSupabase.auth.admin.listUsers({ perPage: 1000 });
         if (!usersError && usersData?.users) {
           allAuthUsers = usersData.users;
         }
