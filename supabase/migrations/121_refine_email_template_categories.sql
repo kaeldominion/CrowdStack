@@ -2,25 +2,8 @@
 -- Add more specific categories to better organize email templates
 -- ============================================
 
--- First, drop the existing check constraint
-ALTER TABLE public.email_templates
-DROP CONSTRAINT IF EXISTS email_templates_category_check;
-
--- Add new check constraint with refined categories
-ALTER TABLE public.email_templates
-ADD CONSTRAINT email_templates_category_check CHECK (category IN (
-  'auth_onboarding',      -- Welcome emails, role assignments
-  'event_registration',   -- Registration confirmations
-  'event_reminders',      -- Event reminders (6h before, etc.)
-  'dj_gigs',              -- DJ gig invitations, confirmations, reminders
-  'event_photos',         -- Photo published notifications
-  'event_invites',        -- Event invite emails, promoter assignments
-  'payout',               -- Payout-related emails, terms updates
-  'bonus',                -- Bonus-related emails
-  'guest',                -- Guest-related emails
-  'venue',                -- Venue-related emails
-  'system'                -- System/admin emails
-));
+-- IMPORTANT: Update existing rows FIRST before changing the constraint
+-- This ensures all data is valid before the new constraint is applied
 
 -- Update existing templates to use new categories
 UPDATE public.email_templates
@@ -46,6 +29,32 @@ WHERE slug IN ('event_invite', 'promoter_event_assigned');
 UPDATE public.email_templates
 SET category = 'payout'
 WHERE slug = 'promoter_terms_updated';
+
+-- Catch-all: Update any remaining 'event_lifecycle' templates to 'event_invites' as default
+-- (This handles any templates we might have missed)
+UPDATE public.email_templates
+SET category = 'event_invites'
+WHERE category = 'event_lifecycle';
+
+-- Now drop the existing check constraint
+ALTER TABLE public.email_templates
+DROP CONSTRAINT IF EXISTS email_templates_category_check;
+
+-- Add new check constraint with refined categories
+ALTER TABLE public.email_templates
+ADD CONSTRAINT email_templates_category_check CHECK (category IN (
+  'auth_onboarding',      -- Welcome emails, role assignments
+  'event_registration',   -- Registration confirmations
+  'event_reminders',      -- Event reminders (6h before, etc.)
+  'dj_gigs',              -- DJ gig invitations, confirmations, reminders
+  'event_photos',         -- Photo published notifications
+  'event_invites',        -- Event invite emails, promoter assignments
+  'payout',               -- Payout-related emails, terms updates
+  'bonus',                -- Bonus-related emails
+  'guest',                -- Guest-related emails
+  'venue',                -- Venue-related emails
+  'system'                -- System/admin emails
+));
 
 -- Add comment explaining categories
 COMMENT ON CONSTRAINT email_templates_category_check ON public.email_templates IS 
