@@ -1,34 +1,35 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserDJId, getUserDJProfiles } from "@/lib/data/get-user-entity";
 
 /**
  * GET /api/dj/profiles
- * Get all DJ profiles for the current user
+ * Get all DJ profiles for the current user with selection status
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ profiles: [] });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profiles, error } = await supabase
-      .from("djs")
-      .select("id, name, handle, profile_image_url, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
+    const selectedDJId = await getUserDJId();
+    const allProfiles = await getUserDJProfiles();
 
-    if (error) {
-      console.error("Error fetching DJ profiles:", error);
-      return NextResponse.json({ profiles: [] });
-    }
+    // Mark which profile is selected
+    const profiles = allProfiles.map(profile => ({
+      ...profile,
+      is_selected: profile.id === selectedDJId,
+    }));
 
-    return NextResponse.json({ profiles: profiles || [] });
+    return NextResponse.json({ profiles });
   } catch (error: any) {
     console.error("Error fetching DJ profiles:", error);
-    return NextResponse.json({ profiles: [] });
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
-

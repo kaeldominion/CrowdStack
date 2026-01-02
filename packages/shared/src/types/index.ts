@@ -883,6 +883,32 @@ export interface PromoterEventContract {
   manual_adjustment_reason: string | null;
 }
 
+export interface PromoterPayoutTemplate {
+  id: string;
+  organizer_id: string;
+  name: string;
+  description: string | null;
+  // Currency override
+  currency: string | null;
+  // Per head payment
+  per_head_rate: number | null;
+  per_head_min: number | null;
+  per_head_max: number | null;
+  // Fixed fee with minimum requirement
+  fixed_fee: number | null;
+  minimum_guests: number | null;
+  below_minimum_percent: number | null;
+  // Legacy single bonus
+  bonus_threshold: number | null;
+  bonus_amount: number | null;
+  // Tiered/repeatable bonuses
+  bonus_tiers: BonusTier[] | null;
+  // Default template flag
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CloseoutSummary {
   event_id: string;
   event_name: string;

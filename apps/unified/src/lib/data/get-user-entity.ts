@@ -3,6 +3,7 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
 
 const SELECTED_VENUE_COOKIE = "selected_venue_id";
+const SELECTED_DJ_COOKIE = "selected_dj_id";
 
 /**
  * Get all venues the current user has access to
@@ -252,8 +253,8 @@ export async function getUserDJProfiles(): Promise<Array<{ id: string; name: str
 }
 
 /**
- * Get the current user's first DJ ID (for backwards compatibility)
- * Returns the first DJ profile linked to the user via user_id
+ * Get the selected DJ ID from cookie, or fallback to first available DJ profile
+ * Returns the selected DJ ID if user owns it, otherwise the first DJ profile they own
  */
 export async function getUserDJId(): Promise<string | null> {
   const supabase = await createClient();
@@ -265,15 +266,33 @@ export async function getUserDJId(): Promise<string | null> {
     return null;
   }
 
-  // Get first DJ profile for this user
-  const { data: dj } = await supabase
-    .from("djs")
-    .select("id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+  // Check for selected DJ in cookie
+  const cookieStore = await cookies();
+  const selectedDJId = cookieStore.get(SELECTED_DJ_COOKIE)?.value;
 
-  return dj?.id || null;
+  if (selectedDJId) {
+    // Verify user owns this DJ profile
+    const { data: dj } = await supabase
+      .from("djs")
+      .select("id")
+      .eq("id", selectedDJId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (dj) {
+      console.log("[getUserDJId] Using selected DJ from cookie:", selectedDJId);
+      return dj.id;
+    }
+  }
+
+  // Fallback to first DJ profile
+  const djIds = await getUserDJIds();
+  if (djIds.length > 0) {
+    console.log("[getUserDJId] Using first available DJ profile:", djIds[0]);
+    return djIds[0];
+  }
+
+  console.log("[getUserDJId] No DJ profiles found for user");
+  return null;
 }
 

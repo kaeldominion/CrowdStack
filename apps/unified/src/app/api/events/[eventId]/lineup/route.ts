@@ -36,6 +36,52 @@ export async function GET(
       .eq("event_id", eventId)
       .order("display_order", { ascending: true });
 
+    // Get gig information for each DJ in the lineup
+    if (lineups && lineups.length > 0) {
+      const djIds = lineups.map((l: any) => l.dj_id);
+      
+      // Get confirmed gig responses for these DJs on this event
+      const { data: gigResponses } = await serviceSupabase
+        .from("dj_gig_responses")
+        .select(`
+          dj_id,
+          status,
+          confirmed_at,
+          dj_gig_postings!inner(
+            id,
+            title,
+            event_id,
+            payment_amount,
+            payment_currency,
+            show_payment
+          )
+        `)
+        .eq("status", "confirmed")
+        .in("dj_id", djIds)
+        .eq("dj_gig_postings.event_id", eventId);
+
+      // Map gig info to lineups
+      const gigMap = new Map();
+      gigResponses?.forEach((gr: any) => {
+        gigMap.set(gr.dj_id, {
+          gig_posting_id: gr.dj_gig_postings.id,
+          gig_title: gr.dj_gig_postings.title,
+          payment_amount: gr.dj_gig_postings.payment_amount,
+          payment_currency: gr.dj_gig_postings.payment_currency,
+          show_payment: gr.dj_gig_postings.show_payment,
+          confirmed_at: gr.confirmed_at,
+        });
+      });
+
+      // Add gig info to each lineup item
+      const lineupsWithGigInfo = lineups.map((lineup: any) => ({
+        ...lineup,
+        gig_info: gigMap.get(lineup.dj_id) || null,
+      }));
+
+      return NextResponse.json({ lineups: lineupsWithGigInfo });
+    }
+
     if (error) {
       console.error("Error fetching lineup:", error);
       return NextResponse.json({ error: "Failed to fetch lineup" }, { status: 500 });
@@ -401,6 +447,53 @@ export async function DELETE(
     if (deleteError) {
       console.error("Error removing DJ from lineup:", deleteError);
       return NextResponse.json({ error: "Failed to remove DJ from lineup" }, { status: 500 });
+    }
+
+    // Check if this DJ was confirmed via a gig posting
+    const { data: gigResponse } = await serviceSupabase
+      .from("dj_gig_responses")
+      .select(`
+        id,
+        gig_posting_id,
+        dj_gig_postings!inner(event_id, title)
+      `)
+      .eq("dj_id", djId)
+      .eq("status", "confirmed")
+      .single();
+
+    if (gigResponse && gigResponse.dj_gig_postings?.event_id === eventId) {
+      // Update gig response status - mark as interested (removed from lineup)
+      await serviceSupabase
+        .from("dj_gig_responses")
+        .update({
+          status: "interested",
+          confirmed_at: null,
+        })
+        .eq("id", gigResponse.id);
+
+      // Get DJ user_id for notification
+      const { data: dj } = await serviceSupabase
+        .from("djs")
+        .select("user_id, name, handle")
+        .eq("id", djId)
+        .single();
+
+      if (dj?.user_id) {
+        // Send in-app notification
+        const { sendNotification } = await import("@crowdstack/shared/notifications/send");
+        await sendNotification({
+          user_id: dj.user_id,
+          type: "dj_gig_cancelled",
+          title: "Removed from Lineup",
+          message: `You have been removed from the lineup for "${gigResponse.dj_gig_postings?.title || "this gig"}"`,
+          link: `/app/dj/gigs`,
+          metadata: {
+            event_id: eventId,
+            dj_id: djId,
+            gig_posting_id: gigResponse.gig_posting_id,
+          },
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

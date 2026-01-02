@@ -15,7 +15,8 @@ import {
   LoadingSpinner,
   Select,
 } from "@crowdstack/ui";
-import { Search, UserPlus, Trash2, Users, DollarSign, Plus, X, Repeat, Target } from "lucide-react";
+import { Search, UserPlus, Trash2, Users, DollarSign, Plus, X, Repeat, Target, FileText } from "lucide-react";
+import type { PromoterPayoutTemplate } from "@crowdstack/shared/types";
 
 interface Promoter {
   id: string;
@@ -111,12 +112,20 @@ export function PromoterManagementModal({
   const [useTieredBonuses, setUseTieredBonuses] = useState(false);
   const [bonusTiers, setBonusTiers] = useState<BonusTier[]>([]);
 
+  // Templates
+  const [templates, setTemplates] = useState<PromoterPayoutTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       loadEventPromoters();
       loadAvailablePromoters();
+      if (context === "organizer") {
+        loadTemplates();
+      }
     }
-  }, [isOpen, eventId]);
+  }, [isOpen, eventId, context]);
 
   useEffect(() => {
     // Debounced search
@@ -156,6 +165,21 @@ export function PromoterManagementModal({
       setAvailablePromoters(data.promoters || []);
     } catch (error) {
       console.error("Error loading available promoters:", error);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const response = await fetch("/api/organizer/payout-templates");
+      if (!response.ok) throw new Error("Failed to load templates");
+      const data = await response.json();
+      setTemplates(data.templates || []);
+    } catch (error) {
+      console.error("Error loading templates:", error);
+      setTemplates([]);
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
@@ -208,6 +232,50 @@ export function PromoterManagementModal({
     setBonusAmount("");
     setUseTieredBonuses(false);
     setBonusTiers([]);
+    setSelectedTemplateId("");
+  };
+
+  const applyTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    // Apply template values to form fields
+    setCurrency(template.currency || "");
+    setPerHeadRate(template.per_head_rate?.toString() || "");
+    setPerHeadMin(template.per_head_min?.toString() || "");
+    setPerHeadMax(template.per_head_max?.toString() || "");
+    setFixedFee(template.fixed_fee?.toString() || "");
+    setMinimumGuests(template.minimum_guests?.toString() || "");
+    setBelowMinimumPercent(template.below_minimum_percent?.toString() || "50");
+    setBonusThreshold(template.bonus_threshold?.toString() || "");
+    setBonusAmount(template.bonus_amount?.toString() || "");
+    
+    // Handle bonus tiers
+    if (template.bonus_tiers && template.bonus_tiers.length > 0) {
+      setUseTieredBonuses(true);
+      setBonusTiers(template.bonus_tiers);
+    } else if (template.bonus_threshold && template.bonus_amount) {
+      setUseTieredBonuses(false);
+      setBonusTiers([]);
+    } else {
+      setUseTieredBonuses(false);
+      setBonusTiers([]);
+    }
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === "") {
+      resetForm();
+    } else if (templateId === "default") {
+      // Find default template
+      const defaultTemplate = templates.find(t => t.is_default);
+      if (defaultTemplate) {
+        applyTemplate(defaultTemplate.id);
+      }
+    } else {
+      applyTemplate(templateId);
+    }
   };
 
   const selectPromoter = (promoter: Promoter & { type?: "promoter" | "user"; user_id?: string }) => {
@@ -226,6 +294,8 @@ export function PromoterManagementModal({
         commission_type: "enhanced", // New type to indicate enhanced model
         commission_config: {},
         assigned_by: context,
+        // Include template_id if a template was selected
+        template_id: selectedTemplateId && selectedTemplateId !== "default" ? selectedTemplateId : (selectedTemplateId === "default" ? templates.find(t => t.is_default)?.id : undefined),
         // Currency (null uses event default)
         currency: currency || null,
         // Per head
@@ -575,6 +645,30 @@ export function PromoterManagementModal({
                     Change Promoter
                   </Button>
                 </div>
+                
+                {/* Template Selector (only for organizer context) */}
+                {context === "organizer" && templates.length > 0 && (
+                  <div className="mb-4 p-3 bg-base rounded-lg border border-border-subtle">
+                    <label className="block text-xs font-medium text-secondary mb-2 flex items-center gap-2">
+                      <FileText className="h-3 w-3" />
+                      Apply Template (Optional)
+                    </label>
+                    <Select
+                      value={selectedTemplateId}
+                      onChange={(e) => handleTemplateChange(e.target.value)}
+                      options={[
+                        { value: "", label: "No template" },
+                        ...(templates.find(t => t.is_default) ? [{ value: "default", label: `Default: ${templates.find(t => t.is_default)?.name}` }] : []),
+                        ...templates.map(t => ({ value: t.id, label: t.name })),
+                      ]}
+                    />
+                    {selectedTemplateId && selectedTemplateId !== "" && (
+                      <p className="text-xs text-secondary mt-2">
+                        Template applied. You can still edit fields below.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="mb-4 p-3 bg-base rounded-lg border border-border-subtle">
                   <p className="text-sm text-primary font-medium">Selected: {selectedPromoter.name}</p>
                   <p className="text-xs text-secondary">{selectedPromoter.email || selectedPromoter.phone || "No contact info"}</p>

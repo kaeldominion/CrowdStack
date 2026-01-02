@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Modal, Input } from "@crowdstack/ui";
-import { Radio, Plus, Trash2, ArrowUp, ArrowDown, Star, Search, X } from "lucide-react";
+import { Radio, Plus, Trash2, ArrowUp, ArrowDown, Star, Search, X, DollarSign, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -15,12 +15,22 @@ interface DJ {
   location: string | null;
 }
 
+interface GigInfo {
+  gig_posting_id: string;
+  gig_title: string;
+  payment_amount: number | null;
+  payment_currency: string | null;
+  show_payment: boolean;
+  confirmed_at: string | null;
+}
+
 interface LineupItem {
   id: string;
   dj_id: string;
   display_order: number;
   is_headliner: boolean;
   djs: DJ;
+  gig_info: GigInfo | null;
 }
 
 interface EventLineupManagementProps {
@@ -35,6 +45,7 @@ export function EventLineupManagement({ eventId }: EventLineupManagementProps) {
   const [djSearchResults, setDjSearchResults] = useState<DJ[]>([]);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [viewingGigTerms, setViewingGigTerms] = useState<{ djId: string; gigInfo: GigInfo } | null>(null);
 
   useEffect(() => {
     loadLineup();
@@ -214,6 +225,7 @@ export function EventLineupManagement({ eventId }: EventLineupManagementProps) {
                 <TableHead className="w-12"></TableHead>
                 <TableHead>DJ</TableHead>
                 <TableHead className="w-32">Headliner</TableHead>
+                <TableHead className="w-32">Gig Terms</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -274,6 +286,25 @@ export function EventLineupManagement({ eventId }: EventLineupManagementProps) {
                       <Star className={`h-4 w-4 ${item.is_headliner ? "fill-warning" : ""}`} />
                       <span className="text-sm">{item.is_headliner ? "Headliner" : "Support"}</span>
                     </button>
+                  </TableCell>
+                  <TableCell>
+                    {item.gig_info ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/50 rounded text-purple-400 text-xs">
+                          <DollarSign className="h-3 w-3" />
+                          <span>Gig</span>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setViewingGigTerms({ djId: item.dj_id, gigInfo: item.gig_info! })}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-secondary text-sm">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Button
@@ -374,6 +405,56 @@ export function EventLineupManagement({ eventId }: EventLineupManagementProps) {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Gig Terms Modal */}
+      <Modal
+        isOpen={viewingGigTerms !== null}
+        onClose={() => setViewingGigTerms(null)}
+        title="Gig Payment Terms"
+        size="md"
+      >
+        {viewingGigTerms && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1">Gig Title</label>
+              <p className="text-primary">{viewingGigTerms.gigInfo.gig_title}</p>
+            </div>
+            
+            {viewingGigTerms.gigInfo.show_payment && viewingGigTerms.gigInfo.payment_amount && (
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Payment Amount</label>
+                <p className="text-primary text-lg font-semibold">
+                  {viewingGigTerms.gigInfo.payment_amount} {viewingGigTerms.gigInfo.payment_currency || "USD"}
+                </p>
+              </div>
+            )}
+            
+            {!viewingGigTerms.gigInfo.show_payment && (
+              <div>
+                <p className="text-secondary text-sm">Payment amount is not disclosed for this gig.</p>
+              </div>
+            )}
+            
+            {viewingGigTerms.gigInfo.confirmed_at && (
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Confirmed At</label>
+                <p className="text-secondary text-sm">
+                  {new Date(viewingGigTerms.gigInfo.confirmed_at).toLocaleString()}
+                </p>
+              </div>
+            )}
+            
+            <div className="pt-4 border-t border-border-subtle">
+              <Button
+                variant="secondary"
+                onClick={() => window.open(`/app/organizer/gigs/${viewingGigTerms.gigInfo.gig_posting_id}`, "_blank")}
+              >
+                View Full Gig Details
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

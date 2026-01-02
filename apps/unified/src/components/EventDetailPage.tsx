@@ -1525,7 +1525,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
       {/* Event Lifecycle Stepper - Show for organizers and admins */}
       {(config.role === "organizer" || config.role === "admin") && (
-        <Card className="p-4 overflow-x-auto">
+        <Card className="overflow-x-auto">
           <div className="flex items-center justify-between mb-3">
             <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
               Event Lifecycle
@@ -1555,7 +1555,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
       {/* Venue Approval Status (for organizers) */}
       {config.role === "organizer" && config.showVenueApproval && event.venue_approval_status && (
-        <Card className="p-6 border-l-4 border-l-warning">
+        <Card className="border-l-4 border-l-warning">
           <div className="flex items-start gap-4">
             <div className={`p-3 rounded-full ${
               event.venue_approval_status === "approved"
@@ -1628,7 +1628,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         <div className={`grid gap-4 ${
           config.role === "promoter" 
             ? "grid-cols-2 lg:grid-cols-4" 
-            : "md:grid-cols-2 lg:grid-cols-4"
+            : "grid-cols-2 md:grid-cols-2 lg:grid-cols-4"
         }`}>
           {config.role === "promoter" ? (
             <>

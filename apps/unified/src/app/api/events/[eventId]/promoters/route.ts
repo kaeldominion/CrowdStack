@@ -110,7 +110,8 @@ export async function POST(
       commission_type, 
       commission_config, 
       assigned_by,
-      // Enhanced payout model fields
+      template_id, // Template to apply
+      // Enhanced payout model fields (can override template)
       currency,
       per_head_rate,
       per_head_min,
@@ -286,6 +287,37 @@ export async function POST(
       );
     }
 
+    // If template_id is provided, fetch the template and use its values as defaults
+    let templateValues: any = {};
+    if (template_id) {
+      // Get organizer ID to verify template ownership
+      const organizerId = await getUserOrganizerId();
+      if (organizerId) {
+        const { data: template } = await serviceSupabase
+          .from("promoter_payout_templates")
+          .select("*")
+          .eq("id", template_id)
+          .eq("organizer_id", organizerId)
+          .single();
+
+        if (template) {
+          // Use template values as defaults (will be overridden by explicit body fields)
+          templateValues = {
+            currency: template.currency,
+            per_head_rate: template.per_head_rate,
+            per_head_min: template.per_head_min,
+            per_head_max: template.per_head_max,
+            fixed_fee: template.fixed_fee,
+            minimum_guests: template.minimum_guests,
+            below_minimum_percent: template.below_minimum_percent,
+            bonus_threshold: template.bonus_threshold,
+            bonus_amount: template.bonus_amount,
+            bonus_tiers: template.bonus_tiers,
+          };
+        }
+      }
+    }
+
     // Determine assigned_by if not provided
     let finalAssignedBy = assigned_by;
     if (!finalAssignedBy) {
@@ -310,14 +342,26 @@ export async function POST(
       }
     }
 
+    // Merge template values with explicit body values (body values take precedence)
+    const finalCurrency = currency !== undefined ? currency : templateValues.currency;
+    const finalPerHeadRate = per_head_rate !== undefined ? per_head_rate : templateValues.per_head_rate;
+    const finalPerHeadMin = per_head_min !== undefined ? per_head_min : templateValues.per_head_min;
+    const finalPerHeadMax = per_head_max !== undefined ? per_head_max : templateValues.per_head_max;
+    const finalFixedFee = fixed_fee !== undefined ? fixed_fee : templateValues.fixed_fee;
+    const finalMinimumGuests = minimum_guests !== undefined ? minimum_guests : templateValues.minimum_guests;
+    const finalBelowMinimumPercent = below_minimum_percent !== undefined ? below_minimum_percent : templateValues.below_minimum_percent;
+    const finalBonusThreshold = bonus_threshold !== undefined ? bonus_threshold : templateValues.bonus_threshold;
+    const finalBonusAmount = bonus_amount !== undefined ? bonus_amount : templateValues.bonus_amount;
+    const finalBonusTiers = bonus_tiers !== undefined ? bonus_tiers : templateValues.bonus_tiers;
+
     // Determine commission_type based on what fields are provided
     // If any enhanced fields are provided, use "enhanced", otherwise use legacy "flat_per_head"
     const hasEnhancedFields = 
-      per_head_rate !== undefined || 
-      fixed_fee !== undefined || 
-      bonus_threshold !== undefined || 
-      bonus_tiers !== undefined ||
-      minimum_guests !== undefined;
+      finalPerHeadRate !== undefined && finalPerHeadRate !== null || 
+      finalFixedFee !== undefined && finalFixedFee !== null || 
+      finalBonusThreshold !== undefined && finalBonusThreshold !== null || 
+      finalBonusTiers !== undefined && finalBonusTiers !== null ||
+      finalMinimumGuests !== undefined && finalMinimumGuests !== null;
     
     const finalCommissionType = hasEnhancedFields ? "enhanced" : (commission_type || "flat_per_head");
     const finalCommissionConfig = commission_config || (finalCommissionType === "flat_per_head" ? { amount_per_head: 0 } : {});
@@ -331,17 +375,17 @@ export async function POST(
         commission_type: finalCommissionType,
         commission_config: finalCommissionConfig,
         assigned_by: finalAssignedBy || "organizer",
-        // Enhanced payout model fields
-        currency: currency || null,
-        per_head_rate: per_head_rate !== undefined ? (per_head_rate === null || per_head_rate === "" ? null : parseFloat(per_head_rate)) : null,
-        per_head_min: per_head_min !== undefined ? (per_head_min === null || per_head_min === "" ? null : parseInt(per_head_min)) : null,
-        per_head_max: per_head_max !== undefined ? (per_head_max === null || per_head_max === "" ? null : parseInt(per_head_max)) : null,
-        bonus_threshold: bonus_threshold !== undefined ? (bonus_threshold === null || bonus_threshold === "" ? null : parseInt(bonus_threshold)) : null,
-        bonus_amount: bonus_amount !== undefined ? (bonus_amount === null || bonus_amount === "" ? null : parseFloat(bonus_amount)) : null,
-        bonus_tiers: bonus_tiers && Array.isArray(bonus_tiers) && bonus_tiers.length > 0 ? bonus_tiers : null,
-        fixed_fee: fixed_fee !== undefined ? (fixed_fee === null || fixed_fee === "" ? null : parseFloat(fixed_fee)) : null,
-        minimum_guests: minimum_guests !== undefined ? (minimum_guests === null || minimum_guests === "" ? null : parseInt(minimum_guests)) : null,
-        below_minimum_percent: below_minimum_percent !== undefined ? (below_minimum_percent === null || below_minimum_percent === "" ? null : parseFloat(below_minimum_percent)) : null,
+        // Enhanced payout model fields (using merged template + body values)
+        currency: finalCurrency || null,
+        per_head_rate: finalPerHeadRate !== undefined && finalPerHeadRate !== null && finalPerHeadRate !== "" ? parseFloat(finalPerHeadRate) : null,
+        per_head_min: finalPerHeadMin !== undefined && finalPerHeadMin !== null && finalPerHeadMin !== "" ? parseInt(finalPerHeadMin) : null,
+        per_head_max: finalPerHeadMax !== undefined && finalPerHeadMax !== null && finalPerHeadMax !== "" ? parseInt(finalPerHeadMax) : null,
+        bonus_threshold: finalBonusThreshold !== undefined && finalBonusThreshold !== null && finalBonusThreshold !== "" ? parseInt(finalBonusThreshold) : null,
+        bonus_amount: finalBonusAmount !== undefined && finalBonusAmount !== null && finalBonusAmount !== "" ? parseFloat(finalBonusAmount) : null,
+        bonus_tiers: finalBonusTiers && Array.isArray(finalBonusTiers) && finalBonusTiers.length > 0 ? finalBonusTiers : null,
+        fixed_fee: finalFixedFee !== undefined && finalFixedFee !== null && finalFixedFee !== "" ? parseFloat(finalFixedFee) : null,
+        minimum_guests: finalMinimumGuests !== undefined && finalMinimumGuests !== null && finalMinimumGuests !== "" ? parseInt(finalMinimumGuests) : null,
+        below_minimum_percent: finalBelowMinimumPercent !== undefined && finalBelowMinimumPercent !== null && finalBelowMinimumPercent !== "" ? parseFloat(finalBelowMinimumPercent) : null,
       })
       .select(`
         id,
@@ -495,8 +539,19 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Support both query params and body
     const { searchParams } = new URL(request.url);
-    const eventPromoterId = searchParams.get("event_promoter_id");
+    let eventPromoterId = searchParams.get("event_promoter_id");
+
+    // If not in query params, try body
+    if (!eventPromoterId) {
+      try {
+        const body = await request.json();
+        eventPromoterId = body.eventPromoterId || body.event_promoter_id;
+      } catch {
+        // Body might not be JSON or might be empty
+      }
+    }
 
     if (!eventPromoterId) {
       return NextResponse.json(

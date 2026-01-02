@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight, Briefcase } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { EarningsChart } from "@/components/charts/EarningsChart";
 import { createBrowserClient } from "@crowdstack/shared";
+import { DJProfileSelector } from "@/components/DJProfileSelector";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
@@ -123,6 +124,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     totalPlays: 0,
     followerCount: 0,
     upcomingEventsCount: 0,
+    gigInvitationsCount: 0,
+    earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
+    totalEarnings: 0,
+    referrals: 0,
+    totalCheckIns: 0,
+    conversionRate: 0,
+    eventsPromotedCount: 0,
   });
   const [djHandle, setDJHandle] = useState<string | null>(null);
 
@@ -1219,12 +1227,17 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               <Radio className="h-5 w-5" />
               DJ Dashboard
             </h2>
+            <div className="flex items-center gap-2">
               <Link href="/app/dj/profile">
                 <Button variant="secondary" size="sm">
-                Edit Profile Info
+                  Edit Profile Info
                 </Button>
               </Link>
             </div>
+          </div>
+
+          {/* DJ Profile Selector */}
+          <DJProfileSelector />
 
           {/* Public Profile Card */}
           {djHandle && (
@@ -1303,8 +1316,93 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </BentoCard>
           </div>
 
+          {/* Earnings & Referrals Stats */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Link href="/app/dj/earnings">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Earnings</p>
+                    <p className="text-2xl font-bold tracking-tighter text-white font-mono">
+                      {new Intl.NumberFormat("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(djStats.totalEarnings || 0)}
+                    </p>
+                    <div className="flex gap-2 mt-1 text-[9px]">
+                      {djStats.earnings?.confirmed > 0 && (
+                        <span className="text-green-400">✓{djStats.earnings.confirmed.toLocaleString()}</span>
+                      )}
+                      {djStats.earnings?.pending > 0 && (
+                        <span className="text-amber-400">⏳{djStats.earnings.pending.toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  <DollarSign className="h-5 w-5 text-white/40" />
+                </div>
+              </BentoCard>
+            </Link>
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Referrals</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.referrals || 0}</p>
+                </div>
+                <Ticket className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+            <BentoCard>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
+                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.totalCheckIns || 0}</p>
+                </div>
+                <TrendingUp className="h-5 w-5 text-white/40" />
+              </div>
+            </BentoCard>
+            <Link href="/app/dj/gigs">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Gig Invitations</p>
+                    <p className="text-3xl font-bold tracking-tighter text-white">{djStats.gigInvitationsCount || 0}</p>
+                  </div>
+                  <Briefcase className="h-5 w-5 text-white/40" />
+                </div>
+              </BentoCard>
+            </Link>
+          </div>
+
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Link href="/app/dj/gigs">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/10">
+                    <Briefcase className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Browse Gigs</p>
+                    <p className="text-xs text-white/60">Find and apply to gig postings</p>
+                  </div>
+                </div>
+              </BentoCard>
+            </Link>
+            <Link href="/app/dj/qr-codes">
+              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-white/10">
+                    <QrCode className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">QR Codes</p>
+                    <p className="text-xs text-white/60">Generate QR codes for referrals</p>
+                  </div>
+                </div>
+              </BentoCard>
+            </Link>
             <Link href="/app/dj/profile">
               <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
@@ -1312,8 +1410,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Edit Profile Info</p>
-                    <p className="text-xs text-white/60">Update your bio, location, genres, and social links</p>
+                    <p className="font-medium text-white">Edit Profile</p>
+                    <p className="text-xs text-white/60">Update your bio and social links</p>
                   </div>
                 </div>
               </BentoCard>

@@ -15,6 +15,8 @@ import {
   Clock,
   Star,
   TrendingUp,
+  Music,
+  Briefcase,
 } from "lucide-react";
 
 export interface NavItem {
@@ -31,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Home",
     href: "/app",
     icon: LayoutGrid,
-    roles: ["venue_admin", "event_organizer", "promoter", "superadmin"],
+    roles: ["venue_admin", "event_organizer", "promoter", "dj", "superadmin"],
   },
 
   {
@@ -114,6 +116,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["event_organizer"],
   },
   {
+    label: "DJ Gigs",
+    href: "/app/organizer/gigs",
+    icon: Music,
+    roles: ["event_organizer"],
+  },
+  {
     label: "Payouts",
     href: "/app/organizer/payouts",
     icon: DollarSign,
@@ -155,6 +163,37 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/app/promoter/profile",
     icon: User,
     roles: ["promoter"],
+  },
+
+  {
+    label: "Gigs",
+    href: "/app/dj/gigs",
+    icon: Briefcase,
+    roles: ["dj"],
+  },
+  {
+    label: "My Events",
+    href: "/app/dj/events",
+    icon: Calendar,
+    roles: ["dj"],
+  },
+  {
+    label: "Earnings",
+    href: "/app/dj/earnings",
+    icon: DollarSign,
+    roles: ["dj"],
+  },
+  {
+    label: "QR Codes",
+    href: "/app/dj/qr-codes",
+    icon: QrCode,
+    roles: ["dj"],
+  },
+  {
+    label: "Profile",
+    href: "/app/dj/profile",
+    icon: User,
+    roles: ["dj"],
   },
 
   // Admin Routes
