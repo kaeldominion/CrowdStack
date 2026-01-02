@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     // Build base query - use JOIN to fetch tags in single query
+    // NOTE: logo_url and cover_image_url excluded - some venues have base64 data URIs
+    // that bloat responses (200KB+ per venue). Fetch images on venue detail page only.
     let query = supabase
       .from("venues")
       .select(`
@@ -32,8 +34,6 @@ export async function GET(request: NextRequest) {
         name,
         slug,
         tagline,
-        logo_url,
-        cover_image_url,
         city,
         state,
         country,
@@ -62,6 +62,9 @@ export async function GET(request: NextRequest) {
     // Transform venue_tags to tags array format
     const venuesWithTags = (venues || []).map((venue: any) => ({
       ...venue,
+      // Images excluded from browse query - set to null for UI fallback
+      logo_url: null,
+      cover_image_url: null,
       tags: venue.venue_tags || [],
       venue_tags: undefined, // Remove the raw relation field
     }));
