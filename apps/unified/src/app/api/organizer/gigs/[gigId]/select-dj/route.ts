@@ -199,6 +199,13 @@ export async function POST(
             .eq("id", gig.organizer_id)
             .single();
 
+          // Supabase returns relations as arrays, so we need to access the first element
+          const venue = eventDetails?.venues
+            ? (Array.isArray(eventDetails.venues) 
+                ? eventDetails.venues[0] 
+                : eventDetails.venues)
+            : null;
+
           await sendTemplateEmail(
             "dj_gig_confirmed",
             djEmail,
@@ -216,7 +223,7 @@ export async function POST(
                     day: "numeric",
                   })
                 : "",
-              venue_name: eventDetails?.venues?.name || "Venue TBA",
+              venue_name: venue?.name || "Venue TBA",
               payment_amount: gig.payment_amount,
               payment_currency: gig.payment_currency || "USD",
               event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${eventDetails?.slug || eventId}`,

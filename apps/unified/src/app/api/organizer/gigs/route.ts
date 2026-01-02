@@ -262,6 +262,13 @@ export async function POST(request: NextRequest) {
                 .eq("id", organizerId)
                 .single();
 
+              // Supabase returns relations as arrays, so we need to access the first element
+              const venue = eventDetails?.venues
+                ? (Array.isArray(eventDetails.venues) 
+                    ? eventDetails.venues[0] 
+                    : eventDetails.venues)
+                : null;
+
               await sendTemplateEmail(
                 "dj_gig_invitation",
                 djEmail,
@@ -279,7 +286,7 @@ export async function POST(request: NextRequest) {
                         day: "numeric",
                       })
                     : "",
-                  venue_name: eventDetails?.venues?.name || "Venue TBA",
+                  venue_name: venue?.name || "Venue TBA",
                   payment_amount: show_payment && payment_amount ? payment_amount : null,
                   payment_currency: payment_currency,
                   gig_description: description || "",
