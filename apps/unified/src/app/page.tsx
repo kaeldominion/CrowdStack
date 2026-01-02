@@ -617,17 +617,25 @@ export default function HomePage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push("/me");
+        const supabase = createBrowserClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        // Ignore network errors - user can still browse the site
+        if (error && error.message?.includes("fetch failed")) {
+          console.warn("[HomePage] Network error checking auth, continuing without redirect:", error);
+          return;
+        }
+        
+        if (user) {
+          router.push("/me");
         }
       } catch (error) {
-        console.error("Error checking auth:", error);
+        // Ignore errors - allow user to browse the site
+        console.warn("[HomePage] Error checking auth, continuing without redirect:", error);
       }
     };
     const timer = setTimeout(() => {
-    checkAuth();
+      checkAuth();
     }, 100);
     return () => clearTimeout(timer);
   }, [router]);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserWithRetry } from "@crowdstack/shared/supabase/auth-helpers";
 import { cookies } from "next/headers";
 
 export async function GET(
@@ -18,7 +19,18 @@ export async function GET(
 
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+      error: authError,
+    } = await getUserWithRetry(supabase);
+    
+    // Handle network errors gracefully
+    if (authError && authError.message?.includes("fetch failed")) {
+      console.error("[Promoter Stats] Network error fetching user:", authError);
+      return NextResponse.json(
+        { error: "Network error. Please try again." },
+        { status: 503 }
+      );
+    }
+    
     console.log("[Promoter Stats] auth user:", user?.id, user?.email);
 
     const userId = user?.id || localhostUser;
@@ -52,10 +64,22 @@ export async function GET(
 
     if (!promoter) {
       console.log("Promoter not found for user:", userId);
-      return NextResponse.json(
-        { error: "Promoter profile not found" },
-        { status: 403 }
-      );
+      // Return empty stats instead of 403 to allow the UI to handle gracefully
+      return NextResponse.json({
+        referrals: 0,
+        checkins: 0,
+        conversionRate: 0,
+        leaderboard_position: 0,
+        total_promoters: 0,
+        event_total_registrations: 0,
+        event_total_checkins: 0,
+        total_registrations: 0,
+        total_check_ins: 0,
+        capacity: null,
+        capacity_remaining: null,
+        capacity_percentage: null,
+        error: "Promoter profile not found",
+      });
     }
     
     console.log("Found promoter:", promoter.id, "for user:", userId);

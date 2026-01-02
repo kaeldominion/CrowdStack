@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserWithRetry } from "@crowdstack/shared/supabase/auth-helpers";
 
 // GET - List notifications for current user
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getUserWithRetry(supabase);
+    
+    // Handle network errors gracefully
+    if (authError && authError.message?.includes("fetch failed")) {
+      console.error("[notifications] Network error fetching user:", authError);
+      return NextResponse.json(
+        { error: "Network error. Please try again." },
+        { status: 503 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,7 +69,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getUserWithRetry(supabase);
+    
+    // Handle network errors gracefully
+    if (authError && authError.message?.includes("fetch failed")) {
+      console.error("[notifications] Network error fetching user:", authError);
+      return NextResponse.json(
+        { error: "Network error. Please try again." },
+        { status: 503 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

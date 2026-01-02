@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserWithRetry } from "@crowdstack/shared/supabase/auth-helpers";
 
 /**
  * GET /api/me/following
@@ -8,7 +9,16 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getUserWithRetry(supabase);
+    
+    // Handle network errors gracefully
+    if (authError && authError.message?.includes("fetch failed")) {
+      console.error("[me/following] Network error fetching user:", authError);
+      return NextResponse.json(
+        { error: "Network error. Please try again." },
+        { status: 503 }
+      );
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
