@@ -183,7 +183,7 @@ export default function MyResponsesPage() {
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         <Link href={`/e/${response.gig.event.slug}`}>
-                          <Button variant="outline" size="sm">
+                          <Button variant="secondary" size="sm">
                             <Eye className="w-4 h-4 mr-2" />
                             View Event
                           </Button>
@@ -250,7 +250,7 @@ export default function MyResponsesPage() {
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         <Link href={`/app/dj/gigs/${response.gig.id}`}>
-                          <Button variant="outline" size="sm">
+                          <Button variant="secondary" size="sm">
                             <Eye className="w-4 h-4 mr-2" />
                             View
                           </Button>
