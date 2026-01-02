@@ -502,6 +502,31 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (response.ok) {
         const data = await response.json();
         console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
+        
+        // Auto-update status to "ended" if end_time has passed and status is "published"
+        if (data.event?.status === "published" && data.event?.end_time) {
+          const endTime = new Date(data.event.end_time);
+          const now = new Date();
+          if (endTime < now) {
+            // Automatically update status to "ended"
+            try {
+              const updateResponse = await fetch(config.eventApiEndpoint, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "ended" }),
+              });
+              if (updateResponse.ok) {
+                const updatedData = await updateResponse.json();
+                data.event = updatedData.event; // Update local data
+                console.log("Auto-updated event status to 'ended'");
+              }
+            } catch (updateError) {
+              console.error("Failed to auto-update event status:", updateError);
+              // Continue with original data even if update fails
+            }
+          }
+        }
+        
         setEvent(data.event);
         // Load event tags
         loadEventTags();
@@ -1444,7 +1469,21 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </span>
           </div>
           <EventStatusStepper
-            status={(event.status || "draft") as EventStatus}
+            status={(() => {
+              // Compute effective status based on end_time
+              const dbStatus = (event.status || "draft") as EventStatus;
+              
+              // If event is published and end_time has passed, show as "ended"
+              if (dbStatus === "published" && event.end_time) {
+                const endTime = new Date(event.end_time);
+                const now = new Date();
+                if (endTime < now) {
+                  return "ended" as EventStatus;
+                }
+              }
+              
+              return dbStatus;
+            })()}
             size="md"
             showLabels={true}
           />
