@@ -10,6 +10,61 @@ interface PhotosLiveEmailOptions {
   venueName: string | null;
   galleryUrl: string;
   customMessage?: string;
+  thumbnailUrls?: string[];
+}
+
+interface BatchNotificationResult {
+  total: number;
+  sent: number;
+  failed: number;
+  errors: string[];
+}
+
+/**
+ * Generate HTML for photo thumbnails grid
+ */
+function generateThumbnailsHTML(thumbnailUrls: string[] | undefined, galleryUrl: string): string {
+  if (!thumbnailUrls || thumbnailUrls.length === 0) {
+    return "";
+  }
+
+  // Limit to 6 thumbnails for email
+  const thumbnails = thumbnailUrls.slice(0, 6);
+  const cols = thumbnails.length <= 3 ? thumbnails.length : 3;
+  const cellWidth = Math.floor(100 / cols);
+
+  let html = '<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">';
+  html += '<tr>';
+
+  thumbnails.forEach((url, index) => {
+    if (index > 0 && index % cols === 0) {
+      html += '</tr><tr>';
+    }
+    html += `
+      <td align="center" style="padding: 4px; width: ${cellWidth}%;">
+        <a href="${galleryUrl}" style="display: block; text-decoration: none;">
+          <img 
+            src="${url}" 
+            alt="Photo ${index + 1}" 
+            width="100%" 
+            style="max-width: 180px; height: auto; border-radius: 8px; display: block; margin: 0 auto;"
+          />
+        </a>
+      </td>
+    `;
+  });
+
+  // Fill remaining cells if needed
+  const remaining = cols - (thumbnails.length % cols);
+  if (remaining < cols && thumbnails.length > 0) {
+    for (let i = 0; i < remaining; i++) {
+      html += '<td style="width: ' + cellWidth + '%;"></td>';
+    }
+  }
+
+  html += '</tr></table>';
+
+  return html;
 }
 
 /**
@@ -25,6 +80,7 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
     venueName,
     galleryUrl,
     customMessage = "",
+    thumbnailUrls,
   } = options;
 
   // Get recipient user ID if available
@@ -36,6 +92,9 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
     .single();
 
   const recipientUserId = user?.id || null;
+
+  // Generate thumbnail HTML
+  const thumbnailsHTML = generateThumbnailsHTML(thumbnailUrls, galleryUrl);
 
   // Use template system
   // Note: eventId should be passed from the caller in metadata
@@ -49,6 +108,7 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
       venue_name: venueName || "",
       gallery_url: galleryUrl,
       custom_message: customMessage || "",
+      photo_thumbnails_html: thumbnailsHTML,
     },
     {} // Metadata will be set by sendPhotosNotificationBatch
   );
@@ -58,13 +118,6 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
   }
 
   return result.messageId;
-}
-
-interface BatchNotificationResult {
-  total: number;
-  sent: number;
-  failed: number;
-  errors: string[];
 }
 
 /**
@@ -92,6 +145,9 @@ export async function sendPhotosNotificationBatch(
     errors: [],
   };
 
+  // Generate thumbnail HTML once for all recipients
+  const thumbnailsHTML = generateThumbnailsHTML(eventDetails.thumbnailUrls, eventDetails.galleryUrl);
+
   // Process in batches to avoid overwhelming the email service
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
@@ -118,6 +174,7 @@ export async function sendPhotosNotificationBatch(
             venue_name: eventDetails.venueName || "",
             gallery_url: eventDetails.galleryUrl,
             custom_message: eventDetails.customMessage || "",
+            photo_thumbnails_html: thumbnailsHTML,
           },
           {
             event_id: eventDetails.eventId,

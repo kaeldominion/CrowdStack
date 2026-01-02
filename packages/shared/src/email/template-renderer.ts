@@ -105,12 +105,15 @@ export async function sendTemplateEmail(
 
       // Update log with success
       if (logEntry) {
+        // Preserve existing metadata (like event_id, email_type) and add postmark_message_id
+        const existingMetadata = (logEntry.metadata as Record<string, any>) || {};
         await supabase
           .from("email_send_logs")
           .update({
             status: "sent",
             sent_at: new Date().toISOString(),
             metadata: {
+              ...existingMetadata,
               postmark_message_id: result.MessageID,
             },
           })

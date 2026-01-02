@@ -180,11 +180,11 @@ export default function PhotosPage() {
         <div className="pt-24 pb-8 px-4">
           <div className="mx-auto max-w-2xl text-center">
             <Link
-              href={`/e/${eventSlug}`}
+              href={event?.slug ? `/e/${event.slug}` : "/"}
               className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Event
+              {event?.slug ? "Back to Event" : "Back to Home"}
             </Link>
           </div>
         </div>
@@ -267,11 +267,11 @@ export default function PhotosPage() {
         <div className="pt-24 px-4">
           <div className="mx-auto max-w-7xl">
             <Link
-              href={`/e/${eventSlug}`}
+              href={event?.slug ? `/e/${event.slug}` : "/"}
               className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Event
+              {event?.slug ? "Back to Event" : "Back to Home"}
             </Link>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function PhotosPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
-                href={`/e/${eventSlug}`}
+                href={event?.slug ? `/e/${event.slug}` : "/"}
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 <ArrowLeft className="h-5 w-5" />

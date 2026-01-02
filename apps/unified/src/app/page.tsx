@@ -217,6 +217,7 @@ function MobileEventCarousel({ events, loading }: { events: any[]; loading: bool
     
     return {
       id: event.id,
+      slug: event.slug,
       name: event.name.toUpperCase(),
       date: `${event.date} • ${event.time}`,
       venue: `@ ${event.venue}${event.city ? `, ${event.city}` : ""}`,
@@ -261,7 +262,8 @@ function MobileEventCarousel({ events, loading }: { events: any[]; loading: bool
             key={event.id}
             className="snap-center shrink-0 w-[85vw] max-w-[340px]"
           >
-            <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-xl">
+            <Link href={`/e/${event.slug}`}>
+              <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-xl cursor-pointer">
               <div className="relative aspect-[3/4]">
                 <img
                   src={event.image}
@@ -297,13 +299,14 @@ function MobileEventCarousel({ events, loading }: { events: any[]; loading: bool
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-accent-success font-medium">{event.attending} attending</span>
-                    <button className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
+                    <div className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
                       Join
-                    </button>
                     </div>
                     </div>
                     </div>
                     </div>
+              </div>
+            </Link>
           </div>
         ))}
       </div>
@@ -343,6 +346,7 @@ function HeroEventCarousel({ events, loading }: { events: any[]; loading: boolea
     
     return {
       id: event.id,
+      slug: event.slug,
       name: event.name.toUpperCase(),
       date: `${event.date} • ${event.time}`,
       venue: `@ ${event.venue}${event.city ? `, ${event.city}` : ""}`,
@@ -382,14 +386,15 @@ function HeroEventCarousel({ events, loading }: { events: any[]; loading: boolea
   return (
     <div className="relative">
       {/* Main card - larger size */}
-                    <motion.div
-        key={currentEvent.id}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="relative w-80 sm:w-96 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl shadow-black/50 hover:scale-[1.02] transition-transform duration-300"
-      >
+      <Link href={`/e/${currentEvent.slug}`}>
+        <motion.div
+          key={currentEvent.id}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="relative w-80 sm:w-96 rounded-2xl overflow-hidden border-2 border-white/30 shadow-2xl shadow-black/50 hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
+        >
         <div className="relative aspect-[3/4]">
           <motion.img
             key={currentEvent.image}
@@ -431,14 +436,15 @@ function HeroEventCarousel({ events, loading }: { events: any[]; loading: boolea
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-accent-success font-medium">{currentEvent.attending} attending</span>
-                <button className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
+                <div className="px-5 py-2.5 bg-white text-void text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-accent-secondary hover:text-white transition-colors">
                   Join
-                </button>
+                </div>
                     </div>
                   </motion.div>
           </div>
                 </div>
               </motion.div>
+      </Link>
 
       {/* Carousel indicators */}
       <div className="flex justify-center gap-2 mt-6">
