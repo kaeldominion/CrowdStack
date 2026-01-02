@@ -69,25 +69,63 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if user is organizer or venue admin
+    // Check if user is organizer owner, organizer team member, or venue admin
     let hasPermission = false;
 
-    if (event.organizer_id) {
+    // Check superadmin
+    const { userHasRole } = await import("@crowdstack/shared/auth/roles");
+    if (await userHasRole("superadmin")) {
+      hasPermission = true;
+    }
+
+    if (!hasPermission && event.organizer_id) {
+      // Check if user is organizer owner
       const { data: organizer } = await serviceSupabase
         .from("organizers")
         .select("created_by")
         .eq("id", event.organizer_id)
         .single();
-      if (organizer?.created_by === userId) hasPermission = true;
+      if (organizer?.created_by === userId) {
+        hasPermission = true;
+      }
+
+      // Check if user is organizer team member
+      if (!hasPermission) {
+        const { data: organizerUser } = await serviceSupabase
+          .from("organizer_users")
+          .select("id")
+          .eq("organizer_id", event.organizer_id)
+          .eq("user_id", userId)
+          .single();
+        if (organizerUser) {
+          hasPermission = true;
+        }
+      }
     }
 
-    if (event.venue_id) {
+    if (!hasPermission && event.venue_id) {
+      // Check if user is venue owner
       const { data: venue } = await serviceSupabase
         .from("venues")
         .select("created_by")
         .eq("id", event.venue_id)
         .single();
-      if (venue?.created_by === userId) hasPermission = true;
+      if (venue?.created_by === userId) {
+        hasPermission = true;
+      }
+
+      // Check if user is venue team member
+      if (!hasPermission) {
+        const { data: venueUser } = await serviceSupabase
+          .from("venue_users")
+          .select("id")
+          .eq("venue_id", event.venue_id)
+          .eq("user_id", userId)
+          .single();
+        if (venueUser) {
+          hasPermission = true;
+        }
+      }
     }
 
     if (!hasPermission) {
@@ -157,25 +195,63 @@ export async function DELETE(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if user is organizer or venue admin
+    // Check if user is organizer owner, organizer team member, or venue admin
     let hasPermission = false;
 
-    if (event.organizer_id) {
+    // Check superadmin
+    const { userHasRole } = await import("@crowdstack/shared/auth/roles");
+    if (await userHasRole("superadmin")) {
+      hasPermission = true;
+    }
+
+    if (!hasPermission && event.organizer_id) {
+      // Check if user is organizer owner
       const { data: organizer } = await serviceSupabase
         .from("organizers")
         .select("created_by")
         .eq("id", event.organizer_id)
         .single();
-      if (organizer?.created_by === userId) hasPermission = true;
+      if (organizer?.created_by === userId) {
+        hasPermission = true;
+      }
+
+      // Check if user is organizer team member
+      if (!hasPermission) {
+        const { data: organizerUser } = await serviceSupabase
+          .from("organizer_users")
+          .select("id")
+          .eq("organizer_id", event.organizer_id)
+          .eq("user_id", userId)
+          .single();
+        if (organizerUser) {
+          hasPermission = true;
+        }
+      }
     }
 
-    if (event.venue_id) {
+    if (!hasPermission && event.venue_id) {
+      // Check if user is venue owner
       const { data: venue } = await serviceSupabase
         .from("venues")
         .select("created_by")
         .eq("id", event.venue_id)
         .single();
-      if (venue?.created_by === userId) hasPermission = true;
+      if (venue?.created_by === userId) {
+        hasPermission = true;
+      }
+
+      // Check if user is venue team member
+      if (!hasPermission) {
+        const { data: venueUser } = await serviceSupabase
+          .from("venue_users")
+          .select("id")
+          .eq("venue_id", event.venue_id)
+          .eq("user_id", userId)
+          .single();
+        if (venueUser) {
+          hasPermission = true;
+        }
+      }
     }
 
     if (!hasPermission) {
