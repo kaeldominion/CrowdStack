@@ -27,7 +27,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'photos_published',
   'photos.published',
-  'event_lifecycle',
+  'event_photos',
   ARRAY['attendee'],
   'Photos from {{event_name}} are now available!',
   '<!DOCTYPE html>
