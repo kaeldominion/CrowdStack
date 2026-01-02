@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createClient } from "../supabase/server";
-import { userHasRole } from "./roles";
+import { userHasRole, getUserRoles } from "./roles";
 
 /**
  * Check if user can upload photos to an event
@@ -137,7 +137,7 @@ export async function canDeletePhoto(photoId: string): Promise<boolean> {
 
 /**
  * Check if user can manage photos for an event (delete, feature, etc.)
- * Allows: superadmin, organizer
+ * Allows: superadmin, organizer (owner or team member)
  * More restrictive than canUploadPhotosToEvent - only organizers can manage photos
  */
 export async function canManageEventPhotos(eventId: string): Promise<boolean> {
@@ -150,9 +150,17 @@ export async function canManageEventPhotos(eventId: string): Promise<boolean> {
     return false;
   }
 
-  // Superadmin can manage photos for any event
-  if (await userHasRole("superadmin")) {
+  // Check if superadmin
+  const roles = await getUserRoles();
+  const isSuperadmin = roles.includes("superadmin");
+
+  if (isSuperadmin) {
     return true;
+  }
+
+  // Only organizers can manage photos
+  if (!(await userHasRole("event_organizer"))) {
+    return false;
   }
 
   // Get event details
@@ -162,11 +170,11 @@ export async function canManageEventPhotos(eventId: string): Promise<boolean> {
     .eq("id", eventId)
     .single();
 
-  if (!event) {
+  if (!event || !event.organizer_id) {
     return false;
   }
 
-  // Check if user is the organizer
+  // Check if user is the organizer owner
   const { data: organizer } = await supabase
     .from("organizers")
     .select("id")
@@ -174,6 +182,18 @@ export async function canManageEventPhotos(eventId: string): Promise<boolean> {
     .eq("id", event.organizer_id)
     .single();
 
-  return !!organizer;
+  if (organizer) {
+    return true;
+  }
+
+  // Check if user is a team member of the organizer
+  const { data: organizerUser } = await supabase
+    .from("organizer_users")
+    .select("id")
+    .eq("organizer_id", event.organizer_id)
+    .eq("user_id", user.id)
+    .single();
+
+  return !!organizerUser;
 }
 
