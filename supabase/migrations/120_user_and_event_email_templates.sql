@@ -16,7 +16,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'welcome',
   'user.signup',
-  'user_lifecycle',
+  'auth_onboarding',
   ARRAY[]::user_role[],
   'Welcome to CrowdStack! 🎉',
   '<!DOCTYPE html>
@@ -147,7 +147,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'venue_admin_welcome',
   'role.assigned',
-  'user_lifecycle',
+  'auth_onboarding',
   ARRAY['venue_admin']::user_role[],
   'Welcome to CrowdStack - Venue Admin Access Confirmed 🏢',
   '<!DOCTYPE html>
@@ -268,7 +268,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'event_organizer_welcome',
   'role.assigned',
-  'user_lifecycle',
+  'auth_onboarding',
   ARRAY['event_organizer']::user_role[],
   'Welcome to CrowdStack - Event Organizer Access Confirmed 🎪',
   '<!DOCTYPE html>
@@ -391,7 +391,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'promoter_welcome',
   'role.assigned',
-  'user_lifecycle',
+  'auth_onboarding',
   ARRAY['promoter']::user_role[],
   'Welcome to CrowdStack - Promoter Access Confirmed 📢',
   '<!DOCTYPE html>
@@ -512,7 +512,7 @@ INSERT INTO public.email_templates (
 ) VALUES (
   'dj_welcome',
   'role.assigned',
-  'user_lifecycle',
+  'auth_onboarding',
   ARRAY['dj']::user_role[],
   'Welcome to CrowdStack - DJ Profile Created 🎧',
   '<!DOCTYPE html>
