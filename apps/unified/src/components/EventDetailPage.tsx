@@ -374,19 +374,39 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   );
 
   // Compute effective permissions by merging config with dynamic permissions
-  // Dynamic permissions override static config when available
+  // Use OR logic: user has permission if EITHER config grants it OR API grants it
+  // This ensures admin role pages still work even if API doesn't recognize the user
   const effectivePermissions = useMemo(() => {
     const perms = eventPermissions?.permissions;
+    const apiHasAccess = eventPermissions?.hasAccess ?? false;
+    const apiIsSuperadmin = eventPermissions?.isSuperadmin ?? false;
+    
+    // If API says user is superadmin/admin, they have all permissions
+    if (apiIsSuperadmin) {
+      return {
+        canEdit: true,
+        canManagePromoters: true,
+        canManageDoorStaff: true,
+        canViewSettings: true,
+        canCloseoutEvent: true,
+        canViewFinancials: true,
+        canPublishPhotos: true,
+        isOwner: eventPermissions?.isOwner ?? false,
+        isSuperadmin: true,
+      };
+    }
+    
+    // Otherwise, use OR logic: config permission OR API permission
     return {
-      canEdit: perms?.edit_events ?? config.canEdit ?? false,
-      canManagePromoters: perms?.manage_promoters ?? config.canManagePromoters ?? false,
-      canManageDoorStaff: perms?.manage_door_staff ?? config.canManageDoorStaff ?? false,
-      canViewSettings: perms?.view_settings ?? config.canViewSettings ?? false,
+      canEdit: (config.canEdit ?? false) || (perms?.edit_events ?? false),
+      canManagePromoters: (config.canManagePromoters ?? false) || (perms?.manage_promoters ?? false),
+      canManageDoorStaff: (config.canManageDoorStaff ?? false) || (perms?.manage_door_staff ?? false),
+      canViewSettings: (config.canViewSettings ?? false) || (perms?.view_settings ?? false),
       canCloseoutEvent: perms?.closeout_event ?? false,
       canViewFinancials: perms?.view_financials ?? false,
       canPublishPhotos: perms?.publish_photos ?? false,
       isOwner: eventPermissions?.isOwner ?? false,
-      isSuperadmin: eventPermissions?.isSuperadmin ?? false,
+      isSuperadmin: false,
     };
   }, [eventPermissions, config.canEdit, config.canManagePromoters, config.canManageDoorStaff, config.canViewSettings]);
 
