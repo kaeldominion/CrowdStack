@@ -54,41 +54,90 @@ export async function GET() {
       .eq("organizer_id", organizerId)
       .order("assigned_at", { ascending: true });
 
-    // Get user details from auth.users using admin API
-    const userIds = (organizerUsers || []).map((ou: any) => ou.user_id);
-    const userMap = new Map<string, { email: string; name: string }>();
+    // Include the owner (created_by) in the list if not already in organizer_users
+    const allUserIds = new Set<string>();
+    if (organizer.created_by) {
+      allUserIds.add(organizer.created_by);
+    }
+    (organizerUsers || []).forEach((ou: any) => {
+      allUserIds.add(ou.user_id);
+    });
 
-    if (userIds.length > 0) {
-      // Use admin API to get user emails (more efficient than individual calls)
+    // Get user details from auth.users and profiles
+    const userIdsArray = Array.from(allUserIds);
+    const userMap = new Map<string, { email: string; name: string; avatar_url: string | null }>();
+
+    if (userIdsArray.length > 0) {
+      // Get user emails from auth.users
       const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
       
+      // Get user profiles for avatars
+      const { data: profiles } = await serviceSupabase
+        .from("profiles")
+        .select("id, avatar_url")
+        .in("id", userIdsArray);
+
+      const profileMap = new Map<string, string | null>();
+      (profiles || []).forEach((profile: any) => {
+        profileMap.set(profile.id, profile.avatar_url);
+      });
+
       if (authUsers?.users) {
         authUsers.users.forEach((authUser) => {
-          if (userIds.includes(authUser.id)) {
+          if (allUserIds.has(authUser.id)) {
             const email = authUser.email || "";
             const name = authUser.user_metadata?.name || 
                         authUser.user_metadata?.full_name || 
                         email.split("@")[0] || 
                         "Unknown";
-            userMap.set(authUser.id, { email, name });
+            const avatar_url = profileMap.get(authUser.id) || null;
+            userMap.set(authUser.id, { email, name, avatar_url });
           }
         });
       }
     }
 
     // Format team members with user info
-    const teamMembers = (organizerUsers || []).map((ou: any) => {
-      const userInfo = userMap.get(ou.user_id) || { email: null, name: "Unknown" };
-      return {
-        id: ou.id,
-        user_id: ou.user_id,
-        name: userInfo.name,
-        email: userInfo.email,
-        role: ou.role || "admin",
-        assigned_at: ou.assigned_at,
-        assigned_by: ou.assigned_by,
-        permissions: ou.permissions,
-      };
+    const teamMembers: any[] = [];
+
+    // Add owner first if they exist
+    if (organizer.created_by) {
+      const ownerInfo = userMap.get(organizer.created_by) || { email: null, name: "Unknown", avatar_url: null };
+      const ownerInUsers = (organizerUsers || []).find((ou: any) => ou.user_id === organizer.created_by);
+      
+      teamMembers.push({
+        id: ownerInUsers?.id || `owner-${organizer.created_by}`,
+        user_id: organizer.created_by,
+        name: ownerInfo.name,
+        email: ownerInfo.email,
+        avatar_url: ownerInfo.avatar_url,
+        role: "Owner",
+        is_owner: true,
+        assigned_at: organizer.created_at,
+        permissions: null, // Owner has all permissions
+      });
+    }
+
+    // Add other team members (excluding owner if already added)
+    (organizerUsers || []).forEach((ou: any) => {
+      if (ou.user_id !== organizer.created_by) {
+        const userInfo = userMap.get(ou.user_id) || { email: null, name: "Unknown", avatar_url: null };
+        const permissions = ou.permissions as any;
+        const isFullAdmin = permissions?.full_admin === true;
+        
+        teamMembers.push({
+          id: ou.id,
+          user_id: ou.user_id,
+          name: userInfo.name,
+          email: userInfo.email,
+          avatar_url: userInfo.avatar_url,
+          role: isFullAdmin ? "Admin" : (ou.role || "Team Member"),
+          is_owner: false,
+          assigned_at: ou.assigned_at,
+          assigned_by: ou.assigned_by,
+          permissions: permissions,
+        });
+      }
     });
 
     return NextResponse.json({

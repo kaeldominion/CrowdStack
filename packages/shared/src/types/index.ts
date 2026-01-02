@@ -211,6 +211,7 @@ export interface OrganizerTeamMember {
   assigned_at?: string; // From organizer_users
   assigned_by?: string; // From organizer_users
   permissions?: any; // From organizer_users
+  is_owner?: boolean; // True if this is the organizer owner (created_by)
 }
 
 export interface Promoter {

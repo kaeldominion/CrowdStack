@@ -373,19 +373,20 @@ export default function OrganizerSettingsPage() {
                   {data.team_members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-4 border-2 border-border"
+                      className="flex items-center justify-between p-4 border-2 border-border rounded-lg"
                     >
-                      <TeamMemberCard member={member} size="md" />
+                      <TeamMemberCard member={member} size="md" showDetails={true} />
                       <div className="flex items-center gap-2">
-                        {/* Edit button removed - users from organizer_users are managed differently */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteTeamMember(member.id, member.user_id)}
-                          title={member.user_id ? "Remove user access" : "Delete team member"}
-                        >
-                          <Trash2 className="h-4 w-4 text-accent-error" />
-                        </Button>
+                        {!member.is_owner && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTeamMember(member.id, member.user_id)}
+                            title={member.user_id ? "Remove user access" : "Delete team member"}
+                          >
+                            <Trash2 className="h-4 w-4 text-accent-error" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -19,15 +19,16 @@ const browseDJsTrend = new Trend('browse_djs_duration');
 export const options = {
   insecureSkipTLSVerify: true, // For production testing
   scenarios: {
-    // Ramp up to 50 concurrent users
+    // Ramp up to 1000 concurrent users
     load_test: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '10s', target: 25 },  // Ramp up to 25 users
-        { duration: '10s', target: 50 },  // Ramp up to 50 users
-        { duration: '30s', target: 50 },  // Stay at 50 users
-        { duration: '10s', target: 0 },   // Ramp down
+        { duration: '15s', target: 250 },   // Ramp up to 250 users
+        { duration: '15s', target: 500 },   // Ramp up to 500 users
+        { duration: '15s', target: 1000 },  // Ramp up to 1000 users
+        { duration: '30s', target: 1000 },  // Stay at 1000 users
+        { duration: '15s', target: 0 },     // Ramp down
       ],
     },
   },
