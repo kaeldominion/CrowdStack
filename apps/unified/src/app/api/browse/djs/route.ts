@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
+// Enable edge runtime for better caching and lower latency
+export const runtime = 'edge';
+
+// Revalidate every 60 seconds
+export const revalidate = 60;
+
 /**
  * GET /api/browse/djs
  * Browse and search DJ profiles

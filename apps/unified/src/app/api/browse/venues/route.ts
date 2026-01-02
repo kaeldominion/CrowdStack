@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
+// Enable edge runtime for better caching
+export const runtime = 'edge';
+
+// Revalidate every 60 seconds
+export const revalidate = 60;
+
 /**
  * GET /api/browse/venues
  * Public browse venues endpoint with search and filters

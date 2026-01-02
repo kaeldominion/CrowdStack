@@ -3,6 +3,12 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getVenueEventGenre } from "@/lib/constants/genres";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
+// Enable edge runtime for better caching and lower latency
+export const runtime = 'edge';
+
+// Revalidate every 60 seconds
+export const revalidate = 60;
+
 /**
  * GET /api/browse/events
  * Public browse events endpoint with search and filters
