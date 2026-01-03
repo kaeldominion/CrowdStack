@@ -198,7 +198,8 @@ interface Stats {
 type ReferralSource = "direct" | "venue" | "organizer" | "promoter" | "user_referral";
 
 interface Attendee {
-  id: string;
+  id: string; // Registration ID
+  attendee_id: string; // Actual attendee ID
   name: string;
   email: string | null;
   phone: string | null;
