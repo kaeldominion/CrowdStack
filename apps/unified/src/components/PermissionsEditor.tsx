@@ -37,6 +37,7 @@ const ORGANIZER_PERMISSION_LABELS: Record<keyof OrganizerPermissions, string> = 
   delete_events: "Delete Events",
   view_reports: "View Reports",
   manage_promoters: "Manage Promoters",
+  manage_guests: "Manage Guests & VIPs",
   publish_photos: "Publish Photos",
   manage_payouts: "Manage Payouts",
   full_admin: "Full Admin (All Permissions)",
@@ -120,18 +121,26 @@ export function PermissionsEditor({
 
       {/* Regular Permissions */}
       <div className="space-y-2">
-        {regularPermissions.map((key) => (
-          <div key={key}>
-            <Checkbox
-              checked={(localPermissions as any)[key] || false}
-              onChange={(e) =>
-                handlePermissionChange(key, e.target.checked)
-              }
-              disabled={disabled || (localPermissions as any).full_admin}
-              label={labels[key] as string}
-            />
-          </div>
-        ))}
+        {regularPermissions.map((key) => {
+          const label = labels[key];
+          // Skip if no label exists (safety check)
+          if (!label) {
+            console.warn(`Missing label for permission: ${key}`);
+            return null;
+          }
+          return (
+            <div key={key}>
+              <Checkbox
+                checked={(localPermissions as any)[key] || false}
+                onChange={(e) =>
+                  handlePermissionChange(key, e.target.checked)
+                }
+                disabled={disabled || (localPermissions as any).full_admin}
+                label={label}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

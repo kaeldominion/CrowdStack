@@ -300,7 +300,14 @@ export default function VenueAttendeesPage() {
                             e?.stopPropagation();
                             toggleVenueVip(attendee.id, attendee.is_venue_vip);
                           }}
-                          title={attendee.is_venue_vip ? "Remove venue VIP" : "Mark as venue VIP"}
+                          disabled={attendee.is_global_vip}
+                          title={
+                            attendee.is_global_vip
+                              ? "Global VIP (system-managed, cannot be changed)"
+                              : attendee.is_venue_vip
+                              ? "Remove venue VIP"
+                              : "Mark as venue VIP"
+                          }
                         >
                           {attendee.is_venue_vip ? (
                             <Star className="h-4 w-4 text-accent-primary fill-accent-primary" />

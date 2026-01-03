@@ -19,6 +19,8 @@ interface AttendeeWithSource {
   promoter_name: string | null;
   referred_by_user_id: string | null;
   referred_by_user_name: string | null;
+  is_organizer_vip?: boolean;
+  is_global_vip?: boolean;
 }
 
 /**
@@ -207,6 +209,35 @@ export async function GET(
       });
     }
 
+    // Get VIP status for attendees (organizer VIP and global VIP)
+    const attendeeIds = [...new Set(registrations?.map(r => r.attendee_id) || [])];
+    const organizerVipSet = new Set<string>();
+    const globalVipSet = new Set<string>();
+
+    if (attendeeIds.length > 0 && event.organizer_id) {
+      // Get organizer VIPs
+      const { data: organizerVips } = await serviceSupabase
+        .from("organizer_vips")
+        .select("attendee_id")
+        .eq("organizer_id", event.organizer_id)
+        .in("attendee_id", attendeeIds);
+
+      organizerVips?.forEach(v => {
+        organizerVipSet.add(v.attendee_id);
+      });
+
+      // Get global VIPs
+      const { data: globalVips } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .in("id", attendeeIds)
+        .eq("is_global_vip", true);
+
+      globalVips?.forEach(a => {
+        globalVipSet.add(a.id);
+      });
+    }
+
     // Format results with source tracking
     let attendees: AttendeeWithSource[] = (registrations || []).map((reg: any) => {
       const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
@@ -238,6 +269,8 @@ export async function GET(
         referred_by_user_name: reg.referred_by_user_id && !reg.referral_promoter_id 
           ? userReferrerMap.get(reg.referred_by_user_id) || "Unknown User" 
           : null,
+        is_organizer_vip: organizerVipSet.has(reg.attendee_id),
+        is_global_vip: globalVipSet.has(reg.attendee_id),
       };
     });
 
@@ -288,6 +321,8 @@ export async function GET(
       userContext: {
         isPromoter: isPromoter && userPromoterId && !isSuperadmin && !isVenueAdmin && !isOrganizer,
         promoterId: userPromoterId,
+        organizerId: event.organizer_id,
+        canManageVips: isOrganizer || isSuperadmin,
       }
     });
   } catch (error: any) {

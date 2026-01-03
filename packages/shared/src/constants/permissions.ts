@@ -47,6 +47,7 @@ export const DEFAULT_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
   delete_events: false,
   view_reports: false,
   manage_promoters: false,
+  manage_guests: false, // Manage attendees, VIPs, and guest lists
   publish_photos: false,
   manage_payouts: false,
   full_admin: false,
@@ -65,6 +66,7 @@ export const FULL_ADMIN_ORGANIZER_PERMISSIONS: OrganizerPermissions = {
   delete_events: true,
   view_reports: true,
   manage_promoters: true,
+  manage_guests: true, // Manage attendees, VIPs, and guest lists
   publish_photos: true,
   manage_payouts: true,
   full_admin: true,

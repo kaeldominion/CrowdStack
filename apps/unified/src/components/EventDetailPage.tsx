@@ -25,6 +25,7 @@ import {
   InlineSpinner,
   LoadingSpinner,
   useToast,
+  VipBadge,
 } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 
@@ -91,6 +92,8 @@ import {
   X,
   Trophy,
   Mail,
+  Crown,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -207,6 +210,8 @@ interface Attendee {
   promoter_name: string | null;
   referred_by_user_id: string | null;
   referred_by_user_name: string | null;
+  is_organizer_vip?: boolean;
+  is_global_vip?: boolean;
 }
 
 interface PromoterOption {
@@ -283,6 +288,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
   const [sourceFilter, setSourceFilter] = useState<ReferralSource | "all">("all");
   const [promoterFilter, setPromoterFilter] = useState<string>("all");
+  const [vipFilter, setVipFilter] = useState<boolean | undefined>(undefined);
+  const [togglingVip, setTogglingVip] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [showPromoterModal, setShowPromoterModal] = useState(false);
@@ -671,9 +678,58 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         setPromoterOptions(data.promoters || []);
         setAttendeeStats(data.stats || null);
         setIsPromoterView(data.userContext?.isPromoter || false);
+        if (data.userContext?.organizerId) {
+          setOrganizerId(data.userContext.organizerId);
+        }
       }
     } catch (error) {
       console.error("Failed to load attendees:", error);
+    }
+  };
+
+  const toggleOrganizerVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
+    // Use organizerId from state, or fallback to event's organizer_id
+    const currentOrganizerId = organizerId || event?.organizer_id;
+    
+    if (!currentOrganizerId) {
+      toast.error("Organizer ID not found");
+      return;
+    }
+
+    setTogglingVip(attendeeId);
+    try {
+      let response: Response;
+      if (isCurrentlyVip) {
+        // Remove VIP
+        response = await fetch(
+          `/api/organizer/attendees/${attendeeId}/vip?organizerId=${currentOrganizerId}`,
+          { method: "DELETE" }
+        );
+      } else {
+        // Add VIP
+        response = await fetch(`/api/organizer/attendees/${attendeeId}/vip`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organizerId: currentOrganizerId }),
+        });
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Failed to ${isCurrentlyVip ? "remove" : "add"} VIP status`;
+        console.error("VIP toggle error:", errorMessage, response.status, errorData);
+        throw new Error(errorMessage);
+      }
+      
+      // Reload attendees
+      await loadAttendees();
+      toast.success(isCurrentlyVip ? "VIP status removed" : "Attendee marked as VIP");
+    } catch (error) {
+      console.error("Error toggling VIP:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update VIP status";
+      toast.error(errorMessage);
+    } finally {
+      setTogglingVip(null);
     }
   };
 
@@ -1276,7 +1332,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  // Filter attendees by search, status, source, and promoter
+  // Filter attendees by search, status, source, promoter, and VIP
   const filteredAttendees = attendees.filter((attendee) => {
     // Status filter
     if (statusFilter === "checked_in" && !attendee.checked_in) return false;
@@ -1287,6 +1343,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     
     // Promoter filter
     if (promoterFilter !== "all" && attendee.promoter_id !== promoterFilter) return false;
+    
+    // VIP filter
+    if (vipFilter !== undefined) {
+      const isVip = attendee.is_organizer_vip || attendee.is_global_vip;
+      if (vipFilter !== isVip) return false;
+    }
     
     // Search filter
     if (!searchQuery) return true;
@@ -2253,6 +2315,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                         ]}
                       />
                     )}
+
+                    {/* VIP Filter */}
+                    <Button
+                      variant={vipFilter === true ? "primary" : "secondary"}
+                      size="sm"
+                      onClick={() => setVipFilter(vipFilter === true ? undefined : true)}
+                    >
+                      <Crown className="h-3 w-3 mr-1" />
+                      VIP
+                    </Button>
                   </div>
                 )}
 
@@ -2275,13 +2347,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <TableHead>Phone</TableHead>
                       <TableHead>Registered</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>VIP</TableHead>
                       {!isPromoterView && <TableHead>Source</TableHead>}
+                      {!isPromoterView && config.role === "organizer" && (organizerId || event?.organizer_id) && <TableHead>Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAttendees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isPromoterView ? 5 : 6} className="text-center text-secondary py-8">
+                        <TableCell colSpan={isPromoterView ? 6 : (config.role === "organizer" && (organizerId || event?.organizer_id) ? 8 : 7)} className="text-center text-secondary py-8">
                           {isPromoterView ? "You haven't referred any guests to this event yet" : "No attendees found"}
                         </TableCell>
                       </TableRow>
@@ -2307,6 +2381,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               </Badge>
                             )}
                           </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {attendee.is_global_vip && (
+                                <VipBadge level="global" variant="badge" size="xs" />
+                              )}
+                              {attendee.is_organizer_vip && (
+                                <VipBadge level="organizer" variant="badge" size="xs" />
+                              )}
+                              {!attendee.is_global_vip && !attendee.is_organizer_vip && (
+                                <span className="text-xs text-secondary">—</span>
+                              )}
+                            </div>
+                          </TableCell>
                           {!isPromoterView && (
                             <TableCell>
                               {attendee.referral_source === "promoter" && attendee.promoter_name ? (
@@ -2322,6 +2409,36 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               ) : (
                                 <span className="text-secondary text-sm">Direct</span>
                               )}
+                            </TableCell>
+                          )}
+                          {!isPromoterView && config.role === "organizer" && (organizerId || event?.organizer_id) && (
+                            <TableCell>
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e?.stopPropagation();
+                                    toggleOrganizerVip(attendee.attendee_id, attendee.is_organizer_vip || false);
+                                  }}
+                                  disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
+                                  title={
+                                    attendee.is_global_vip
+                                      ? "Global VIP (system-managed, cannot be changed)"
+                                      : attendee.is_organizer_vip
+                                      ? "Remove organizer VIP"
+                                      : "Mark as organizer VIP"
+                                  }
+                                >
+                                  {togglingVip === attendee.attendee_id ? (
+                                    <InlineSpinner size="xs" />
+                                  ) : attendee.is_organizer_vip ? (
+                                    <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />
+                                  ) : (
+                                    <Sparkles className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </TableCell>
                           )}
                         </TableRow>

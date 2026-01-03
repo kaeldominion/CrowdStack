@@ -146,6 +146,7 @@ export interface OrganizerPermissions {
   delete_events: boolean;
   view_reports: boolean;
   manage_promoters: boolean;
+  manage_guests: boolean; // Manage attendees, VIPs, and guest lists
   publish_photos: boolean;
   manage_payouts: boolean;
   full_admin: boolean;

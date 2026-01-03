@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { hasOrganizerPermission } from "@crowdstack/shared/auth/organizer-permissions";
 
 export const dynamic = 'force-dynamic';
 
@@ -34,14 +35,6 @@ export async function POST(
       return NextResponse.json({ error: "organizerId is required" }, { status: 400 });
     }
 
-    // Check if user is an organizer user for this organizer
-    const { data: organizerUser, error: organizerUserError } = await serviceSupabase
-      .from("organizer_users")
-      .select("organizer_id")
-      .eq("user_id", user.id)
-      .eq("organizer_id", organizerId)
-      .single();
-
     // Check if user is superadmin
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
@@ -50,7 +43,14 @@ export async function POST(
 
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin") || false;
 
-    if (organizerUserError && !isSuperadmin) {
+    // Check if user has permission to manage guests/VIPs
+    // Organizer creator (created_by) and users with full_admin automatically have permission
+    // Otherwise, check for manage_guests permission
+    const canManageGuests = isSuperadmin || 
+      await hasOrganizerPermission(user.id, organizerId, "full_admin") ||
+      await hasOrganizerPermission(user.id, organizerId, "manage_guests");
+
+    if (!canManageGuests) {
       return NextResponse.json(
         { error: "You don't have permission to manage VIPs for this organizer" },
         { status: 403 }
@@ -132,14 +132,6 @@ export async function DELETE(
       return NextResponse.json({ error: "organizerId is required" }, { status: 400 });
     }
 
-    // Check if user is an organizer user for this organizer
-    const { data: organizerUser, error: organizerUserError } = await serviceSupabase
-      .from("organizer_users")
-      .select("organizer_id")
-      .eq("user_id", user.id)
-      .eq("organizer_id", organizerId)
-      .single();
-
     // Check if user is superadmin
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
@@ -148,7 +140,14 @@ export async function DELETE(
 
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin") || false;
 
-    if (organizerUserError && !isSuperadmin) {
+    // Check if user has permission to manage guests/VIPs
+    // Organizer creator (created_by) and users with full_admin automatically have permission
+    // Otherwise, check for manage_guests permission
+    const canManageGuests = isSuperadmin || 
+      await hasOrganizerPermission(user.id, organizerId, "full_admin") ||
+      await hasOrganizerPermission(user.id, organizerId, "manage_guests");
+
+    if (!canManageGuests) {
       return NextResponse.json(
         { error: "You don't have permission to manage VIPs for this organizer" },
         { status: 403 }

@@ -246,7 +246,14 @@ export default function OrganizerAttendeesPage() {
                             e?.stopPropagation();
                             toggleOrganizerVip(attendee.id, attendee.is_organizer_vip);
                           }}
-                          title={attendee.is_organizer_vip ? "Remove organizer VIP" : "Mark as organizer VIP"}
+                          disabled={attendee.is_global_vip}
+                          title={
+                            attendee.is_global_vip
+                              ? "Global VIP (system-managed, cannot be changed)"
+                              : attendee.is_organizer_vip
+                              ? "Remove organizer VIP"
+                              : "Mark as organizer VIP"
+                          }
                         >
                           {attendee.is_organizer_vip ? (
                             <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />

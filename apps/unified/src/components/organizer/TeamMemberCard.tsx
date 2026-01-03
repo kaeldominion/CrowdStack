@@ -43,6 +43,7 @@ export function TeamMemberCard({
       "delete_events",
       "view_reports",
       "manage_promoters",
+      "manage_guests",
       "publish_photos",
       "manage_payouts",
     ];
