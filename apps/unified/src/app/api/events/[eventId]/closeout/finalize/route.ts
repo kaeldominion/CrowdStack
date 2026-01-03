@@ -102,12 +102,8 @@ export async function POST(
       throw promotersError;
     }
 
-    if (!eventPromoters || eventPromoters.length === 0) {
-      return NextResponse.json(
-        { error: "No promoters configured for this event" },
-        { status: 400 }
-      );
-    }
+    // Allow closing events with no promoters - just skip payout calculations
+    const hasPromoters = eventPromoters && eventPromoters.length > 0;
 
     // Get all check-ins for this event
     const { data: checkins, error: checkinsError } = await serviceSupabase
@@ -135,7 +131,7 @@ export async function POST(
       }
     });
 
-    // Create payout run
+    // Create payout run (even if no promoters - for audit trail)
     const { data: payoutRun, error: payoutRunError } = await serviceSupabase
       .from("payout_runs")
       .insert({
@@ -149,9 +145,10 @@ export async function POST(
       throw payoutRunError;
     }
 
-    // Calculate and create payout lines
+    // Calculate and create payout lines (only if there are promoters)
     const payoutLines = [];
-    for (const ep of eventPromoters) {
+    if (hasPromoters) {
+      for (const ep of eventPromoters) {
       const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
 
       // Calculate base payout
@@ -211,48 +208,45 @@ export async function POST(
       }
     }
 
-    if (payoutLines.length === 0) {
-      // Rollback payout run if no lines created
-      await serviceSupabase
-        .from("payout_runs")
-        .delete()
-        .eq("id", payoutRun.id);
-
-      return NextResponse.json(
-        { error: "Failed to create payout lines" },
-        { status: 500 }
-      );
-    }
-
-    // Get promoter details for PDF
-    const promoterIds = payoutLines.map((pl) => pl.promoter_id);
-    const { data: promoters } = await serviceSupabase
-      .from("promoters")
-      .select("*")
-      .in("id", promoterIds);
-
-    const payoutLinesWithPromoters = payoutLines.map((pl) => ({
-      ...pl,
-      promoter: promoters?.find((p) => p.id === pl.promoter_id),
-    }));
-
-    // Generate PDF and upload
+    // Only generate PDF and send emails if there are payout lines
     let pdfPath: string | null = null;
-    try {
-      pdfPath = await generateAndUploadPayoutStatement(
-        payoutRun,
-        payoutLinesWithPromoters as any,
-        event as any
-      );
+    let promoters: any[] = [];
 
-      // Update payout run with PDF path
-      await serviceSupabase
-        .from("payout_runs")
-        .update({ statement_pdf_path: pdfPath })
-        .eq("id", payoutRun.id);
-    } catch (pdfError) {
-      console.error("[Closeout Finalize] Error generating PDF:", pdfError);
-      // Continue even if PDF generation fails
+    if (payoutLines.length > 0) {
+      // Get promoter details for PDF
+      const promoterIds = payoutLines.map((pl) => pl.promoter_id);
+      const { data: promoterData } = await serviceSupabase
+        .from("promoters")
+        .select("*")
+        .in("id", promoterIds);
+
+      promoters = promoterData || [];
+
+      const payoutLinesWithPromoters = payoutLines.map((pl) => ({
+        ...pl,
+        promoter: promoters.find((p) => p.id === pl.promoter_id),
+      }));
+
+      // Generate PDF and upload
+      try {
+        pdfPath = await generateAndUploadPayoutStatement(
+          payoutRun,
+          payoutLinesWithPromoters as any,
+          event as any
+        );
+
+        // Update payout run with PDF path
+        await serviceSupabase
+          .from("payout_runs")
+          .update({ statement_pdf_path: pdfPath })
+          .eq("id", payoutRun.id);
+      } catch (pdfError) {
+        console.error("[Closeout Finalize] Error generating PDF:", pdfError);
+        // Continue even if PDF generation fails
+      }
+    } else if (!hasPromoters) {
+      // No promoters configured - that's fine, just log it
+      console.log("[Closeout Finalize] Event closed with no promoters configured");
     }
 
     // Close the event
@@ -272,32 +266,34 @@ export async function POST(
       throw closeError;
     }
 
-    // Send payout ready emails to promoters (non-blocking)
-    try {
-      const { sendPayoutReadyEmail } = await import("@crowdstack/shared/email/promoter-emails");
-      
-      for (const payoutLine of payoutLines) {
-        const promoter = promoters?.find((p) => p.id === payoutLine.promoter_id);
-        if (promoter?.email) {
-          const statementUrl = pdfPath
-            ? `https://crowdstack.app/api/storage/statements/${pdfPath}`
-            : undefined;
+    // Send payout ready emails to promoters (non-blocking, only if there are payout lines)
+    if (payoutLines.length > 0) {
+      try {
+        const { sendPayoutReadyEmail } = await import("@crowdstack/shared/email/promoter-emails");
+        
+        for (const payoutLine of payoutLines) {
+          const promoter = promoters.find((p) => p.id === payoutLine.promoter_id);
+          if (promoter?.email) {
+            const statementUrl = pdfPath
+              ? `https://crowdstack.app/api/storage/statements/${pdfPath}`
+              : undefined;
 
-          await sendPayoutReadyEmail(
-            promoter.id,
-            promoter.name,
-            promoter.email,
-            promoter.created_by || null,
-            event.name || "Event",
-            payoutLine.commission_amount,
-            event.currency || "IDR",
-            statementUrl,
-            params.eventId
-          );
+            await sendPayoutReadyEmail(
+              promoter.id,
+              promoter.name,
+              promoter.email,
+              promoter.created_by || null,
+              event.name || "Event",
+              payoutLine.commission_amount,
+              event.currency || "IDR",
+              statementUrl,
+              params.eventId
+            );
+          }
         }
+      } catch (emailError) {
+        console.warn("[Closeout Finalize] Failed to send payout emails:", emailError);
       }
-    } catch (emailError) {
-      console.warn("[Closeout Finalize] Failed to send payout emails:", emailError);
     }
 
     // Emit outbox event
@@ -316,7 +312,9 @@ export async function POST(
       payout_run: payoutRun,
       payout_lines: payoutLines,
       pdf_path: pdfPath,
-      message: "Event closed successfully. Payouts are now pending payment.",
+      message: hasPromoters 
+        ? "Event closed successfully. Payouts are now pending payment."
+        : "Event closed successfully. No promoters were configured for this event.",
     });
   } catch (error: any) {
     console.error("[Closeout Finalize] Error:", error);
