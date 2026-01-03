@@ -3,6 +3,87 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permissions";
 
 /**
+ * Process email logs and group by type with stats
+ */
+function processEmailLogs(emailLogs: any[]) {
+  const statsByType: Record<string, {
+    type: string;
+    total: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+    deliveryRate: number;
+    openRate: number;
+    clickRate: number;
+    bounceRate: number;
+    emails: Array<{
+      id: string;
+      recipient_email: string;
+      subject: string;
+      created_at: string;
+      delivered_at: string | null;
+      opened_at: string | null;
+      clicked_at: string | null;
+      bounced_at: string | null;
+      bounce_reason: string | null;
+    }>;
+  }> = {};
+
+  emailLogs.forEach((log: any) => {
+    // Use template_slug as the type, or fallback to email_type from metadata
+    const type = log.metadata?.email_type || log.template_slug || "unknown";
+    
+    if (!statsByType[type]) {
+      statsByType[type] = {
+        type,
+        total: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+        deliveryRate: 0,
+        openRate: 0,
+        clickRate: 0,
+        bounceRate: 0,
+        emails: [],
+      };
+    }
+
+    const stats = statsByType[type];
+    stats.total++;
+    
+    // email_send_logs uses status field: 'sent' = delivered, 'bounced' = bounced
+    if (log.status === "sent") stats.delivered++;
+    if (log.opened_at) stats.opened++;
+    if (log.clicked_at) stats.clicked++;
+    if (log.status === "bounced") stats.bounced++;
+
+    stats.emails.push({
+      id: log.id,
+      recipient_email: log.recipient || "Unknown",
+      subject: log.subject || "No subject",
+      created_at: log.created_at,
+      delivered_at: log.status === "sent" ? (log.sent_at || log.created_at) : null,
+      opened_at: log.opened_at,
+      clicked_at: log.clicked_at,
+      bounced_at: log.status === "bounced" ? (log.sent_at || log.created_at) : null,
+      bounce_reason: log.error_message || null,
+    });
+  });
+
+  // Calculate rates
+  Object.values(statsByType).forEach((stats) => {
+    stats.deliveryRate = stats.total > 0 ? (stats.delivered / stats.total) * 100 : 0;
+    stats.openRate = stats.delivered > 0 ? (stats.opened / stats.delivered) * 100 : 0;
+    stats.clickRate = stats.delivered > 0 ? (stats.clicked / stats.delivered) * 100 : 0;
+    stats.bounceRate = stats.total > 0 ? (stats.bounced / stats.total) * 100 : 0;
+  });
+
+  return Object.values(statsByType);
+}
+
+/**
  * GET /api/events/[eventId]/email-stats
  * Get email delivery statistics for an event
  */
@@ -29,93 +110,47 @@ export async function GET(
 
     // Get all email logs for this event from email_send_logs
     // Query by event_id in metadata JSONB field
-    const { data: emailLogs, error } = await serviceSupabase
+    // Try multiple query approaches to handle different metadata storage formats
+    let emailLogs: any[] | null = null;
+    let queryError: any = null;
+
+    // First, try the standard query with text extraction
+    const { data: logs1, error: err1 } = await serviceSupabase
       .from("email_send_logs")
       .select("*")
       .eq("metadata->>event_id", params.eventId)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      throw error;
+    if (!err1 && logs1 && logs1.length > 0) {
+      emailLogs = logs1;
+      console.log(`[Email Stats] Found ${logs1.length} logs with standard query for event ${params.eventId}`);
+    } else {
+      // Try alternative query using JSONB containment
+      console.log(`[Email Stats] Standard query returned no results, trying alternative query for event ${params.eventId}`);
+      const { data: logs2, error: err2 } = await serviceSupabase
+        .from("email_send_logs")
+        .select("*")
+        .contains("metadata", { event_id: params.eventId })
+        .order("created_at", { ascending: false });
+      
+      if (!err2 && logs2 && logs2.length > 0) {
+        emailLogs = logs2;
+        console.log(`[Email Stats] Found ${logs2.length} logs with alternative query`);
+      } else {
+        queryError = err2 || err1;
+        console.log(`[Email Stats] No logs found for event ${params.eventId}`, { err1, err2 });
+      }
     }
 
-    // Group by template_slug (which indicates email type) and calculate stats
-    const statsByType: Record<string, {
-      type: string;
-      total: number;
-      delivered: number;
-      opened: number;
-      clicked: number;
-      bounced: number;
-      deliveryRate: number;
-      openRate: number;
-      clickRate: number;
-      bounceRate: number;
-      emails: Array<{
-        id: string;
-        recipient_email: string;
-        subject: string;
-        created_at: string;
-        delivered_at: string | null;
-        opened_at: string | null;
-        clicked_at: string | null;
-        bounced_at: string | null;
-        bounce_reason: string | null;
-      }>;
-    }> = {};
+    if (queryError && !emailLogs) {
+      throw queryError;
+    }
 
-    (emailLogs || []).forEach((log: any) => {
-      // Use template_slug as the type, or fallback to email_type from metadata
-      const type = log.metadata?.email_type || log.template_slug || "unknown";
-      
-      if (!statsByType[type]) {
-        statsByType[type] = {
-          type,
-          total: 0,
-          delivered: 0,
-          opened: 0,
-          clicked: 0,
-          bounced: 0,
-          deliveryRate: 0,
-          openRate: 0,
-          clickRate: 0,
-          bounceRate: 0,
-          emails: [],
-        };
-      }
-
-      const stats = statsByType[type];
-      stats.total++;
-      
-      // email_send_logs uses status field: 'sent' = delivered, 'bounced' = bounced
-      if (log.status === "sent") stats.delivered++;
-      if (log.opened_at) stats.opened++;
-      if (log.clicked_at) stats.clicked++;
-      if (log.status === "bounced") stats.bounced++;
-
-      stats.emails.push({
-        id: log.id,
-        recipient_email: log.recipient || "Unknown",
-        subject: log.subject || "No subject",
-        created_at: log.created_at,
-        delivered_at: log.status === "sent" ? (log.sent_at || log.created_at) : null,
-        opened_at: log.opened_at,
-        clicked_at: log.clicked_at,
-        bounced_at: log.status === "bounced" ? (log.sent_at || log.created_at) : null,
-        bounce_reason: log.error_message || null,
-      });
-    });
-
-    // Calculate rates
-    Object.values(statsByType).forEach((stats) => {
-      stats.deliveryRate = stats.total > 0 ? (stats.delivered / stats.total) * 100 : 0;
-      stats.openRate = stats.delivered > 0 ? (stats.opened / stats.delivered) * 100 : 0;
-      stats.clickRate = stats.delivered > 0 ? (stats.clicked / stats.delivered) * 100 : 0;
-      stats.bounceRate = stats.total > 0 ? (stats.bounced / stats.total) * 100 : 0;
-    });
+    // Process email logs and calculate stats
+    const stats = processEmailLogs(emailLogs || []);
 
     return NextResponse.json({
-      stats: Object.values(statsByType),
+      stats,
       totalEmails: emailLogs?.length || 0,
     });
   } catch (error: any) {

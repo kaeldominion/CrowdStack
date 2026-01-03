@@ -111,17 +111,30 @@ export async function sendTemplateEmail(
       if (logEntry) {
         // Update existing log entry
         const existingMetadata = (logEntry.metadata as Record<string, any>) || {};
-        await supabase
+        const updatedMetadata = {
+          ...existingMetadata,
+          ...(metadata || {}), // Preserve original metadata (event_id, etc.)
+          postmark_message_id: result.MessageID,
+        };
+        
+        const { error: updateError } = await supabase
           .from("email_send_logs")
           .update({
             status: "sent",
             sent_at: new Date().toISOString(),
-            metadata: {
-              ...existingMetadata,
-              postmark_message_id: result.MessageID,
-            },
+            metadata: updatedMetadata,
           })
           .eq("id", logEntry.id);
+
+        if (updateError) {
+          console.error("[Template Email] Failed to update log entry:", updateError);
+        } else {
+          console.log("[Template Email] Log entry updated successfully:", {
+            logId: logEntry.id,
+            eventId: metadata?.event_id,
+            templateSlug: template.slug,
+          });
+        }
       } else {
         // Initial insert failed, try to create log entry now with Postmark message ID
         const finalMetadata = {
@@ -129,7 +142,7 @@ export async function sendTemplateEmail(
           postmark_message_id: result.MessageID,
         };
         
-        const { error: insertError } = await supabase
+        const { data: insertedLog, error: insertError } = await supabase
           .from("email_send_logs")
           .insert({
             template_id: template.id,
@@ -140,11 +153,19 @@ export async function sendTemplateEmail(
             status: "sent",
             sent_at: new Date().toISOString(),
             metadata: finalMetadata,
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) {
           // Log error but don't fail - email was sent successfully
           console.error("[Template Email] Failed to create log entry after send:", insertError);
+        } else {
+          console.log("[Template Email] Log entry created after send:", {
+            logId: insertedLog?.id,
+            eventId: metadata?.event_id,
+            templateSlug: template.slug,
+          });
         }
       }
 
