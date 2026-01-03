@@ -1,122 +1,108 @@
 # Postmark Webhook Setup Guide
 
-This guide explains how to configure Postmark webhooks to track email delivery stats for photo notifications.
+## Step 1: Set Up Webhook in Postmark
 
-## Prerequisites
-
-- Postmark account with API access
-- Your production domain deployed (webhooks need a public URL)
-
-## Step 1: Configure Webhook URL in Postmark
-
-1. Log in to your [Postmark Dashboard](https://account.postmarkapp.com/)
-2. Navigate to **Servers** → Select your server
-3. Go to **Webhooks** tab
-4. Click **Add Webhook**
-5. Enter your webhook URL:
+1. **Go to Postmark Dashboard**: https://account.postmarkapp.com/
+2. **Navigate to**: Servers → Your Server → Settings → Webhooks
+3. **Click**: "Add Webhook"
+4. **Set the webhook URL**:
+   - **Production**: `https://crowdstack.app/api/webhooks/postmark`
+   - **Beta/Preview**: `https://beta.crowdstack.app/api/webhooks/postmark`
+   - **Local (with ngrok)**: `https://your-ngrok-url.ngrok.io/api/webhooks/postmark`
+   
+   **Optional Security**: You can add HTTP Basic Auth to the URL:
    ```
-   https://yourdomain.com/api/webhooks/postmark
+   https://username:password@crowdstack.app/api/webhooks/postmark
    ```
-   (Replace `yourdomain.com` with your actual domain)
+   (Replace `username:password` with your chosen credentials)
+5. **Select events to track**:
+   - ✅ Open
+   - ✅ Click
+   - ✅ Bounce
+   - ✅ Delivery
+   - ✅ SpamComplaint
+6. **Save** the webhook
 
-6. Select the following event types to subscribe to:
-   - ✅ **Delivery** - Email successfully delivered
-   - ✅ **Open** - Recipient opened the email
-   - ✅ **Click** - Recipient clicked a link
-   - ✅ **Bounce** - Email bounced (hard or soft)
-   - ✅ **SpamComplaint** - Recipient marked as spam
+## Step 2: Security (Optional)
 
-7. Click **Save Webhook**
+Postmark webhooks are already secured via HTTPS. For additional security, you have two options:
 
-## Step 2: Configure Webhook Secret (Optional but Recommended)
+### Option A: HTTP Basic Auth (Recommended)
 
-For security, Postmark can sign webhook requests. To enable signature verification:
+Include credentials in the webhook URL:
+```
+https://username:password@crowdstack.app/api/webhooks/postmark
+```
 
-1. In the webhook settings, copy the **Webhook Secret** (or generate a new one)
-2. Add it to your environment variables:
-   ```bash
-   POSTMARK_WEBHOOK_SECRET=your_webhook_secret_here
-   ```
-3. Deploy the updated environment variable to your hosting platform
+Then update your webhook endpoint to verify Basic Auth (if needed).
 
-**Note:** The webhook handler will work without the secret, but signature verification adds an extra layer of security.
+### Option B: No Additional Security
 
-## Step 3: Test the Webhook
+Webhooks are sent over HTTPS, which is sufficient for most use cases. No additional configuration needed.
 
-1. Publish a photo album with auto-email enabled
-2. Check your Postmark dashboard → **Activity** to see if emails were sent
-3. Check your application logs for webhook events:
-   ```
-   [Postmark Webhook] Updated Delivery event for user@example.com
-   [Postmark Webhook] Updated Open event for user@example.com
-   ```
+**Note**: Postmark doesn't provide a separate "webhook secret" - webhooks are secured via HTTPS. The `POSTMARK_API_TOKEN` is only used for sending emails, not for webhook verification.
 
-## Step 4: Verify Email Stats
+## Step 3: Verify Setup
 
-1. Navigate to your event's photo gallery
-2. Click the **Email Stats** tab
-3. You should see:
-   - Delivery rates
-   - Open rates
-   - Click rates
-   - Bounce rates
-   - Individual email logs with timestamps
+### Test the Webhook
+
+1. **Send a test email** (use the test endpoint or send a real email)
+2. **Open the email** in your inbox
+3. **Check the logs** - The webhook should automatically update `opened_at` in `email_send_logs`
+
+### Check Webhook Logs in Postmark
+
+1. Go to Postmark Dashboard → Webhooks
+2. Click on your webhook
+3. View "Webhook Activity" to see if requests are being sent and if they're successful
+
+### Verify in Your App
+
+Check the email stats endpoint:
+```bash
+curl https://your-domain.com/api/test/email-stats?limit=5 \
+  -H "X-Service-Role-Key: YOUR_SERVICE_ROLE_KEY"
+```
+
+You should see `opened_at` and `clicked_at` timestamps populated.
 
 ## Troubleshooting
 
 ### Webhook Not Receiving Events
 
-1. **Check webhook URL is correct** - Must be publicly accessible
-2. **Verify event types are selected** - All 5 event types must be enabled
-3. **Check server logs** - Look for webhook POST requests in your application logs
-4. **Test with Postmark's webhook tester** - Postmark dashboard has a "Test Webhook" feature
+1. **Check webhook URL**: Make sure it's correct and accessible
+2. **Check Postmark logs**: Go to Webhooks → Your webhook → Activity
+3. **Verify signature**: If `POSTMARK_WEBHOOK_SECRET` is set, webhook signature must match
+4. **Check server logs**: Look for `[Postmark Webhook]` errors
 
-### Events Not Matching Message Logs
+### Webhook Not Secure Enough
 
-The webhook matches emails by:
-- `email_recipient_email` (must match exactly)
-- `email_message_type` (must be "photo_notification")
+- Postmark webhooks are sent over HTTPS, which provides encryption
+- For additional security, use HTTP Basic Auth in the webhook URL
+- Or implement IP allowlisting (Postmark publishes their webhook IP ranges)
 
-If emails aren't matching:
-- Check that `email_recipient_email` in the database matches the recipient in Postmark
-- Verify the email was logged with `email_message_type: "photo_notification"`
+### Events Not Updating Stats
 
-### Signature Verification Failing
+1. **Check message ID**: The webhook `MessageID` must match `postmark_message_id` in `email_send_logs`
+2. **Verify log exists**: Make sure the email was logged before the webhook fires
+3. **Check webhook payload**: Use Postmark's webhook testing tool to see the exact payload
 
-If you see "Invalid signature" errors:
-- Verify `POSTMARK_WEBHOOK_SECRET` matches the secret in Postmark dashboard
-- Ensure the secret is set in your production environment variables
-- Check that the webhook secret hasn't been regenerated in Postmark
+## Security Notes
 
-## Webhook Payload Structure
+- ⚠️ **Never commit** `POSTMARK_WEBHOOK_SECRET` to git
+- 🔒 The webhook secret is used to verify requests are actually from Postmark
+- ✅ Without the secret, webhooks still work but aren't verified (less secure)
+- 🔑 The secret is different for each webhook you create
 
-The webhook handler expects Postmark's standard webhook format:
+## Optional: Testing with ngrok (Local Development)
 
-```json
-{
-  "RecordType": "Delivery|Open|Click|Bounce|SpamComplaint",
-  "Recipient": "user@example.com",
-  "MessageID": "postmark-message-id",
-  "DeliveredAt": "2024-01-01T12:00:00Z",
-  "OpenedAt": "2024-01-01T12:05:00Z",
-  "ClickedAt": "2024-01-01T12:10:00Z",
-  "BouncedAt": "2024-01-01T12:00:00Z",
-  "Description": "Bounce reason (for bounces)"
-}
-```
+If you want to test webhooks locally:
 
-## Local Development
+1. **Install ngrok**: `brew install ngrok` (Mac) or download from ngrok.com
+2. **Start your dev server**: `pnpm dev:unified`
+3. **Expose local server**: `ngrok http 3000`
+4. **Copy the ngrok URL**: e.g., `https://abc123.ngrok.io`
+5. **Set webhook URL in Postmark**: `https://abc123.ngrok.io/api/webhooks/postmark`
+6. **Set `POSTMARK_WEBHOOK_SECRET` in `.env.local`**
 
-For local development, you can use a tool like [ngrok](https://ngrok.com/) to expose your local server:
-
-```bash
-ngrok http 3000
-```
-
-Then use the ngrok URL in Postmark webhook settings:
-```
-https://your-ngrok-url.ngrok.io/api/webhooks/postmark
-```
-
-**Note:** Remember to update the webhook URL back to your production domain when done testing!
-
+Now webhooks from Postmark will be forwarded to your local server!

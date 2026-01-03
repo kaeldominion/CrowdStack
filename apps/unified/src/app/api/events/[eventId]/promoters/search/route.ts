@@ -191,22 +191,34 @@ export async function GET(
       });
     }
 
+    // Get list of promoters already assigned to this event (to exclude from search results)
+    const { data: assignedPromoters } = await serviceSupabase
+      .from("event_promoters")
+      .select("promoter_id")
+      .eq("event_id", eventId);
+
+    const assignedPromoterIds = new Set(
+      (assignedPromoters || []).map((ep) => ep.promoter_id)
+    );
+
     // Combine and deduplicate: if a user is already a promoter, prefer the promoter entry
     const promoterMap = new Map<string, any>();
     
-    // Add existing promoters
+    // Add existing promoters (exclude those already assigned to this event)
     allMatchingPromoters.forEach((promoter) => {
-      promoterMap.set(promoter.id, {
-        ...promoter,
-        type: "promoter" as const,
-      });
+      if (!assignedPromoterIds.has(promoter.id)) {
+        promoterMap.set(promoter.id, {
+          ...promoter,
+          type: "promoter" as const,
+        });
+      }
     });
 
-    // Add users, but skip if they're already in the promoter list
+    // Add users, but skip if they're already in the promoter list or already assigned
     matchingUsers.forEach((user) => {
       if (user.isPromoter && user.promoterId) {
-        // User is already a promoter, ensure it's in the list
-        if (!promoterMap.has(user.promoterId)) {
+        // User is already a promoter, ensure it's in the list (if not already assigned)
+        if (!assignedPromoterIds.has(user.promoterId) && !promoterMap.has(user.promoterId)) {
           promoterMap.set(user.promoterId, {
             id: user.promoterId,
             name: user.name,

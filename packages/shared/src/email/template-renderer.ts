@@ -74,7 +74,8 @@ export async function sendTemplateEmail(
       : undefined;
 
     // Log email send attempt
-    const { data: logEntry, error: logError } = await supabase
+    let logEntry: any = null;
+    const { data: insertedLog, error: logError } = await supabase
       .from("email_send_logs")
       .insert({
         template_id: template.id,
@@ -90,6 +91,9 @@ export async function sendTemplateEmail(
 
     if (logError) {
       console.error("[Template Email] Failed to create log entry:", logError);
+      // Don't fail the email send, but we'll try to create/update after sending
+    } else {
+      logEntry = insertedLog;
     }
 
     // Send email via Postmark
@@ -103,9 +107,9 @@ export async function sendTemplateEmail(
         tag: `template:${template.slug}`,
       });
 
-      // Update log with success
+      // Ensure log entry exists - create or update
       if (logEntry) {
-        // Preserve existing metadata (like event_id, email_type) and add postmark_message_id
+        // Update existing log entry
         const existingMetadata = (logEntry.metadata as Record<string, any>) || {};
         await supabase
           .from("email_send_logs")
@@ -118,6 +122,30 @@ export async function sendTemplateEmail(
             },
           })
           .eq("id", logEntry.id);
+      } else {
+        // Initial insert failed, try to create log entry now with Postmark message ID
+        const finalMetadata = {
+          ...(metadata || {}),
+          postmark_message_id: result.MessageID,
+        };
+        
+        const { error: insertError } = await supabase
+          .from("email_send_logs")
+          .insert({
+            template_id: template.id,
+            template_slug: template.slug,
+            recipient,
+            recipient_user_id: recipientUserId,
+            subject,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            metadata: finalMetadata,
+          });
+
+        if (insertError) {
+          // Log error but don't fail - email was sent successfully
+          console.error("[Template Email] Failed to create log entry after send:", insertError);
+        }
       }
 
       return {
@@ -134,6 +162,23 @@ export async function sendTemplateEmail(
             error_message: emailError.message || "Failed to send email",
           })
           .eq("id", logEntry.id);
+      } else {
+        // Initial insert failed, try to create log entry now with error status
+        const finalMetadata = metadata || {};
+        await supabase
+          .from("email_send_logs")
+          .insert({
+            template_id: template.id,
+            template_slug: template.slug,
+            recipient,
+            recipient_user_id: recipientUserId,
+            subject,
+            status: "failed",
+            error_message: emailError.message || "Failed to send email",
+            metadata: finalMetadata,
+          })
+          .select()
+          .single();
       }
 
       throw emailError;

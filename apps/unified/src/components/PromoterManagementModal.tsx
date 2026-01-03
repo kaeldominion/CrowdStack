@@ -335,8 +335,14 @@ export function PromoterManagementModal({
         throw new Error(data.error || "Failed to add promoter");
       }
 
+      const result = await response.json();
+      console.log("[PromoterManagementModal] Promoter added successfully:", result);
+
+      // Reload promoters list to ensure UI is in sync
       await loadEventPromoters();
       await loadAvailablePromoters();
+      
+      // Clear search to show updated list
       setSearchQuery("");
       setSearchResults([]);
       setSelectedPromoter(null);

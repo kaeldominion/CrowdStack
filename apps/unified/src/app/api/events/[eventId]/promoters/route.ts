@@ -407,7 +407,17 @@ export async function POST(
       .single();
 
     if (error) {
+      console.error("[Promoters API] Failed to insert event_promoter:", error);
       throw error;
+    }
+
+    // Verify the insert actually worked by fetching it back
+    if (!eventPromoter || !eventPromoter.id) {
+      console.error("[Promoters API] Insert succeeded but no data returned");
+      return NextResponse.json(
+        { error: "Failed to add promoter - insert returned no data" },
+        { status: 500 }
+      );
     }
 
     // Send event assignment email (non-blocking)
@@ -415,6 +425,8 @@ export async function POST(
       const promoter = Array.isArray(eventPromoter.promoter) 
         ? eventPromoter.promoter[0] 
         : eventPromoter.promoter;
+
+      console.log("[Promoters API] Attempting to send assignment email to:", promoter?.email);
 
       if (promoter?.email) {
         // Get event details with venue and flier
@@ -494,10 +506,15 @@ export async function POST(
             },
             event.currency || "IDR"
           );
+          console.log("[Promoters API] Assignment email sent successfully to:", promoter.email);
+        } else {
+          console.warn("[Promoters API] Promoter has no email address, skipping email");
         }
+      } else {
+        console.warn("[Promoters API] Promoter object not found in response, skipping email");
       }
     } catch (emailError) {
-      console.warn("[Promoters API] Failed to send assignment email:", emailError);
+      console.error("[Promoters API] Failed to send assignment email:", emailError);
       // Don't fail the request if email fails
     }
 
