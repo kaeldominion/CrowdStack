@@ -149,62 +149,63 @@ export async function POST(
     const payoutLines = [];
     if (hasPromoters) {
       for (const ep of eventPromoters) {
-      const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
+        const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
 
-      // Calculate base payout
-      let calculatedPayout = 0;
+        // Calculate base payout
+        let calculatedPayout = 0;
 
-      // Per-head calculation
-      if (ep.per_head_rate !== null && ep.per_head_rate !== undefined) {
-        let countedCheckins = checkinsCount;
+        // Per-head calculation
+        if (ep.per_head_rate !== null && ep.per_head_rate !== undefined) {
+          let countedCheckins = checkinsCount;
 
-        // Apply min/max constraints
-        if (ep.per_head_min !== null && countedCheckins < ep.per_head_min) {
-          countedCheckins = 0;
-        } else if (ep.per_head_max !== null && countedCheckins > ep.per_head_max) {
-          countedCheckins = ep.per_head_max;
+          // Apply min/max constraints
+          if (ep.per_head_min !== null && countedCheckins < ep.per_head_min) {
+            countedCheckins = 0;
+          } else if (ep.per_head_max !== null && countedCheckins > ep.per_head_max) {
+            countedCheckins = ep.per_head_max;
+          }
+
+          calculatedPayout += countedCheckins * (ep.per_head_rate || 0);
         }
 
-        calculatedPayout += countedCheckins * (ep.per_head_rate || 0);
-      }
+        // Bonus calculation
+        if (
+          ep.bonus_threshold !== null &&
+          ep.bonus_amount !== null &&
+          checkinsCount >= ep.bonus_threshold
+        ) {
+          calculatedPayout += ep.bonus_amount;
+        }
 
-      // Bonus calculation
-      if (
-        ep.bonus_threshold !== null &&
-        ep.bonus_amount !== null &&
-        checkinsCount >= ep.bonus_threshold
-      ) {
-        calculatedPayout += ep.bonus_amount;
-      }
+        // Fixed fee
+        if (ep.fixed_fee !== null && ep.fixed_fee !== undefined) {
+          calculatedPayout += ep.fixed_fee;
+        }
 
-      // Fixed fee
-      if (ep.fixed_fee !== null && ep.fixed_fee !== undefined) {
-        calculatedPayout += ep.fixed_fee;
-      }
+        // Manual adjustment
+        const manualAdjustment = ep.manual_adjustment_amount || 0;
+        const finalPayout = calculatedPayout + manualAdjustment;
 
-      // Manual adjustment
-      const manualAdjustment = ep.manual_adjustment_amount || 0;
-      const finalPayout = calculatedPayout + manualAdjustment;
+        const { data: payoutLine, error: lineError } = await serviceSupabase
+          .from("payout_lines")
+          .insert({
+            payout_run_id: payoutRun.id,
+            promoter_id: ep.promoter_id,
+            checkins_count: checkinsCount,
+            commission_amount: finalPayout,
+            payment_status: "pending_payment",
+          })
+          .select()
+          .single();
 
-      const { data: payoutLine, error: lineError } = await serviceSupabase
-        .from("payout_lines")
-        .insert({
-          payout_run_id: payoutRun.id,
-          promoter_id: ep.promoter_id,
-          checkins_count: checkinsCount,
-          commission_amount: finalPayout,
-          payment_status: "pending_payment",
-        })
-        .select()
-        .single();
+        if (lineError) {
+          console.error(`[Closeout Finalize] Error creating payout line for promoter ${ep.promoter_id}:`, lineError);
+          continue;
+        }
 
-      if (lineError) {
-        console.error(`[Closeout Finalize] Error creating payout line for promoter ${ep.promoter_id}:`, lineError);
-        continue;
-      }
-
-      if (payoutLine) {
-        payoutLines.push(payoutLine);
+        if (payoutLine) {
+          payoutLines.push(payoutLine);
+        }
       }
     }
 
