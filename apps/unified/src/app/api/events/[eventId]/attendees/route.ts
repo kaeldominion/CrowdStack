@@ -147,7 +147,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Build query - include referral data
+    // Build query - include referral data (without checkins join - we'll fetch separately)
     const { data: registrations, error } = await serviceSupabase
       .from("registrations")
       .select(`
@@ -163,8 +163,7 @@ export async function GET(
           email,
           phone,
           gender
-        ),
-        checkins(id, checked_in_at, undo_at)
+        )
       `)
       .eq("event_id", eventId)
       .order("registered_at", { ascending: false });
@@ -172,6 +171,30 @@ export async function GET(
     if (error) {
       console.error("[EventAttendees] Query error:", error);
       throw error;
+    }
+
+    // Fetch checkins directly from checkins table (more reliable than embedded join)
+    const regIds = registrations?.map(r => r.id) || [];
+    const checkinMap = new Map<string, { id: string; checked_in_at: string; undo_at: string | null }>();
+    
+    if (regIds.length > 0) {
+      const { data: checkins, error: checkinsError } = await serviceSupabase
+        .from("checkins")
+        .select("id, registration_id, checked_in_at, undo_at")
+        .in("registration_id", regIds);
+      
+      if (checkinsError) {
+        console.error("[EventAttendees] Checkins query error:", checkinsError);
+      } else {
+        checkins?.forEach(c => {
+          checkinMap.set(c.registration_id, {
+            id: c.id,
+            checked_in_at: c.checked_in_at,
+            undo_at: c.undo_at,
+          });
+        });
+        console.log(`[EventAttendees] Found ${checkins?.length || 0} checkins for ${regIds.length} registrations`);
+      }
     }
 
     // Get promoter names for referrals
@@ -242,13 +265,8 @@ export async function GET(
     
     // Format results with source tracking
     let attendees: AttendeeWithSource[] = (registrations || []).map((reg: any) => {
-      const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
+      const checkin = checkinMap.get(reg.id) || null;
       const isCheckedIn = checkin && !checkin.undo_at;
-      
-      // Debug log for checkin status
-      if (reg.referral_promoter_id) {
-        console.log(`[EventAttendees] Promoter referral reg ${reg.id}: checkins=${JSON.stringify(reg.checkins)}, isCheckedIn=${isCheckedIn}`);
-      }
       
       // Determine referral source
       let referralSource: ReferralSource = "direct";
@@ -267,8 +285,8 @@ export async function GET(
         phone: reg.attendee?.phone || null,
         gender: reg.attendee?.gender || null,
         registration_date: reg.registered_at,
-        checked_in: isCheckedIn,
-        check_in_time: isCheckedIn ? checkin.checked_in_at : null,
+        checked_in: !!isCheckedIn,
+        check_in_time: isCheckedIn ? checkin!.checked_in_at : null,
         referral_source: referralSource,
         promoter_id: reg.referral_promoter_id || null,
         promoter_name: reg.referral_promoter_id ? promoterMap.get(reg.referral_promoter_id) || "Unknown Promoter" : null,

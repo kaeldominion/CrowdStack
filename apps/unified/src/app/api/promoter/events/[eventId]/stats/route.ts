@@ -85,10 +85,9 @@ export async function GET(
     console.log("Found promoter:", promoter.id, "for user:", userId);
 
     // Get registrations referred by this promoter for this event
-    // Note: checkins are in a separate table, so we need to join
     const { data: registrations, error: regError } = await serviceClient
       .from("registrations")
-      .select("id, attendee_id, referral_promoter_id, checkins(id, checked_in_at, undo_at)")
+      .select("id, attendee_id, referral_promoter_id")
       .eq("event_id", params.eventId)
       .eq("referral_promoter_id", promoter.id);
 
@@ -100,22 +99,32 @@ export async function GET(
       );
     }
 
-    console.log("[Promoter Stats] Registrations for promoter", promoter.id, ":", JSON.stringify(registrations, null, 2));
-
     const referrals = registrations?.length || 0;
-    // A registration is checked in if it has any checkins records (and not undone)
-    const checkins = registrations?.filter((r: any) => {
-      const hasCheckin = r.checkins && r.checkins.length > 0;
-      const isNotUndone = hasCheckin && !r.checkins[0].undo_at;
-      console.log(`[Promoter Stats] Registration ${r.id}: hasCheckin=${hasCheckin}, isNotUndone=${isNotUndone}, checkins=`, r.checkins);
-      return hasCheckin && isNotUndone;
-    }).length || 0;
+    
+    // Get check-ins directly from checkins table (same approach as live-metrics)
+    let checkins = 0;
+    if (referrals > 0) {
+      const regIds = registrations.map(r => r.id);
+      const { count, error: checkinsError } = await serviceClient
+        .from("checkins")
+        .select("*", { count: "exact", head: true })
+        .in("registration_id", regIds)
+        .is("undo_at", null);
+      
+      if (checkinsError) {
+        console.error("[Promoter Stats] Error fetching checkins:", checkinsError);
+      } else {
+        checkins = count || 0;
+      }
+      
+      console.log(`[Promoter Stats] Promoter ${promoter.id}: referrals=${referrals}, checkins=${checkins}, regIds=`, regIds);
+    }
     const conversionRate = referrals > 0 ? (checkins / referrals) * 100 : 0;
 
     // Get overall event stats
     const { data: allRegistrations, error: allRegError } = await serviceClient
       .from("registrations")
-      .select("id, referral_promoter_id, checkins(id)")
+      .select("id, referral_promoter_id")
       .eq("event_id", params.eventId);
 
     if (allRegError) {
@@ -123,7 +132,26 @@ export async function GET(
     }
 
     const event_total_registrations = allRegistrations?.length || 0;
-    const event_total_checkins = allRegistrations?.filter((r: any) => r.checkins && r.checkins.length > 0).length || 0;
+    
+    // Get all checkins for this event directly
+    const allRegIds = allRegistrations?.map(r => r.id) || [];
+    let event_total_checkins = 0;
+    const checkedInRegIds = new Set<string>();
+    
+    if (allRegIds.length > 0) {
+      const { data: allCheckins, error: allCheckinsError } = await serviceClient
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", allRegIds)
+        .is("undo_at", null);
+      
+      if (allCheckinsError) {
+        console.error("[Promoter Stats] Error fetching all checkins:", allCheckinsError);
+      } else {
+        allCheckins?.forEach(c => checkedInRegIds.add(c.registration_id));
+        event_total_checkins = checkedInRegIds.size;
+      }
+    }
 
     // Calculate leaderboard position
     let leaderboard_position = 1;
@@ -134,7 +162,7 @@ export async function GET(
       const promoterCheckIns: Record<string, number> = {};
       
       for (const reg of allRegistrations as any[]) {
-        const isCheckedIn = reg.checkins && reg.checkins.length > 0;
+        const isCheckedIn = checkedInRegIds.has(reg.id);
         if (reg.referral_promoter_id && isCheckedIn) {
           promoterCheckIns[reg.referral_promoter_id] = (promoterCheckIns[reg.referral_promoter_id] || 0) + 1;
         }
