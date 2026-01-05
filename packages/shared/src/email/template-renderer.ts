@@ -59,12 +59,17 @@ export async function sendTemplateEmail(
   const supabase = createServiceRoleClient();
 
   try {
+    console.log(`[Template Email] Starting send for template: ${templateSlug} to: ${recipient}`);
+    
     // Get template
     const template = await getEmailTemplate(templateSlug);
 
     if (!template) {
+      console.error(`[Template Email] Template "${templateSlug}" not found or disabled`);
       throw new Error(`Template "${templateSlug}" not found or disabled`);
     }
+    
+    console.log(`[Template Email] Found template: ${template.slug} (id: ${template.id}, enabled: ${template.enabled})`)
 
     // Render subject and body
     const subject = renderTemplate(template.subject, data);

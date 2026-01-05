@@ -52,20 +52,145 @@ export async function GET(
 
     const supabase = createServiceRoleClient();
 
-    // Get all users from auth (we'll filter in memory for fuzzy search)
-    const { data: { users: authUsers } } = await supabase.auth.admin.listUsers({
-      perPage: 1000,
-    });
+    // Check if query looks like an email - if so, try direct lookup first
+    const isEmailQuery = query.includes("@");
+    let matchingUsers: any[] = [];
 
-    // Filter users by email fuzzy match
-    const matchingUsers = authUsers
-      .filter((user) => {
-        if (!user.email) return false;
-        const email = user.email.toLowerCase();
-        // Fuzzy match: check if query appears anywhere in email
-        return email.includes(query);
-      })
-      .slice(0, 10); // Limit to 10 results
+    if (isEmailQuery) {
+      // Try to get user by email directly (bypasses pagination issues)
+      try {
+        // Fetch all users with pagination to find the exact match
+        let allAuthUsers: any[] = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: { users }, error } = await supabase.auth.admin.listUsers({
+            page,
+            perPage: 1000,
+          });
+
+          if (error) {
+            console.error("Error fetching users:", error);
+            break;
+          }
+
+          if (!users || users.length === 0) {
+            hasMore = false;
+          } else {
+            allAuthUsers = [...allAuthUsers, ...users];
+            // If we got less than 1000, we've reached the end
+            if (users.length < 1000) {
+              hasMore = false;
+            } else {
+              page++;
+            }
+          }
+        }
+
+        console.log(`[Door Staff Search] Searching for email: "${query}", Total users fetched: ${allAuthUsers.length}`);
+
+        const exactMatch = allAuthUsers.find(
+          (u) => u.email?.toLowerCase().trim() === query
+        );
+        
+        if (exactMatch) {
+          matchingUsers = [exactMatch];
+        } else {
+          // Fallback: Check attendees table for recently created users
+          // (new users might not appear in listUsers() immediately due to caching)
+          const { data: attendee } = await supabase
+            .from("attendees")
+            .select("user_id, email")
+            .ilike("email", query)
+            .not("user_id", "is", null)
+            .maybeSingle();
+
+          if (attendee?.user_id) {
+            // Get user by ID (more reliable for new users)
+            const { data: { user: userById }, error: userError } = await supabase.auth.admin.getUserById(attendee.user_id);
+            if (!userError && userById) {
+              matchingUsers = [userById];
+            }
+          } else {
+            // Additional fallback: Try case-insensitive search in all users
+            // Sometimes emails have different casing in the database
+            const caseInsensitiveMatch = allAuthUsers.find(
+              (u) => u.email?.toLowerCase().trim() === query.toLowerCase().trim()
+            );
+            if (caseInsensitiveMatch) {
+              matchingUsers = [caseInsensitiveMatch];
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error in direct email lookup:", e);
+      }
+    }
+
+    // If no exact match or not an email query, do fuzzy search
+    if (matchingUsers.length === 0) {
+      // Fetch all users with pagination to handle >1000 users
+      let allAuthUsers: any[] = [];
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: { users }, error } = await supabase.auth.admin.listUsers({
+          page,
+          perPage: 1000,
+        });
+
+        if (error) {
+          console.error("Error fetching users:", error);
+          break;
+        }
+
+        if (!users || users.length === 0) {
+          hasMore = false;
+        } else {
+          allAuthUsers = [...allAuthUsers, ...users];
+          // If we got less than 1000, we've reached the end
+          if (users.length < 1000) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        }
+      }
+
+      // Filter users by email fuzzy match
+      matchingUsers = allAuthUsers
+        .filter((user) => {
+          if (!user.email) return false;
+          const email = user.email.toLowerCase();
+          return email.includes(query);
+        })
+        .slice(0, 10); // Limit to 10 results
+
+      // If still no results and query looks like email, try attendees table fallback
+      if (matchingUsers.length === 0 && isEmailQuery) {
+        const { data: attendees } = await supabase
+          .from("attendees")
+          .select("user_id, email")
+          .ilike("email", `%${query}%`)
+          .not("user_id", "is", null)
+          .limit(10);
+
+        if (attendees && attendees.length > 0) {
+          // Get users by their IDs
+          const userIds = attendees.map((a) => a.user_id).filter(Boolean);
+          const userPromises = userIds.map((userId) =>
+            supabase.auth.admin.getUserById(userId).then(({ data, error }) => {
+              if (!error && data?.user) return data.user;
+              return null;
+            })
+          );
+          const foundUsers = (await Promise.all(userPromises)).filter(Boolean);
+          matchingUsers = foundUsers.slice(0, 10);
+        }
+      }
+    }
 
     // Get attendee profiles for these users
     const userIds = matchingUsers.map((u) => u.id);
@@ -74,7 +199,9 @@ export async function GET(
       .select("user_id, name, avatar_url")
       .in("user_id", userIds);
 
-    const attendeeMap = new Map(attendees?.map((a) => [a.user_id, a]) || []);
+    const attendeeMap = new Map(
+      (attendees || []).map((a: { user_id: string; name?: string; avatar_url?: string }) => [a.user_id, a])
+    );
 
     // Get existing door staff for this event to mark already assigned
     const { data: existingStaff } = await supabase

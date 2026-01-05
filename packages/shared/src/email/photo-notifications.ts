@@ -5,6 +5,7 @@ import { sendTemplateEmail } from "./template-renderer";
 
 interface PhotosLiveEmailOptions {
   to: string;
+  eventId: string;
   eventName: string;
   eventDate: string;
   venueName: string | null;
@@ -75,6 +76,7 @@ function generateThumbnailsHTML(thumbnailUrls: string[] | undefined, galleryUrl:
 export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Promise<string> {
   const {
     to,
+    eventId,
     eventName,
     eventDate,
     venueName,
@@ -96,8 +98,7 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
   // Generate thumbnail HTML
   const thumbnailsHTML = generateThumbnailsHTML(thumbnailUrls, galleryUrl);
 
-  // Use template system
-  // Note: eventId should be passed from the caller in metadata
+  // Use template system with event_id for tracking
   const result = await sendTemplateEmail(
     "photos_published",
     to,
@@ -110,7 +111,10 @@ export async function sendPhotosLiveEmail(options: PhotosLiveEmailOptions): Prom
       custom_message: customMessage || "",
       photo_thumbnails_html: thumbnailsHTML,
     },
-    {} // Metadata will be set by sendPhotosNotificationBatch
+    {
+      event_id: eventId,
+      email_type: "photos_published",
+    }
   );
 
   if (!result.success || !result.messageId) {

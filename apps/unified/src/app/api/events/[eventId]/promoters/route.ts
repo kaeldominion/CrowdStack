@@ -426,11 +426,21 @@ export async function POST(
         ? eventPromoter.promoter[0] 
         : eventPromoter.promoter;
 
-      console.log("[Promoters API] Attempting to send assignment email to:", promoter?.email);
+      console.log("[Promoters API] Email flow - promoter data:", {
+        promoterId: promoter?.id,
+        promoterName: promoter?.name,
+        promoterEmail: promoter?.email,
+        promoterCreatedBy: promoter?.created_by,
+        hasPromoter: !!promoter,
+      });
 
-      if (promoter?.email) {
+      if (!promoter) {
+        console.error("[Promoters API] ERROR: Promoter object is null/undefined in response");
+      } else if (!promoter.email) {
+        console.warn("[Promoters API] WARNING: Promoter has no email address, skipping email. Promoter ID:", promoter.id);
+      } else {
         // Get event details with venue and flier
-        const { data: event } = await serviceSupabase
+        const { data: event, error: eventError } = await serviceSupabase
           .from("events")
           .select(`
             name,
@@ -446,7 +456,17 @@ export async function POST(
           .eq("id", eventId)
           .single();
 
-        if (event) {
+        if (eventError) {
+          console.error("[Promoters API] ERROR: Failed to fetch event for email:", eventError);
+        } else if (!event) {
+          console.error("[Promoters API] ERROR: Event not found for email. EventId:", eventId);
+        } else {
+          console.log("[Promoters API] Fetched event for email:", {
+            eventName: event.name,
+            eventSlug: event.slug,
+            venueName: (event.venue as any)?.name,
+          });
+
           const { sendEventAssignmentEmail } = await import("@crowdstack/shared/email/promoter-emails");
           const { sendPromoterWelcomeEmail } = await import("@crowdstack/shared/email/promoter-emails");
 
@@ -458,14 +478,20 @@ export async function POST(
             .neq("event_id", eventId)
             .limit(1);
 
-          if (!otherEvents || otherEvents.length === 0) {
-            // First event - send welcome email
-            await sendPromoterWelcomeEmail(
+          const isFirstEvent = !otherEvents || otherEvents.length === 0;
+          console.log("[Promoters API] Is first event for promoter?", isFirstEvent);
+
+          if (isFirstEvent) {
+            // First event - send welcome email with event_id for tracking
+            console.log("[Promoters API] Sending welcome email to:", promoter.email);
+            const welcomeResult = await sendPromoterWelcomeEmail(
               promoter.id,
               promoter.name,
               promoter.email,
-              promoter.created_by || null
+              promoter.created_by || null,
+              eventId
             );
+            console.log("[Promoters API] Welcome email result:", welcomeResult);
           }
 
           // Build referral link
@@ -473,7 +499,8 @@ export async function POST(
           const referralLink = `${baseUrl}/e/${event.slug}?ref=${promoter.id}`;
 
           // Send assignment email
-          await sendEventAssignmentEmail(
+          console.log("[Promoters API] Sending assignment email to:", promoter.email);
+          const assignmentResult = await sendEventAssignmentEmail(
             promoter.id,
             promoter.name,
             promoter.email,
@@ -506,15 +533,17 @@ export async function POST(
             },
             event.currency || "IDR"
           );
-          console.log("[Promoters API] Assignment email sent successfully to:", promoter.email);
-        } else {
-          console.warn("[Promoters API] Promoter has no email address, skipping email");
+          console.log("[Promoters API] Assignment email result:", assignmentResult);
+          
+          if (assignmentResult.success) {
+            console.log("[Promoters API] ✓ Email sent successfully to:", promoter.email);
+          } else {
+            console.error("[Promoters API] ✗ Email failed:", assignmentResult);
+          }
         }
-      } else {
-        console.warn("[Promoters API] Promoter object not found in response, skipping email");
       }
     } catch (emailError) {
-      console.error("[Promoters API] Failed to send assignment email:", emailError);
+      console.error("[Promoters API] EXCEPTION in email flow:", emailError);
       // Don't fail the request if email fails
     }
 

@@ -40,7 +40,8 @@ export async function sendPromoterWelcomeEmail(
   promoterId: string,
   promoterName: string,
   promoterEmail: string | null,
-  promoterUserId: string | null
+  promoterUserId: string | null,
+  eventId?: string
 ): Promise<{ success: boolean; skipped?: boolean }> {
   if (!promoterEmail) {
     return { success: false, skipped: true };
@@ -58,6 +59,10 @@ export async function sendPromoterWelcomeEmail(
     {
       promoter_name: promoterName,
       promoter_email: promoterEmail,
+    },
+    {
+      event_id: eventId || null,
+      email_type: "promoter_welcome",
     }
   );
 

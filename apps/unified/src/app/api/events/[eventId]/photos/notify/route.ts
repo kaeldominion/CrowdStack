@@ -188,6 +188,7 @@ export async function POST(
 
       await sendPhotosLiveEmail({
         to: userEmail,
+        eventId: params.eventId,
         eventName: event.name,
         eventDate,
         venueName,

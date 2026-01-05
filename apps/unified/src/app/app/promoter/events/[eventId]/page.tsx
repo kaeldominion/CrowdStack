@@ -14,6 +14,7 @@ export default function PromoterEventPage() {
         role: "promoter",
         eventApiEndpoint: `/api/promoter/events/${eventId}`,
         statsApiEndpoint: `/api/promoter/events/${eventId}/stats`,
+        attendeesApiEndpoint: `/api/events/${eventId}/attendees`, // Endpoint filters to promoter's referrals only
         backUrl: "/app/promoter/events",
         liveUrl: `/app/promoter/live/${eventId}`,
         canEdit: false,
