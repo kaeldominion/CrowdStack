@@ -3479,36 +3479,88 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 aspectRatio="9:16"
                 currentImageUrl={event?.flier_url}
                 onUpload={async (file) => {
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
-                    method: "POST",
-                    body: formData,
-                  });
-                  if (!response.ok) {
-                    // Handle non-JSON error responses (e.g., "Request Entity Too Large")
-                    let errorMessage = "Failed to upload flier";
-                    try {
-                      const error = await response.json();
-                      errorMessage = error.error || errorMessage;
-                    } catch {
-                      // Response is not JSON, try to get text
-                      try {
-                        const text = await response.text();
-                        if (text.includes("Request Entity Too Large") || text.includes("413")) {
-                          errorMessage = "File is too large. Please use an image under 10MB.";
-                        } else if (text) {
-                          errorMessage = text.substring(0, 100);
-                        }
-                      } catch {
-                        // Ignore text parsing errors
-                      }
+                  // For files over 4MB, use direct Supabase upload to bypass Vercel's 4.5MB limit
+                  const FOUR_MB = 4 * 1024 * 1024;
+                  
+                  if (file.size > FOUR_MB) {
+                    // Get signed upload URL
+                    const urlResponse = await fetch(
+                      `/api/organizer/events/${eventId}/flier/upload-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}&fileSize=${file.size}`
+                    );
+                    
+                    if (!urlResponse.ok) {
+                      const error = await urlResponse.json();
+                      throw new Error(error.error || "Failed to get upload URL");
                     }
-                    throw new Error(errorMessage);
+                    
+                    const { uploadUrl, storagePath } = await urlResponse.json();
+                    
+                    // Upload directly to Supabase Storage
+                    const uploadResponse = await fetch(uploadUrl, {
+                      method: "PUT",
+                      body: file,
+                      headers: {
+                        "Content-Type": file.type,
+                      },
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                      throw new Error("Failed to upload file to storage");
+                    }
+                    
+                    // Get public URL
+                    const supabase = createBrowserClient();
+                    const { data: { publicUrl } } = supabase.storage
+                      .from("event-photos")
+                      .getPublicUrl(storagePath);
+                    
+                    // Update event with flier URL
+                    const updateResponse = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ flier_url: publicUrl }),
+                    });
+                    
+                    if (!updateResponse.ok) {
+                      const error = await updateResponse.json();
+                      throw new Error(error.error || "Failed to update event");
+                    }
+                    
+                    await loadEventData(false);
+                    return publicUrl;
+                  } else {
+                    // For smaller files, use the existing API route
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const response = await fetch(`/api/organizer/events/${eventId}/flier`, {
+                      method: "POST",
+                      body: formData,
+                    });
+                    if (!response.ok) {
+                      // Handle non-JSON error responses (e.g., "Request Entity Too Large")
+                      let errorMessage = "Failed to upload flier";
+                      try {
+                        const error = await response.json();
+                        errorMessage = error.error || errorMessage;
+                      } catch {
+                        // Response is not JSON, try to get text
+                        try {
+                          const text = await response.text();
+                          if (text.includes("Request Entity Too Large") || text.includes("413")) {
+                            errorMessage = "File is too large. Please use an image under 10MB.";
+                          } else if (text) {
+                            errorMessage = text.substring(0, 100);
+                          }
+                        } catch {
+                          // Ignore text parsing errors
+                        }
+                      }
+                      throw new Error(errorMessage);
+                    }
+                    const data = await response.json();
+                    await loadEventData(false); // Refresh event data without resetting form
+                    return data.flier_url;
                   }
-                  const data = await response.json();
-                  await loadEventData(false); // Refresh event data without resetting form
-                  return data.flier_url;
                 }}
                 onRemove={async () => {
                   // Delete flier via DELETE endpoint

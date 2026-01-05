@@ -89,6 +89,48 @@ export async function POST(
       );
     }
 
+    // Check if this is a JSON request (for direct URL updates from client-side upload)
+    const contentType = request.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      const body = await request.json();
+      const { flier_url } = body;
+      
+      if (!flier_url) {
+        return NextResponse.json(
+          { error: "flier_url is required" },
+          { status: 400 }
+        );
+      }
+      
+      // Delete old flier if exists
+      if (event.flier_url) {
+        try {
+          const { deleteFromStorage } = await import("@crowdstack/shared/storage/upload");
+          const urlParts = event.flier_url.split("/event-photos/");
+          if (urlParts.length > 1) {
+            await deleteFromStorage("event-photos", urlParts[1]);
+          }
+        } catch (storageError) {
+          console.error("Failed to delete old flier:", storageError);
+        }
+      }
+      
+      // Update event with flier URL
+      const { error: updateError } = await serviceSupabase
+        .from("events")
+        .update({ flier_url })
+        .eq("id", eventId);
+      
+      if (updateError) {
+        return NextResponse.json(
+          { error: "Failed to update event flier" },
+          { status: 500 }
+        );
+      }
+      
+      return NextResponse.json({ flier_url });
+    }
+    
     const formData = await request.formData();
     const file = formData.get("file") as File;
 

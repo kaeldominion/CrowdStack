@@ -41,16 +41,30 @@ export async function GET(
     const isOrganizer = organizerData?.created_by === userId;
     const isVenueAdmin = venueData?.created_by === userId;
 
+    // Check if user is a team member of the organizer
+    let isTeamMember = false;
+    if (event.organizer_id && !isOrganizer) {
+      const { data: teamMember } = await supabase
+        .from("organizer_team_members")
+        .select("id")
+        .eq("organizer_id", event.organizer_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      isTeamMember = !!teamMember;
+    }
+
     console.log("Promoter requests auth check:", {
       userId,
+      organizerId: event.organizer_id,
       organizerCreatedBy: organizerData?.created_by,
       venueCreatedBy: venueData?.created_by,
       isOrganizer,
       isVenueAdmin,
+      isTeamMember,
       isSuperAdmin,
     });
 
-    if (!isSuperAdmin && !isOrganizer && !isVenueAdmin) {
+    if (!isSuperAdmin && !isOrganizer && !isVenueAdmin && !isTeamMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -124,7 +138,19 @@ export async function PATCH(
     const isOrganizer = organizerData?.created_by === userId;
     const isVenueAdmin = venueData?.created_by === userId;
 
-    if (!isSuperAdmin && !isOrganizer && !isVenueAdmin) {
+    // Check if user is a team member of the organizer
+    let isTeamMember = false;
+    if (event.organizer_id && !isOrganizer) {
+      const { data: teamMember } = await supabase
+        .from("organizer_team_members")
+        .select("id")
+        .eq("organizer_id", event.organizer_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      isTeamMember = !!teamMember;
+    }
+
+    if (!isSuperAdmin && !isOrganizer && !isVenueAdmin && !isTeamMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
