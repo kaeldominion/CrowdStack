@@ -249,7 +249,7 @@ export default function QRTestPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-primary">Results</h2>
               <div className="flex items-center gap-2">
-                <Badge variant={qrData.error ? "destructive" : qrData.type === "pass" ? "success" : "secondary"}>
+                <Badge variant={qrData.error ? "danger" : qrData.type === "pass" ? "success" : "secondary"}>
                   {qrData.type === "pass" ? "Pass Token" : qrData.type === "registration_url" ? "Registration URL" : "Unknown"}
                 </Badge>
                 <Button
