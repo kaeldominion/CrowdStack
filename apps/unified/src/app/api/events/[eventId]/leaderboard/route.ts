@@ -39,16 +39,27 @@ export async function GET(
       return NextResponse.json({ leaderboard: [] });
     }
 
-    // Get all registrations for this event with check-in status
+    // Get all registrations for this event
     const { data: registrations, error: regError } = await serviceClient
       .from("registrations")
-      .select("id, referral_promoter_id, checkins(id)")
+      .select("id, referral_promoter_id")
       .eq("event_id", eventId);
 
     if (regError) {
       console.error("Error fetching registrations:", regError);
       return NextResponse.json({ error: "Failed to fetch leaderboard" }, { status: 500 });
     }
+
+    // Get check-ins directly from checkins table (more reliable than embedded join)
+    const registrationIds = registrations?.map((r) => r.id) || [];
+    const { data: checkins } = await serviceClient
+      .from("checkins")
+      .select("registration_id")
+      .in("registration_id", registrationIds.length > 0 ? registrationIds : ["none"])
+      .is("undo_at", null);
+
+    // Build a set of checked-in registration IDs
+    const checkedInRegIds = new Set(checkins?.map((c) => c.registration_id) || []);
 
     // Calculate stats for each promoter
     const promoterStats: Record<string, { referrals: number; checkins: number }> = {};
@@ -60,8 +71,7 @@ export async function GET(
         }
         promoterStats[reg.referral_promoter_id].referrals += 1;
         
-        const isCheckedIn = (reg as any).checkins && (reg as any).checkins.length > 0;
-        if (isCheckedIn) {
+        if (checkedInRegIds.has(reg.id)) {
           promoterStats[reg.referral_promoter_id].checkins += 1;
         }
       }

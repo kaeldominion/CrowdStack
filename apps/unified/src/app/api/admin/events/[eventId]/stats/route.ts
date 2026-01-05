@@ -63,23 +63,27 @@ export async function GET(
         const promoterId = ep.promoter?.id;
         if (!promoterId) return null;
 
-        // Get registrations for this promoter
+        // Get registrations for this promoter (without embedded checkins join)
         const { data: regs } = await serviceSupabase
           .from("registrations")
-          .select(`
-            id,
-            checkins(id, undo_at)
-          `)
+          .select("id")
           .eq("event_id", params.eventId)
           .eq("referral_promoter_id", promoterId);
 
-        const checkins = (regs || []).flatMap((r: any) => r.checkins || []).filter((c: any) => !c.undo_at);
+        const regIds = regs?.map((r) => r.id) || [];
+        
+        // Get check-ins directly from checkins table
+        const { data: checkinData } = await serviceSupabase
+          .from("checkins")
+          .select("id")
+          .in("registration_id", regIds.length > 0 ? regIds : ["none"])
+          .is("undo_at", null);
         
         return {
           promoter_id: promoterId,
           promoter_name: ep.promoter?.name,
           registrations: regs?.length || 0,
-          check_ins: checkins.length,
+          check_ins: checkinData?.length || 0,
         };
       })
     );
