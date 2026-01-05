@@ -10,6 +10,7 @@ interface TeamMemberCardProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   showDetails?: boolean; // Show email and permissions
+  isCurrentUser?: boolean; // Whether this is the current logged-in user
 }
 
 const sizeClasses = {
@@ -23,6 +24,7 @@ export function TeamMemberCard({
   size = "md",
   className = "",
   showDetails = false,
+  isCurrentUser = false,
 }: TeamMemberCardProps) {
   const getUserInitial = () => {
     if (member.name) return member.name[0].toUpperCase();
@@ -82,6 +84,11 @@ export function TeamMemberCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-medium text-primary truncate">{member.name}</p>
+          {isCurrentUser && (
+            <Badge variant="success" className="text-xs">
+              ME
+            </Badge>
+          )}
           {member.is_owner && (
             <Badge variant="primary" className="text-xs flex items-center gap-1">
               <Crown className="h-3 w-3" />

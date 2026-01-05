@@ -2453,15 +2453,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {config.canViewPromoters && (
             <TabsContent value="promoters" className="space-y-4">
-              {/* Pending Promoter Requests */}
+              {/* Pending Promoter Requests - DISABLED: Promoter request feature is currently disabled */}
               {/* Debug: Show request count */}
-              {effectivePermissions.canManagePromoters && (
+              {false && effectivePermissions.canManagePromoters && (
                 <div className="text-xs text-secondary mb-2">
                   Total requests loaded: {promoterRequests.length} | Pending: {promoterRequests.filter(r => r.status === "pending").length}
                 </div>
               )}
               
-              {config.canManagePromoters && promoterRequests.filter(r => r.status === "pending").length > 0 && (
+              {false && config.canManagePromoters && promoterRequests.filter(r => r.status === "pending").length > 0 && (
                 <Card className="border-warning/30 bg-warning/5 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertCircle className="h-4 w-4 text-warning" />
@@ -2617,7 +2617,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     No promoters assigned to this event yet.
                     {effectivePermissions.canManagePromoters && (
                       <p className="text-sm mt-2">
-                        Click &quot;Add Promoter&quot; to assign promoters, or wait for promoters to request access.
+                        Click &quot;Add Promoter&quot; to assign promoters with payment terms.
                       </p>
                     )}
                   </div>

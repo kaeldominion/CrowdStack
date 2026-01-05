@@ -13,6 +13,7 @@ import { PermissionsEditor } from "@/components/PermissionsEditor";
 interface OrganizerSettingsData {
   organizer: Organizer;
   team_members: OrganizerTeamMember[];
+  current_user_id?: string;
 }
 
 export default function OrganizerSettingsPage() {
@@ -46,6 +47,7 @@ export default function OrganizerSettingsPage() {
       setData({
         organizer: result.organizer,
         team_members: result.organizer.team_members || [],
+        current_user_id: result.current_user_id,
       });
     } catch (error) {
       console.error("Failed to load settings:", error);
@@ -484,7 +486,12 @@ export default function OrganizerSettingsPage() {
                       key={member.id}
                       className="flex items-center justify-between p-4 border-2 border-border rounded-lg"
                     >
-                      <TeamMemberCard member={member} size="md" showDetails={true} />
+                      <TeamMemberCard 
+                        member={member} 
+                        size="md" 
+                        showDetails={true}
+                        isCurrentUser={data.current_user_id === member.user_id}
+                      />
                       <div className="flex items-center gap-2">
                         {!member.is_owner && member.user_id && (
                           <Button

@@ -82,7 +82,7 @@ export async function GET() {
         profileMap.set(profile.id, profile.avatar_url);
       });
 
-      // Get attendee names (which have the actual user names)
+      // Get attendee names (which have the actual user names) - this is the most reliable source
       const { data: attendees } = await serviceSupabase
         .from("attendees")
         .select("user_id, name, surname, avatar_url")
@@ -109,7 +109,7 @@ export async function GET() {
             const name = attendeeInfo?.name ||
                         authUser.user_metadata?.name || 
                         authUser.user_metadata?.full_name || 
-                        email.split("@")[0] || 
+                        (email ? email.split("@")[0] : null) || 
                         "Unknown";
             
             // Prefer attendee avatar, then profile avatar
@@ -121,10 +121,25 @@ export async function GET() {
           }
         });
       }
+      
+      // For any user IDs not found in auth.users, try to get from attendees directly
+      userIdsArray.forEach((userId) => {
+        if (!userMap.has(userId)) {
+          const attendeeInfo = attendeeMap.get(userId);
+          if (attendeeInfo) {
+            userMap.set(userId, {
+              email: "",
+              name: attendeeInfo.name,
+              avatar_url: attendeeInfo.avatar_url,
+            });
+          }
+        }
+      });
     }
 
     // Format team members with user info
     const teamMembers: any[] = [];
+    const currentUserId = user.id;
 
     // Add owner first if they exist
     if (organizer.created_by) {
@@ -141,6 +156,7 @@ export async function GET() {
         is_owner: true,
         assigned_at: organizer.created_at,
         permissions: null, // Owner has all permissions
+        is_current_user: organizer.created_by === currentUserId,
       });
     }
 
@@ -162,6 +178,7 @@ export async function GET() {
           assigned_at: ou.assigned_at,
           assigned_by: ou.assigned_by,
           permissions: permissions,
+          is_current_user: ou.user_id === currentUserId,
         });
       }
     });
@@ -171,6 +188,7 @@ export async function GET() {
         ...organizer,
         team_members: teamMembers || [],
       },
+      current_user_id: currentUserId,
     });
   } catch (error: any) {
     console.error("Failed to fetch organizer settings:", error);
