@@ -3,12 +3,6 @@
   "devCommand": "cd ../.. && pnpm dev:unified",
   "installCommand": "cd ../.. && npx -y pnpm@8.15.0 install",
   "framework": "nextjs",
-  "functions": {
-    "src/app/api/organizer/events/[eventId]/flier/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  },
   "crons": [
     {
       "path": "/api/cron/dj-gig-reminders",
