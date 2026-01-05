@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Card, Badge, InlineSpinner } from "@crowdstack/ui";
-import { Camera, Copy, Check, RefreshCw, QrCode, User, Calendar, MapPin, Users, Ticket, AlertCircle } from "lucide-react";
+import { Camera, Copy, Check, RefreshCw, QrCode, User, Calendar, MapPin, Users, Ticket, AlertCircle, CameraOff } from "lucide-react";
+import jsQR from "jsqr";
 
 interface QRData {
   type: "pass" | "registration_url" | "unknown";
@@ -54,88 +55,37 @@ export default function QRTestPage() {
   const [qrData, setQrData] = useState<QRData | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanningRef = useRef(false);
+  const animationRef = useRef<number | null>(null);
 
   // Cleanup camera on unmount
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopScanning();
     };
   }, []);
 
-  const startScanning = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
-      });
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      
-      setScanning(true);
-      scanFrame();
-    } catch (error) {
-      console.error("Failed to start camera:", error);
-      alert("Failed to access camera. Please ensure camera permissions are granted.");
+  const stopScanning = useCallback(() => {
+    scanningRef.current = false;
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-  };
-
-  const stopScanning = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
     setScanning(false);
-  };
-
-  const scanFrame = () => {
-    if (!scanning || !videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
-    if (video.readyState === video.HAVE_ENOUGH_DATA && context) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Use BarcodeDetector if available (modern browsers)
-      if ("BarcodeDetector" in window) {
-        const barcodeDetector = new (window as any).BarcodeDetector({ formats: ["qr_code"] });
-        barcodeDetector.detect(imageData)
-          .then((barcodes: any[]) => {
-            if (barcodes.length > 0) {
-              handleQRCode(barcodes[0].rawValue);
-              stopScanning();
-            } else {
-              requestAnimationFrame(scanFrame);
-            }
-          })
-          .catch(() => {
-            requestAnimationFrame(scanFrame);
-          });
-      } else {
-        // Fallback: just keep trying (user should use manual input)
-        requestAnimationFrame(scanFrame);
-      }
-    } else {
-      requestAnimationFrame(scanFrame);
-    }
-  };
+  }, []);
 
   const handleQRCode = async (code: string) => {
     setLoading(true);
     setQrData(null);
+    stopScanning();
 
     try {
       const response = await fetch("/api/dev/decode-qr", {
@@ -154,6 +104,70 @@ export default function QRTestPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const scanFrame = useCallback(() => {
+    if (!scanningRef.current || !videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA && context) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Use jsQR for reliable QR code detection
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      });
+      
+      if (code) {
+        handleQRCode(code.data);
+        return;
+      }
+    }
+    
+    // Continue scanning
+    if (scanningRef.current) {
+      animationRef.current = requestAnimationFrame(scanFrame);
+    }
+  }, []);
+
+  const startScanning = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      streamRef.current = stream;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      
+      scanningRef.current = true;
+      setScanning(true);
+      
+      // Wait a bit for video to initialize then start scanning
+      setTimeout(() => {
+        if (scanningRef.current) {
+          scanFrame();
+        }
+      }, 500);
+    } catch (error: any) {
+      console.error("Failed to start camera:", error);
+      setCameraError(error.message || "Failed to access camera");
+      alert("Failed to access camera. Please ensure camera permissions are granted.");
     }
   };
 
@@ -210,16 +224,32 @@ export default function QRTestPage() {
             )}
           </div>
 
+          {cameraError && (
+            <div className="p-4 bg-danger/10 border border-danger/30 rounded-lg flex items-center gap-3">
+              <CameraOff className="h-5 w-5 text-danger" />
+              <div>
+                <p className="text-sm font-medium text-danger">Camera Error</p>
+                <p className="text-xs text-secondary">{cameraError}</p>
+              </div>
+            </div>
+          )}
+
           {scanning && (
-            <div className="relative aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-black">
+            <div className="relative aspect-video max-w-md mx-auto rounded-lg overflow-hidden bg-black">
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
                 playsInline
                 muted
+                autoPlay
               />
               <div className="absolute inset-0 border-2 border-accent-secondary/50 rounded-lg pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-accent-secondary rounded-lg" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-accent-secondary rounded-lg animate-pulse" />
+              </div>
+              <div className="absolute bottom-2 left-2 right-2 text-center">
+                <span className="px-2 py-1 bg-black/70 rounded text-xs text-white">
+                  Point camera at QR code
+                </span>
               </div>
             </div>
           )}
@@ -396,35 +426,56 @@ export default function QRTestPage() {
               </div>
             )}
 
-            {/* Referrer Info */}
-            {qrData.referrer && qrData.referrer.type && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-secondary uppercase tracking-wider flex items-center gap-1">
-                  <Users className="h-3 w-3" /> Referrer
+            {/* Referrer Info - Made prominent as this is the key info */}
+            {qrData.referrer && (qrData.referrer.type || qrData.referrer.id || qrData.referrer.code) && (
+              <div className="space-y-2 border-2 border-accent-secondary rounded-xl p-4 bg-accent-secondary/5">
+                <p className="text-sm font-bold text-accent-secondary uppercase tracking-wider flex items-center gap-2">
+                  <Users className="h-4 w-4" /> REFERRER ATTRIBUTION
                 </p>
-                <div className="p-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20 space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-secondary">Type:</span>
-                    <Badge variant="default" className="capitalize">{qrData.referrer.type}</Badge>
+                
+                {/* Big name display */}
+                {qrData.referrer.name ? (
+                  <div className="text-center py-3 bg-accent-secondary/10 rounded-lg">
+                    <p className="text-2xl font-bold text-accent-secondary">{qrData.referrer.name}</p>
+                    <p className="text-xs text-secondary mt-1 capitalize">{qrData.referrer.type || "Unknown"}</p>
                   </div>
-                  {qrData.referrer.name && (
+                ) : (
+                  <div className="text-center py-3 bg-warning/10 rounded-lg border border-warning/30">
+                    <p className="text-lg font-bold text-warning">No name found</p>
+                    <p className="text-xs text-secondary mt-1">Referrer ID: {qrData.referrer.id || qrData.referrer.code || "Unknown"}</p>
+                  </div>
+                )}
+
+                <div className="space-y-1 pt-2 border-t border-border/50">
+                  {qrData.referrer.type && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-secondary">Name:</span>
-                      <span className="text-accent-secondary font-medium">{qrData.referrer.name}</span>
+                      <span className="text-secondary">Type:</span>
+                      <Badge variant="default" className="capitalize">{qrData.referrer.type}</Badge>
                     </div>
                   )}
                   {qrData.referrer.code && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-secondary">Code:</span>
+                      <span className="text-secondary">Invite Code:</span>
                       <code className="text-primary font-mono">{qrData.referrer.code}</code>
                     </div>
                   )}
                   {qrData.referrer.id && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-secondary">ID:</span>
+                      <span className="text-secondary">Referrer ID:</span>
                       <code className="text-primary font-mono text-xs">{qrData.referrer.id}</code>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* No Referrer Warning */}
+            {qrData.type === "registration_url" && (!qrData.referrer || (!qrData.referrer.type && !qrData.referrer.id && !qrData.referrer.code)) && (
+              <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-warning" />
+                <div>
+                  <p className="text-sm font-medium text-warning">No Referrer Detected</p>
+                  <p className="text-xs text-secondary">This registration URL has no referral attribution</p>
                 </div>
               </div>
             )}

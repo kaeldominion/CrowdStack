@@ -314,6 +314,76 @@ export async function POST(request: NextRequest) {
 
 // Helper to parse ref parameter
 async function parseReferrer(ref: string, supabase: any) {
+  // Check for UUID format (could be a direct promoter ID)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  // Handle org_ prefix (organizer shares)
+  if (ref.startsWith("org_")) {
+    const organizerId = ref.substring(4);
+    const { data: organizer } = await supabase
+      .from("organizers")
+      .select("id, name, created_by")
+      .eq("id", organizerId)
+      .single();
+    
+    if (organizer) {
+      // Also try to find organizer's promoter profile
+      let promoterName = organizer.name;
+      if (organizer.created_by) {
+        const { data: promoter } = await supabase
+          .from("promoters")
+          .select("id, name")
+          .eq("created_by", organizer.created_by)
+          .maybeSingle();
+        if (promoter) {
+          promoterName = promoter.name || organizer.name;
+        }
+      }
+      return {
+        type: "organizer" as const,
+        id: organizerId,
+        name: promoterName,
+      };
+    }
+    return { type: "organizer" as const, id: organizerId, name: undefined };
+  }
+  
+  // If it's a raw UUID, try promoter first, then user
+  if (uuidRegex.test(ref)) {
+    // Try as promoter ID first
+    const { data: promoter } = await supabase
+      .from("promoters")
+      .select("id, name")
+      .eq("id", ref)
+      .maybeSingle();
+    
+    if (promoter) {
+      return {
+        type: "promoter" as const,
+        id: ref,
+        name: promoter.name,
+      };
+    }
+    
+    // Try as user ID
+    const { data: attendee } = await supabase
+      .from("attendees")
+      .select("id, name, email")
+      .eq("user_id", ref)
+      .maybeSingle();
+    
+    if (attendee) {
+      return {
+        type: "user" as const,
+        id: ref,
+        name: attendee.name || attendee.email?.split("@")[0],
+      };
+    }
+    
+    return { type: null, id: ref, name: undefined };
+  }
+  
+  // Handle prefixed refs
   const parts = ref.split("_");
   const type = parts[0];
   const id = parts.slice(1).join("_");
@@ -368,6 +438,7 @@ async function parseReferrer(ref: string, supabase: any) {
       };
     }
     default:
+      // Unknown format
       return {
         type: null,
         code: ref,
