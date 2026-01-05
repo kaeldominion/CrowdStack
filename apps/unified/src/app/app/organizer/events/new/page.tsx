@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { EventImageUpload } from "@/components/EventImageUpload";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
+import { TIMEZONE_GROUPS, getLocalTimezone } from "@/lib/constants/timezones";
 
 export default function NewEventPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function NewEventPage() {
     start_time: "",
     end_time: "",
     capacity: "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
+    timezone: getLocalTimezone(),
     promoter_access_type: "public" as "public" | "invite_only",
     self_promote: true,
     selected_promoters: [] as string[],
@@ -361,20 +362,15 @@ export default function NewEventPage() {
               onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
               className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
             >
-              <option value="America/New_York">Eastern Time (ET)</option>
-              <option value="America/Chicago">Central Time (CT)</option>
-              <option value="America/Denver">Mountain Time (MT)</option>
-              <option value="America/Los_Angeles">Pacific Time (PT)</option>
-              <option value="America/Anchorage">Alaska Time (AKT)</option>
-              <option value="Pacific/Honolulu">Hawaii Time (HST)</option>
-              <option value="America/Toronto">Toronto (ET)</option>
-              <option value="America/Vancouver">Vancouver (PT)</option>
-              <option value="Europe/London">London (GMT/BST)</option>
-              <option value="Europe/Paris">Paris (CET/CEST)</option>
-              <option value="Europe/Berlin">Berlin (CET/CEST)</option>
-              <option value="Asia/Tokyo">Tokyo (JST)</option>
-              <option value="Asia/Shanghai">Shanghai (CST)</option>
-              <option value="Australia/Sydney">Sydney (AEDT/AEST)</option>
+              {Object.entries(TIMEZONE_GROUPS).map(([region, timezones]) => (
+                <optgroup key={region} label={region}>
+                  {timezones.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label} ({tz.offset})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
             <p className="mt-1 text-xs text-secondary">
               Timezone for event times

@@ -108,6 +108,7 @@ import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
+import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 import { EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
@@ -139,6 +140,7 @@ interface EventData {
   name: string;
   slug: string;
   description: string | null;
+  important_info: string | null;
   status: string;
   start_time: string;
   end_time: string | null;
@@ -355,6 +357,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     name: "",
     slug: "",
     description: "",
+    important_info: "",
     start_time: "",
     end_time: "",
     capacity: "",
@@ -626,6 +629,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             name: data.event.name || "",
             slug: data.event.slug || "",
             description: data.event.description || "",
+            important_info: data.event.important_info || "",
             start_time: data.event.start_time?.slice(0, 16) || "",
             end_time: data.event.end_time?.slice(0, 16) || "",
             capacity: data.event.capacity?.toString() || "",
@@ -773,6 +777,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       if (editForm.name !== event.name) updates.name = editForm.name;
       if (editForm.slug !== event.slug) updates.slug = editForm.slug;
       if (editForm.description !== (event.description || "")) updates.description = editForm.description || null;
+      if (editForm.important_info !== (event.important_info || "")) updates.important_info = editForm.important_info || null;
       if (editForm.start_time !== event.start_time?.slice(0, 16)) {
         updates.start_time = new Date(editForm.start_time).toISOString();
       }
@@ -3304,6 +3309,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
               rows={4}
             />
+            <Textarea
+              label="Important Info for Guests"
+              value={editForm.important_info}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, important_info: e.target.value }))}
+              rows={2}
+              placeholder="e.g., Arrive before 10pm, Dress code: Smart casual, Bring ID"
+              helperText="This will be shown in registration confirmation and reminder emails"
+            />
             <div className="grid gap-4 md:grid-cols-2">
               <Input
                 label="Start Time"
@@ -3351,28 +3364,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 required
               />
             )}
-            <Select
-              label="Timezone"
-              value={editForm.timezone}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, timezone: e.target.value }))}
-              options={[
-                { value: "America/New_York", label: "Eastern Time (ET)" },
-                { value: "America/Chicago", label: "Central Time (CT)" },
-                { value: "America/Denver", label: "Mountain Time (MT)" },
-                { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
-                { value: "America/Anchorage", label: "Alaska Time (AKT)" },
-                { value: "Pacific/Honolulu", label: "Hawaii Time (HST)" },
-                { value: "America/Toronto", label: "Toronto (ET)" },
-                { value: "America/Vancouver", label: "Vancouver (PT)" },
-                { value: "Europe/London", label: "London (GMT/BST)" },
-                { value: "Europe/Paris", label: "Paris (CET/CEST)" },
-                { value: "Europe/Berlin", label: "Berlin (CET/CEST)" },
-                { value: "Asia/Tokyo", label: "Tokyo (JST)" },
-                { value: "Asia/Shanghai", label: "Shanghai (CST)" },
-                { value: "Australia/Sydney", label: "Sydney (AEDT/AEST)" },
-              ]}
-              helperText="Timezone for event times"
-            />
+            <div>
+              <label className="block text-sm font-medium text-primary mb-2">Timezone</label>
+              <select
+                value={editForm.timezone}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, timezone: e.target.value }))}
+                className="w-full rounded-xl bg-raised border border-border-subtle px-4 py-3 text-sm text-primary focus:outline-none focus:border-accent-primary/50 focus:ring-2 focus:ring-accent-primary/20"
+              >
+                {Object.entries(TIMEZONE_GROUPS).map(([region, timezones]) => (
+                  <optgroup key={region} label={region}>
+                    {timezones.map((tz) => (
+                      <option key={tz.value} value={tz.value}>
+                        {tz.label} ({tz.offset})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <p className="text-xs text-secondary mt-1">Timezone for event times</p>
+            </div>
 
             {/* Registration Type */}
             <div className="space-y-4 border-t border-border pt-6">
