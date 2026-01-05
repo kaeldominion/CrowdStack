@@ -94,6 +94,7 @@ import {
   Mail,
   Crown,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
@@ -2252,9 +2253,19 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 {/* Header with title and search */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-semibold text-primary">
-                    {isPromoterView ? "Your Guests" : "Attendees"} ({filteredAttendees.length})
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-primary">
+                      {isPromoterView ? "Your Guests" : "Attendees"} ({filteredAttendees.length})
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => loadAttendees()}
+                      title="Refresh attendees list"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Input
                     placeholder="Search by name, email, or promoter..."
                     value={searchQuery}

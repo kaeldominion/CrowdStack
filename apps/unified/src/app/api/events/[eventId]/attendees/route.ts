@@ -238,10 +238,17 @@ export async function GET(
       });
     }
 
+    console.log("[EventAttendees] Total registrations:", registrations?.length);
+    
     // Format results with source tracking
     let attendees: AttendeeWithSource[] = (registrations || []).map((reg: any) => {
       const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
       const isCheckedIn = checkin && !checkin.undo_at;
+      
+      // Debug log for checkin status
+      if (reg.referral_promoter_id) {
+        console.log(`[EventAttendees] Promoter referral reg ${reg.id}: checkins=${JSON.stringify(reg.checkins)}, isCheckedIn=${isCheckedIn}`);
+      }
       
       // Determine referral source
       let referralSource: ReferralSource = "direct";

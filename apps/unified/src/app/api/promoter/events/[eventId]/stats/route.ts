@@ -88,7 +88,7 @@ export async function GET(
     // Note: checkins are in a separate table, so we need to join
     const { data: registrations, error: regError } = await serviceClient
       .from("registrations")
-      .select("id, attendee_id, referral_promoter_id, checkins(id)")
+      .select("id, attendee_id, referral_promoter_id, checkins(id, checked_in_at, undo_at)")
       .eq("event_id", params.eventId)
       .eq("referral_promoter_id", promoter.id);
 
@@ -100,9 +100,16 @@ export async function GET(
       );
     }
 
+    console.log("[Promoter Stats] Registrations for promoter", promoter.id, ":", JSON.stringify(registrations, null, 2));
+
     const referrals = registrations?.length || 0;
-    // A registration is checked in if it has any checkins records
-    const checkins = registrations?.filter((r: any) => r.checkins && r.checkins.length > 0).length || 0;
+    // A registration is checked in if it has any checkins records (and not undone)
+    const checkins = registrations?.filter((r: any) => {
+      const hasCheckin = r.checkins && r.checkins.length > 0;
+      const isNotUndone = hasCheckin && !r.checkins[0].undo_at;
+      console.log(`[Promoter Stats] Registration ${r.id}: hasCheckin=${hasCheckin}, isNotUndone=${isNotUndone}, checkins=`, r.checkins);
+      return hasCheckin && isNotUndone;
+    }).length || 0;
     const conversionRate = referrals > 0 ? (checkins / referrals) * 100 : 0;
 
     // Get overall event stats
