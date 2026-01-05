@@ -76,6 +76,30 @@ export async function POST(
             console.log("[Register API] Ref is not a valid user or promoter ID:", ref);
           }
         }
+      } else if (ref.startsWith("user_")) {
+        // User referral link - extract user ID
+        const userId = ref.substring(5); // Remove "user_" prefix
+        console.log("[Register API] Processing user ref:", userId);
+        
+        // Verify user exists
+        const { data: { user }, error: userError } = await serviceSupabase.auth.admin.getUserById(userId);
+        if (user && !userError) {
+          referredByUserId = userId;
+          console.log("[Register API] Set referredByUserId from user_ prefix:", referredByUserId);
+          
+          // Check if this user is also a promoter
+          const { data: userPromoter } = await serviceSupabase
+            .from("promoters")
+            .select("id")
+            .eq("created_by", userId)
+            .maybeSingle();
+          if (userPromoter) {
+            referralPromoterId = userPromoter.id;
+            console.log("[Register API] User is also a promoter:", referralPromoterId);
+          }
+        } else {
+          console.warn("[Register API] User not found for ref:", ref);
+        }
       } else if (ref.startsWith("org_")) {
         // Organizer share link - look up organizer and find their promoter profile
         const organizerId = ref.substring(4); // Remove "org_" prefix

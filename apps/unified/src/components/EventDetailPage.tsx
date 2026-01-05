@@ -347,10 +347,27 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   // Referral state (for promoters and organizers)
   const [promoterId, setPromoterId] = useState<string | null>(null);
   const [organizerId, setOrganizerId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedReferral, setCopiedReferral] = useState(false);
+
+  // Load current user ID for referral attribution
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserId(user.id);
+        }
+      } catch (error) {
+        console.error("[EventDetailPage] Error loading current user:", error);
+      }
+    };
+    loadCurrentUser();
+  }, []);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -501,8 +518,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     if (config.role === "promoter" && promoterId) {
       return promoterId;
     }
-    if (config.role === "organizer" && organizerId) {
-      return `org_${organizerId}`;
+    // For organizers, use the logged-in user's ID (not the organizer account)
+    // This ensures team members get their own attribution
+    if (config.role === "organizer" && currentUserId) {
+      return `user_${currentUserId}`;
     }
     return null;
   };
@@ -1573,7 +1592,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {event.is_featured ? "Featured" : "Feature"}
             </Button>
           )}
-          {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
+          {((config.role === "promoter" && promoterId) || (config.role === "organizer" && currentUserId)) && (
             <>
               <Button variant="secondary" onClick={copyReferralLink}>
                 {copiedReferral ? (
@@ -1966,7 +1985,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </div>
 
                   {/* Your Tracking Link (for promoters and organizers) */}
-                  {((config.role === "promoter" && promoterId) || (config.role === "organizer" && organizerId)) && (
+                  {((config.role === "promoter" && promoterId) || (config.role === "organizer" && currentUserId)) && (
                     <div className="space-y-3 p-3 bg-accent-secondary/5 rounded-lg border border-accent-secondary/20">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-primary">

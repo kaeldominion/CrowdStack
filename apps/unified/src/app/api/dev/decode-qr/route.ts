@@ -317,6 +317,38 @@ async function parseReferrer(ref: string, supabase: any) {
   // Check for UUID format (could be a direct promoter ID)
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   
+  // Handle user_ prefix (user referrals - for organizers/team members)
+  if (ref.startsWith("user_")) {
+    const userId = ref.substring(5); // Remove "user_" prefix
+    
+    // Get user from auth
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(userId);
+    
+    if (user && !userError) {
+      // Check if user has a promoter profile
+      const { data: promoter } = await supabase
+        .from("promoters")
+        .select("id, name")
+        .eq("created_by", userId)
+        .maybeSingle();
+      
+      // Check if user has an attendee record
+      const { data: attendee } = await supabase
+        .from("attendees")
+        .select("id, name, email")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      return {
+        type: "user" as const,
+        id: userId,
+        name: promoter?.name || attendee?.name || user.user_metadata?.name || user.email?.split("@")[0] || "Unknown User",
+      };
+    }
+    
+    return { type: "user" as const, id: userId, name: undefined };
+  }
+  
   // Handle org_ prefix (organizer shares)
   if (ref.startsWith("org_")) {
     const organizerId = ref.substring(4);
