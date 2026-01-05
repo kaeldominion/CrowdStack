@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Card, Badge, InlineSpinner } from "@crowdstack/ui";
 import { Camera, Copy, Check, RefreshCw, QrCode, User, Calendar, MapPin, Users, Ticket, AlertCircle, CameraOff } from "lucide-react";
-import jsQR from "jsqr";
 
 interface QRData {
   type: "pass" | "registration_url" | "unknown";
@@ -56,30 +55,13 @@ export default function QRTestPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanningRef = useRef(false);
-  const animationRef = useRef<number | null>(null);
+  const scannerRef = useRef<any>(null);
 
   // Cleanup camera on unmount
   useEffect(() => {
     return () => {
       stopScanning();
     };
-  }, []);
-
-  const stopScanning = useCallback(() => {
-    scanningRef.current = false;
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setScanning(false);
   }, []);
 
   const handleQRCode = async (code: string) => {
@@ -107,67 +89,54 @@ export default function QRTestPage() {
     }
   };
 
-  const scanFrame = useCallback(() => {
-    if (!scanningRef.current || !videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-
-    if (video.readyState === video.HAVE_ENOUGH_DATA && context) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Use jsQR for reliable QR code detection
-      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
-      });
-      
-      if (code) {
-        handleQRCode(code.data);
-        return;
+  const stopScanning = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current = null;
+      } catch (e) {
+        console.log("Error stopping scanner:", e);
       }
     }
-    
-    // Continue scanning
-    if (scanningRef.current) {
-      animationRef.current = requestAnimationFrame(scanFrame);
-    }
+    setScanning(false);
   }, []);
 
+  // QR Scanner using html5-qrcode (same as door scanner)
   const startScanning = async () => {
     setCameraError(null);
+    setScanning(true);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-      streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      
-      scanningRef.current = true;
-      setScanning(true);
-      
-      // Wait a bit for video to initialize then start scanning
-      setTimeout(() => {
-        if (scanningRef.current) {
-          scanFrame();
-        }
-      }, 500);
-    } catch (error: any) {
-      console.error("Failed to start camera:", error);
-      setCameraError(error.message || "Failed to access camera");
-      alert("Failed to access camera. Please ensure camera permissions are granted.");
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode("qr-test-reader");
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          scanner.pause(true);
+          handleQRCode(decodedText);
+          setTimeout(() => {
+            if (scannerRef.current) {
+              try {
+                scanner.resume();
+              } catch (e) {
+                console.log("Could not resume scanner");
+              }
+            }
+          }, 2000);
+        },
+        () => {}
+      );
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      setCameraError(err.message || "Failed to access camera");
+      setScanning(false);
     }
   };
 
@@ -224,36 +193,28 @@ export default function QRTestPage() {
             )}
           </div>
 
+          {/* QR Reader container (html5-qrcode renders here) */}
+          <div 
+            id="qr-test-reader" 
+            className="rounded-xl overflow-hidden bg-raised border border-border-subtle mb-4"
+            style={{ 
+              minHeight: scanning ? "300px" : "0",
+              display: scanning ? "block" : "none",
+            }}
+          />
+
           {cameraError && (
-            <div className="p-4 bg-danger/10 border border-danger/30 rounded-lg flex items-center gap-3">
+            <div className="p-4 bg-danger/10 border border-danger/30 rounded-lg flex items-center gap-3 mb-4">
               <CameraOff className="h-5 w-5 text-danger" />
               <div>
                 <p className="text-sm font-medium text-danger">Camera Error</p>
                 <p className="text-xs text-secondary">{cameraError}</p>
+                <p className="text-xs text-secondary mt-1">
+                  Make sure camera permissions are granted and you're using HTTPS.
+                </p>
               </div>
             </div>
           )}
-
-          {scanning && (
-            <div className="relative aspect-video max-w-md mx-auto rounded-lg overflow-hidden bg-black">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                muted
-                autoPlay
-              />
-              <div className="absolute inset-0 border-2 border-accent-secondary/50 rounded-lg pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-accent-secondary rounded-lg animate-pulse" />
-              </div>
-              <div className="absolute bottom-2 left-2 right-2 text-center">
-                <span className="px-2 py-1 bg-black/70 rounded text-xs text-white">
-                  Point camera at QR code
-                </span>
-              </div>
-            </div>
-          )}
-          <canvas ref={canvasRef} className="hidden" />
 
           <div className="text-center text-xs text-secondary">
             Or paste the QR code content below
