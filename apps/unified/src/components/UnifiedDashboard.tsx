@@ -742,8 +742,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             Event Management
           </h2>
 
-          {/* Pending Promoter Requests Alert */}
-          {pendingPromoterRequests > 0 && (
+          {/* Pending Promoter Requests Alert - DISABLED: Promoter request feature is currently disabled */}
+          {false && pendingPromoterRequests > 0 && (
             <Link href="/app/organizer/promoter-requests">
               <div className="flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/15 transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">

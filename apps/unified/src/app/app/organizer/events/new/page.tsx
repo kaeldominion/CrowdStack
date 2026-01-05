@@ -546,9 +546,12 @@ export default function NewEventPage() {
                 }
                 className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
               >
-                <option value="public">Public - All promoters can request to promote</option>
                 <option value="invite_only">Invite Only - Only invited promoters can promote</option>
+                <option value="public">Public - Promoters can be added manually (request feature disabled)</option>
               </select>
+              <p className="mt-1 text-xs text-secondary">
+                Promoters must be added manually with payment terms defined. Request feature is currently disabled.
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -563,47 +566,6 @@ export default function NewEventPage() {
                 Promote as yourself (add yourself as a promoter)
               </label>
             </div>
-
-            {formData.promoter_access_type === "invite_only" && (
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Invite Promoters
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-md p-3">
-                  {promoters.map((promoter) => (
-                    <div key={promoter.id} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`promoter-${promoter.id}`}
-                        checked={formData.selected_promoters.includes(promoter.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              selected_promoters: [...formData.selected_promoters, promoter.id],
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              selected_promoters: formData.selected_promoters.filter(
-                                (id) => id !== promoter.id
-                              ),
-                            });
-                          }
-                        }}
-                        className="rounded border-border"
-                      />
-                      <label
-                        htmlFor={`promoter-${promoter.id}`}
-                        className="text-sm text-primary"
-                      >
-                        {promoter.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Photo Email Notice Setting */}
