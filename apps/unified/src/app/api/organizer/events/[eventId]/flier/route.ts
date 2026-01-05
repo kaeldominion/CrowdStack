@@ -122,14 +122,32 @@ export async function POST(
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const storagePath = `events/${eventId}/flier/${fileName}`;
 
-    // Upload to storage (using event-photos bucket for now, or create event-assets bucket)
-    const fileBuffer = await file.arrayBuffer();
-    const publicUrl = await uploadToStorage(
-      "event-photos", // Using existing bucket, could create event-assets bucket later
+    console.log("[Flier Upload] Uploading file:", {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
       storagePath,
-      Buffer.from(fileBuffer),
-      file.type
-    );
+      eventId,
+    });
+
+    // Upload to storage (using event-photos bucket for now, or create event-assets bucket)
+    let publicUrl: string;
+    try {
+      const fileBuffer = await file.arrayBuffer();
+      publicUrl = await uploadToStorage(
+        "event-photos", // Using existing bucket, could create event-assets bucket later
+        storagePath,
+        Buffer.from(fileBuffer),
+        file.type
+      );
+      console.log("[Flier Upload] Upload successful:", publicUrl);
+    } catch (uploadError: any) {
+      console.error("[Flier Upload] Storage upload failed:", uploadError);
+      return NextResponse.json(
+        { error: `Storage upload failed: ${uploadError.message}` },
+        { status: 500 }
+      );
+    }
 
     // Delete old flier if exists
     if (event.flier_url) {
