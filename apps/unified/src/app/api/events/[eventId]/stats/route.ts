@@ -135,20 +135,27 @@ export async function GET(
         // Get registrations for this promoter
         const { data: regs } = await serviceSupabase
           .from("registrations")
-          .select(`
-            id,
-            checkins(id, undo_at)
-          `)
+          .select("id")
           .eq("event_id", params.eventId)
           .eq("referral_promoter_id", promoterId);
 
-        const checkins = (regs || []).flatMap((r: any) => r.checkins || []).filter((c: any) => !c.undo_at);
+        // Get checkins directly from checkins table
+        let checkinsCount = 0;
+        if (regs && regs.length > 0) {
+          const regIds = regs.map(r => r.id);
+          const { count } = await serviceSupabase
+            .from("checkins")
+            .select("*", { count: "exact", head: true })
+            .in("registration_id", regIds)
+            .is("undo_at", null);
+          checkinsCount = count || 0;
+        }
         
         return {
           promoter_id: promoterId,
           promoter_name: ep.promoter?.name,
           registrations: regs?.length || 0,
-          check_ins: checkins.length,
+          check_ins: checkinsCount,
         };
       })
     );

@@ -42,18 +42,33 @@ export async function GET() {
     const { data: registrations } = await serviceSupabase
       .from("registrations")
       .select(`
+        id,
         attendee_id,
         event_id,
-        registered_at,
-        checkins(id)
+        registered_at
       `)
       .in("event_id", eventIds);
 
     const attendeeIds = Array.from(new Set(registrations?.map((r) => r.attendee_id) || []));
     const totalAttendees = attendeeIds.length;
 
-    // Count total check-ins
-    const totalCheckins = registrations?.reduce((sum, r) => sum + (r.checkins?.length || 0), 0) || 0;
+    // Get checkins directly from checkins table
+    const regIds = registrations?.map(r => r.id) || [];
+    let totalCheckins = 0;
+    const checkinsByRegistration = new Map<string, number>();
+    
+    if (regIds.length > 0) {
+      const { data: checkins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", regIds)
+        .is("undo_at", null);
+      
+      totalCheckins = checkins?.length || 0;
+      checkins?.forEach(c => {
+        checkinsByRegistration.set(c.registration_id, (checkinsByRegistration.get(c.registration_id) || 0) + 1);
+      });
+    }
 
     // New attendees this month
     const startOfMonth = new Date();
@@ -83,7 +98,8 @@ export async function GET() {
     // Get top 5 attendees by check-in count
     const attendeeCheckins = new Map<string, number>();
     registrations?.forEach((r) => {
-      attendeeCheckins.set(r.attendee_id, (attendeeCheckins.get(r.attendee_id) || 0) + (r.checkins?.length || 0));
+      const regCheckins = checkinsByRegistration.get(r.id) || 0;
+      attendeeCheckins.set(r.attendee_id, (attendeeCheckins.get(r.attendee_id) || 0) + regCheckins);
     });
 
     const topAttendeeIds = Array.from(attendeeCheckins.entries())
