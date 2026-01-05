@@ -4035,8 +4035,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         loading={removingVideo}
       />
 
-      {/* Promoter QR Code Modal */}
-      {showQRModal && config.role === "promoter" && event && (
+      {/* Referral QR Code Modal (for promoters and organizers) */}
+      {showQRModal && (config.role === "promoter" || config.role === "organizer") && event && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <Surface variant="void" className="max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between">

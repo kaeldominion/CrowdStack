@@ -76,9 +76,40 @@ export async function POST(
             console.log("[Register API] Ref is not a valid user or promoter ID:", ref);
           }
         }
+      } else if (ref.startsWith("org_")) {
+        // Organizer share link - look up organizer and find their promoter profile
+        const organizerId = ref.substring(4); // Remove "org_" prefix
+        console.log("[Register API] Processing organizer ref:", organizerId);
+        
+        const { data: organizer } = await serviceSupabase
+          .from("organizers")
+          .select("id, created_by")
+          .eq("id", organizerId)
+          .single();
+        
+        if (organizer?.created_by) {
+          // Set user referral to the organizer's user
+          referredByUserId = organizer.created_by;
+          
+          // Find organizer's promoter profile
+          const { data: organizerPromoter } = await serviceSupabase
+            .from("promoters")
+            .select("id")
+            .eq("created_by", organizer.created_by)
+            .maybeSingle();
+          
+          if (organizerPromoter) {
+            referralPromoterId = organizerPromoter.id;
+            console.log("[Register API] Found organizer's promoter profile:", referralPromoterId);
+          } else {
+            console.log("[Register API] Organizer has no promoter profile, using user referral only");
+          }
+        } else {
+          console.warn("[Register API] Organizer not found for ref:", ref);
+        }
       } else if (ref.startsWith("venue_") || ref.startsWith("organizer_")) {
-        // Ignore venue/organizer refs - they're not promoter IDs
-        console.log("[Register API] Ignoring non-promoter ref:", ref);
+        // Ignore these legacy refs - they're not promoter IDs
+        console.log("[Register API] Ignoring legacy non-promoter ref:", ref);
       } else if (ref.startsWith("INV-")) {
         // This is an invite code - look up the associated promoter
         console.log("[Register API] Looking up invite code:", ref);
