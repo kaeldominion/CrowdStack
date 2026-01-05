@@ -2,6 +2,12 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@crowdstack/ui", "@crowdstack/shared", "framer-motion"],
+  // Increase body size limit for file uploads (fliers, photos, videos)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   images: {
     remotePatterns: [
       {

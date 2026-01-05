@@ -4,6 +4,10 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { uploadToStorage } from "@crowdstack/shared/storage/upload";
 
+// Next.js App Router: Configure route segment for larger file uploads
+export const maxDuration = 60; // 60 seconds timeout for upload
+export const dynamic = "force-dynamic";
+
 /**
  * POST /api/organizer/events/[eventId]/flier
  * Upload event flier/poster

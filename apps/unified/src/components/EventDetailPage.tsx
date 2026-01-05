@@ -3467,8 +3467,25 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     body: formData,
                   });
                   if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || "Failed to upload flier");
+                    // Handle non-JSON error responses (e.g., "Request Entity Too Large")
+                    let errorMessage = "Failed to upload flier";
+                    try {
+                      const error = await response.json();
+                      errorMessage = error.error || errorMessage;
+                    } catch {
+                      // Response is not JSON, try to get text
+                      try {
+                        const text = await response.text();
+                        if (text.includes("Request Entity Too Large") || text.includes("413")) {
+                          errorMessage = "File is too large. Please use an image under 10MB.";
+                        } else if (text) {
+                          errorMessage = text.substring(0, 100);
+                        }
+                      } catch {
+                        // Ignore text parsing errors
+                      }
+                    }
+                    throw new Error(errorMessage);
                   }
                   const data = await response.json();
                   await loadEventData(false); // Refresh event data without resetting form
@@ -3480,8 +3497,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     method: "DELETE",
                   });
                   if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Failed to remove flier");
+                    let errorMessage = "Failed to remove flier";
+                    try {
+                      const errorData = await response.json();
+                      errorMessage = errorData.error || errorMessage;
+                    } catch {
+                      // Response is not JSON
+                    }
+                    throw new Error(errorMessage);
                   }
                   await loadEventData(false); // Refresh event data without resetting form
                 }}
