@@ -2371,10 +2371,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                           </TableCell>
                           <TableCell>
                             {attendee.checked_in ? (
-                              <Badge variant="success" className="flex items-center gap-1 w-fit">
-                                <CheckCircle2 className="h-3 w-3" />
-                                Checked In
-                              </Badge>
+                              <div className="flex flex-col gap-0.5">
+                                <Badge variant="success" className="flex items-center gap-1 w-fit">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Checked In
+                                </Badge>
+                                {attendee.check_in_time && (
+                                  <span className="text-xs text-secondary">
+                                    {new Date(attendee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <Badge variant="default" className="flex items-center gap-1 w-fit">
                                 <Clock className="h-3 w-3" />
