@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -111,6 +111,12 @@ export default function AdminDashboardPage() {
   ];
 
   const adminTools = [
+    {
+      name: "QR Code Test Tool",
+      href: "/dev/qr-test",
+      description: "Scan or paste QR codes to verify registration attribution",
+      icon: <ScanLine className="h-6 w-6" />,
+    },
     {
       name: "Merge Duplicate Attendees",
       href: "/admin/attendees/merge",
