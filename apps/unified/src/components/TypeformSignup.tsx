@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo, InlineSpinner } from "@crowdstack/ui";
-import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users, ChevronDown, Settings, LogOut, AlertCircle, Folder } from "lucide-react";
+import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users, ChevronDown, Settings, LogOut, AlertCircle, Folder, HelpCircle } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
@@ -986,135 +986,128 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       if (magicLinkSent && !emailVerified) {
         // OTP-only flow - always show code entry (no magic link click option)
         return (
-          <div className="space-y-6">
-            <div className="text-center space-y-4 py-4">
-              <div className="mx-auto w-14 h-14 bg-accent-secondary/20 rounded-full flex items-center justify-center">
-                <Mail className="h-7 w-7 text-accent-secondary" />
+          <div className="space-y-5">
+            {/* Email Icon & Confirmation */}
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-12 h-12 bg-accent-secondary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <Mail className="h-6 w-6 text-accent-secondary" />
               </div>
-              <div>
-                <h3 className="font-sans text-lg font-bold text-primary mb-2">Enter verification code</h3>
-                    <p className="text-secondary text-sm">
-                  We sent a 6-digit code to <span className="font-medium text-primary">{formData.email}</span>
-                    </p>
-                <p className="text-muted text-xs mt-1">
+              <div className="text-left">
+                <p className="text-secondary text-sm">
+                  We sent a code to <span className="font-medium text-primary">{formData.email}</span>
+                </p>
+                <p className="text-muted text-xs">
                   Check your email and enter the code below
-                    </p>
+                </p>
               </div>
+            </div>
               
-              {magicLinkError && (
-                <div className="bg-accent-warning/10 border border-accent-warning/20 rounded-xl p-3">
-                  <p className="text-accent-warning text-xs text-center">
-                    {magicLinkError.includes("rate limit") || magicLinkError.includes("too many")
-                      ? "Email rate limit reached. Please wait a moment before trying again."
-                      : "There was an issue. Please try again or use password."}
-                  </p>
+            {magicLinkError && (
+              <div className="bg-accent-warning/10 border border-accent-warning/20 rounded-xl p-3">
+                <p className="text-accent-warning text-xs text-center">
+                  {magicLinkError.includes("rate limit") || magicLinkError.includes("too many")
+                    ? "Email rate limit reached. Please wait a moment before trying again."
+                    : "There was an issue. Please try again or use password."}
+                </p>
+              </div>
+            )}
+              
+            {/* OTP Help Notice */}
+            <div className="bg-accent-warning/10 border-2 border-accent-warning/30 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <AlertCircle className="h-5 w-5 text-accent-warning" />
                 </div>
+                <div className="flex-1 space-y-2">
+                  <p className="text-accent-warning text-sm font-semibold">
+                    Can't find your code?
+                  </p>
+                  <div className="flex items-start gap-2">
+                    <Folder className="h-4 w-4 text-accent-secondary mt-0.5 flex-shrink-0" />
+                    <p className="text-secondary text-xs leading-relaxed">
+                      Check your <strong className="text-primary">junk or spam folder</strong> - verification emails often end up there, especially for first-time users.
+                    </p>
+                  </div>
+                  <Link 
+                    href="/faq" 
+                    className="text-xs text-accent-secondary hover:text-accent-primary underline inline-flex items-center gap-1"
+                  >
+                    Need more help? Visit our FAQ →
+                  </Link>
+                </div>
+              </div>
+            </div>
+              
+            {/* OTP Input */}
+            <div className="space-y-4">
+              <Input
+                type="text"
+                value={otpCode}
+                onChange={(e) => {
+                  // Only allow digits and limit to 6 characters
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 8);
+                  setOtpCode(value);
+                  if (otpError) setOtpError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && otpCode.length >= 8) {
+                    e.preventDefault();
+                    handleVerifyOtp();
+                  }
+                }}
+                placeholder="Enter code"
+                className="text-xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-accent-primary w-full"
+                autoFocus
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={8}
+              />
+              
+              {otpError && (
+                <p className="text-accent-error text-sm text-center">{otpError}</p>
               )}
               
-              {/* OTP Help Notice */}
-              <div className="bg-accent-warning/10 border-2 border-accent-warning/30 rounded-xl p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <AlertCircle className="h-5 w-5 text-accent-warning" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-accent-warning text-sm font-semibold mb-1.5">
-                      Can't find your code?
-                    </p>
-                    <div className="flex items-start gap-2 mb-2">
-                      <Folder className="h-4 w-4 text-accent-secondary mt-0.5 flex-shrink-0" />
-                      <p className="text-secondary text-xs leading-relaxed">
-                        Check your <strong className="text-primary">junk or spam folder</strong> - verification emails often end up there, especially for first-time users.
-                      </p>
-                    </div>
-                    <Link 
-                      href="/faq" 
-                      className="text-xs text-accent-secondary hover:text-accent-primary underline inline-flex items-center gap-1"
-                    >
-                      Need more help? Visit our FAQ →
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <Button
+                variant="primary"
+                onClick={handleVerifyOtp}
+                disabled={verifyingOtp || otpCode.length < 8}
+                loading={verifyingOtp}
+                className="w-full"
+              >
+                {verifyingOtp ? "Verifying..." : "Verify Code"}
+              </Button>
+            </div>
               
-              {/* OTP Input */}
-              <div className="pt-4 space-y-4">
-                <Input
-                  type="text"
-                  value={otpCode}
-                  onChange={(e) => {
-                    // Only allow digits and limit to 6 characters
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    setOtpCode(value);
-                    if (otpError) setOtpError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && otpCode.length >= 8) {
-                      e.preventDefault();
-                      handleVerifyOtp();
-                    }
-                  }}
-                  placeholder="Enter code"
-                  className="text-xl py-6 text-center tracking-[0.3em] font-mono border-2 focus:border-accent-primary w-full"
-                  autoFocus
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={8}
-                />
-                
-                {otpError && (
-                  <p className="text-accent-error text-sm text-center">{otpError}</p>
-                )}
-                
-                <Button
-                  variant="primary"
-                  onClick={handleVerifyOtp}
-                  disabled={verifyingOtp || otpCode.length < 8}
-                  loading={verifyingOtp}
-                  className="w-full"
-                >
-                  {verifyingOtp ? "Verifying..." : "Verify Code"}
-                </Button>
-              </div>
-              
-              <div className="pt-2 space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOtpCode("");
-                    setOtpError(null);
-                    handleSendMagicLink();
-                  }}
-                  disabled={sendingMagicLink}
-                  className="text-sm text-muted hover:text-secondary transition-colors"
-                >
-                  {sendingMagicLink ? "Sending..." : "Didn't receive it? Send new code"}
-                </button>
-                <br />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined" && formData.email) {
-                      sessionStorage.setItem("pending_registration_email", formData.email);
-                    }
-                    setPasswordFallbackFromMagicLink(true);
-                    setShowPasswordFallback(true);
-                    setMagicLinkSent(false);
-                    setShowOtpInput(false);
-                    setMagicLinkError(null);
-                  }}
-                  className="text-sm text-muted hover:text-secondary transition-colors"
-                >
-                  Use password instead
-                </button>
-                <br />
-                <Link
-                  href="/faq"
-                  className="text-xs text-muted hover:text-accent-secondary transition-colors block text-center"
-                >
-                  Need more help? Visit FAQ →
-                </Link>
-              </div>
+            {/* Action Links */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpCode("");
+                  setOtpError(null);
+                  handleSendMagicLink();
+                }}
+                disabled={sendingMagicLink}
+                className="text-sm text-muted hover:text-secondary transition-colors w-full text-center"
+              >
+                {sendingMagicLink ? "Sending..." : "Didn't receive it? Send new code"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined" && formData.email) {
+                    sessionStorage.setItem("pending_registration_email", formData.email);
+                  }
+                  setPasswordFallbackFromMagicLink(true);
+                  setShowPasswordFallback(true);
+                  setMagicLinkSent(false);
+                  setShowOtpInput(false);
+                  setMagicLinkError(null);
+                }}
+                className="text-sm text-muted hover:text-secondary transition-colors w-full text-center"
+              >
+                Use password instead
+              </button>
             </div>
           </div>
         );
@@ -1326,6 +1319,10 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
 
   // Use mobile-optimized label on small screens
   const getLabel = () => {
+    // If showing OTP input, display OTP title instead of email step title
+    if (magicLinkSent && !emailVerified) {
+      return "Enter verification code";
+    }
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
     const stepId = visibleSteps[currentStep];
     const step = steps.find(s => s.id === stepId);
@@ -1387,6 +1384,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
                 >
                   Browse
+                </Link>
+                {/* FAQ link */}
+                <Link 
+                  href="/faq" 
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
+                >
+                  FAQ
                 </Link>
                 {/* Login button */}
                 <Link 
