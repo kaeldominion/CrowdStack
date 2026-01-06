@@ -19,6 +19,7 @@ import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { DJCard } from "@/components/dj/DJCard";
 import { XpProgressBar, type XpProgressData } from "@/components/XpProgressBar";
+import { ActivityLog } from "@/components/ActivityLog";
 
 interface Registration {
   id: string;
@@ -54,7 +55,7 @@ interface UserProfile {
 
 
 
-type TabId = "events" | "djs" | "venues" | "history";
+type TabId = "events" | "djs" | "venues" | "history" | "activity";
 type MobileEventsTab = "upcoming" | "past" | "djs" | "venues";
 
 export default function MePage() {
@@ -663,6 +664,12 @@ export default function MePage() {
               >
                 History
               </button>
+              <button 
+                onClick={() => setActiveTab("activity")}
+                className={`tab-label ${activeTab === "activity" ? "tab-label-active" : "tab-label-inactive"}`}
+              >
+                Activity
+              </button>
             </nav>
 
             {/* MY EVENTS Tab */}
@@ -802,7 +809,7 @@ export default function MePage() {
             {/* HISTORY Tab */}
             {activeTab === "history" && (
               <section>
-                <h2 className="section-header">All Activity</h2>
+                <h2 className="section-header">Event History</h2>
                 {pastEvents.length > 0 ? (
                   <div className="space-y-3">
                     {pastEvents.map((reg) => (
@@ -830,6 +837,17 @@ export default function MePage() {
                     <p className="text-sm text-secondary">Your event history will appear here.</p>
                   </Card>
                 )}
+              </section>
+            )}
+
+            {/* ACTIVITY Tab */}
+            {activeTab === "activity" && (
+              <section>
+                <ActivityLog
+                  title="Your Activity"
+                  showFilters={true}
+                  limit={50}
+                />
               </section>
             )}
             </div>
