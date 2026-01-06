@@ -28,6 +28,7 @@ import {
   VipBadge,
 } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+import { ActivityLog } from "@/components/ActivityLog";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -1435,6 +1436,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   // Email Stats tab - show for organizers, venues, and admins
   if (config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "email-stats", label: "Email Stats" });
+  }
+  // Activity tab - show for organizers, venues, and admins
+  if (config.role === "organizer" || config.role === "venue" || config.role === "admin" || config.canViewStats) {
+    tabs.push({ value: "activity", label: "Activity" });
   }
   // Settings tab - uses dynamic permissions
   if (effectivePermissions.canViewSettings) {
@@ -2983,6 +2988,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 )}
               </Card>
           </TabsContent>
+
+          {(config.role === "organizer" || config.role === "venue" || config.role === "admin" || config.canViewStats) && (
+            <TabsContent value="activity" className="space-y-4">
+              <ActivityLog
+                title="Event Activity"
+                entityType="event"
+                entityId={eventId}
+                showFilters={true}
+                limit={50}
+              />
+            </TabsContent>
+          )}
 
           {(effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") && (
             <TabsContent value="lineup" className="space-y-4">

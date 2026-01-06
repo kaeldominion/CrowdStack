@@ -5,6 +5,7 @@ import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 import type { RegisterEventRequest } from "@crowdstack/shared";
 import { trackEventRegistration } from "@/lib/analytics/server";
+import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
 export async function POST(
   request: NextRequest,
@@ -463,6 +464,22 @@ export async function POST(
       id: registration.id,
       referred_by_user_id: registration.referred_by_user_id,
     });
+
+    // Log activity
+    if (user) {
+      await logActivity(
+        user.id,
+        "registration_create",
+        "registration",
+        registration.id,
+        {
+          event_id: event.id,
+          event_name: event.name,
+          referred_by_user_id: referredByUserId,
+          referral_promoter_id: referralPromoterId,
+        }
+      );
+    }
 
     // Update referral_clicks to mark as converted if we have a matching click
     if (referredByUserId) {

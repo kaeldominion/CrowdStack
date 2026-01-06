@@ -5,6 +5,7 @@ import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { cookies } from "next/headers";
 import { trackCheckIn } from "@/lib/analytics/server";
 import { sendBonusProgressNotification } from "@crowdstack/shared/email/bonus-notifications";
+import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
 /**
  * POST /api/events/[eventId]/checkin
@@ -232,6 +233,28 @@ export async function POST(
     }
 
     console.log(`[Check-in API] ✅ Successfully checked in ${attendeeName} (checkin ID: ${checkin.id})`);
+
+    // Log activity
+    const { data: attendeeRecord } = await serviceSupabase
+      .from("attendees")
+      .select("user_id")
+      .eq("id", registration.attendee_id)
+      .single();
+    
+    if (attendeeRecord?.user_id) {
+      await logActivity(
+        attendeeRecord.user_id,
+        "checkin",
+        "checkin",
+        checkin.id,
+        {
+          event_id: eventId,
+          registration_id: registrationId,
+          checked_in_by: userId,
+          attendee_name: attendeeName,
+        }
+      );
+    }
 
     // Award XP for check-in using new schema (user_id)
     try {

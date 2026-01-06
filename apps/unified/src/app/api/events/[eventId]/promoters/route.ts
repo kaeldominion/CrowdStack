@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { assignUserRole } from "@crowdstack/shared/auth/roles";
+import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
 // GET - List all promoters for an event
 export async function GET(
@@ -420,6 +421,20 @@ export async function POST(
         { status: 500 }
       );
     }
+
+    // Log activity
+    await logActivity(
+      userId,
+      "promoter_assign",
+      "promoter",
+      promoter.id,
+      {
+        event_id: eventId,
+        promoter_name: promoter.name,
+        commission_type: finalCommissionType,
+        assigned_by: finalAssignedBy,
+      }
+    );
 
     // Send event assignment email (non-blocking)
     try {

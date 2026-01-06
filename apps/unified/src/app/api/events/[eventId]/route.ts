@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
+import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
 export async function GET(
   request: NextRequest,
@@ -206,6 +207,19 @@ export async function PATCH(
     }
 
     console.log("[EventUpdate] Updated event start_time:", updatedEvent?.start_time);
+    
+    // Log activity
+    await logActivity(
+      userId,
+      "event_edit",
+      "event",
+      params.eventId,
+      {
+        changes: Object.keys(body),
+        event_name: updatedEvent?.name,
+      }
+    );
+    
     return NextResponse.json({ event: updatedEvent });
   } catch (error: any) {
     console.error("[EventUpdate] Error:", error);

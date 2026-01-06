@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
 // Helper to check if profile is complete
 function isProfileComplete(attendee: any): boolean {
