@@ -14,8 +14,8 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.attendees a ON a.user_id = u.id
 LEFT JOIN public.promoters p ON (p.user_id = u.id OR p.created_by = u.id)
-WHERE u.email = 'USER_EMAIL_HERE'  -- ⬅️ CHANGE THIS
-   OR u.id::text = 'USER_EMAIL_HERE';  -- ⬅️ OR USE UUID HERE
+WHERE u.email = 'ayu.pp03@gmail.com'  -- ⬅️ CHANGE THIS
+   OR u.id::text = 'ayu.pp03@gmail.com';  -- ⬅️ OR USE UUID HERE
 
 -- Now fix it if attendee name exists and promoter name matches email
 UPDATE public.promoters p
@@ -23,7 +23,7 @@ SET name = a.name
 FROM auth.users u
 INNER JOIN public.attendees a ON a.user_id = u.id
 WHERE (p.user_id = u.id OR p.created_by = u.id)
-  AND u.email = 'USER_EMAIL_HERE'  -- ⬅️ CHANGE THIS
+  AND u.email = 'ayu.pp03@gmail.com'  -- ⬅️ CHANGE THIS
   AND a.name IS NOT NULL
   AND a.name != ''
   AND (
@@ -49,6 +49,6 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.attendees a ON a.user_id = u.id
 LEFT JOIN public.promoters p ON (p.user_id = u.id OR p.created_by = u.id)
-WHERE u.email = 'USER_EMAIL_HERE'  -- ⬅️ CHANGE THIS
-   OR u.id::text = 'USER_EMAIL_HERE';  -- ⬅️ OR USE UUID HERE
+WHERE u.email = 'ayu.pp03@gmail.com'  -- ⬅️ CHANGE THIS
+   OR u.id::text = 'ayu.pp03@gmail.com';  -- ⬅️ OR USE UUID HERE
 

@@ -518,8 +518,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     if (config.role === "promoter" && promoterId) {
       return promoterId;
     }
-    // For organizers, use the logged-in user's ID (not the organizer account)
-    // This ensures team members get their own attribution
+    // For organizers, ALWAYS use the logged-in user's ID (not the organizer owner)
+    // This ensures team members get their own attribution, and the organizer owner
+    // gets tracked as themselves (not as the organizer entity)
+    // The logged-in user might not be a promoter, which is fine - they own the organizer
+    // so they wouldn't earn commissions anyway unless specifically set as a promoter
     if (config.role === "organizer" && currentUserId) {
       return `user_${currentUserId}`;
     }
@@ -1390,10 +1393,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   // Use chart data from API, or generate empty array if not available
   const chartData = stats?.chart_data || [];
 
-  const eventUrl = event?.slug
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/e/${event.slug}`
-    : "";
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -2052,35 +2051,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             ? "Share to earn commissions when referrals attend" 
                             : "Track registrations from your personal shares"}
                         </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Public Event URL */}
-                  {eventUrl && (
-                    <div className="space-y-2">
-                      <div className="text-xs text-secondary">
-                        {(config.role === "promoter" || config.role === "organizer") ? "Direct Link (no tracking)" : "Public Event Page"}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-border overflow-hidden">
-                          <LinkIcon className="h-3 w-3 text-secondary flex-shrink-0" />
-                          <code className="text-xs text-primary truncate">{eventUrl}</code>
-                        </div>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => navigator.clipboard.writeText(eventUrl)}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => window.open(eventUrl, "_blank")}
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   )}
