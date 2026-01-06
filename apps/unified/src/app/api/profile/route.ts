@@ -146,6 +146,24 @@ export async function PATCH(request: NextRequest) {
         throw updateError;
       }
 
+      // Sync promoter name if user is a promoter and name was updated
+      // Note: The database trigger will also handle this, but we do it here too for immediate sync
+      if (name !== undefined && updated.name) {
+        const { data: promoter } = await serviceSupabase
+          .from("promoters")
+          .select("id")
+          .or(`user_id.eq.${user.id},created_by.eq.${user.id}`)
+          .maybeSingle();
+
+        if (promoter) {
+          // Update promoter name to match attendee name
+          await serviceSupabase
+            .from("promoters")
+            .update({ name: updated.name })
+            .eq("id", promoter.id);
+        }
+      }
+
       // Check if profile is now complete (and wasn't before)
       const isCompleteNow = isProfileComplete(updated);
       

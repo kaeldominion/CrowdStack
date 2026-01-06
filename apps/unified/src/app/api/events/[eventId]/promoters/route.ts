@@ -135,11 +135,11 @@ export async function POST(
 
     // If user_id is provided, create or find promoter profile for that user
     if (user_id) {
-      // Check if user already has a promoter profile
+      // Check if user already has a promoter profile (check both user_id and created_by for legacy support)
       const { data: existingPromoter } = await serviceSupabase
         .from("promoters")
-        .select("id, name, created_by")
-        .eq("created_by", user_id)
+        .select("id, name, created_by, user_id")
+        .or(`user_id.eq.${user_id},created_by.eq.${user_id}`)
         .maybeSingle();
 
       if (existingPromoter) {
@@ -176,9 +176,10 @@ export async function POST(
           .insert({
             name: promoterName,
             email: user.email || null,
+            user_id: user_id,
             created_by: user_id,
           })
-          .select("id, name, created_by")
+          .select("id, name, created_by, user_id")
           .single();
 
         if (createError || !newPromoter) {

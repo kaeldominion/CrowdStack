@@ -102,11 +102,11 @@ export async function POST(request: NextRequest) {
         .eq("role", "promoter");
 
       if (existingRoles && existingRoles.length > 0) {
-        // Check if promoter profile exists
+        // Check if promoter profile exists (check both user_id and created_by for legacy support)
         const { data: existingPromoter } = await serviceSupabase
           .from("promoters")
           .select("*")
-          .eq("created_by", targetUserId)
+          .or(`user_id.eq.${targetUserId},created_by.eq.${targetUserId}`)
           .maybeSingle();
 
         if (existingPromoter) {
@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
       name,
       email: promoterEmail || null,
       phone: phone || null,
+      user_id: targetUserId || null,
       created_by: targetUserId || adminUser.id,
     };
 

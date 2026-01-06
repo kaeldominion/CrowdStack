@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Button, Card, PageLoader, Logo, Input } from "@crowdstack/ui";
-import { AlertCircle, Folder } from "lucide-react";
+import { AlertCircle, Folder, Mail } from "lucide-react";
 
 // Detect iOS Safari for OTP-first flow
 const isIOSSafari = () => {
@@ -801,23 +801,30 @@ function LoginContent() {
           {showOtpInput && magicLinkSent && (
             <div className="space-y-4">
               <div className="rounded-md p-4 bg-accent-secondary/10 border border-accent-secondary/20">
-                <p className="text-accent-secondary text-sm font-medium mb-1">Check your email</p>
-                <p className="text-secondary text-xs">
-                  We sent an 8-digit code to <span className="font-medium text-primary">{email}</span>
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-accent-secondary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-6 w-6 text-accent-secondary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-accent-secondary text-sm font-medium mb-1">Check your email</p>
+                    <p className="text-secondary text-xs">
+                      We sent an 8-digit code to <span className="font-medium text-primary">{email}</span>
+                    </p>
+                  </div>
+                </div>
               </div>
               
               {/* OTP Help Notice */}
-              <div className="rounded-md p-4 bg-accent-warning/10 border-2 border-accent-warning/30 space-y-3">
+              <div className="rounded-md p-4 bg-accent-warning/10 border-2 border-accent-warning/30">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">
                     <AlertCircle className="h-5 w-5 text-accent-warning" />
                   </div>
-                  <div className="flex-1">
-                    <p className="text-accent-warning text-sm font-semibold mb-1.5">
+                  <div className="flex-1 space-y-2">
+                    <p className="text-accent-warning text-sm font-semibold">
                       Can't find your code?
                     </p>
-                    <div className="flex items-start gap-2 mb-2">
+                    <div className="flex items-start gap-2">
                       <Folder className="h-4 w-4 text-accent-secondary mt-0.5 flex-shrink-0" />
                       <p className="text-secondary text-xs leading-relaxed">
                         Check your <strong className="text-primary">junk or spam folder</strong> - verification emails often end up there, especially for first-time users.
@@ -905,13 +912,6 @@ function LoginContent() {
                 >
                   Use password instead
                 </button>
-                <br />
-                <Link
-                  href="/faq"
-                  className="text-xs text-muted hover:text-accent-secondary transition-colors inline-block"
-                >
-                  Need more help? Visit FAQ →
-                </Link>
               </div>
             </div>
           )}

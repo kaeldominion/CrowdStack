@@ -201,12 +201,25 @@ export async function acceptInviteToken(
       if (existingPromoter) {
         promoterId = existingPromoter.id;
       } else {
+        // Get attendee name if available, otherwise use email username
+        const { data: attendee } = await supabase
+          .from("attendees")
+          .select("name")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const promoterName = attendee?.name || 
+                            inviteToken.metadata.invitee_name ||
+                            (inviteToken.metadata.invitee_email 
+                              ? inviteToken.metadata.invitee_email.split("@")[0] 
+                              : "Promoter");
+
         // Create a basic promoter profile
         const { data: newPromoter, error: createError } = await supabase
           .from("promoters")
           .insert({
             user_id: userId,
-            name: inviteToken.metadata.invitee_email || "Promoter",
+            name: promoterName,
             email: inviteToken.metadata.invitee_email || null,
             status: "active",
             created_by: inviteToken.created_by,
