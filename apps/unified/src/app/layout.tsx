@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ConditionalLayout } from "./conditional-layout";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CrispChat } from "@/components/CrispChat";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -51,6 +52,7 @@ export default function RootLayout({
             </Suspense>
             <ConditionalLayout>{children}</ConditionalLayout>
             <Analytics />
+            <SpeedInsights />
             <CrispChat />
           </ToastProvider>
         </QueryProvider>
