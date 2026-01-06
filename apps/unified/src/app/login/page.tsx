@@ -806,6 +806,22 @@ function LoginContent() {
                 </p>
               </div>
               
+              {/* OTP Help Notice */}
+              <div className="rounded-md p-4 bg-accent-secondary/10 border border-accent-secondary/20">
+                <p className="text-accent-secondary text-sm font-medium mb-2">
+                  <strong>Can't find your code?</strong>
+                </p>
+                <p className="text-secondary text-xs mb-2">
+                  Check your <strong>junk or spam folder</strong> - verification emails sometimes end up there, especially for first-time users.
+                </p>
+                <Link 
+                  href="/faq" 
+                  className="text-xs text-accent-secondary hover:text-accent-primary underline"
+                >
+                  Need more help? Visit our FAQ →
+                </Link>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
                   Verification Code
@@ -878,6 +894,13 @@ function LoginContent() {
                 >
                   Use password instead
                 </button>
+                <br />
+                <Link
+                  href="/faq"
+                  className="text-xs text-muted hover:text-accent-secondary transition-colors inline-block"
+                >
+                  Need more help? Visit FAQ →
+                </Link>
               </div>
             </div>
           )}

@@ -1008,8 +1008,24 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                       ? "Email rate limit reached. Please wait a moment before trying again."
                       : "There was an issue. Please try again or use password."}
                   </p>
-              </div>
+                </div>
               )}
+              
+              {/* OTP Help Notice */}
+              <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-xl p-4">
+                <p className="text-accent-secondary text-sm text-center mb-2">
+                  <strong>Can't find your code?</strong>
+                </p>
+                <p className="text-secondary text-xs text-center mb-2">
+                  Check your <strong>junk or spam folder</strong> - verification emails sometimes end up there, especially for first-time users.
+                </p>
+                <Link 
+                  href="/faq" 
+                  className="text-xs text-accent-secondary hover:text-accent-primary underline text-center block"
+                >
+                  Need more help? Visit our FAQ →
+                </Link>
+              </div>
               
               {/* OTP Input */}
               <div className="pt-4 space-y-4">
@@ -1081,6 +1097,13 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
                 >
                   Use password instead
                 </button>
+                <br />
+                <Link
+                  href="/faq"
+                  className="text-xs text-muted hover:text-accent-secondary transition-colors block text-center"
+                >
+                  Need more help? Visit FAQ →
+                </Link>
               </div>
             </div>
           </div>

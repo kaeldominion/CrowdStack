@@ -18,6 +18,7 @@ import {
   Building2,
   Mic2,
   Radio,
+  HelpCircle,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -40,6 +41,7 @@ interface ModeItem {
 // Public nav items (logged out users) - Login button is separate with gradient styling
 const PUBLIC_NAV_ITEMS: NavItem[] = [
   { href: "/browse", label: "Browse", icon: Compass },
+  { href: "/faq", label: "FAQ", icon: HelpCircle },
 ];
 
 // Additional nav item for landing page only
