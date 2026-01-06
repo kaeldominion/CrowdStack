@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input, Button, Logo, InlineSpinner } from "@crowdstack/ui";
-import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users, ChevronDown, Settings, LogOut } from "lucide-react";
+import { Calendar, Instagram, MessageCircle, User, ArrowRight, Check, Mail, MapPin, Users, ChevronDown, Settings, LogOut, AlertCircle, Folder } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
@@ -1012,19 +1012,29 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               )}
               
               {/* OTP Help Notice */}
-              <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-xl p-4">
-                <p className="text-accent-secondary text-sm text-center mb-2">
-                  <strong>Can't find your code?</strong>
-                </p>
-                <p className="text-secondary text-xs text-center mb-2">
-                  Check your <strong>junk or spam folder</strong> - verification emails sometimes end up there, especially for first-time users.
-                </p>
-                <Link 
-                  href="/faq" 
-                  className="text-xs text-accent-secondary hover:text-accent-primary underline text-center block"
-                >
-                  Need more help? Visit our FAQ →
-                </Link>
+              <div className="bg-accent-warning/10 border-2 border-accent-warning/30 rounded-xl p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <AlertCircle className="h-5 w-5 text-accent-warning" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-accent-warning text-sm font-semibold mb-1.5">
+                      Can't find your code?
+                    </p>
+                    <div className="flex items-start gap-2 mb-2">
+                      <Folder className="h-4 w-4 text-accent-secondary mt-0.5 flex-shrink-0" />
+                      <p className="text-secondary text-xs leading-relaxed">
+                        Check your <strong className="text-primary">junk or spam folder</strong> - verification emails often end up there, especially for first-time users.
+                      </p>
+                    </div>
+                    <Link 
+                      href="/faq" 
+                      className="text-xs text-accent-secondary hover:text-accent-primary underline inline-flex items-center gap-1"
+                    >
+                      Need more help? Visit our FAQ →
+                    </Link>
+                  </div>
+                </div>
               </div>
               
               {/* OTP Input */}
