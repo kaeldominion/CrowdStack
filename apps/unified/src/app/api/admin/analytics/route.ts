@@ -65,7 +65,7 @@ export async function GET() {
       // Total registrations
       serviceClient.from("registrations").select("*", { count: "exact", head: true }),
       // Total checkins
-      serviceClient.from("registrations").select("*", { count: "exact", head: true }).eq("checked_in", true),
+      serviceClient.from("checkins").select("*", { count: "exact", head: true }).is("undo_at", null),
       // Total venues
       serviceClient.from("venues").select("*", { count: "exact", head: true }),
       // Total organizers
