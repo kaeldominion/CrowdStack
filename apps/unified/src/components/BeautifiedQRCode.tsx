@@ -83,26 +83,14 @@ export function BeautifiedQRCode({
           const logoX = centerX - logoSize / 2;
           const logoY = centerY - logoSize / 2;
           const padding = 4;
-          const borderRadius = 8; // Rounded corners
 
-          // Draw black background square with rounded corners for logo
+          // Draw black background square with square edges for logo
           ctx.fillStyle = "#000000";
-          ctx.beginPath();
           const x = logoX - padding;
           const y = logoY - padding;
           const w = logoSize + (padding * 2);
           const h = logoSize + (padding * 2);
-          ctx.moveTo(x + borderRadius, y);
-          ctx.lineTo(x + w - borderRadius, y);
-          ctx.quadraticCurveTo(x + w, y, x + w, y + borderRadius);
-          ctx.lineTo(x + w, y + h - borderRadius);
-          ctx.quadraticCurveTo(x + w, y + h, x + w - borderRadius, y + h);
-          ctx.lineTo(x + borderRadius, y + h);
-          ctx.quadraticCurveTo(x, y + h, x, y + h - borderRadius);
-          ctx.lineTo(x, y + borderRadius);
-          ctx.quadraticCurveTo(x, y, x + borderRadius, y);
-          ctx.closePath();
-          ctx.fill();
+          ctx.fillRect(x, y, w, h);
 
           // Draw logo at high resolution (will be scaled by dpr for sharpness)
           ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);

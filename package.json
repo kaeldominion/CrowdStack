@@ -13,6 +13,9 @@
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "check-fix": "node scripts/watch-and-fix.js",
     "check-fix:sh": "./scripts/check-and-fix.sh",
@@ -21,8 +24,10 @@
     "typecheck:unified": "cd apps/unified && npx tsc --noEmit"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/node": "^22.10.2",
     "concurrently": "^9.1.0",
+    "playwright": "^1.57.0",
     "typescript": "^5.7.2"
   },
   "engines": {
