@@ -56,73 +56,60 @@ export default function RegisterPage() {
     flierUrl?: string | null;
   } | null>(null);
 
-  // Fetch event data on mount
+  // Fetch event data and check auth in parallel on mount
   useEffect(() => {
-    const fetchEventData = async () => {
+    const initializePage = async () => {
       try {
-        const response = await fetch(`/api/events/by-slug/${eventSlug}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.event) {
-            console.log("[Register] fetchEventData got flier_url:", data.event.flier_url);
+        const supabase = createBrowserClient();
+        
+        // Fetch event data and check auth in parallel
+        const [eventResponse, authResult] = await Promise.all([
+          fetch(`/api/events/by-slug/${eventSlug}`).catch(() => null),
+          supabase.auth.getUser().catch(() => ({ data: { user: null }, error: null })),
+        ]);
+
+        // Process event data
+        if (eventResponse?.ok) {
+          const eventData = await eventResponse.json();
+          if (eventData.event) {
+            console.log("[Register] fetchEventData got flier_url:", eventData.event.flier_url);
             setEventDataForSignup({
-              name: data.event.name,
-              venueName: data.event.venue?.name || null,
-              startTime: data.event.start_time || null,
-              registrationCount: data.event.registration_count || 0,
-              flierUrl: data.event.flier_url || null,
+              name: eventData.event.name,
+              venueName: eventData.event.venue?.name || null,
+              startTime: eventData.event.start_time || null,
+              registrationCount: eventData.event.registration_count || 0,
+              flierUrl: eventData.event.flier_url || null,
             });
-            // Also update eventDetails if not already set
             if (!eventDetails) {
               setEventDetails({
-                name: data.event.name,
-                venue: data.event.venue,
-                start_time: data.event.start_time,
-                end_time: data.event.end_time || null,
-                registration_count: data.event.registration_count || 0,
-                flier_url: data.event.flier_url || null,
-                show_photo_email_notice: data.event.show_photo_email_notice || false,
+                name: eventData.event.name,
+                venue: eventData.event.venue,
+                start_time: eventData.event.start_time,
+                end_time: eventData.event.end_time || null,
+                registration_count: eventData.event.registration_count || 0,
+                flier_url: eventData.event.flier_url || null,
+                show_photo_email_notice: eventData.event.show_photo_email_notice || false,
               });
             }
           }
         }
-      } catch (err) {
-        console.error("[Register] Error fetching event data:", err);
-      }
-    };
-    
-    if (eventSlug) {
-      fetchEventData();
-    }
-  }, [eventSlug]);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+        const user = authResult.data?.user;
 
-  const checkAuth = async () => {
-    console.log("[Register] checkAuth started");
-    try {
-      const supabase = createBrowserClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
-      console.log("[Register] User check:", { hasUser: !!user, email: user?.email, error: error?.message });
+        if (user && user.email) {
+          setAuthenticated(true);
+          setUserEmail(user.email);
+          
+          // Check registration and profile in parallel
+          const [checkResponse, profileResponse] = await Promise.all([
+            fetch(`/api/events/by-slug/${eventSlug}/check-registration`).catch(() => null),
+            fetch("/api/profile").catch(() => null),
+          ]);
 
-      if (user && user.email) {
-        setAuthenticated(true);
-        setUserEmail(user.email);
-        console.log("[Register] User is authenticated:", user.email);
-        
-        // Always check if already registered first (whether from QR code or direct link)
-        try {
-          console.log("[Register] Checking if already registered for event:", eventSlug);
-          const checkResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-registration`);
-          console.log("[Register] Check registration response status:", checkResponse.status);
-          if (checkResponse.ok) {
+          // Check if already registered
+          if (checkResponse?.ok) {
             const checkData = await checkResponse.json();
-            console.log("[Register] Check registration data:", checkData);
             if (checkData.registered && checkData.event) {
-              console.log("[Register] User is already registered! Showing success screen");
-              // User is already registered - show success screen immediately
               setSuccess(true);
               setQrToken(checkData.qr_pass_token);
               setEventDetails({
@@ -137,23 +124,13 @@ export default function RegisterPage() {
               return;
             }
           }
-        } catch (checkErr) {
-          console.error("[Register] Error checking registration:", checkErr);
-          // Continue to registration if check fails
-        }
-        
-        // Not registered yet - check if user has existing profile
-        console.log("[Register] Not registered yet, checking profile...");
-        try {
-          const profileResponse = await fetch("/api/profile");
-          console.log("[Register] Profile response status:", profileResponse.status);
-          if (profileResponse.ok) {
+
+          // Process profile data
+          if (profileResponse?.ok) {
             const profileData = await profileResponse.json();
             const attendee = profileData.attendee;
-            console.log("[Register] Profile data:", attendee);
             
             if (attendee) {
-              // Store existing profile to pre-fill form
               setExistingProfile({
                 name: attendee.name,
                 surname: attendee.surname,
@@ -164,31 +141,27 @@ export default function RegisterPage() {
               });
             }
             
-            // Store registration count for progressive signup logic
             if (profileData.registrationCount !== undefined) {
               setRegistrationCount(profileData.registrationCount);
             }
           }
-        } catch (profileErr) {
-          console.error("[Register] Error checking profile:", profileErr);
-          // Continue to signup form if profile check fails
+          
+          setShowSignup(true);
+          setLoading(false);
+        } else {
+          setAuthenticated(false);
+          setLoading(false);
         }
-        
-        // Profile incomplete or check failed - show signup form
-        console.log("[Register] Profile incomplete, showing signup form");
-        setShowSignup(true);
-        setLoading(false);
-      } else {
-        console.log("[Register] User is not authenticated");
-        setAuthenticated(false);
+      } catch (err) {
+        console.error("[Register] Error initializing page:", err);
         setLoading(false);
       }
-    } catch (err) {
-      console.error("[Register] Error in checkAuth:", err);
-      setAuthenticated(false);
-      setLoading(false);
+    };
+
+    if (eventSlug) {
+      initializePage();
     }
-  };
+  }, [eventSlug]);
 
   const handleMagicLink = async () => {
     if (!userEmail) {

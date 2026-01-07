@@ -1,12 +1,7 @@
-"use client";
-
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { Button, EmptyState, Badge, LoadingSpinner, Card } from "@crowdstack/ui";
-import { Plus, Calendar, AlertCircle, Radio, Clock, History, Users, CheckCircle2, ArrowUpRight, MapPin } from "lucide-react";
-import Link from "next/link";
-import { EventCard } from "@/components/events/EventCard";
-import type { Organizer, Venue } from "@crowdstack/shared/types";
+import { redirect } from "next/navigation";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
+import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
 
 interface Event {
   id: string;
@@ -21,274 +16,108 @@ interface Event {
   checkins: number;
   flier_url: string | null;
   cover_image_url: string | null;
-  venue: Venue | null;
-  organizer: Organizer | null;
+  venue: any | null;
+  organizer: any | null;
 }
 
-export default function OrganizerEventsPage() {
-  const router = useRouter();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+async function getOrganizerEvents() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
-    try {
-      const response = await fetch("/api/organizer/events");
-      if (response.ok) {
-        const data = await response.json();
-        setEvents(data.events || []);
-      }
-    } catch (error) {
-      console.error("Failed to load events:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Categorize events
-  const { liveEvents, upcomingEvents, pastEvents, pendingEvents, rejectedEvents } = useMemo(() => {
-    const now = new Date();
-    const live: Event[] = [];
-    const upcoming: Event[] = [];
-    const past: Event[] = [];
-    const pending: Event[] = [];
-    const rejected: Event[] = [];
-
-    events.forEach((event) => {
-      const startTime = new Date(event.start_time);
-      const endTime = event.end_time ? new Date(event.end_time) : null;
-
-      // Track pending/rejected separately for alerts
-      if (event.venue_approval_status === "pending") {
-        pending.push(event);
-      }
-      if (event.venue_approval_status === "rejected") {
-        rejected.push(event);
-      }
-
-      // Categorize by time
-      if (startTime <= now && (!endTime || endTime >= now) && event.status === "published") {
-        live.push(event);
-      } else if (startTime > now) {
-        upcoming.push(event);
-      } else {
-        past.push(event);
-      }
-    });
-
-    // Sort upcoming by start time ascending
-    upcoming.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
-    // Sort past by start time descending
-    past.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
-
-    return { liveEvents: live, upcomingEvents: upcoming, pastEvents: past, pendingEvents: pending, rejectedEvents: rejected };
-  }, [events]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner text="Loading events..." />
-      </div>
-    );
+  if (!user) {
+    redirect("/login");
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Your Events</h1>
-          <p className="text-sm text-secondary">
-            Manage and track all events you've created
-          </p>
-        </div>
-        <Link href="/app/organizer/events/new">
-          <Button variant="primary" size="lg">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
-        </Link>
-      </div>
+  // Get organizer ID for current user
+  const organizerId = await getUserOrganizerId();
 
-      {/* Pending Approval Alert */}
-      {pendingEvents.length > 0 && (
-        <Card className="border-accent-warning/30 bg-accent-warning/5">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-accent-warning flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-accent-warning">
-                {pendingEvents.length} event{pendingEvents.length > 1 ? "s" : ""} pending venue approval
-              </p>
-              <p className="text-sm text-secondary mt-1">
-                These events are waiting to be approved by their respective venues before they can go live.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+  if (!organizerId) {
+    return { events: [] };
+  }
 
-      {/* Rejected Events Alert */}
-      {rejectedEvents.length > 0 && (
-        <Card className="border-accent-error/30 bg-accent-error/5">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-accent-error flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-accent-error">
-                {rejectedEvents.length} event{rejectedEvents.length > 1 ? "s" : ""} rejected
-              </p>
-              <p className="text-sm text-secondary mt-1">
-                These events were not approved by the venue. You can edit and try a different venue.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+  const serviceSupabase = createServiceRoleClient();
 
-      {events.length === 0 ? (
-        <EmptyState
-          icon={<Calendar className="h-12 w-12 text-secondary" />}
-          title="No events yet"
-          description="Create your first event to start tracking attendance and managing promoters."
-          action={{
-            label: "Create Event",
-            href: "/app/organizer/events/new"
-          }}
-        />
-      ) : (
-        <div className="space-y-4">
-          {/* Live Events Section */}
-          {liveEvents.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-accent-error rounded-full animate-pulse flex-shrink-0 mt-0.5" />
-                  <h2 className="section-header !mb-0">Live Now</h2>
-                </div>
-                <Badge variant="danger" className="!text-[10px]">{liveEvents.length} Active</Badge>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {liveEvents.map((event) => (
-                  <div key={event.id} className="relative">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-error via-accent-warning to-accent-error rounded-2xl blur opacity-30 animate-pulse" />
-                    <div className="relative">
-                      <EventCard
-                        event={event}
-                        onClick={() => router.push(`/app/organizer/events/${event.id}`)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+  // Get events for this organizer
+  const { data: events, error } = await serviceSupabase
+    .from("events")
+    .select(`
+      id,
+      name,
+      slug,
+      description,
+      start_time,
+      end_time,
+      status,
+      venue_approval_status,
+      venue_rejection_reason,
+      capacity,
+      cover_image_url,
+      flier_url,
+      created_at,
+      venue:venues(id, name, logo_url, cover_image_url, city, state),
+      organizer:organizers(id, name, logo_url)
+    `)
+    .eq("organizer_id", organizerId)
+    .order("start_time", { ascending: false });
 
-          {/* Upcoming Events Section */}
-          {upcomingEvents.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-accent-secondary flex-shrink-0 mt-0.5" />
-                  <h2 className="section-header !mb-0">Upcoming Events</h2>
-                </div>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                  ({upcomingEvents.length})
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {upcomingEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    onClick={() => router.push(`/app/organizer/events/${event.id}`)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+  if (error) {
+    console.error("[OrganizerEvents] Query error:", error);
+    return { events: [] };
+  }
 
-          {/* Past Events Section - Row View */}
-          {pastEvents.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <History className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
-                  <h2 className="section-header !mb-0">Event History</h2>
-                </div>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-                  ({pastEvents.length})
-                </span>
-              </div>
-              <div className="space-y-2">
-                {pastEvents.map((event) => {
-                  const eventDate = new Date(event.start_time);
-                  const conversionRate = event.registrations > 0 
-                    ? Math.round((event.checkins / event.registrations) * 100) 
-                    : 0;
+  // Get registration and checkin counts for each event
+  const eventIds = events?.map(e => e.id) || [];
+  let registrationCounts: Record<string, number> = {};
+  let checkinCounts: Record<string, number> = {};
 
-                  return (
-                    <Link 
-                      key={event.id} 
-                      href={`/app/organizer/events/${event.id}`}
-                      className="block"
-                    >
-                      <div className="flex items-center gap-4 p-4 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/30 hover:bg-active/50 transition-all cursor-pointer group">
-                        {/* Thumbnail */}
-                        {event.flier_url && (
-                          <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
-                            <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        
-                        {/* Event Info */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-primary line-clamp-1 group-hover:text-accent-secondary transition-colors">
-                            {event.name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
-                            <Calendar className="h-3 w-3 text-muted flex-shrink-0" />
-                            <span>{eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                            <span className="text-muted">•</span>
-                            <span>{eventDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
-                          </div>
-                          {event.venue && (
-                            <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
-                              <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
-                              <span className="line-clamp-1">{event.venue.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="hidden sm:flex items-center gap-4 lg:gap-6">
-                          <div className="text-center min-w-[45px]">
-                            <span className="text-sm font-bold text-primary">{event.registrations}</span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Reg.</p>
-                          </div>
-                          <div className="text-center min-w-[45px]">
-                            <span className="text-sm font-bold text-accent-success">{event.checkins}</span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">In</p>
-                          </div>
-                          <div className="text-center min-w-[45px]">
-                            <span className={`text-sm font-bold ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
-                              {conversionRate}%
-                            </span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Conv.</p>
-                          </div>
-                        </div>
-                        
-                        {/* Arrow */}
-                        <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors flex-shrink-0" />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  if (eventIds.length > 0) {
+    // Get registrations with their event IDs
+    const registrationsResult = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id")
+      .in("event_id", eventIds);
+
+    const registrations = registrationsResult.data || [];
+    const registrationIds = registrations.map(reg => reg.id);
+
+    // Count registrations per event
+    registrations.forEach((reg: any) => {
+      registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
+    });
+
+    // Get checkins and map back to events
+    if (registrationIds.length > 0) {
+      const checkinsResult = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", registrationIds);
+
+      const registrationIdToEventId: Record<string, string> = {};
+      registrations.forEach((reg: any) => {
+        registrationIdToEventId[reg.id] = reg.event_id;
+      });
+
+      (checkinsResult.data || []).forEach((checkin: any) => {
+        const eventId = registrationIdToEventId[checkin.registration_id];
+        if (eventId) {
+          checkinCounts[eventId] = (checkinCounts[eventId] || 0) + 1;
+        }
+      });
+    }
+  }
+
+  // Add counts to events
+  const eventsWithCounts: Event[] = (events || []).map((event) => ({
+    ...event,
+    registrations: registrationCounts[event.id] || 0,
+    checkins: checkinCounts[event.id] || 0,
+  }));
+
+  return { events: eventsWithCounts };
+}
+
+export default async function OrganizerEventsPage() {
+  const { events } = await getOrganizerEvents();
+
+  return <OrganizerEventsPageClient initialEvents={events} />;
 }
