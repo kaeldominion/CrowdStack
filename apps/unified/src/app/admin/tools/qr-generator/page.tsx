@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, Container, Section, Button, Input, Badge } from "@crowdstack/ui";
+import { Card, Container, Section, Button, Input, Badge, Modal } from "@crowdstack/ui";
 import { ArrowLeft, QrCode, Plus, Edit2, Trash2, Copy, Check, ExternalLink, Download, Eye } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
@@ -32,6 +32,7 @@ export default function QRGeneratorPage() {
   const [baseUrl, setBaseUrl] = useState("");
   const [stats, setStats] = useState<Record<string, QRCodeStats>>({});
   const [loadingStats, setLoadingStats] = useState<Record<string, boolean>>({});
+  const [previewingCode, setPreviewingCode] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -502,6 +503,14 @@ export default function QRGeneratorPage() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => setPreviewingCode(qrCode.code)}
+                            title="Preview QR Code"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => copyToClipboard(getQRUrl(qrCode.code), qrCode.code)}
                             title="Copy QR URL"
                           >
@@ -543,6 +552,32 @@ export default function QRGeneratorPage() {
               </table>
             </div>
           </Card>
+        )}
+
+        {/* Preview Modal */}
+        {previewingCode && (
+          <Modal
+            isOpen={!!previewingCode}
+            onClose={() => setPreviewingCode(null)}
+            title="Preview QR Code"
+            size="md"
+          >
+            <div className="flex flex-col items-center py-8">
+              <div className="bg-white rounded-lg p-6 mb-4">
+                <BeautifiedQRCode
+                  url={previewingCode ? getQRUrl(previewingCode) : ""}
+                  size={400}
+                  logoSize={80}
+                />
+              </div>
+              {previewingCode && (
+                <div className="text-center">
+                  <p className="text-sm text-secondary mb-2">Scan this QR code to test</p>
+                  <p className="text-xs font-mono text-muted">{getQRUrl(previewingCode)}</p>
+                </div>
+              )}
+            </div>
+          </Modal>
         )}
       </Container>
     </Section>
