@@ -72,8 +72,11 @@ export function BeautifiedQRCode({
         // Draw QR code to main canvas (will be scaled by dpr for sharpness)
         ctx.drawImage(tempCanvas, 0, 0, displaySize, displaySize);
 
-        // Draw logo using SVG directly for crisp rendering
-        const drawLogo = () => {
+        // Load and draw logo from PNG file
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        
+        logo.onload = () => {
           // Calculate center position (in display coordinates, ctx is already scaled)
           const centerX = displaySize / 2;
           const centerY = displaySize / 2;
@@ -101,60 +104,17 @@ export function BeautifiedQRCode({
           ctx.closePath();
           ctx.fill();
 
-          // Create SVG logo and render to canvas
-          // Tricolor logo: white (top), purple (middle), blue (bottom)
-          // Based on the actual logo structure with rectangles
-          const uniqueId = `logo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-          const svgString = `
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${logoSize}" height="${logoSize}">
-              <defs>
-                <linearGradient id="purpleGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#A855F7"/>
-                  <stop offset="100%" stop-color="#C084FC"/>
-                </linearGradient>
-                <linearGradient id="blueGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#3B82F6"/>
-                  <stop offset="100%" stop-color="#60A5FA"/>
-                </linearGradient>
-              </defs>
-              <!-- Bottom layer (widest, blue) -->
-              <rect x="4" y="20" width="24" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
-              <!-- Third layer (blue) -->
-              <rect x="6" y="14" width="20" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
-              <!-- Second layer (purple) -->
-              <rect x="8" y="8" width="16" height="3" rx="1" fill="url(#purpleGrad-${uniqueId})"/>
-              <!-- Top layer (white) -->
-              <rect x="10" y="2" width="12" height="3" rx="1" fill="white"/>
-            </svg>
-          `;
-
-          // Convert SVG to image and draw
-          const img = new Image();
-          const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-          const url = URL.createObjectURL(svgBlob);
-          
-          img.onload = () => {
-            // Draw SVG at high resolution
-            ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
-            URL.revokeObjectURL(url);
-          };
-          
-          img.onerror = () => {
-            // Fallback to PNG if SVG fails
-            const fallbackImg = new Image();
-            fallbackImg.crossOrigin = "anonymous";
-            fallbackImg.onload = () => {
-              ctx.drawImage(fallbackImg, logoX, logoY, logoSize, logoSize);
-            };
-            fallbackImg.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
-            URL.revokeObjectURL(url);
-          };
-          
-          img.src = url;
+          // Draw logo at high resolution (will be scaled by dpr for sharpness)
+          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
         };
 
-        // Draw logo
-        drawLogo();
+        logo.onerror = () => {
+          console.warn("Failed to load logo for QR code");
+          // Continue without logo if it fails to load
+        };
+
+        // Use the PNG file directly - load at natural size for best quality
+        logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
       } catch (err: any) {
         console.error("Error generating QR code:", err);
         setError(err.message || "Failed to generate QR code");

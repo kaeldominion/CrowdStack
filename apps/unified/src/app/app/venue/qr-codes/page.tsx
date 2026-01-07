@@ -223,7 +223,7 @@ export default function VenueQRCodesPage() {
       // Draw QR code to main canvas
       ctx.drawImage(tempCanvas, 0, 0, size, size);
 
-      // Draw logo using SVG for crisp rendering
+      // Draw logo using PNG file directly
       const centerX = size / 2;
       const centerY = size / 2;
       const logoX = centerX - logoSize / 2;
@@ -250,39 +250,11 @@ export default function VenueQRCodesPage() {
       ctx.closePath();
       ctx.fill();
 
-      // Create SVG logo and render
-      // Based on the actual logo structure with rectangles
-      const uniqueId = `logo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const svgString = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${logoSize}" height="${logoSize}">
-          <defs>
-            <linearGradient id="purpleGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#A855F7"/>
-              <stop offset="100%" stop-color="#C084FC"/>
-            </linearGradient>
-            <linearGradient id="blueGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#3B82F6"/>
-              <stop offset="100%" stop-color="#60A5FA"/>
-            </linearGradient>
-          </defs>
-          <!-- Bottom layer (widest, blue) -->
-          <rect x="4" y="20" width="24" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
-          <!-- Third layer (blue) -->
-          <rect x="6" y="14" width="20" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
-          <!-- Second layer (purple) -->
-          <rect x="8" y="8" width="16" height="3" rx="1" fill="url(#purpleGrad-${uniqueId})"/>
-          <!-- Top layer (white) -->
-          <rect x="10" y="2" width="12" height="3" rx="1" fill="white"/>
-        </svg>
-      `;
-
       const logo = new Image();
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(svgBlob);
+      logo.crossOrigin = "anonymous";
       
       logo.onload = () => {
         ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-        URL.revokeObjectURL(url);
 
         const pngUrl = canvas.toDataURL("image/png");
         const downloadLink = document.createElement("a");
@@ -294,24 +266,17 @@ export default function VenueQRCodesPage() {
       };
 
       logo.onerror = () => {
-        // Fallback to PNG if SVG fails
-        const fallbackImg = new Image();
-        fallbackImg.crossOrigin = "anonymous";
-        fallbackImg.onload = () => {
-          ctx.drawImage(fallbackImg, logoX, logoY, logoSize, logoSize);
-          const pngUrl = canvas.toDataURL("image/png");
-          const downloadLink = document.createElement("a");
-          downloadLink.href = pngUrl;
-          downloadLink.download = `qr-code-${code}.png`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-        };
-        fallbackImg.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
-        URL.revokeObjectURL(url);
+        // Download without logo if it fails to load
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `qr-code-${code}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
       };
 
-      logo.src = url;
+      logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
     } catch (error) {
       console.error("Error generating QR code for download:", error);
       alert("Failed to generate QR code for download");
