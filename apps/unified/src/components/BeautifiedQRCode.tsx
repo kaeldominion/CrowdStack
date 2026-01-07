@@ -55,11 +55,27 @@ export function BeautifiedQRCode({
           const centerY = size / 2;
           const logoX = centerX - logoSize / 2;
           const logoY = centerY - logoSize / 2;
+          const padding = 4;
+          const borderRadius = 8; // Rounded corners
 
-          // Draw white background circle for logo
-          ctx.fillStyle = "#FFFFFF";
+          // Draw black background square with rounded corners for logo
+          ctx.fillStyle = "#000000";
           ctx.beginPath();
-          ctx.arc(centerX, centerY, logoSize / 2 + 4, 0, 2 * Math.PI);
+          // Use manual rounded rect since roundRect might not be available
+          const x = logoX - padding;
+          const y = logoY - padding;
+          const w = logoSize + (padding * 2);
+          const h = logoSize + (padding * 2);
+          ctx.moveTo(x + borderRadius, y);
+          ctx.lineTo(x + w - borderRadius, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + borderRadius);
+          ctx.lineTo(x + w, y + h - borderRadius);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - borderRadius, y + h);
+          ctx.lineTo(x + borderRadius, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - borderRadius);
+          ctx.lineTo(x, y + borderRadius);
+          ctx.quadraticCurveTo(x, y, x + borderRadius, y);
+          ctx.closePath();
           ctx.fill();
 
           // Draw logo

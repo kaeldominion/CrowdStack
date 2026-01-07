@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, Container, Section, Button, Input } from "@crowdstack/ui";
-import { ArrowLeft, QrCode, Plus, Edit2, Trash2, Copy, Check, ExternalLink, Download } from "lucide-react";
+import { ArrowLeft, QrCode, Plus, Edit2, Trash2, Copy, Check, ExternalLink, Download, TrendingUp, Eye } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 interface DynamicQRCode {
@@ -15,6 +15,13 @@ interface DynamicQRCode {
   updated_at: string;
 }
 
+interface QRCodeStats {
+  totalScans: number;
+  recentScans: number;
+  todayScans: number;
+  scansByDay: Record<string, number>;
+}
+
 export default function OrganizerQRCodesPage() {
   const [qrCodes, setQrCodes] = useState<DynamicQRCode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +29,8 @@ export default function OrganizerQRCodesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState("");
+  const [stats, setStats] = useState<Record<string, QRCodeStats>>({});
+  const [loadingStats, setLoadingStats] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState({
     code: "",
@@ -33,6 +42,30 @@ export default function OrganizerQRCodesPage() {
     setBaseUrl(window.location.origin);
     loadQRCodes();
   }, []);
+
+  // Load stats for all QR codes
+  useEffect(() => {
+    if (qrCodes.length > 0) {
+      qrCodes.forEach((qrCode) => {
+        loadStats(qrCode.id);
+      });
+    }
+  }, [qrCodes]);
+
+  const loadStats = async (qrCodeId: string) => {
+    setLoadingStats((prev) => ({ ...prev, [qrCodeId]: true }));
+    try {
+      const response = await fetch(`/api/organizer/qr-codes/${qrCodeId}/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setStats((prev) => ({ ...prev, [qrCodeId]: data.stats }));
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    } finally {
+      setLoadingStats((prev) => ({ ...prev, [qrCodeId]: false }));
+    }
+  };
 
   const loadQRCodes = async () => {
     try {
@@ -179,10 +212,26 @@ export default function OrganizerQRCodesPage() {
         const centerY = size / 2;
         const logoX = centerX - logoSize / 2;
         const logoY = centerY - logoSize / 2;
+        const padding = 4;
+        const borderRadius = 8;
 
-        ctx.fillStyle = "#FFFFFF";
+        // Draw black background square with rounded corners
+        ctx.fillStyle = "#000000";
         ctx.beginPath();
-        ctx.arc(centerX, centerY, logoSize / 2 + 6, 0, 2 * Math.PI);
+        const x = logoX - padding;
+        const y = logoY - padding;
+        const w = logoSize + (padding * 2);
+        const h = logoSize + (padding * 2);
+        ctx.moveTo(x + borderRadius, y);
+        ctx.lineTo(x + w - borderRadius, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + borderRadius);
+        ctx.lineTo(x + w, y + h - borderRadius);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - borderRadius, y + h);
+        ctx.lineTo(x + borderRadius, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - borderRadius);
+        ctx.lineTo(x, y + borderRadius);
+        ctx.quadraticCurveTo(x, y, x + borderRadius, y);
+        ctx.closePath();
         ctx.fill();
 
         ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
@@ -413,6 +462,32 @@ export default function OrganizerQRCodesPage() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Stats */}
+                {stats[qrCode.id] && (
+                  <div className="mb-4 pt-4 border-t border-border-subtle">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Eye className="h-4 w-4 text-secondary" />
+                      <label className="block text-xs font-medium text-secondary uppercase tracking-widest">
+                        Scan Statistics
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-primary">{stats[qrCode.id].totalScans}</p>
+                        <p className="text-[10px] text-secondary uppercase tracking-widest">Total</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-accent-secondary">{stats[qrCode.id].recentScans}</p>
+                        <p className="text-[10px] text-secondary uppercase tracking-widest">30 Days</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-accent-success">{stats[qrCode.id].todayScans}</p>
+                        <p className="text-[10px] text-secondary uppercase tracking-widest">Today</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-4 border-t border-border-subtle">
                   <Button

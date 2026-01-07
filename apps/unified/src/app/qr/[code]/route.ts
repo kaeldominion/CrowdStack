@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 /**
  * GET /qr/[code]
  * Redirect dynamic QR code to its current target URL
+ * Tracks the scan for analytics
  * Public endpoint - no authentication required
  */
 export async function GET(
@@ -23,7 +24,7 @@ export async function GET(
     const serviceSupabase = createServiceRoleClient();
     const { data: qrCode, error } = await serviceSupabase
       .from("dynamic_qr_codes")
-      .select("target_url")
+      .select("id, target_url")
       .eq("code", code)
       .single();
 
@@ -31,6 +32,27 @@ export async function GET(
       console.error("[QR Redirect] QR code not found:", code, error);
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // Track the scan (fire and forget - don't block redirect)
+    const ipAddress = request.headers.get("x-forwarded-for") || 
+                     request.headers.get("x-real-ip") || 
+                     "unknown";
+    const userAgent = request.headers.get("user-agent") || "unknown";
+    const referer = request.headers.get("referer") || null;
+
+    // Don't await - let it run in background
+    serviceSupabase
+      .from("qr_code_scans")
+      .insert({
+        qr_code_id: qrCode.id,
+        ip_address: ipAddress.split(",")[0].trim(), // Get first IP if comma-separated
+        user_agent: userAgent,
+        referer: referer,
+      })
+      .catch((err) => {
+        // Silently fail - don't block redirect if tracking fails
+        console.error("[QR Redirect] Failed to track scan:", err);
+      });
 
     // Redirect to the target URL
     return NextResponse.redirect(new URL(qrCode.target_url, request.url));
