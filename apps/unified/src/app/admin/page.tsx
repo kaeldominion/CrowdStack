@@ -112,6 +112,12 @@ export default function AdminDashboardPage() {
 
   const adminTools = [
     {
+      name: "Dynamic QR Generator",
+      href: "/admin/tools/qr-generator",
+      description: "Create reusable QR codes with dynamic URL redirects",
+      icon: <QrCode className="h-6 w-6" />,
+    },
+    {
       name: "QR Code Test Tool",
       href: "/dev/qr-test",
       description: "Scan or paste QR codes to verify registration attribution",
