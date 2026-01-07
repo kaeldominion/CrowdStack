@@ -103,24 +103,28 @@ export function BeautifiedQRCode({
 
           // Create SVG logo and render to canvas
           // Tricolor logo: white (top), purple (middle), blue (bottom)
+          // Based on the actual logo structure with rectangles
+          const uniqueId = `logo-${Date.now()}-${Math.random().toString(36).substring(7)}`;
           const svgString = `
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${logoSize}" height="${logoSize}">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${logoSize}" height="${logoSize}">
               <defs>
-                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="purpleGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stop-color="#A855F7"/>
                   <stop offset="100%" stop-color="#C084FC"/>
                 </linearGradient>
-                <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient id="blueGrad-${uniqueId}" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stop-color="#3B82F6"/>
                   <stop offset="100%" stop-color="#60A5FA"/>
                 </linearGradient>
               </defs>
+              <!-- Bottom layer (widest, blue) -->
+              <rect x="4" y="20" width="24" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
+              <!-- Third layer (blue) -->
+              <rect x="6" y="14" width="20" height="3" rx="1" fill="url(#blueGrad-${uniqueId})"/>
+              <!-- Second layer (purple) -->
+              <rect x="8" y="8" width="16" height="3" rx="1" fill="url(#purpleGrad-${uniqueId})"/>
               <!-- Top layer (white) -->
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <!-- Middle layer (purple) -->
-              <path d="M2 12L12 17L22 12" stroke="url(#purpleGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-              <!-- Bottom layer (blue) -->
-              <path d="M12 17L2 22L12 24L22 22L12 17Z" fill="url(#blueGrad)" stroke="url(#blueGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="10" y="2" width="12" height="3" rx="1" fill="white"/>
             </svg>
           `;
 
