@@ -41,18 +41,21 @@ export async function GET(
     const referer = request.headers.get("referer") || null;
 
     // Don't await - let it run in background
-    serviceSupabase
-      .from("qr_code_scans")
-      .insert({
-        qr_code_id: qrCode.id,
-        ip_address: ipAddress.split(",")[0].trim(), // Get first IP if comma-separated
-        user_agent: userAgent,
-        referer: referer,
-      })
-      .catch((err) => {
+    (async () => {
+      try {
+        await serviceSupabase
+          .from("qr_code_scans")
+          .insert({
+            qr_code_id: qrCode.id,
+            ip_address: ipAddress.split(",")[0].trim(), // Get first IP if comma-separated
+            user_agent: userAgent,
+            referer: referer,
+          });
+      } catch (err) {
         // Silently fail - don't block redirect if tracking fails
         console.error("[QR Redirect] Failed to track scan:", err);
-      });
+      }
+    })();
 
     // Redirect to the target URL
     return NextResponse.redirect(new URL(qrCode.target_url, request.url));
