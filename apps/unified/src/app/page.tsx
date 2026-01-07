@@ -1,6 +1,10 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { HomePageClient } from "./HomePageClient";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+
+// ISR: Revalidate homepage every 60 seconds
+export const revalidate = 60;
 
 async function getFeaturedEvents() {
   try {
@@ -27,7 +31,7 @@ async function getFeaturedEvents() {
           country
         ),
         registrations(count)
-      `)
+      `, { count: 'exact' })
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"])
       .gte("start_time", twelveHoursAgo.toISOString())
@@ -116,11 +120,24 @@ async function getPopularVenues() {
   }
 }
 
+// Cache data fetching functions with 60 second revalidation
+const getCachedFeaturedEvents = unstable_cache(
+  getFeaturedEvents,
+  ['homepage-featured-events'],
+  { revalidate: 60, tags: ['events', 'homepage'] }
+);
+
+const getCachedPopularVenues = unstable_cache(
+  getPopularVenues,
+  ['homepage-popular-venues'],
+  { revalidate: 60, tags: ['venues', 'homepage'] }
+);
+
 export default async function HomePage() {
-  // Fetch data in parallel on the server
+  // Fetch data in parallel on the server with caching
   const [featuredEvents, popularVenues] = await Promise.all([
-    getFeaturedEvents(),
-    getPopularVenues(),
+    getCachedFeaturedEvents(),
+    getCachedPopularVenues(),
   ]);
 
   return (
