@@ -51,6 +51,50 @@ async function isSuperadmin(userId: string): Promise<boolean> {
 }
 
 /**
+ * Generate a unique code for QR code
+ */
+function generateQRCode(prefix: string = "admin"): string {
+  const timestamp = Date.now().toString(36).slice(-6);
+  const random = Math.random().toString(36).substring(2, 6);
+  return `${prefix}-${timestamp}-${random}`.toLowerCase();
+}
+
+/**
+ * Check if a code already exists
+ */
+async function codeExists(code: string): Promise<boolean> {
+  const serviceSupabase = createServiceRoleClient();
+  const { data, error } = await serviceSupabase
+    .from("dynamic_qr_codes")
+    .select("code")
+    .eq("code", code)
+    .single();
+  
+  return !!data && !error;
+}
+
+/**
+ * Generate a unique code with conflict checking
+ */
+async function generateUniqueCode(prefix: string = "admin", maxAttempts: number = 10): Promise<string> {
+  let attempts = 0;
+  let code = generateQRCode(prefix);
+  
+  while (attempts < maxAttempts) {
+    const exists = await codeExists(code);
+    if (!exists) {
+      return code;
+    }
+    code = generateQRCode(prefix);
+    attempts++;
+  }
+  
+  // If we still have conflicts after max attempts, add more randomness
+  const fallback = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`.toLowerCase();
+  return fallback;
+}
+
+/**
  * GET /api/admin/qr-codes
  * List all dynamic QR codes
  */
@@ -108,19 +152,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { code, name, target_url } = body;
+    const { name, target_url } = body;
 
-    if (!code || !name || !target_url) {
+    if (!name || !target_url) {
       return NextResponse.json(
-        { error: "Missing required fields: code, name, target_url" },
-        { status: 400 }
-      );
-    }
-
-    // Validate code format (alphanumeric, hyphens, underscores only)
-    if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-      return NextResponse.json(
-        { error: "Code must contain only alphanumeric characters, hyphens, and underscores" },
+        { error: "Missing required fields: name, target_url" },
         { status: 400 }
       );
     }
@@ -134,6 +170,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Auto-generate unique code
+    const code = await generateUniqueCode("admin");
 
     const serviceSupabase = createServiceRoleClient();
     const { data: qrCode, error } = await serviceSupabase

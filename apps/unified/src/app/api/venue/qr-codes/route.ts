@@ -49,6 +49,50 @@ export async function GET() {
 }
 
 /**
+ * Generate a unique code for QR code
+ */
+function generateQRCode(prefix: string = "ven"): string {
+  const timestamp = Date.now().toString(36).slice(-6);
+  const random = Math.random().toString(36).substring(2, 6);
+  return `${prefix}-${timestamp}-${random}`.toLowerCase();
+}
+
+/**
+ * Check if a code already exists
+ */
+async function codeExists(code: string): Promise<boolean> {
+  const serviceSupabase = createServiceRoleClient();
+  const { data, error } = await serviceSupabase
+    .from("dynamic_qr_codes")
+    .select("code")
+    .eq("code", code)
+    .single();
+  
+  return !!data && !error;
+}
+
+/**
+ * Generate a unique code with conflict checking
+ */
+async function generateUniqueCode(prefix: string = "ven", maxAttempts: number = 10): Promise<string> {
+  let attempts = 0;
+  let code = generateQRCode(prefix);
+  
+  while (attempts < maxAttempts) {
+    const exists = await codeExists(code);
+    if (!exists) {
+      return code;
+    }
+    code = generateQRCode(prefix);
+    attempts++;
+  }
+  
+  // If we still have conflicts after max attempts, add more randomness
+  const fallback = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`.toLowerCase();
+  return fallback;
+}
+
+/**
  * POST /api/venue/qr-codes
  * Create a new QR code for the current venue
  */
@@ -72,11 +116,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { code, name, target_url, venue_id } = body;
+    const { name, target_url, venue_id } = body;
 
-    if (!code || !name || !target_url) {
+    if (!name || !target_url) {
       return NextResponse.json(
-        { error: "Missing required fields: code, name, target_url" },
+        { error: "Missing required fields: name, target_url" },
         { status: 400 }
       );
     }
@@ -85,14 +129,6 @@ export async function POST(request: NextRequest) {
     const selectedVenueId = venue_id && venueIds.includes(venue_id)
       ? venue_id
       : venueIds[0];
-
-    // Validate code format
-    if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-      return NextResponse.json(
-        { error: "Code must contain only alphanumeric characters, hyphens, and underscores" },
-        { status: 400 }
-      );
-    }
 
     // Validate URL
     try {
@@ -103,6 +139,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Auto-generate unique code
+    const code = await generateUniqueCode("ven");
 
     const serviceSupabase = createServiceRoleClient();
     const { data: qrCode, error } = await serviceSupabase
@@ -119,8 +158,9 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       if (error.code === "23505") {
+        // This shouldn't happen with our conflict checking, but handle it anyway
         return NextResponse.json(
-          { error: "A QR code with this code already exists" },
+          { error: "Code conflict detected. Please try again." },
           { status: 409 }
         );
       }
