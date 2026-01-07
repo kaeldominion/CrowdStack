@@ -29,9 +29,38 @@ export function BeautifiedQRCode({
       try {
         setError(null);
         
-        // Generate QR code
-        await QRCode.toCanvas(canvasRef.current, url, {
-          width: size,
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // Use device pixel ratio for high-DPI displays (2x for retina, 3x for high-res)
+        const dpr = Math.min(window.devicePixelRatio || 2, 3);
+        const displaySize = size;
+        const actualSize = displaySize * dpr;
+
+        // Set canvas size accounting for device pixel ratio
+        canvas.width = actualSize;
+        canvas.height = actualSize;
+        canvas.style.width = `${displaySize}px`;
+        canvas.style.height = `${displaySize}px`;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Scale context to account for device pixel ratio
+        ctx.scale(dpr, dpr);
+
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        
+        // Create temporary canvas for QR code generation
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = displaySize;
+        tempCanvas.height = displaySize;
+        
+        // Generate QR code to temporary canvas
+        await QRCode.toCanvas(tempCanvas, url, {
+          width: displaySize,
           margin: 2,
           color: {
             dark: "#000000",
@@ -40,19 +69,14 @@ export function BeautifiedQRCode({
           errorCorrectionLevel: "H", // High error correction for logo overlay
         });
 
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
+        // Draw QR code to main canvas (will be scaled by dpr for sharpness)
+        ctx.drawImage(tempCanvas, 0, 0, displaySize, displaySize);
 
-        // Load and draw logo in center
-        const logo = new Image();
-        logo.crossOrigin = "anonymous";
-        
-        logo.onload = () => {
-          // Calculate center position
-          const centerX = size / 2;
-          const centerY = size / 2;
+        // Draw logo using SVG directly for crisp rendering
+        const drawLogo = () => {
+          // Calculate center position (in display coordinates, ctx is already scaled)
+          const centerX = displaySize / 2;
+          const centerY = displaySize / 2;
           const logoX = centerX - logoSize / 2;
           const logoY = centerY - logoSize / 2;
           const padding = 4;
@@ -61,7 +85,6 @@ export function BeautifiedQRCode({
           // Draw black background square with rounded corners for logo
           ctx.fillStyle = "#000000";
           ctx.beginPath();
-          // Use manual rounded rect since roundRect might not be available
           const x = logoX - padding;
           const y = logoY - padding;
           const w = logoSize + (padding * 2);
@@ -78,17 +101,56 @@ export function BeautifiedQRCode({
           ctx.closePath();
           ctx.fill();
 
-          // Draw logo
-          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          // Create SVG logo and render to canvas
+          // Tricolor logo: white (top), purple (middle), blue (bottom)
+          const svgString = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${logoSize}" height="${logoSize}">
+              <defs>
+                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#A855F7"/>
+                  <stop offset="100%" stop-color="#C084FC"/>
+                </linearGradient>
+                <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#3B82F6"/>
+                  <stop offset="100%" stop-color="#60A5FA"/>
+                </linearGradient>
+              </defs>
+              <!-- Top layer (white) -->
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Middle layer (purple) -->
+              <path d="M2 12L12 17L22 12" stroke="url(#purpleGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <!-- Bottom layer (blue) -->
+              <path d="M12 17L2 22L12 24L22 22L12 17Z" fill="url(#blueGrad)" stroke="url(#blueGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          `;
+
+          // Convert SVG to image and draw
+          const img = new Image();
+          const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+          const url = URL.createObjectURL(svgBlob);
+          
+          img.onload = () => {
+            // Draw SVG at high resolution
+            ctx.drawImage(img, logoX, logoY, logoSize, logoSize);
+            URL.revokeObjectURL(url);
+          };
+          
+          img.onerror = () => {
+            // Fallback to PNG if SVG fails
+            const fallbackImg = new Image();
+            fallbackImg.crossOrigin = "anonymous";
+            fallbackImg.onload = () => {
+              ctx.drawImage(fallbackImg, logoX, logoY, logoSize, logoSize);
+            };
+            fallbackImg.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+            URL.revokeObjectURL(url);
+          };
+          
+          img.src = url;
         };
 
-        logo.onerror = () => {
-          console.warn("Failed to load logo for QR code");
-          // Continue without logo if it fails to load
-        };
-
-        // Use the tricolor icon logo
-        logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+        // Draw logo
+        drawLogo();
       } catch (err: any) {
         console.error("Error generating QR code:", err);
         setError(err.message || "Failed to generate QR code");
@@ -113,10 +175,12 @@ export function BeautifiedQRCode({
     <div className={`flex items-center justify-center ${className}`}>
       <canvas
         ref={canvasRef}
-        width={size}
-        height={size}
         className="rounded-lg"
-        style={{ imageRendering: "pixelated" }}
+        style={{ 
+          imageRendering: "auto", // Changed from "pixelated" to "auto" for better quality
+          maxWidth: "100%",
+          height: "auto"
+        }}
       />
     </div>
   );

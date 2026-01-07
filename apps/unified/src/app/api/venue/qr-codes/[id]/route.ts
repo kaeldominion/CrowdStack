@@ -39,10 +39,11 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, target_url } = body;
+    const { name, description, target_url } = body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description || null;
     if (target_url !== undefined) {
       try {
         new URL(target_url);

@@ -10,6 +10,7 @@ interface DynamicQRCode {
   id: string;
   code: string;
   name: string;
+  description?: string | null;
   target_url: string;
   created_at: string;
   updated_at: string;
@@ -36,6 +37,7 @@ export default function QRGeneratorPage() {
   const [formData, setFormData] = useState({
     code: "",
     name: "",
+    description: "",
     target_url: "",
   });
 
@@ -93,13 +95,14 @@ export default function QRGeneratorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
+          description: formData.description || null,
           target_url: formData.target_url,
         }),
       });
 
       if (response.ok) {
         await loadQRCodes();
-        setFormData({ code: "", name: "", target_url: "" });
+        setFormData({ code: "", name: "", description: "", target_url: "" });
         setShowCreateForm(false);
       } else {
         const error = await response.json();
@@ -118,6 +121,7 @@ export default function QRGeneratorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
+          description: formData.description || null,
           target_url: formData.target_url,
         }),
       });
@@ -125,7 +129,7 @@ export default function QRGeneratorPage() {
       if (response.ok) {
         await loadQRCodes();
         setEditingId(null);
-        setFormData({ code: "", name: "", target_url: "" });
+        setFormData({ code: "", name: "", description: "", target_url: "" });
       } else {
         const error = await response.json();
         alert(error.error || "Failed to update QR code");
@@ -163,6 +167,7 @@ export default function QRGeneratorPage() {
     setFormData({
       code: qrCode.code,
       name: qrCode.name,
+      description: qrCode.description || "",
       target_url: qrCode.target_url,
     });
     setShowCreateForm(false);
@@ -170,7 +175,7 @@ export default function QRGeneratorPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ code: "", name: "", target_url: "" });
+    setFormData({ code: "", name: "", description: "", target_url: "" });
     setShowCreateForm(false);
   };
 
@@ -188,61 +193,91 @@ export default function QRGeneratorPage() {
     const qrUrl = getQRUrl(code);
     const size = 512;
     const logoSize = 80;
+    const scale = 2; // Use 2x scale for high-quality download
     
     try {
       const QRCode = (await import("qrcode")).default;
       const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
+      canvas.width = size * scale;
+      canvas.height = size * scale;
       
-      // Generate QR code
-      await QRCode.toCanvas(canvas, qrUrl, {
-        width: size,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-        errorCorrectionLevel: "H",
-      });
-
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Load and draw logo in center
+      // Enable high-quality rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.scale(scale, scale);
+
+      // Create temporary canvas for QR code
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = size;
+      tempCanvas.height = size;
+      
+      await QRCode.toCanvas(tempCanvas, qrUrl, {
+        width: size,
+        margin: 2,
+        color: { dark: "#000000", light: "#FFFFFF" },
+        errorCorrectionLevel: "H",
+      });
+
+      // Draw QR code to main canvas
+      ctx.drawImage(tempCanvas, 0, 0, size, size);
+
+      // Draw logo using SVG for crisp rendering
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const logoX = centerX - logoSize / 2;
+      const logoY = centerY - logoSize / 2;
+      const padding = 4;
+      const borderRadius = 8;
+
+      // Draw black background square with rounded corners
+      ctx.fillStyle = "#000000";
+      ctx.beginPath();
+      const x = logoX - padding;
+      const y = logoY - padding;
+      const w = logoSize + (padding * 2);
+      const h = logoSize + (padding * 2);
+      ctx.moveTo(x + borderRadius, y);
+      ctx.lineTo(x + w - borderRadius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + borderRadius);
+      ctx.lineTo(x + w, y + h - borderRadius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - borderRadius, y + h);
+      ctx.lineTo(x + borderRadius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - borderRadius);
+      ctx.lineTo(x, y + borderRadius);
+      ctx.quadraticCurveTo(x, y, x + borderRadius, y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Create SVG logo and render
+      const svgString = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${logoSize}" height="${logoSize}">
+          <defs>
+            <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#A855F7"/>
+              <stop offset="100%" stop-color="#C084FC"/>
+            </linearGradient>
+            <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3B82F6"/>
+              <stop offset="100%" stop-color="#60A5FA"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="url(#purpleGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M12 17L2 22L12 24L22 22L12 17Z" fill="url(#blueGrad)" stroke="url(#blueGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+
       const logo = new Image();
-      logo.crossOrigin = "anonymous";
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
       
       logo.onload = () => {
-        const centerX = size / 2;
-        const centerY = size / 2;
-        const logoX = centerX - logoSize / 2;
-        const logoY = centerY - logoSize / 2;
-        const padding = 4;
-        const borderRadius = 8;
-
-        // Draw black background square with rounded corners
-        ctx.fillStyle = "#000000";
-        ctx.beginPath();
-        const x = logoX - padding;
-        const y = logoY - padding;
-        const w = logoSize + (padding * 2);
-        const h = logoSize + (padding * 2);
-        ctx.moveTo(x + borderRadius, y);
-        ctx.lineTo(x + w - borderRadius, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + borderRadius);
-        ctx.lineTo(x + w, y + h - borderRadius);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - borderRadius, y + h);
-        ctx.lineTo(x + borderRadius, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - borderRadius);
-        ctx.lineTo(x, y + borderRadius);
-        ctx.quadraticCurveTo(x, y, x + borderRadius, y);
-        ctx.closePath();
-        ctx.fill();
-
-        // Draw logo
         ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-
+        URL.revokeObjectURL(url);
+        
         // Download
         const pngUrl = canvas.toDataURL("image/png");
         const downloadLink = document.createElement("a");
@@ -254,17 +289,24 @@ export default function QRGeneratorPage() {
       };
 
       logo.onerror = () => {
-        // Download without logo if logo fails to load
-        const pngUrl = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.href = pngUrl;
-        downloadLink.download = `qr-code-${code}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        // Fallback to PNG if SVG fails
+        const fallbackImg = new Image();
+        fallbackImg.crossOrigin = "anonymous";
+        fallbackImg.onload = () => {
+          ctx.drawImage(fallbackImg, logoX, logoY, logoSize, logoSize);
+          const pngUrl = canvas.toDataURL("image/png");
+          const downloadLink = document.createElement("a");
+          downloadLink.href = pngUrl;
+          downloadLink.download = `qr-code-${code}.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        };
+        fallbackImg.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+        URL.revokeObjectURL(url);
       };
 
-      logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+      logo.src = url;
     } catch (error) {
       console.error("Error generating QR code for download:", error);
       alert("Failed to generate QR code for download");
@@ -342,8 +384,21 @@ export default function QRGeneratorPage() {
                   required
                 />
                 <p className="text-xs text-secondary mt-1">
-                  Human-readable description for this QR code
+                  Human-readable name for this QR code
                 </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Optional description or notes about this QR code"
+                  rows={3}
+                  className="w-full px-3 py-2 bg-raised border border-border-subtle rounded-lg text-primary placeholder-secondary focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary/50 resize-none"
+                />
               </div>
 
               <div>
@@ -396,148 +451,126 @@ export default function QRGeneratorPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {qrCodes.map((qrCode) => (
-              <Card key={qrCode.id} className="!p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-primary mb-1">
-                      {qrCode.name}
-                    </h3>
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      {qrCode.code}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => startEdit(qrCode)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleDelete(qrCode.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* QR Code Display */}
-                <div className="bg-white rounded-lg p-4 mb-4 flex items-center justify-center">
-                  <BeautifiedQRCode
-                    url={getQRUrl(qrCode.code)}
-                    size={200}
-                    logoSize={40}
-                  />
-                </div>
-
-                {/* QR Code URL */}
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-secondary uppercase tracking-widest mb-2">
-                    QR Code URL
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={getQRUrl(qrCode.code)}
-                      readOnly
-                      className="font-mono text-xs flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => copyToClipboard(getQRUrl(qrCode.code), qrCode.code)}
-                    >
-                      {copiedCode === qrCode.code ? (
-                        <Check className="h-4 w-4 text-accent-success" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Target URL */}
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-secondary uppercase tracking-widest mb-2">
-                    Current Target URL
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={qrCode.target_url}
-                      readOnly
-                      className="font-mono text-xs flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => window.open(qrCode.target_url, "_blank")}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                {stats[qrCode.id] && (
-                  <div className="mb-4 pt-4 border-t border-border-subtle">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Eye className="h-4 w-4 text-secondary" />
-                      <label className="block text-xs font-medium text-secondary uppercase tracking-widest">
-                        Scan Statistics
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-primary">{stats[qrCode.id].totalScans}</p>
-                        <p className="text-[10px] text-secondary uppercase tracking-widest">Total</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-accent-secondary">{stats[qrCode.id].recentScans}</p>
-                        <p className="text-[10px] text-secondary uppercase tracking-widest">30 Days</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold text-accent-success">{stats[qrCode.id].todayScans}</p>
-                        <p className="text-[10px] text-secondary uppercase tracking-widest">Today</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t border-border-subtle">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => downloadQRCode(qrCode.code, qrCode.name)}
-                    className="flex-1"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => window.open(getQRUrl(qrCode.code), "_blank")}
-                    className="flex-1"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Test
-                  </Button>
-                </div>
-
-                {/* Metadata */}
-                <div className="mt-4 pt-4 border-t border-border-subtle">
-                  <p className="text-xs text-secondary">
-                    Updated {new Date(qrCode.updated_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <Card className="!p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-raised border-b border-border-subtle">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">QR Code</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">Name / Code</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">Description</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">Target URL</th>
+                    <th className="text-center px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">Stats</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-secondary uppercase tracking-widest">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {qrCodes.map((qrCode) => (
+                    <tr key={qrCode.id} className="hover:bg-raised/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="bg-white rounded p-2 w-20 h-20 flex items-center justify-center">
+                          <BeautifiedQRCode
+                            url={getQRUrl(qrCode.code)}
+                            size={80}
+                            logoSize={16}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-semibold text-primary">{qrCode.name}</p>
+                          <p className="text-xs font-mono text-secondary mt-1">{qrCode.code}</p>
+                          <p className="text-xs text-muted mt-1">
+                            Updated {new Date(qrCode.updated_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm text-secondary max-w-xs truncate">
+                          {qrCode.description || <span className="text-muted italic">No description</span>}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 max-w-xs">
+                          <p className="text-xs font-mono text-secondary truncate">{qrCode.target_url}</p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => window.open(qrCode.target_url, "_blank")}
+                            className="flex-shrink-0"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {stats[qrCode.id] ? (
+                          <div className="flex items-center gap-4 justify-center">
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-primary">{stats[qrCode.id].totalScans}</p>
+                              <p className="text-[10px] text-secondary">Total</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-accent-secondary">{stats[qrCode.id].recentScans}</p>
+                              <p className="text-[10px] text-secondary">30d</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-bold text-accent-success">{stats[qrCode.id].todayScans}</p>
+                              <p className="text-[10px] text-secondary">Today</p>
+                            </div>
+                          </div>
+                        ) : loadingStats[qrCode.id] ? (
+                          <span className="text-xs text-secondary">Loading...</span>
+                        ) : (
+                          <span className="text-xs text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => copyToClipboard(getQRUrl(qrCode.code), qrCode.code)}
+                            title="Copy QR URL"
+                          >
+                            {copiedCode === qrCode.code ? (
+                              <Check className="h-4 w-4 text-accent-success" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadQRCode(qrCode.code, qrCode.name)}
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEdit(qrCode)}
+                            title="Edit"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(qrCode.id)}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4 text-accent-error" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
       </Container>
     </Section>

@@ -29,8 +29,9 @@ export async function GET(
       .single();
 
     if (error || !qrCode) {
-      console.error("[QR Redirect] QR code not found:", code, error);
-      return NextResponse.redirect(new URL("/", request.url));
+      // QR code deleted or not found - redirect to crowdstack.app
+      console.log("[QR Redirect] QR code not found, redirecting to crowdstack.app:", code);
+      return NextResponse.redirect(new URL("https://crowdstack.app", request.url));
     }
 
     // Track the scan (fire and forget - don't block redirect)
@@ -61,8 +62,8 @@ export async function GET(
     return NextResponse.redirect(new URL(qrCode.target_url, request.url));
   } catch (error: any) {
     console.error("[QR Redirect] Unexpected error:", error);
-    // On error, redirect to home page
-    return NextResponse.redirect(new URL("/", request.url));
+    // On error, redirect to crowdstack.app
+    return NextResponse.redirect(new URL("https://crowdstack.app", request.url));
   }
 }
 

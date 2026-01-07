@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, target_url, venue_id } = body;
+    const { name, description, target_url, venue_id } = body;
 
     if (!name || !target_url) {
       return NextResponse.json(
@@ -149,6 +149,7 @@ export async function POST(request: NextRequest) {
       .insert({
         code,
         name,
+        description: description || null,
         target_url,
         venue_id: selectedVenueId,
         created_by: userId,
