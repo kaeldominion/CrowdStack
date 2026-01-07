@@ -96,6 +96,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Settings,
     roles: ["venue_admin"],
   },
+  {
+    label: "QR Codes",
+    href: "/app/venue/qr-codes",
+    icon: QrCode,
+    roles: ["venue_admin"],
+  },
 
   {
     label: "My Events",
@@ -131,6 +137,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Organizer Settings",
     href: "/app/organizer/settings",
     icon: Settings,
+    roles: ["event_organizer"],
+  },
+  {
+    label: "QR Codes",
+    href: "/app/organizer/qr-codes",
+    icon: QrCode,
     roles: ["event_organizer"],
   },
 

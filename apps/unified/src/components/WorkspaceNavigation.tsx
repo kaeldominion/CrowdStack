@@ -21,6 +21,7 @@ import {
   Megaphone,
   Radio,
   Music,
+  QrCode,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -76,11 +77,13 @@ export function WorkspaceNavigation({ roles, userEmail, userId }: WorkspaceNavig
       items.push({ href: "/app/venue/organizers", label: "Organizers", icon: Building2 });
       items.push({ href: "/app/venue/users", label: "Team", icon: Users });
       items.push({ href: "/app/venue/promoters", label: "Promoters", icon: Megaphone });
+      items.push({ href: "/app/venue/qr-codes", label: "QR Codes", icon: QrCode });
     } else if (roles.includes("event_organizer")) {
       items.push({ href: "/app/organizer/events", label: "Events", icon: Calendar });
       items.push({ href: "/app/organizer/attendees", label: "Attendees", icon: Users });
       items.push({ href: "/app/organizer/promoters", label: "Promoters", icon: Megaphone });
       items.push({ href: "/app/organizer/gigs", label: "DJ Gigs", icon: Music });
+      items.push({ href: "/app/organizer/qr-codes", label: "QR Codes", icon: QrCode });
       items.push({ href: "/app/organizer/settings", label: "Settings", icon: Settings });
     } else if (roles.includes("promoter")) {
       items.push({ href: "/app/promoter/events", label: "Events", icon: Calendar });
