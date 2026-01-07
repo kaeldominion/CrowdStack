@@ -21,6 +21,12 @@ SUPABASE_SERVICE_ROLE_KEY=<get-from-prod-supabase>
 JWT_SECRET=<generate-secure-random-string>
 NEXT_PUBLIC_APP_ENV=prod
 NEXT_PUBLIC_APP_VERSION=$VERCEL_GIT_COMMIT_SHA
+
+# Sentry Error Tracking (Optional but Recommended)
+NEXT_PUBLIC_SENTRY_DSN=https://55f917dbe1e1fcef95c38c4349664764@o4510667665768448.ingest.us.sentry.io/4510667668979712
+SENTRY_DSN=https://55f917dbe1e1fcef95c38c4349664764@o4510667665768448.ingest.us.sentry.io/4510667668979712
+SENTRY_ORG=4510667665768448
+SENTRY_PROJECT=4510667668979712
 ```
 
 **To get SUPABASE_SERVICE_ROLE_KEY:**
@@ -44,6 +50,12 @@ SUPABASE_SERVICE_ROLE_KEY=<get-from-beta-supabase>
 JWT_SECRET=<generate-secure-random-string>
 NEXT_PUBLIC_APP_ENV=beta
 NEXT_PUBLIC_APP_VERSION=$VERCEL_GIT_COMMIT_SHA
+
+# Sentry Error Tracking (Optional but Recommended)
+NEXT_PUBLIC_SENTRY_DSN=https://55f917dbe1e1fcef95c38c4349664764@o4510667665768448.ingest.us.sentry.io/4510667668979712
+SENTRY_DSN=https://55f917dbe1e1fcef95c38c4349664764@o4510667665768448.ingest.us.sentry.io/4510667668979712
+SENTRY_ORG=4510667665768448
+SENTRY_PROJECT=4510667668979712
 ```
 
 **To get SUPABASE_SERVICE_ROLE_KEY:**
@@ -67,4 +79,5 @@ NEXT_PUBLIC_APP_VERSION=$VERCEL_GIT_COMMIT_SHA
 - ⚠️ **Never mix environments**: Preview must use Beta Supabase, Production must use Prod Supabase
 - 🔒 **SUPABASE_SERVICE_ROLE_KEY** is server-only and must never be exposed to the client
 - 📝 **NEXT_PUBLIC_APP_VERSION** uses `$VERCEL_GIT_COMMIT_SHA` to show the commit hash in the footer
+- 🐛 **Sentry DSN**: Get from https://sentry.io → Your Project → Settings → Client Keys (DSN). See `MONITORING_SETUP.md` for full setup instructions.
 
