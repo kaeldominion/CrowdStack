@@ -174,7 +174,7 @@ export default function OrganizerQRCodesPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ code: "", name: "", target_url: "" });
+    setFormData({ code: "", name: "", description: "", target_url: "" });
     setShowCreateForm(false);
   };
 
