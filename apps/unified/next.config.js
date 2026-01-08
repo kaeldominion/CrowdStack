@@ -12,7 +12,14 @@ const nextConfig = {
     },
     // Enable instrumentation hook for Sentry
     instrumentationHook: true,
+    // Enable output file tracing for better performance
+    outputFileTracingIncludes: {
+      '/api/*': ['./node_modules/**/*.js'],
+    },
   },
+  // Performance optimizations
+  compress: true,
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
