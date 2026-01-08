@@ -38,6 +38,14 @@ export async function GET(
 
     console.log(`[Search API] Searching for "${query}" in event ${params.eventId}`);
 
+    // First, get total registration count to determine if we need stricter matching
+    const { count: totalRegistrations } = await serviceSupabase
+      .from("registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", params.eventId);
+
+    const isLargeEvent = (totalRegistrations || 0) > 1000;
+
     // Build query with proper database-level filtering
     let queryBuilder = serviceSupabase
       .from("registrations")
@@ -50,15 +58,37 @@ export async function GET(
     // If query provided, use database-level ILIKE for better performance and exact/fuzzy matching
     if (query && !showAll) {
       const searchTerm = query.trim();
-      // Use ILIKE for case-insensitive matching with wildcards for fuzzy search
-      // This supports both exact matches and partial matches
-      queryBuilder = queryBuilder.or(
-        `attendee.name.ilike.%${searchTerm}%,attendee.email.ilike.%${searchTerm}%,attendee.phone.ilike.%${searchTerm}%`
-      );
-      // Increase limit for search results
-      queryBuilder = queryBuilder.limit(100);
+      const searchLower = searchTerm.toLowerCase();
+      
+      // For large events, require minimum query length and use stricter matching
+      if (isLargeEvent && searchTerm.length < 3) {
+        return NextResponse.json({ results: [] });
+      }
+
+      // Try exact matches first (starts with or equals)
+      // This is more restrictive and returns better results for large events
+      let exactQueryBuilder = queryBuilder.or(
+        `attendee.name.ilike.${searchTerm}%,attendee.email.ilike.${searchTerm}%,attendee.phone.ilike.${searchTerm}%`
+      ).limit(50);
+
+      const { data: exactRegistrations } = await exactQueryBuilder;
+
+      // If we have good exact matches (starts with), use those
+      if (exactRegistrations && exactRegistrations.length > 0 && exactRegistrations.length <= 50) {
+        queryBuilder = exactQueryBuilder;
+      } else if (isLargeEvent && searchTerm.length < 4) {
+        // For large events with short queries, only return if we have exact matches
+        // Otherwise return empty to avoid hundreds of results
+        return NextResponse.json({ results: [] });
+      } else {
+        // For longer queries or smaller events, allow fuzzy matching
+        // But limit results more strictly
+        queryBuilder = queryBuilder.or(
+          `attendee.name.ilike.%${searchTerm}%,attendee.email.ilike.%${searchTerm}%,attendee.phone.ilike.%${searchTerm}%`
+        ).limit(isLargeEvent ? 50 : 100);
+      }
     } else if (showAll) {
-      // Show all registrations
+      // Show all registrations (limited)
       queryBuilder = queryBuilder.limit(500);
     } else {
       // No query and not showing all
@@ -77,6 +107,7 @@ export async function GET(
     if (query && !showAll) {
       const searchLower = query.toLowerCase().trim();
       const exactMatches: typeof filtered = [];
+      const startsWithMatches: typeof filtered = [];
       const fuzzyMatches: typeof filtered = [];
       
       filtered.forEach((reg) => {
@@ -91,23 +122,45 @@ export async function GET(
         const isExactMatch = 
           nameMatch === searchLower ||
           emailMatch === searchLower ||
-          phoneMatch === searchTerm;
+          phoneMatch === query.trim();
         
-        // Check for fuzzy matches
+        // Check for "starts with" matches (better than fuzzy)
+        const startsWith = 
+          nameMatch?.startsWith(searchLower) ||
+          emailMatch?.startsWith(searchLower) ||
+          phoneMatch?.startsWith(query.trim());
+        
+        // Check for fuzzy matches (contains)
         const isFuzzyMatch = 
           nameMatch?.includes(searchLower) ||
           emailMatch?.includes(searchLower) ||
-          phoneMatch?.includes(searchTerm);
+          phoneMatch?.includes(query.trim());
         
         if (isExactMatch) {
           exactMatches.push(reg);
+        } else if (startsWith) {
+          startsWithMatches.push(reg);
         } else if (isFuzzyMatch) {
           fuzzyMatches.push(reg);
         }
       });
       
-      // Prioritize exact matches, then fuzzy matches
-      filtered = [...exactMatches, ...fuzzyMatches];
+      // Prioritize: exact matches, then starts-with, then fuzzy
+      // For large events, only return if we have good matches
+      if (isLargeEvent) {
+        if (exactMatches.length > 0 || startsWithMatches.length > 0) {
+          filtered = [...exactMatches, ...startsWithMatches];
+        } else if (fuzzyMatches.length <= 20) {
+          // Only return fuzzy matches if there are few of them
+          filtered = fuzzyMatches;
+        } else {
+          // Too many fuzzy matches for large event - return empty
+          filtered = [];
+        }
+      } else {
+        // For smaller events, return all matches
+        filtered = [...exactMatches, ...startsWithMatches, ...fuzzyMatches];
+      }
     }
 
     // Get check-in status for each
