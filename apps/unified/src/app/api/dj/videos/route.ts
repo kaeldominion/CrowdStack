@@ -8,6 +8,9 @@ import { cookies } from "next/headers";
  * List videos for DJ
  * Query params: ?djId=xxx (optional, for admin/public access)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

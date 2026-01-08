@@ -7,6 +7,9 @@ import { cookies } from "next/headers";
  * POST /api/admin/djs/[djId]/cover
  * Upload DJ cover image (admin only)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { djId: string } }

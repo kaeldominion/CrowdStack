@@ -54,6 +54,9 @@ async function isSuperadmin(userId: string): Promise<boolean> {
  * PATCH /api/admin/qr-codes/[id]
  * Update a dynamic QR code (typically just the target_url)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

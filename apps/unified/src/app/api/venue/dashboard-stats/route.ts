@@ -4,6 +4,9 @@ import { getVenueDashboardStats } from "@/lib/data/dashboard-stats";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

@@ -20,6 +20,9 @@ export interface PromoterDashboardEvent {
   isPast: boolean;
 }
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

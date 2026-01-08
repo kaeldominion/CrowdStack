@@ -8,6 +8,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * POST /api/organizer/gigs/[gigId]/select-dj
  * Select a DJ for the gig - adds to lineup and creates event_promoters entry
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ gigId: string }> | { gigId: string } }

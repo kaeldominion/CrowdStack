@@ -98,6 +98,9 @@ async function canManageEventDoorStaff(userId: string, eventId: string): Promise
  * GET /api/events/[eventId]/door-staff
  * Get all door staff assigned to an event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

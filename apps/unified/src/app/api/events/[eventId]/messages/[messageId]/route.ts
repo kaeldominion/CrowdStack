@@ -5,6 +5,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * PATCH /api/events/[eventId]/messages/[messageId]
  * Update a message (only the author can update)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { eventId: string; messageId: string } }

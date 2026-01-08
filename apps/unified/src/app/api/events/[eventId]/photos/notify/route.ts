@@ -19,6 +19,9 @@ interface NotifyRequestBody {
  * 
  * Allowed roles: superadmin, event_organizer (for their events), venue_admin (for their venue's events)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

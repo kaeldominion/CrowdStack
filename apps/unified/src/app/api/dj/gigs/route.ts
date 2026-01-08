@@ -8,6 +8,9 @@ import { getUserDJId, getUserDJIds } from "@/lib/data/get-user-entity";
  * List available gigs for all DJ profiles (open postings + invitations)
  * Shows gigs for all profiles, but marks which profile can respond
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

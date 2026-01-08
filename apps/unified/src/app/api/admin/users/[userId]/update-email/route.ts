@@ -12,6 +12,9 @@ import { userHasRole } from "@crowdstack/shared/auth/roles";
  * 3. Updates email in related records (promoters, attendees) if they exist
  * 4. Preserves all relationships
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { userId: string } }

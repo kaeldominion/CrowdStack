@@ -6,6 +6,9 @@ import { cookies } from "next/headers";
  * GET /api/events/[eventId]/search
  * Search for attendees registered to this event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

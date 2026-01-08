@@ -9,6 +9,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
  * Query params:
  * - venueId: UUID of the venue
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(request.url);

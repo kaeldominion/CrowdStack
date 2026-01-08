@@ -16,6 +16,9 @@ import { createServiceRoleClient, createClient } from "@crowdstack/shared/supaba
  *   receivedAt?: string (ISO timestamp)
  * }
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Allow service role key for testing (bypass auth)

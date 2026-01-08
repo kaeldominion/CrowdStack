@@ -5,6 +5,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * GET /api/organizer/door-staff/search-users?q=xxx&organizerId=xxx
  * Search for users by email to add as door staff
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

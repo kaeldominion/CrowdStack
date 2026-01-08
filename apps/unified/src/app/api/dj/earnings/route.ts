@@ -6,6 +6,9 @@ import { getUserDJIds } from "@/lib/data/get-user-entity";
  * GET /api/dj/earnings
  * Get DJ gig earnings (separate from promoter earnings)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

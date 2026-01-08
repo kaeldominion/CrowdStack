@@ -6,6 +6,9 @@ import { cookies } from "next/headers";
  * GET /api/events/[eventId]/lineup
  * Get event lineup (public)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ eventId: string }> | { eventId: string } }

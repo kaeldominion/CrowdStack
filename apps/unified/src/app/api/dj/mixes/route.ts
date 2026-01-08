@@ -8,6 +8,9 @@ import { cookies } from "next/headers";
  * Get all mixes for the current DJ (both draft and published)
  * Query params: ?djId=xxx (optional, for admin/public access)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

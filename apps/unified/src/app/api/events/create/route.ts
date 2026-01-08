@@ -7,6 +7,9 @@ import type { CreateEventRequest } from "@crowdstack/shared";
 import { notifyVenueOfPendingEvent, notifyVenueOfAutoApprovedEvent } from "@crowdstack/shared/notifications/send";
 import { trackEventCreated } from "@/lib/analytics/server";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

@@ -7,6 +7,9 @@ import { cookies } from "next/headers";
  * GET /api/dj/mixes/[mixId]
  * Get a specific mix
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { mixId: string } }

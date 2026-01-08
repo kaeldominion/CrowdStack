@@ -14,6 +14,9 @@ const VENUE_EDITABLE_FIELDS = [
   "show_photo_email_notice",
 ];
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PUT(
   request: Request,
   { params }: { params: { eventId: string } }

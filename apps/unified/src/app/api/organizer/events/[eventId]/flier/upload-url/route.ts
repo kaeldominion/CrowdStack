@@ -8,6 +8,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * Generate a signed URL for direct client-side upload to Supabase Storage
  * This bypasses Vercel's 4.5MB body size limit
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ eventId: string }> | { eventId: string } }

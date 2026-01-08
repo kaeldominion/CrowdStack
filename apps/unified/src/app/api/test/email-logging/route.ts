@@ -10,6 +10,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * Authentication: Uses cookies (Supabase session) OR service role key in header
  * For testing: Set X-Service-Role-Key header with SUPABASE_SERVICE_ROLE_KEY
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Allow service role key for testing (bypass auth)

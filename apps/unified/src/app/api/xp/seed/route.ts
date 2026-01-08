@@ -6,6 +6,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * DEV ONLY: Seed test XP for the current user
  * Body: { amount: number }
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Only allow in development

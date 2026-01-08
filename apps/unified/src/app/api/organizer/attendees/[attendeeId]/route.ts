@@ -3,6 +3,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { getOrganizerAttendeeDetails } from "@/lib/data/attendees-organizer";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ attendeeId: string }> }

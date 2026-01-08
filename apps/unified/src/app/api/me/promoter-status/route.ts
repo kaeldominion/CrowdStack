@@ -5,6 +5,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * GET /api/me/promoter-status
  * Check if the current user is a promoter and their assignment status for an event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

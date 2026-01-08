@@ -5,6 +5,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * GET /api/events/[eventId]/edit-history
  * Get edit history for an event (organizer, venue admin, or superadmin access)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
   { params }: { params: { eventId: string } }

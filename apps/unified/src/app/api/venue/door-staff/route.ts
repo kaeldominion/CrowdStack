@@ -87,6 +87,9 @@ async function canManageVenueDoorStaff(userId: string, venueId: string): Promise
  * GET /api/venue/door-staff
  * Get all permanent door staff for the venue
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { userId, venueId } = await getUserIdAndVenue();

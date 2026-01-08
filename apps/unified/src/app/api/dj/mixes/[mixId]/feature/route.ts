@@ -6,6 +6,9 @@ import { getUserDJId } from "@/lib/data/get-user-entity";
  * POST /api/dj/mixes/[mixId]/feature
  * Feature or unfeature a mix
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { mixId: string } }

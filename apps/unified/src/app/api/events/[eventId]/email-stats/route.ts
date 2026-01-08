@@ -87,6 +87,9 @@ function processEmailLogs(emailLogs: any[]) {
  * GET /api/events/[eventId]/email-stats
  * Get email delivery statistics for an event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

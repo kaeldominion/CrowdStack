@@ -9,6 +9,9 @@ import { uploadToStorage, deleteFromStorage } from "@crowdstack/shared/storage/u
  * List gallery images for venue
  * Query params: ?venueId=xxx (optional, for admin access)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

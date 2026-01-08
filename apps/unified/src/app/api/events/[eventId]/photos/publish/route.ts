@@ -13,6 +13,9 @@ const AUTO_NOTIFY_COOLDOWN_HOURS = 24;
  * POST /api/events/[eventId]/photos/publish
  * Publish the photo album and optionally send notification emails
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

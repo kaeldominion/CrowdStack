@@ -56,6 +56,9 @@ async function isSuperadmin(userId: string): Promise<boolean> {
  * POST /api/admin/events/[eventId]/approve
  * Admin approves or rejects an event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

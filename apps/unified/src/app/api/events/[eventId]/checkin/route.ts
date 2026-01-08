@@ -13,6 +13,9 @@ import { logActivity } from "@crowdstack/shared/activity/log-activity";
  * 
  * Allowed roles: superadmin, door_staff, venue_admin (for their venues), event_organizer (for their events)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

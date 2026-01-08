@@ -9,6 +9,9 @@ const SELECTED_DJ_COOKIE = "selected_dj_id";
  * POST /api/dj/select-profile
  * Set the selected DJ profile for the current user
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

@@ -8,6 +8,9 @@ import { cookies } from "next/headers";
  * DELETE /api/dj/gallery/[imageId]
  * Delete specific gallery image
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { imageId: string } }

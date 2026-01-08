@@ -9,6 +9,9 @@ import { getUserDJId, getUserDJIds } from "@/lib/data/get-user-entity";
  * Respond to a gig posting (interested or declined)
  * Uses selected DJ profile, or allows specifying dj_id in body
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ gigId: string }> | { gigId: string } }

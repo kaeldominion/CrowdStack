@@ -4,6 +4,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { hasVenuePermission } from "@crowdstack/shared/auth/venue-permissions";
 import type { VenuePermissions } from "@crowdstack/shared/types";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: Request,
   { params }: { params: { userId: string } }

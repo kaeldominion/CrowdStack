@@ -7,6 +7,9 @@ import { cookies } from "next/headers";
  * PATCH /api/dj/videos/[videoId]
  * Update video
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { videoId: string } }

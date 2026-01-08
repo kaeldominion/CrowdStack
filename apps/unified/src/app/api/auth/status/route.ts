@@ -6,6 +6,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
  * Check if the current user is authenticated
  * Returns minimal info needed for client-side UI decisions
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

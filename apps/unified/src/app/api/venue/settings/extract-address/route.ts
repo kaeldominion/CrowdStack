@@ -280,6 +280,9 @@ async function extractAddressFromGoogleMapsUrl(url: string): Promise<{
  * POST /api/venue/settings/extract-address
  * Extract address from Google Maps URL and update venue
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

@@ -15,6 +15,9 @@ import { createHmac } from "crypto";
  * 
  * @see https://docs.crisp.chat/guides/chatbox-sdks/web-sdk/identity-verification/
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

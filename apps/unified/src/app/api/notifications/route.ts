@@ -4,6 +4,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserWithRetry } from "@crowdstack/shared/supabase/auth-helpers";
 
 // GET - List notifications for current user
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();

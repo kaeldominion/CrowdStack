@@ -13,6 +13,9 @@ import { userHasRole } from "@crowdstack/shared/auth/roles";
  * 4. Updates promoter name if exists
  * 5. Preserves all relationships
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { userId: string } }

@@ -6,6 +6,9 @@ import { getUserVenues } from "@/lib/data/get-user-entity";
  * GET /api/venue/list
  * Get all venues the current user has access to
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

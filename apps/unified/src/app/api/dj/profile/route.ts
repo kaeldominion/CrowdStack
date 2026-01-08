@@ -7,6 +7,9 @@ import { normalizeInstagramUrl, normalizeWebsiteUrl, normalizeMixcloudUrl, norma
  * GET /api/dj/profile
  * Get current user's DJ profile
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

@@ -33,6 +33,9 @@ async function getUserId(): Promise<string | null> {
  * GET /api/events/[eventId]/door-staff/search-users
  * Search for users by email (fuzzy match) for door staff assignment
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

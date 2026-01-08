@@ -22,6 +22,9 @@ interface MessageRequest {
  * - Recipient count is calculated server-side
  * - Message is queued (not sent immediately)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

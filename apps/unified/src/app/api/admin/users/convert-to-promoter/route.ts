@@ -4,6 +4,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRole } from "@crowdstack/shared/auth/roles";
 import { assignUserRole } from "@crowdstack/shared/auth/roles";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Verify admin access

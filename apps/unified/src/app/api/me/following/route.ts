@@ -6,6 +6,9 @@ import { getUserWithRetry } from "@crowdstack/shared/supabase/auth-helpers";
  * GET /api/me/following
  * Get list of DJs the current user follows
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

@@ -3,6 +3,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 
 // GET - List pre-approved organizers for the venue
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

@@ -6,6 +6,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * Track a photo download and return the download URL
  * Logged-in users only
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { photoId: string } }

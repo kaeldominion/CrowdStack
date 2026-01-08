@@ -7,6 +7,9 @@ import { cookies } from "next/headers";
  * Debug endpoint to check user roles
  * This endpoint also checks for localhost custom cookie format
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     // First, try to get user with regular client

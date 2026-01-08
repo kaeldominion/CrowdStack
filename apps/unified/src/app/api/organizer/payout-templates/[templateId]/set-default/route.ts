@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
  * PUT /api/organizer/payout-templates/[templateId]/set-default
  * Set a template as the default for the organizer
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PUT(
   request: NextRequest,
   { params }: { params: { templateId: string } }

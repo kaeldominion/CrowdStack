@@ -6,6 +6,9 @@ import { canManageEventPhotos } from "@crowdstack/shared/auth/photo-permissions"
  * POST /api/events/[eventId]/photos/bulk
  * Bulk operations on photos (delete, feature/unfeature)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

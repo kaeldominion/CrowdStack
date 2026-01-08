@@ -6,6 +6,9 @@ import { assignUserRole } from "@crowdstack/shared/auth/roles";
 import { DEFAULT_VENUE_PERMISSIONS } from "@crowdstack/shared/constants/permissions";
 import type { VenuePermissions } from "@crowdstack/shared/types";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

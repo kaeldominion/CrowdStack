@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * GET /api/organizer/settings
  * Get organizer settings (profile + team members)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

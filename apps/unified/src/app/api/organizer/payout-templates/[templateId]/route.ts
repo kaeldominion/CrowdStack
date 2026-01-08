@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
  * GET /api/organizer/payout-templates/[templateId]
  * Get a single payout template
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { templateId: string } }

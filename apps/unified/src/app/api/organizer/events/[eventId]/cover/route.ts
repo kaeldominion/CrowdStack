@@ -8,6 +8,9 @@ import { uploadToStorage } from "@crowdstack/shared/storage/upload";
  * POST /api/organizer/events/[eventId]/cover
  * Upload event cover image
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

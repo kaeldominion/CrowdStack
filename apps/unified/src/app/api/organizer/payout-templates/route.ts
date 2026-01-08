@@ -8,6 +8,9 @@ import type { PromoterPayoutTemplate } from "@crowdstack/shared/types";
  * GET /api/organizer/payout-templates
  * Get all payout templates for the organizer
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

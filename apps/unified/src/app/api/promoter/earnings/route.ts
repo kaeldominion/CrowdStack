@@ -34,6 +34,9 @@ export interface PromoterEarningsSummary {
  * GET /api/promoter/earnings
  * Get detailed earnings breakdown for the current promoter
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

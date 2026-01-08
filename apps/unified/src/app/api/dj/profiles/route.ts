@@ -6,6 +6,9 @@ import { getUserDJId, getUserDJProfiles } from "@/lib/data/get-user-entity";
  * GET /api/dj/profiles
  * Get all DJ profiles for the current user with selection status
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

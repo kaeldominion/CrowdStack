@@ -5,6 +5,9 @@ import { cookies } from "next/headers";
 const IMPERSONATION_COOKIE = "crowdstack_impersonation";
 const IMPERSONATION_LOG_TABLE = "impersonation_logs";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceRoleClient();

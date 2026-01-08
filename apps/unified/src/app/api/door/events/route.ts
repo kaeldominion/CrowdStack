@@ -30,6 +30,9 @@ async function getUserId(): Promise<string | null> {
   return userId || null;
 }
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * POST /api/organizer/team
  * Add a new team member
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

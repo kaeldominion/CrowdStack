@@ -34,6 +34,9 @@ async function getUserId(): Promise<string | null> {
  * Get event details for door scanner
  * Permissions: venue_admin, event_organizer, door_staff assigned to event, or superadmin
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

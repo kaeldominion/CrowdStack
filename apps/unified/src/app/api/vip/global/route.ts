@@ -12,6 +12,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
  * - action: "grant" | "revoke"
  * - reason: Optional reason for granting VIP status
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 

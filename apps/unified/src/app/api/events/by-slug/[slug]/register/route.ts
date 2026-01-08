@@ -7,6 +7,9 @@ import type { RegisterEventRequest } from "@crowdstack/shared";
 import { trackEventRegistration } from "@/lib/analytics/server";
 import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { slug: string } }

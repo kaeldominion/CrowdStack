@@ -12,6 +12,9 @@ import type {
   OrganizerPermissions,
 } from "@crowdstack/shared/types";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: Request,
   { params }: { params: { userId: string } }

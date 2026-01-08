@@ -5,6 +5,9 @@ import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { generateAndUploadPayoutStatement } from "@crowdstack/shared/pdf/generate-statement";
 import { trackPayoutGenerated } from "@/lib/analytics/server";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

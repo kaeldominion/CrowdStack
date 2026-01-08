@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * GET /api/organizer/team/search-users?email=xxx
  * Search for users by email to add to organizer team
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

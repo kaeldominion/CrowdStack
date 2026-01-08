@@ -7,6 +7,9 @@ import { deleteFromStorage } from "@crowdstack/shared/storage/upload";
  * DELETE /api/events/[eventId]/photos/[photoId]
  * Delete a photo
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { eventId: string; photoId: string } }

@@ -16,6 +16,9 @@ import { getUserOrganizerId, getUserVenueId } from "@/lib/data/get-user-entity";
  *   event_id?: string // Optional - to pre-assign to an event
  * }
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

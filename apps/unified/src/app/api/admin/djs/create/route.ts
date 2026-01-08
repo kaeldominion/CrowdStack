@@ -9,6 +9,9 @@ import { cookies } from "next/headers";
  * POST /api/admin/djs/create
  * Create a DJ profile and assign it to a user (admin only)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();

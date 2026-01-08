@@ -33,6 +33,9 @@ async function getUserId(): Promise<string | null> {
  * GET /api/door/invite/[token]
  * Get invite details
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { token: string } }

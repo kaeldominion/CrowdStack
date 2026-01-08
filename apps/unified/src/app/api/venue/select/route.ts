@@ -9,6 +9,9 @@ const SELECTED_VENUE_COOKIE = "selected_venue_id";
  * POST /api/venue/select
  * Set the selected venue for the current user
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

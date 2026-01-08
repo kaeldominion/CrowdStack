@@ -6,6 +6,9 @@ import { uploadToStorage, deleteFromStorage } from "@crowdstack/shared/storage/u
  * POST /api/profile/avatar
  * Upload avatar image for current user
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();

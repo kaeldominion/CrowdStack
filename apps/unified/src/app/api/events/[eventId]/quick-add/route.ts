@@ -18,6 +18,9 @@ interface QuickAddRequest {
  * 
  * Allowed roles: superadmin, door_staff, venue_admin, event_organizer (with event access)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

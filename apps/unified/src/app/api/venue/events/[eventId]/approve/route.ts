@@ -4,6 +4,9 @@ import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { notifyOrganizerOfApproval } from "@crowdstack/shared/notifications/send";
 import { trackEventApproved, trackEventRejected } from "@/lib/analytics/server";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

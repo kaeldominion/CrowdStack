@@ -6,6 +6,9 @@ import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permission
  * PATCH /api/events/[eventId]/photos/cover
  * Set cover photo for album
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { eventId: string } }

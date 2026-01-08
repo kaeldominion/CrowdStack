@@ -3,6 +3,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 
 type ManageRole = "admin" | "organizer" | "venue" | null;
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
   { params }: { params: { eventId: string } }

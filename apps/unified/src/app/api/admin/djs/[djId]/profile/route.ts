@@ -7,6 +7,9 @@ import { cookies } from "next/headers";
  * GET /api/admin/djs/[djId]/profile
  * Get DJ profile (admin only)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
   { params }: { params: { djId: string } }

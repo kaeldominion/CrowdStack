@@ -7,6 +7,9 @@ import { userHasRole } from "@crowdstack/shared/auth/roles";
  * Search for attendees registered for this event (door staff only)
  * Query params: ?q=search_term
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

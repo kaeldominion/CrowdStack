@@ -8,6 +8,9 @@ import type { OrganizerPermissions } from "@crowdstack/shared/types";
  * PUT /api/organizer/team/permissions
  * Update permissions for a team member
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();

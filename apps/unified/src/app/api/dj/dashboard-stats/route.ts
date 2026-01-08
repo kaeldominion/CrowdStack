@@ -8,6 +8,9 @@ import { getPromoterDashboardStats } from "@/lib/data/dashboard-stats";
  * Get DJ dashboard statistics including earnings and referrals from promoter profile
  * Stats are for the selected DJ profile, but gig invitations show all profiles
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

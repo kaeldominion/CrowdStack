@@ -10,6 +10,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
  * - attendeeId: UUID of the attendee
  * - eventId: Optional event UUID to check scoped VIP status
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(request.url);

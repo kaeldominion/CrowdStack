@@ -8,6 +8,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * GET /api/organizer/gigs
  * List all gig postings for the organizer
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();

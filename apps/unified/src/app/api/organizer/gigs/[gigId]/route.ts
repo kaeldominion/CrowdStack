@@ -7,6 +7,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * GET /api/organizer/gigs/[gigId]
  * Get gig posting details with all responses
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ gigId: string }> | { gigId: string } }

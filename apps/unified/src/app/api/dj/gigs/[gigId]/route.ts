@@ -7,6 +7,9 @@ import { getUserDJId, getUserDJIds } from "@/lib/data/get-user-entity";
  * GET /api/dj/gigs/[gigId]
  * Get gig posting details
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ gigId: string }> | { gigId: string } }

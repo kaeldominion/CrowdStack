@@ -3,6 +3,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { getPromoterDashboardStats, getPromoterEarningsChartData } from "@/lib/data/dashboard-stats";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();

@@ -87,6 +87,9 @@ async function canManageOrganizerDoorStaff(userId: string, organizerId: string):
  * GET /api/organizer/door-staff
  * Get all permanent door staff for the organizer
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { userId, organizerId } = await getUserIdAndOrganizer();

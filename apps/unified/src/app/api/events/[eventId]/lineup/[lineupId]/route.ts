@@ -5,6 +5,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
  * PATCH /api/events/[eventId]/lineup/[lineupId]
  * Update a lineup entry (e.g., toggle headliner status)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ eventId: string; lineupId: string }> | { eventId: string; lineupId: string } }

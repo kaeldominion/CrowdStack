@@ -6,6 +6,9 @@ import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permission
  * PATCH /api/events/[eventId]/photos/reorder
  * Update display order of photos
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { eventId: string } }

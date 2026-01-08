@@ -3,6 +3,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { logActivity } from "@crowdstack/shared/activity/log-activity";
 import type { ActivityActionType, ActivityEntityType, ActivityMetadata } from "@crowdstack/shared/activity/log-activity";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
