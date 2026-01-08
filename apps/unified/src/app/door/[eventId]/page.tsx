@@ -96,6 +96,7 @@ export default function DoorScannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [requiresLogin, setRequiresLogin] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [origin, setOrigin] = useState<string>(""); // Client-side origin to prevent hydration mismatch
 
   // Camera scanning state
   const [scanning, setScanning] = useState(false);
@@ -138,6 +139,13 @@ export default function DoorScannerPage() {
         clearTimeout(processingTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Set origin on client-side only to prevent hydration mismatch
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
   }, []);
 
   const loadEventInfo = async () => {
@@ -882,8 +890,8 @@ export default function DoorScannerPage() {
             <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg">
               <BeautifiedQRCode
                 url={(() => {
-                  const baseUrl = typeof window !== "undefined" 
-                    ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                  const baseUrl = origin 
+                    ? `${origin}/e/${eventInfo.slug}/register`
                     : `/e/${eventInfo.slug}/register`;
                   if (eventInfo.venue?.id) {
                     return `${baseUrl}?ref=venue_${eventInfo.venue.id}`;
@@ -898,8 +906,8 @@ export default function DoorScannerPage() {
             <div className="text-center space-y-2">
               <p className="text-sm font-medium text-primary">Event Registration Link</p>
               <p className="text-xs text-secondary break-all">
-                {typeof window !== "undefined" 
-                  ? `${window.location.origin}/e/${eventInfo.slug}/register`
+                {origin 
+                  ? `${origin}/e/${eventInfo.slug}/register`
                   : `/e/${eventInfo.slug}/register`}
               </p>
             </div>
