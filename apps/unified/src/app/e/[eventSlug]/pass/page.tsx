@@ -9,10 +9,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { X, CheckCircle2, QrCode, Scan } from "lucide-react";
+import { X, CheckCircle2, QrCode, Scan, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { Logo, LoadingSpinner, Button, Card, ConfirmModal } from "@crowdstack/ui";
 import { DockNav } from "@/components/navigation/DockNav";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PassData {
   qrToken: string;
@@ -38,6 +39,7 @@ export default function QRPassPage() {
   const [isDeregistering, setIsDeregistering] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [deregisterError, setDeregisterError] = useState<string | null>(null);
+  const [showFullscreenQR, setShowFullscreenQR] = useState(false);
 
   // Format date for display
   const formatEventDate = (dateStr: string) => {
@@ -269,18 +271,31 @@ export default function QRPassPage() {
 
                 {/* QR Code */}
                 <div className="p-6 flex flex-col items-center">
-                  <div className="bg-white p-3 rounded-xl shadow-lg">
+                  <div 
+                    className="bg-white p-3 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow relative group"
+                    onClick={() => setShowFullscreenQR(true)}
+                  >
                     <img 
                       src={qrCodeUrl} 
                       alt="Event QR Pass" 
                       className="w-52 h-52"
                       style={{ imageRendering: "pixelated" }}
                     />
+                    {/* Tap hint overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/5 rounded-xl transition-colors">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 text-primary">
+                        <Maximize2 className="h-5 w-5" />
+                        <span className="text-sm font-medium">Tap to enlarge</span>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Pass ID */}
                   <p className="mt-5 font-mono text-xs text-muted tracking-wider">
                     ID: {passData.passId}
+                  </p>
+                  <p className="mt-2 text-xs text-secondary text-center">
+                    Tap QR code to view full screen
                   </p>
                 </div>
               </div>
@@ -307,6 +322,75 @@ export default function QRPassPage() {
           </>
         ) : null}
       </div>
+
+      {/* Fullscreen QR Code Modal */}
+      <AnimatePresence>
+        {showFullscreenQR && qrCodeUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setShowFullscreenQR(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-2xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowFullscreenQR(false)}
+                className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              
+              {/* QR Code Container */}
+              <div className="bg-white p-8 rounded-2xl shadow-2xl">
+                <div className="flex flex-col items-center">
+                  <img 
+                    src={qrCodeUrl.replace('size=300x300', 'size=600x600')} 
+                    alt="Event QR Pass" 
+                    className="w-full max-w-md h-auto"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                  
+                  {/* Event Info */}
+                  {passData && (
+                    <div className="mt-6 text-center">
+                      <p className="font-sans text-lg font-bold text-primary mb-1">
+                        {passData.eventName}
+                      </p>
+                      <p className="font-mono text-xs text-muted tracking-wider">
+                        ID: {passData.passId}
+                      </p>
+                      <p className="mt-2 text-sm text-secondary">
+                        {passData.attendeeName}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Instruction */}
+                  <div className="mt-4 flex items-center gap-2 text-muted">
+                    <Scan className="h-4 w-4" />
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                      Scan at door for entry
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Tap to close hint */}
+              <p className="mt-4 text-center text-white/60 text-sm">
+                Tap outside to close
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Cancel Registration Modal */}
       <ConfirmModal
