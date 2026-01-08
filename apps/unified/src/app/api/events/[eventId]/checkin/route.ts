@@ -201,67 +201,69 @@ export async function POST(
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
 
     // Check if already checked in (idempotent)
+    // Use upsert to handle race conditions gracefully
     const { data: existingCheckin } = await serviceSupabase
       .from("checkins")
       .select("*")
       .eq("registration_id", registrationId)
       .single();
 
+    let checkin;
+    let isDuplicate = false;
+
     if (existingCheckin) {
       console.log(`[Check-in API] Attendee ${attendeeName} already checked in at ${existingCheckin.checked_in_at}`);
-      return NextResponse.json({
-        success: true,
-        duplicate: true,
-        checkin: existingCheckin,
-        attendee_name: attendeeName,
-        attendee_id: registration.attendee_id,
-        registration_id: registrationId,
-        message: `${attendeeName} was already checked in`,
-      });
-    }
-
-    // Create checkin
-    const { data: checkin, error: checkinError } = await serviceSupabase
-      .from("checkins")
-      .insert({
-        registration_id: registrationId,
-        checked_in_by: userId,
-      })
-      .select()
-      .single();
-
-    if (checkinError) {
-      console.error(`[Check-in API] Failed to create checkin:`, checkinError);
-      throw checkinError;
-    }
-
-    console.log(`[Check-in API] ✅ Successfully checked in ${attendeeName} (checkin ID: ${checkin.id})`);
-
-    // Log activity
-    const { data: attendeeRecord } = await serviceSupabase
-      .from("attendees")
-      .select("user_id")
-      .eq("id", registration.attendee_id)
-      .single();
-    
-    if (attendeeRecord?.user_id) {
-      await logActivity(
-        attendeeRecord.user_id,
-        "checkin",
-        "checkin",
-        checkin.id,
-        {
-          event_id: eventId,
+      checkin = existingCheckin;
+      isDuplicate = true;
+    } else {
+      // Try to insert, but handle unique constraint violation (race condition)
+      const { data: newCheckin, error: checkinError } = await serviceSupabase
+        .from("checkins")
+        .insert({
           registration_id: registrationId,
           checked_in_by: userId,
-          attendee_name: attendeeName,
+        })
+        .select()
+        .single();
+
+      if (checkinError) {
+        // Check if it's a unique constraint violation (race condition)
+        if (checkinError.code === '23505' || checkinError.message?.includes('duplicate key') || checkinError.message?.includes('unique constraint')) {
+          console.log(`[Check-in API] Race condition detected, fetching existing checkin for ${attendeeName}`);
+          // Another request created the checkin, fetch it
+          const { data: raceCheckin } = await serviceSupabase
+            .from("checkins")
+            .select("*")
+            .eq("registration_id", registrationId)
+            .single();
+          
+          if (raceCheckin) {
+            checkin = raceCheckin;
+            isDuplicate = true;
+          } else {
+            // This shouldn't happen, but handle it
+            console.error(`[Check-in API] Unique constraint error but couldn't fetch checkin:`, checkinError);
+            throw checkinError;
+          }
+        } else {
+          console.error(`[Check-in API] Failed to create checkin:`, checkinError);
+          throw checkinError;
         }
-      );
+      } else {
+        checkin = newCheckin;
+      }
     }
 
-    // Award XP for check-in using new schema (user_id)
-    try {
-      // Get the user_id from the attendee record
+    if (!checkin) {
+      throw new Error("Failed to get or create checkin");
+    }
+
+    if (isDuplicate) {
+      console.log(`[Check-in API] ✅ Duplicate check-in handled gracefully for ${attendeeName} (checkin ID: ${checkin.id})`);
+    } else {
+      console.log(`[Check-in API] ✅ Successfully checked in ${attendeeName} (checkin ID: ${checkin.id})`);
+
+      // Log activity (only for new check-ins, not duplicates)
       const { data: attendeeRecord } = await serviceSupabase
         .from("attendees")
         .select("user_id")
@@ -269,46 +271,73 @@ export async function POST(
         .single();
       
       if (attendeeRecord?.user_id) {
-        // Use the award_xp RPC function if available, otherwise direct insert
-        const { error: xpError } = await serviceSupabase.rpc("award_xp", {
-          p_user_id: attendeeRecord.user_id,
-          p_amount: 100,
-          p_source_type: "ATTENDED_EVENT",
-          p_role_context: "attendee",
-          p_event_id: eventId,
-          p_description: "Checked in to event",
-        });
-        
-        if (xpError) {
-          console.warn(`[Check-in API] Failed to award XP via RPC:`, xpError);
-          // Fallback to direct insert
-          const { error: insertError } = await serviceSupabase
-            .from("xp_ledger")
-            .insert({
-              user_id: attendeeRecord.user_id,
-              event_id: eventId,
-              amount: 100,
-              source_type: "ATTENDED_EVENT",
-              role_context: "attendee",
-              description: "Checked in to event",
-            });
-          if (insertError) {
-            console.warn(`[Check-in API] Failed to award XP via insert:`, insertError);
-          } else {
-            console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id}`);
+        await logActivity(
+          attendeeRecord.user_id,
+          "checkin",
+          "checkin",
+          checkin.id,
+          {
+            event_id: eventId,
+            registration_id: registrationId,
+            checked_in_by: userId,
+            attendee_name: attendeeName,
           }
-        } else {
-          console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id} via RPC`);
-        }
-      } else {
-        console.warn(`[Check-in API] No user_id found for attendee ${registration.attendee_id}`);
+        );
       }
-    } catch (xpAwardError) {
-      console.warn(`[Check-in API] XP award error:`, xpAwardError);
     }
 
-    // Check for bonus notifications (non-blocking)
-    if (registration.referral_promoter_id) {
+    // Award XP for check-in using new schema (user_id) - only for new check-ins
+    if (!isDuplicate) {
+      try {
+        // Get the user_id from the attendee record
+        const { data: attendeeRecord } = await serviceSupabase
+          .from("attendees")
+          .select("user_id")
+          .eq("id", registration.attendee_id)
+          .single();
+        
+        if (attendeeRecord?.user_id) {
+          // Use the award_xp RPC function if available, otherwise direct insert
+          const { error: xpError } = await serviceSupabase.rpc("award_xp", {
+            p_user_id: attendeeRecord.user_id,
+            p_amount: 100,
+            p_source_type: "ATTENDED_EVENT",
+            p_role_context: "attendee",
+            p_event_id: eventId,
+            p_description: "Checked in to event",
+          });
+          
+          if (xpError) {
+            console.warn(`[Check-in API] Failed to award XP via RPC:`, xpError);
+            // Fallback to direct insert
+            const { error: insertError } = await serviceSupabase
+              .from("xp_ledger")
+              .insert({
+                user_id: attendeeRecord.user_id,
+                event_id: eventId,
+                amount: 100,
+                source_type: "ATTENDED_EVENT",
+                role_context: "attendee",
+                description: "Checked in to event",
+              });
+            if (insertError) {
+              console.warn(`[Check-in API] Failed to award XP via insert:`, insertError);
+            } else {
+              console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id}`);
+            }
+          } else {
+            console.log(`[Check-in API] 🎉 Awarded 100 XP to user ${attendeeRecord.user_id} via RPC`);
+          }
+        } else {
+          console.warn(`[Check-in API] No user_id found for attendee ${registration.attendee_id}`);
+        }
+      } catch (xpAwardError) {
+        console.warn(`[Check-in API] XP award error:`, xpAwardError);
+      }
+    }
+
+    // Check for bonus notifications (non-blocking) - only for new check-ins
+    if (!isDuplicate && registration.referral_promoter_id) {
       try {
         // Get promoter details and event promoter contract
         const { data: promoter } = await serviceSupabase
@@ -373,40 +402,42 @@ export async function POST(
       }
     }
 
-    // Try to emit outbox event (non-blocking)
-    try {
-      await emitOutboxEvent("attendee_checked_in", {
-        checkin_id: checkin.id,
-        registration_id: registrationId,
-        event_id: eventId,
-        attendee_name: attendeeName,
-        checked_in_by: userId,
-      });
-    } catch (outboxError) {
-      console.warn(`[Check-in API] Failed to emit outbox event:`, outboxError);
-    }
+    // Try to emit outbox event (non-blocking) - only for new check-ins
+    if (!isDuplicate) {
+      try {
+        await emitOutboxEvent("attendee_checked_in", {
+          checkin_id: checkin.id,
+          registration_id: registrationId,
+          event_id: eventId,
+          attendee_name: attendeeName,
+          checked_in_by: userId,
+        });
+      } catch (outboxError) {
+        console.warn(`[Check-in API] Failed to emit outbox event:`, outboxError);
+      }
 
-    // Track analytics event
-    try {
-      // Get event name for tracking
-      const { data: eventData } = await serviceSupabase
-        .from("events")
-        .select("name")
-        .eq("id", eventId)
-        .single();
-      
-      const method = body.qr_token ? "qr_code" : "manual";
-      await trackCheckIn(
-        eventId,
-        eventData?.name || "Unknown Event",
-        registration.attendee_id,
-        registrationId,
-        userId,
-        method,
-        request
-      );
-    } catch (analyticsError) {
-      console.warn("[Check-in API] Failed to track analytics event:", analyticsError);
+      // Track analytics event
+      try {
+        // Get event name for tracking
+        const { data: eventData } = await serviceSupabase
+          .from("events")
+          .select("name")
+          .eq("id", eventId)
+          .single();
+        
+        const method = body.qr_token ? "qr_code" : "manual";
+        await trackCheckIn(
+          eventId,
+          eventData?.name || "Unknown Event",
+          registration.attendee_id,
+          registrationId,
+          userId,
+          method,
+          request
+        );
+      } catch (analyticsError) {
+        console.warn("[Check-in API] Failed to track analytics event:", analyticsError);
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -414,13 +445,15 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      duplicate: false,
+      duplicate: isDuplicate,
       checkin,
       attendee_name: attendeeName,
       attendee_id: registration.attendee_id,
       registration_id: registrationId,
       attendee: attendee,
-      message: `${attendeeName} checked in successfully`,
+      message: isDuplicate 
+        ? `${attendeeName} was already checked in`
+        : `${attendeeName} checked in successfully`,
     });
   } catch (error: any) {
     console.error(`[Check-in API] Error:`, error);
