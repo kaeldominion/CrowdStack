@@ -98,13 +98,27 @@ export async function POST(request: NextRequest) {
           })
         : "TBA";
 
-      // Send reminder to each registered attendee
+      // Send reminder to each registered attendee (skip if already sent)
       for (const registration of registrations) {
         const attendee = Array.isArray(registration.attendee)
           ? registration.attendee[0]
           : registration.attendee;
 
         if (!attendee?.email) continue;
+
+        // Check if reminder was already sent for this registration
+        const { data: existingReminder } = await supabase
+          .from("event_reminder_sent")
+          .select("id")
+          .eq("registration_id", registration.id)
+          .eq("event_id", event.id)
+          .eq("reminder_type", "6h")
+          .single();
+
+        if (existingReminder) {
+          console.log(`Skipping reminder for registration ${registration.id} - already sent`);
+          continue;
+        }
 
         try {
           await sendTemplateEmail(
@@ -122,6 +136,16 @@ export async function POST(request: NextRequest) {
             },
             { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
           );
+
+          // Record that reminder was sent
+          await supabase
+            .from("event_reminder_sent")
+            .insert({
+              registration_id: registration.id,
+              event_id: event.id,
+              reminder_type: "6h",
+            });
+
           sent.push(registration.id);
         } catch (error) {
           console.error(`Failed to send reminder for registration ${registration.id}:`, error);

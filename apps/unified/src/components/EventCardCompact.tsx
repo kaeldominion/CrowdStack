@@ -72,7 +72,11 @@ export function EventCardCompact({
   const formatEventDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
-    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Compare dates at day level (ignore time)
+    const eventDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((eventDateOnly.getTime() - todayOnly.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return "TODAY";
     if (diffDays === 1) return "TOMORROW";
