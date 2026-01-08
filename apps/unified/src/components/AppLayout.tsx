@@ -63,7 +63,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       
       {/* Page content - top padding for DockNav clearance, left padding for sidebar */}
       <main className={cn(
-        "min-h-screen relative z-10 pt-24 pb-8 px-4 lg:px-8",
+        "min-h-screen relative z-10 pt-[70px] pb-8 px-4 lg:px-8",
         "transition-all duration-300",
         isDashboardRoute && "lg:pl-60" // Account for sidebar width (w-56 + some padding)
       )}>

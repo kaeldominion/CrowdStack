@@ -272,7 +272,7 @@ export function DockNav() {
   profileMenuItems.push({ href: "/dj/create", label: djProfiles.length > 0 ? "Add DJ Profile" : "Create DJ Profile", icon: Radio });
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4 font-sans">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-4 font-sans" style={{ willChange: 'transform' }}>
       {/* Container for pill + separator + avatar */}
       <div className="flex items-center justify-center gap-2">
         {/* The Pill */}
