@@ -79,11 +79,15 @@ export async function GET() {
           .select("*", { count: "exact", head: true })
           .eq("event_id", event.id);
 
+        // Get check-ins from the checkins table, joined with registrations to filter by event_id
         const { count: checkins } = await serviceClient
-          .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id)
-          .eq("checked_in", true);
+          .from("checkins")
+          .select(`
+            *,
+            registrations!inner(event_id)
+          `, { count: "exact", head: true })
+          .eq("registrations.event_id", event.id)
+          .is("undo_at", null);
 
         return {
           ...event,
