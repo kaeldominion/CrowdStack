@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { canUploadPhotosToEvent } from "@crowdstack/shared/auth/photo-permissions";
+import { getUserId } from "@/lib/auth/check-role";
 
 /**
  * Process email logs and group by type with stats
@@ -95,21 +95,97 @@ export async function GET(
   { params }: { params: { eventId: string } }
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const userId = await getUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check permissions - same as photo management
-    if (!(await canUploadPhotosToEvent(params.eventId))) {
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get user roles to check permissions
+    const { data: userRoles } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    
+    const roles = userRoles?.map((r) => r.role) || [];
+    const isSuperadmin = roles.includes("superadmin");
+    const isOrganizer = roles.includes("event_organizer");
+    const isVenueAdmin = roles.includes("venue_admin");
+
+    // Verify user has organizer or venue admin role (or is superadmin)
+    if (!isSuperadmin && !isOrganizer && !isVenueAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const serviceSupabase = createServiceRoleClient();
+    // Check if user can access this event
+    if (!isSuperadmin) {
+      const { data: event } = await serviceSupabase
+        .from("events")
+        .select("organizer_id, venue_id")
+        .eq("id", params.eventId)
+        .single();
+
+      if (!event) {
+        return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      let hasAccess = false;
+
+      // Check if user is organizer (via junction table first, then created_by)
+      if (isOrganizer) {
+        const { data: organizerUser } = await serviceSupabase
+          .from("organizer_users")
+          .select("organizer_id")
+          .eq("user_id", userId)
+          .eq("organizer_id", event.organizer_id)
+          .single();
+        
+        if (organizerUser) {
+          hasAccess = true;
+        } else {
+          // Fallback to created_by
+          const { data: organizer } = await serviceSupabase
+            .from("organizers")
+            .select("id")
+            .eq("created_by", userId)
+            .single();
+          
+          if (organizer && organizer.id === event.organizer_id) {
+            hasAccess = true;
+          }
+        }
+      }
+
+      // Check if user is venue admin
+      if (!hasAccess && isVenueAdmin && event.venue_id) {
+        const { data: venueUser } = await serviceSupabase
+          .from("venue_users")
+          .select("venue_id")
+          .eq("user_id", userId)
+          .eq("venue_id", event.venue_id)
+          .single();
+        
+        if (venueUser) {
+          hasAccess = true;
+        } else {
+          // Fallback to created_by
+          const { data: venue } = await serviceSupabase
+            .from("venues")
+            .select("id")
+            .eq("created_by", userId)
+            .single();
+          
+          if (venue && venue.id === event.venue_id) {
+            hasAccess = true;
+          }
+        }
+      }
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
 
     // Get all email logs for this event from email_send_logs
     // Query by event_id in metadata JSONB field
