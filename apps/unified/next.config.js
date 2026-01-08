@@ -12,9 +12,13 @@ const nextConfig = {
     },
     // Enable instrumentation hook for Sentry
     instrumentationHook: true,
-    // Enable output file tracing for better performance
+    // Optimize output file tracing - only include what's actually needed
+    // This reduces build time by not tracing unnecessary node_modules
     outputFileTracingIncludes: {
-      '/api/*': ['./node_modules/**/*.js'],
+      '/api/*': [
+        './node_modules/@supabase/**/*.js',
+        './node_modules/@sentry/**/*.js',
+      ],
     },
   },
   // Performance optimizations
@@ -71,6 +75,8 @@ module.exports = withSentryConfig(
     silent: true,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
+    // Only upload source maps in production to speed up dev builds
+    dryRun: process.env.NODE_ENV !== 'production',
   },
   {
     // For all available options, see:
