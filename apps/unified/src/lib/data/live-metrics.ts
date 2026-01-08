@@ -171,11 +171,60 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     }
   });
 
+  // Get organizer's user_id to exclude from leaderboard
+  const organizerUserIds = new Set<string>();
+  if (eventOrganizerId) {
+    const { data: organizer } = await supabase
+      .from("organizers")
+      .select("created_by")
+      .eq("id", eventOrganizerId)
+      .single();
+    
+    if (organizer?.created_by) {
+      organizerUserIds.add(organizer.created_by);
+    }
+    
+    // Also get users from organizer_users table
+    const { data: organizerUsers } = await supabase
+      .from("organizer_users")
+      .select("user_id")
+      .eq("organizer_id", eventOrganizerId);
+    
+    organizerUsers?.forEach((ou: any) => {
+      if (ou.user_id) {
+        organizerUserIds.add(ou.user_id);
+      }
+    });
+  }
+
+  // Get promoter IDs that belong to organizer users (to exclude from leaderboard)
+  const organizerPromoterIds = new Set<string>();
+  if (organizerUserIds.size > 0) {
+    const { data: organizerPromoters } = await supabase
+      .from("promoters")
+      .select("id")
+      .in("user_id", Array.from(organizerUserIds));
+    
+    organizerPromoters?.forEach((p: any) => {
+      organizerPromoterIds.add(p.id);
+    });
+    
+    // Also check created_by field
+    const { data: organizerPromotersByCreatedBy } = await supabase
+      .from("promoters")
+      .select("id")
+      .in("created_by", Array.from(organizerUserIds));
+    
+    organizerPromotersByCreatedBy?.forEach((p: any) => {
+      organizerPromoterIds.add(p.id);
+    });
+  }
+
   // Get promoter stats
   const promoterCounts = new Map<string, { name: string; count: number }>();
   checkins?.forEach((c: any) => {
     const promoterId = c.registrations?.referral_promoter_id;
-    if (promoterId) {
+    if (promoterId && !organizerPromoterIds.has(promoterId)) {
       const promoterName = promoterNameMap.get(promoterId) || "Unknown";
       const existing = promoterCounts.get(promoterId);
       promoterCounts.set(promoterId, {
