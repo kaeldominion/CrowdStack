@@ -621,7 +621,7 @@ export async function POST(
               per_head_max: commission.per_head_max || null,
               bonus_threshold: commission.bonus_threshold || null,
               bonus_amount: commission.bonus_amount || null,
-              bonus_tiers: (commission.bonus_tiers as unknown[] | null) || null,
+              bonus_tiers: (Array.isArray(commission.bonus_tiers) ? commission.bonus_tiers : null) as unknown as { threshold: number; amount: number; repeatable: boolean; label?: string }[] | null | undefined,
               fixed_fee: commission.fixed_fee || null,
               minimum_guests: commission.minimum_guests || null,
               below_minimum_percent: commission.below_minimum_percent || null,
