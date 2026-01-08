@@ -47,45 +47,66 @@ export async function GET(
     const isLargeEvent = (totalRegistrations || 0) > 1000;
 
     // Build query with proper database-level filtering
+    // First, get all registrations for the event, then filter by attendee fields
     let queryBuilder = serviceSupabase
       .from("registrations")
       .select(`
         id,
+        attendee_id,
         attendee:attendees(id, name, email, phone)
       `)
       .eq("event_id", params.eventId);
 
-    // If query provided, use database-level ILIKE for better performance and exact/fuzzy matching
+    // If query provided, we need to search attendees first, then get their registrations
     if (query && !showAll) {
       const searchTerm = query.trim();
-      const searchLower = searchTerm.toLowerCase();
       
-      // For large events, require minimum query length and use stricter matching
+      // For large events, require minimum query length
       if (isLargeEvent && searchTerm.length < 3) {
         return NextResponse.json({ results: [] });
       }
 
-      // Try exact matches first (starts with or equals)
-      // This is more restrictive and returns better results for large events
-      let exactQueryBuilder = queryBuilder.or(
-        `attendee.name.ilike.${searchTerm}%,attendee.email.ilike.${searchTerm}%,attendee.phone.ilike.${searchTerm}%`
-      ).limit(50);
+      // Search attendees table directly, then get their registrations for this event
+      const attendeeSearchBuilder = serviceSupabase
+        .from("attendees")
+        .select("id, name, email, phone")
+        .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
 
-      const { data: exactRegistrations } = await exactQueryBuilder;
+      // For large events, try "starts with" first
+      if (isLargeEvent) {
+        const startsWithBuilder = serviceSupabase
+          .from("attendees")
+          .select("id, name, email, phone")
+          .or(`name.ilike.${searchTerm}%,email.ilike.${searchTerm}%,phone.ilike.${searchTerm}%`)
+          .limit(50);
 
-      // If we have good exact matches (starts with), use those
-      if (exactRegistrations && exactRegistrations.length > 0 && exactRegistrations.length <= 50) {
-        queryBuilder = exactQueryBuilder;
-      } else if (isLargeEvent && searchTerm.length < 4) {
-        // For large events with short queries, only return if we have exact matches
-        // Otherwise return empty to avoid hundreds of results
-        return NextResponse.json({ results: [] });
+        const { data: startsWithAttendees } = await startsWithBuilder;
+
+        if (startsWithAttendees && startsWithAttendees.length > 0) {
+          const attendeeIds = startsWithAttendees.map(a => a.id);
+          queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(50);
+        } else if (searchTerm.length < 4) {
+          // For large events with short queries, only return if we have starts-with matches
+          return NextResponse.json({ results: [] });
+        } else {
+          // Use fuzzy matching but limit strictly
+          const { data: fuzzyAttendees } = await attendeeSearchBuilder.limit(50);
+          if (fuzzyAttendees && fuzzyAttendees.length > 0) {
+            const attendeeIds = fuzzyAttendees.map(a => a.id);
+            queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(50);
+          } else {
+            return NextResponse.json({ results: [] });
+          }
+        }
       } else {
-        // For longer queries or smaller events, allow fuzzy matching
-        // But limit results more strictly
-        queryBuilder = queryBuilder.or(
-          `attendee.name.ilike.%${searchTerm}%,attendee.email.ilike.%${searchTerm}%,attendee.phone.ilike.%${searchTerm}%`
-        ).limit(isLargeEvent ? 50 : 100);
+        // For smaller events, use fuzzy matching with more results
+        const { data: matchingAttendees } = await attendeeSearchBuilder.limit(100);
+        if (matchingAttendees && matchingAttendees.length > 0) {
+          const attendeeIds = matchingAttendees.map(a => a.id);
+          queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(100);
+        } else {
+          return NextResponse.json({ results: [] });
+        }
       }
     } else if (showAll) {
       // Show all registrations (limited)

@@ -660,6 +660,11 @@ export async function POST(
             </p>
           </div>`;
 
+        // Build subject with event name and venue
+        const emailSubject = venueName 
+          ? `${event.name} at ${venueName}`
+          : event.name;
+
         await sendTemplateEmail(
           "registration_confirmation",
           attendee.email,
@@ -680,6 +685,7 @@ export async function POST(
             qr_code_html: qrCodeHtml,
             qr_code_url: qrCodeUrl,
             qr_pass_url: qrPassUrl,
+            email_subject: emailSubject, // Add subject as variable for template
           },
           { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
         );
