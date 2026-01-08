@@ -93,6 +93,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     return null;
   }
 
+  const eventOrganizerId = (event as any).organizer_id;
+  const eventVenueId = (event as any).venue_id;
+
   // Get total registrations for this event
   const { count: totalRegistrations } = await supabase
     .from("registrations")
@@ -244,9 +247,6 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
         .in("id", checkinAttendeeIds)
         .eq("is_global_vip", true)
     : { data: [] };
-
-  const eventVenueId = (event as any).venue_id;
-  const eventOrganizerId = (event as any).organizer_id;
 
   const { data: venueVips } = eventVenueId && checkinAttendeeIds.length > 0
     ? await supabase
