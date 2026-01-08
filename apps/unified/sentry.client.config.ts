@@ -50,6 +50,29 @@ Sentry.init({
         ) {
           return null;
         }
+        // Ignore third-party script errors (browser extensions, injected scripts)
+        if (
+          error.message.includes("SCDynimacBridge") ||
+          error.message.includes("Can't find variable:") ||
+          error.name === "ReferenceError" && error.message.includes("Can't find variable")
+        ) {
+          return null;
+        }
+      }
+      
+      // Also check exception values directly
+      if (event.exception.values) {
+        for (const exception of event.exception.values) {
+          if (exception.value) {
+            // Ignore SCDynimacBridge and similar third-party script errors
+            if (
+              exception.value.includes("SCDynimacBridge") ||
+              (exception.type === "ReferenceError" && exception.value.includes("Can't find variable"))
+            ) {
+              return null;
+            }
+          }
+        }
       }
     }
     return event;
