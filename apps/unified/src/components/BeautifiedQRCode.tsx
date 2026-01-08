@@ -33,7 +33,10 @@ export function BeautifiedQRCode({
         if (!canvas) return;
 
         // Use device pixel ratio for high-DPI displays (2x for retina, 3x for high-res)
-        const dpr = Math.min(window.devicePixelRatio || 2, 3);
+        // Guard against window not being available (shouldn't happen in client component, but safety first)
+        const dpr = typeof window !== "undefined" 
+          ? Math.min(window.devicePixelRatio || 2, 3)
+          : 2;
         const displaySize = size;
         const actualSize = displaySize * dpr;
 
@@ -59,15 +62,20 @@ export function BeautifiedQRCode({
         tempCanvas.height = displaySize;
         
         // Generate QR code to temporary canvas
-        await QRCode.toCanvas(tempCanvas, url, {
-          width: displaySize,
-          margin: 2,
-          color: {
-            dark: "#000000",
-            light: "#FFFFFF",
-          },
-          errorCorrectionLevel: "H", // High error correction for logo overlay
-        });
+        try {
+          await QRCode.toCanvas(tempCanvas, url, {
+            width: displaySize,
+            margin: 2,
+            color: {
+              dark: "#000000",
+              light: "#FFFFFF",
+            },
+            errorCorrectionLevel: "H", // High error correction for logo overlay
+          });
+        } catch (qrError: any) {
+          console.error("QR code generation failed:", qrError);
+          throw new Error(`Failed to generate QR code: ${qrError.message || "Unknown error"}`);
+        }
 
         // Draw QR code to main canvas (will be scaled by dpr for sharpness)
         ctx.drawImage(tempCanvas, 0, 0, displaySize, displaySize);
@@ -77,32 +85,43 @@ export function BeautifiedQRCode({
         logo.crossOrigin = "anonymous";
         
         logo.onload = () => {
-          // Calculate center position (in display coordinates, ctx is already scaled)
-          const centerX = displaySize / 2;
-          const centerY = displaySize / 2;
-          const logoX = centerX - logoSize / 2;
-          const logoY = centerY - logoSize / 2;
-          const padding = 4;
+          try {
+            // Calculate center position (in display coordinates, ctx is already scaled)
+            const centerX = displaySize / 2;
+            const centerY = displaySize / 2;
+            const logoX = centerX - logoSize / 2;
+            const logoY = centerY - logoSize / 2;
+            const padding = 4;
 
-          // Draw black background square with square edges for logo
-          ctx.fillStyle = "#000000";
-          const x = logoX - padding;
-          const y = logoY - padding;
-          const w = logoSize + (padding * 2);
-          const h = logoSize + (padding * 2);
-          ctx.fillRect(x, y, w, h);
+            // Draw black background square with square edges for logo
+            ctx.fillStyle = "#000000";
+            const x = logoX - padding;
+            const y = logoY - padding;
+            const w = logoSize + (padding * 2);
+            const h = logoSize + (padding * 2);
+            ctx.fillRect(x, y, w, h);
 
-          // Draw logo at high resolution (will be scaled by dpr for sharpness)
-          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+            // Draw logo at high resolution (will be scaled by dpr for sharpness)
+            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          } catch (drawError) {
+            console.warn("Failed to draw logo on QR code:", drawError);
+            // Continue without logo if drawing fails
+          }
         };
 
-        logo.onerror = () => {
-          console.warn("Failed to load logo for QR code");
+        logo.onerror = (error) => {
+          console.warn("Failed to load logo for QR code:", error);
           // Continue without logo if it fails to load
         };
 
         // Use the PNG file directly - load at natural size for best quality
-        logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+        // Wrap in try-catch to handle any load errors gracefully
+        try {
+          logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
+        } catch (loadError) {
+          console.warn("Failed to set logo source:", loadError);
+          // Continue without logo
+        }
       } catch (err: any) {
         console.error("Error generating QR code:", err);
         setError(err.message || "Failed to generate QR code");
