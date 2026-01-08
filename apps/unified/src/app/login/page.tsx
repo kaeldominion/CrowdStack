@@ -773,14 +773,6 @@ function LoginContent() {
               ? "Create an account to get started. You can use email + password or magic link."
               : "Sign in to your account. You can use email + password or magic link."}
           </p>
-          {authMode === "signup" && (
-            <div className="mt-3 rounded-md p-3 bg-accent-secondary/10 border border-accent-secondary/20">
-              <p className="text-xs text-secondary leading-relaxed">
-                <strong className="text-primary">Note:</strong> If you're registering for a family or household, 
-                the head of household should create this account. Other family members can be added later.
-              </p>
-            </div>
-          )}
         </div>
 
         <form onSubmit={useMagicLink ? handleMagicLink : handlePasswordLogin} className="space-y-6">
