@@ -38,35 +38,76 @@ export async function GET(
 
     console.log(`[Search API] Searching for "${query}" in event ${params.eventId}`);
 
-    // Search registrations with attendee info
-    const { data: registrations, error } = await serviceSupabase
+    // Build query with proper database-level filtering
+    let queryBuilder = serviceSupabase
       .from("registrations")
       .select(`
         id,
         attendee:attendees(id, name, email, phone)
       `)
-      .eq("event_id", params.eventId)
-      .limit(showAll ? 100 : 20);
+      .eq("event_id", params.eventId);
+
+    // If query provided, use database-level ILIKE for better performance and exact/fuzzy matching
+    if (query && !showAll) {
+      const searchTerm = query.trim();
+      // Use ILIKE for case-insensitive matching with wildcards for fuzzy search
+      // This supports both exact matches and partial matches
+      queryBuilder = queryBuilder.or(
+        `attendee.name.ilike.%${searchTerm}%,attendee.email.ilike.%${searchTerm}%,attendee.phone.ilike.%${searchTerm}%`
+      );
+      // Increase limit for search results
+      queryBuilder = queryBuilder.limit(100);
+    } else if (showAll) {
+      // Show all registrations
+      queryBuilder = queryBuilder.limit(500);
+    } else {
+      // No query and not showing all
+      return NextResponse.json({ results: [] });
+    }
+
+    const { data: registrations, error } = await queryBuilder;
 
     if (error) {
       console.error("[Search API] Error:", error);
       return NextResponse.json({ error: "Search failed" }, { status: 500 });
     }
 
-    // Filter by query (name, email, phone) if query provided
+    // Additional client-side filtering for exact matches (prioritize exact matches)
     let filtered = registrations || [];
-    if (query) {
-    const searchLower = query.toLowerCase();
-      filtered = filtered.filter((reg) => {
-        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
-      if (!attendee) return false;
+    if (query && !showAll) {
+      const searchLower = query.toLowerCase().trim();
+      const exactMatches: typeof filtered = [];
+      const fuzzyMatches: typeof filtered = [];
       
-      return (
-        attendee.name?.toLowerCase().includes(searchLower) ||
-        attendee.email?.toLowerCase().includes(searchLower) ||
-        attendee.phone?.includes(query)
-      );
-    });
+      filtered.forEach((reg) => {
+        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+        if (!attendee) return;
+        
+        const nameMatch = attendee.name?.toLowerCase();
+        const emailMatch = attendee.email?.toLowerCase();
+        const phoneMatch = attendee.phone;
+        
+        // Check for exact matches first
+        const isExactMatch = 
+          nameMatch === searchLower ||
+          emailMatch === searchLower ||
+          phoneMatch === searchTerm;
+        
+        // Check for fuzzy matches
+        const isFuzzyMatch = 
+          nameMatch?.includes(searchLower) ||
+          emailMatch?.includes(searchLower) ||
+          phoneMatch?.includes(searchTerm);
+        
+        if (isExactMatch) {
+          exactMatches.push(reg);
+        } else if (isFuzzyMatch) {
+          fuzzyMatches.push(reg);
+        }
+      });
+      
+      // Prioritize exact matches, then fuzzy matches
+      filtered = [...exactMatches, ...fuzzyMatches];
     }
 
     // Get check-in status for each
