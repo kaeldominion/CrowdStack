@@ -108,15 +108,29 @@ export async function GET(
     }
 
     if (isVenueAdmin && !hasAccess) {
-      const { data: venue } = await serviceSupabase
-        .from("venues")
-        .select("id")
-        .eq("created_by", userId)
+      // Check venue_users junction table first (preferred method)
+      const { data: venueUser } = await serviceSupabase
+        .from("venue_users")
+        .select("venue_id")
+        .eq("user_id", userId)
+        .eq("venue_id", event.venue_id)
         .single();
       
-      if (venue && venue.id === event.venue_id) {
+      if (venueUser) {
         hasAccess = true;
-        userVenueId = venue.id;
+        userVenueId = venueUser.venue_id;
+      } else {
+        // Fallback to created_by for backward compatibility
+        const { data: venue } = await serviceSupabase
+          .from("venues")
+          .select("id")
+          .eq("created_by", userId)
+          .single();
+        
+        if (venue && venue.id === event.venue_id) {
+          hasAccess = true;
+          userVenueId = venue.id;
+        }
       }
     }
 
