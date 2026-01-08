@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/server";
 import type { HealthCheckResult } from "@crowdstack/shared";
 
-// Cache health check for 10 seconds (very short since it's a health check)
-export const revalidate = 10;
+// Force dynamic rendering since we use cookies() via createClient()
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const startTime = Date.now();

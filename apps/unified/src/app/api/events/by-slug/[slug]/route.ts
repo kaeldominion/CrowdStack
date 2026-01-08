@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getCacheControl } from "@/lib/cache";
 
-// Revalidate every 30 seconds (more aggressive caching)
-export const revalidate = 30;
+// This route doesn't use cookies, but we'll use cache headers instead of revalidate
+// Cache headers provide better control for API routes
 
 /**
  * GET /api/events/by-slug/[slug]

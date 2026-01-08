@@ -6,7 +6,6 @@ import { CACHE, getCacheControl } from "@/lib/cache";
 
 // Financial data - explicitly disable caching
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 /**
  * GET /api/events/[eventId]/closeout

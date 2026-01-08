@@ -5,8 +5,7 @@ import { CACHE, getCacheControl } from "@/lib/cache";
 // Enable edge runtime for better caching and lower latency
 export const runtime = 'edge';
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// Edge runtime doesn't support revalidate, we use cache headers instead
 
 /**
  * GET /api/browse/djs
