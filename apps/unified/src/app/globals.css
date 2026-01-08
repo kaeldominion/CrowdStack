@@ -18,8 +18,6 @@ html {
   min-height: 100%;
   height: 100%;
   background-color: var(--bg-void);
-  /* Prevent layout shifts on scroll */
-  overflow-x: hidden;
 }
 
 body {
@@ -29,8 +27,6 @@ body {
 
   background-color: var(--bg-void);
   color: var(--text-primary);
-  /* Prevent layout shifts on scroll */
-  overflow-x: hidden;
 
   /* Fonts are applied via next/font in layout.tsx */
 

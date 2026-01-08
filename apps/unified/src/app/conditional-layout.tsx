@@ -109,9 +109,8 @@ export function ConditionalLayout({
   const hasNestedLayoutNav = shouldHideNav(pathname); // /app, /admin, /door, /scanner have their own layouts
   
   // Add top padding for DockNav clearance (nav is now at top)
-  // DockNav is at top-6 (24px) + nav height (~56px) = ~80px, but reduce to ~70px for tighter spacing
   const shouldAddTopPadding = !isStandaloneRoute(pathname) && !hasNestedLayoutNav && !handlesOwnLayout;
-  const topPadding = shouldAddTopPadding ? "pt-[70px]" : "";
+  const topPadding = shouldAddTopPadding ? "pt-20" : "";
   
   // DockNav is now at top, so we need top padding instead of bottom
   const mainPaddingClass = `flex-1 ${topPadding}`;
