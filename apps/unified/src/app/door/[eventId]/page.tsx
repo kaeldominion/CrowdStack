@@ -102,6 +102,11 @@ export default function DoorScannerPage() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<any>(null);
+  
+  // Processing state for check-ins
+  const [processingCheckIn, setProcessingCheckIn] = useState(false);
+  const [lastScannedToken, setLastScannedToken] = useState<string | null>(null);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Quick add modal
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -125,6 +130,15 @@ export default function DoorScannerPage() {
       stopScanning();
     };
   }, [eventId]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadEventInfo = async () => {
     try {
@@ -211,6 +225,25 @@ export default function DoorScannerPage() {
 
   // Check-in functionality
   const handleCheckIn = async (registrationId?: string, qrToken?: string) => {
+    // Prevent duplicate scans within 3 seconds
+    if (qrToken && lastScannedToken === qrToken) {
+      console.log("Duplicate scan detected, ignoring");
+      return;
+    }
+
+    if (qrToken) {
+      setLastScannedToken(qrToken);
+      // Clear the token after 3 seconds to allow re-scanning if needed
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+      processingTimeoutRef.current = setTimeout(() => {
+        setLastScannedToken(null);
+      }, 3000);
+    }
+
+    setProcessingCheckIn(true);
+    
     try {
       const response = await fetch(`/api/events/${eventId}/checkin`, {
         method: "POST",
@@ -268,6 +301,8 @@ export default function DoorScannerPage() {
       setLastCheckIn(result);
       setFlashColor("red");
       setTimeout(() => setFlashColor(null), 500);
+    } finally {
+      setProcessingCheckIn(false);
     }
   };
 
@@ -288,18 +323,27 @@ export default function DoorScannerPage() {
           fps: 10,
           qrbox: { width: 250, height: 250 },
         },
-        (decodedText) => {
+        async (decodedText) => {
+          // Prevent duplicate scans
+          if (lastScannedToken === decodedText || processingCheckIn) {
+            return;
+          }
+
           scanner.pause(true);
-          handleCheckIn(undefined, decodedText);
+          
+          // Process check-in
+          await handleCheckIn(undefined, decodedText);
+          
+          // Resume scanner after processing completes (with a small delay)
           setTimeout(() => {
-            if (scannerRef.current) {
+            if (scannerRef.current && !processingCheckIn) {
               try {
                 scanner.resume();
               } catch (e) {
                 console.log("Could not resume scanner");
               }
             }
-          }, 2000);
+          }, 1000);
         },
         () => {}
       );
@@ -506,6 +550,26 @@ export default function DoorScannerPage() {
               flashColor === "green" ? "bg-accent-success" : "bg-accent-error"
             }`}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Processing Overlay */}
+      <AnimatePresence>
+        {processingCheckIn && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 pointer-events-none"
+          >
+            <Card className="pointer-events-auto">
+              <div className="flex flex-col items-center gap-4 p-6">
+                <LoadingSpinner size="lg" />
+                <p className="text-lg font-semibold text-primary">Processing check-in...</p>
+                <p className="text-sm text-secondary">Please wait</p>
+              </div>
+            </Card>
+          </motion.div>
         )}
       </AnimatePresence>
 
