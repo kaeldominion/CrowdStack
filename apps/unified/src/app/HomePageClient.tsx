@@ -63,6 +63,7 @@ export function HomePageClient({ initialEvents, initialVenues }: HomePageClientP
   }, []);
 
   // Check if user is already logged in and redirect to /me (non-blocking)
+  // Increased delay to avoid blocking initial render and improve perceived performance
   useEffect(() => {
     // Use a longer delay to avoid blocking initial render
     const timer = setTimeout(() => {
@@ -84,7 +85,7 @@ export function HomePageClient({ initialEvents, initialVenues }: HomePageClientP
         }
       };
       checkAuth();
-    }, 2000); // Wait 2 seconds before checking auth
+    }, 3000); // Increased to 3 seconds to prioritize homepage rendering
     return () => clearTimeout(timer);
   }, [router]);
 

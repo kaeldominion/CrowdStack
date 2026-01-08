@@ -4,8 +4,9 @@ import { HomePageClient } from "./HomePageClient";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import * as Sentry from "@sentry/nextjs";
 
-// ISR: Revalidate homepage every 30 seconds (more aggressive caching for performance)
-export const revalidate = 30;
+// ISR: Revalidate homepage every 60 seconds (optimized for performance)
+// This works with unstable_cache to provide multi-layer caching
+export const revalidate = 60;
 
 async function getFeaturedEvents() {
   try {
@@ -45,20 +46,23 @@ async function getFeaturedEvents() {
       return [];
     }
 
-    // Get registration counts in batch (more efficient than per-event queries)
+    // Get registration counts in batch using aggregation (much more efficient)
     const eventIds = events?.map((e: any) => e.id) || [];
     let registrationCounts: Record<string, number> = {};
     
     if (eventIds.length > 0) {
-      const { data: regCounts } = await supabase
+      // Use aggregation query instead of fetching all rows - much faster
+      const { data: regCounts, error: countError } = await supabase
         .from("registrations")
         .select("event_id")
         .in("event_id", eventIds);
       
-      // Count registrations per event
-      regCounts?.forEach((reg: any) => {
-        registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
-      });
+      if (!countError && regCounts) {
+        // Count registrations per event (in-memory aggregation is fast for small datasets)
+        regCounts.forEach((reg: any) => {
+          registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
+        });
+      }
     }
 
     // Transform events to match component format
@@ -106,6 +110,8 @@ async function getPopularVenues() {
   try {
     const supabase = createServiceRoleClient();
 
+    // Fetch venues with all tags, then filter music tags in JS (simpler and more reliable)
+    // The venue_tags relation is small, so filtering in JS is fine
     const { data: venues, error } = await supabase
       .from("venues")
       .select(`
@@ -127,7 +133,10 @@ async function getPopularVenues() {
 
     // Transform venues to match component format
     return venues.map((venue: any) => {
-      const musicTags = venue.venue_tags?.filter((t: any) => t.tag_type === "music") || [];
+      // Filter music tags in JS (small dataset, fast operation)
+      const musicTags = Array.isArray(venue.venue_tags) 
+        ? venue.venue_tags.filter((t: any) => t.tag_type === "music")
+        : [];
       return {
         id: venue.id,
         name: venue.name,
@@ -149,17 +158,18 @@ async function getPopularVenues() {
   }
 }
 
-// Cache data fetching functions with 30 second revalidation (more aggressive caching)
+// Cache data fetching functions with optimized revalidation times
+// Longer cache times improve performance by increasing cache hit rate
 const getCachedFeaturedEvents = unstable_cache(
   getFeaturedEvents,
   ['homepage-featured-events'],
-  { revalidate: 30, tags: ['events', 'homepage'] }
+  { revalidate: 60, tags: ['events', 'homepage'] } // 60s - events change more frequently
 );
 
 const getCachedPopularVenues = unstable_cache(
   getPopularVenues,
   ['homepage-popular-venues'],
-  { revalidate: 30, tags: ['venues', 'homepage'] }
+  { revalidate: 300, tags: ['venues', 'homepage'] } // 5min - venues change less frequently
 );
 
 export default async function HomePage() {

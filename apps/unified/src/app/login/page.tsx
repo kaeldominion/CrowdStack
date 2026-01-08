@@ -62,6 +62,7 @@ function LoginContent() {
   const [message, setMessage] = useState("");
   const [useMagicLink, setUseMagicLink] = useState(true); // Magic link is primary
   const [isSignup, setIsSignup] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin"); // Clear mode: signin or signup
   const submittingRef = useRef(false);
   
   // OTP verification state
@@ -294,7 +295,8 @@ function LoginContent() {
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSignup) {
+    // Use authMode to determine if this is signup
+    if (authMode === "signup" || isSignup) {
       await handlePasswordSignup();
       return;
     }
@@ -557,6 +559,8 @@ function LoginContent() {
         console.log("[Login] Requesting magic link for:", trimmedEmail);
         console.log("[Login] Using redirect URL:", redirectTo);
       }
+      // signInWithOtp works for both sign in and sign up - it automatically creates accounts for new users
+      // (if signup is enabled in Supabase settings)
       const { data, error: magicError } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
@@ -725,16 +729,58 @@ function LoginContent() {
         </div>
 
         <div className="text-center mb-8">
+          {/* Tab selector for Sign In / Sign Up */}
+          <div className="flex items-center justify-center gap-1 mb-6 bg-active/30 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode("signin");
+                setIsSignup(false);
+                setError("");
+                setMessage("");
+              }}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                authMode === "signin"
+                  ? "bg-accent-secondary text-void shadow-sm"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode("signup");
+                setIsSignup(true);
+                setError("");
+                setMessage("");
+              }}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                authMode === "signup"
+                  ? "bg-accent-secondary text-void shadow-sm"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
           <h1 className="text-2xl font-bold text-primary">
-            {useMagicLink ? "Welcome" : (isSignup ? "Create Account" : "Sign In")}
+            {authMode === "signup" ? "Create Your Account" : "Welcome Back"}
           </h1>
           <p className="mt-2 text-sm text-secondary">
-            {useMagicLink 
-              ? "Enter your email to sign in or create an account" 
-              : isSignup
-              ? "Create a new account with email and password"
-              : "Sign in with your email and password"}
+            {authMode === "signup"
+              ? "Create an account to get started. You can use email + password or magic link."
+              : "Sign in to your account. You can use email + password or magic link."}
           </p>
+          {authMode === "signup" && (
+            <div className="mt-3 rounded-md p-3 bg-accent-secondary/10 border border-accent-secondary/20">
+              <p className="text-xs text-secondary leading-relaxed">
+                <strong className="text-primary">Note:</strong> If you're registering for a family or household, 
+                the head of household should create this account. Other family members can be added later.
+              </p>
+            </div>
+          )}
         </div>
 
         <form onSubmit={useMagicLink ? handleMagicLink : handlePasswordLogin} className="space-y-6">
@@ -766,11 +812,11 @@ function LoginContent() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isSignup ? "Create a password (min 6 characters)" : "Enter your password"}
-                  minLength={isSignup ? 6 : undefined}
+                  placeholder={(authMode === "signup" || isSignup) ? "Create a password (min 6 characters)" : "Enter your password"}
+                  minLength={(authMode === "signup" || isSignup) ? 6 : undefined}
                 />
               </div>
-              {isSignup && (
+              {(authMode === "signup" || isSignup) && (
                 <div>
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-primary mb-2">
                     Confirm Password
@@ -786,7 +832,7 @@ function LoginContent() {
                   />
                 </div>
               )}
-              {!isSignup && (
+              {authMode === "signin" && !isSignup && (
                 <div className="text-right">
                   <Link
                     href="/auth/forgot-password"
@@ -934,6 +980,7 @@ function LoginContent() {
                     setOtpError(null);
                     setMessage("");
                     setUseMagicLink(false);
+                    // Keep the same auth mode (signin/signup)
                   }}
                   className="text-sm text-muted hover:text-secondary transition-colors"
                 >
@@ -951,57 +998,40 @@ function LoginContent() {
             className="w-full"
             size="lg"
           >
-            {useMagicLink ? "Send OTP Code" : (isSignup ? "Create Account" : "Sign In")}
+            {useMagicLink 
+              ? (authMode === "signup" ? "Send Sign Up Code" : "Send Sign In Code")
+              : (authMode === "signup" ? "Create Account" : "Sign In")}
           </Button>
           )}
 
 
           {!showOtpInput && (
-          <div className="text-center space-y-3">
-            {/* Password login toggle - only show when using magic link */}
-            {useMagicLink ? (
+          <div className="text-center space-y-3 pt-2 border-t border-border-subtle">
+            {/* Toggle between magic link and password */}
+            <div className="flex items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  setUseMagicLink(false);
+                  setUseMagicLink(!useMagicLink);
                   setError("");
                   setMessage("");
-                    setMagicLinkSent(false);
+                  setMagicLinkSent(false);
+                  setPassword("");
+                  setConfirmPassword("");
                 }}
                 className="text-sm text-muted hover:text-secondary transition-colors"
               >
-                Use password instead
+                {useMagicLink 
+                  ? "Use password instead" 
+                  : "Use magic link instead"}
               </button>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignup(!isSignup);
-                    setError("");
-                    setMessage("");
-                    setPassword("");
-                    setConfirmPassword("");
-                  }}
-                  className="text-sm text-accent-secondary hover:text-accent-secondary/80"
-                >
-                  {isSignup ? "Already have an account?" : "Need an account?"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUseMagicLink(true);
-                    setIsSignup(false);
-                    setError("");
-                    setMessage("");
-                    setPassword("");
-                    setConfirmPassword("");
-                  }}
-                  className="text-sm text-muted hover:text-secondary transition-colors"
-                >
-                  Use magic link instead
-                </button>
-              </div>
+            </div>
+            
+            {/* Helpful note for new users */}
+            {authMode === "signup" && useMagicLink && (
+              <p className="text-xs text-secondary mt-2">
+                ✨ Magic link works for both new and existing accounts
+              </p>
             )}
           </div>
           )}
