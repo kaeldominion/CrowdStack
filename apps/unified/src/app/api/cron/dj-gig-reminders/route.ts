@@ -7,6 +7,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * Send reminder emails for upcoming DJ gigs
  * Should be called by a cron job (e.g., every hour)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   // Verify cron secret or Vercel cron header
   const authHeader = request.headers.get("authorization");

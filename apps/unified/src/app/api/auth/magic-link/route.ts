@@ -6,6 +6,9 @@ import { createServerClient } from "@supabase/ssr";
  * This ensures PKCE code verifier is stored in cookies (not localStorage)
  * so the server-side callback can access it
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const { email, redirect } = await request.json();

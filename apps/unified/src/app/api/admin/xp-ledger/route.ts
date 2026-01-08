@@ -5,6 +5,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * GET /api/admin/xp-ledger
  * Get XP ledger entries with filtering options
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceRoleClient();

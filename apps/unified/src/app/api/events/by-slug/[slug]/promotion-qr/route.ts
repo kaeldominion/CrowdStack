@@ -5,6 +5,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * Get promotion QR code for an event
  * Returns a URL with ref parameter that attributes registrations to organizer/venue
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }

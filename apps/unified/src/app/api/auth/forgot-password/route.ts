@@ -5,6 +5,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * POST /api/auth/forgot-password
  * Send password reset email to user
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();

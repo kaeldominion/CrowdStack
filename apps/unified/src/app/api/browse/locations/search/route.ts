@@ -9,6 +9,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * - q: Search query
  * - limit: Max results (default: 20)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

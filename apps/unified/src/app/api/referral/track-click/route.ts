@@ -20,6 +20,9 @@ function createVisitorFingerprint(request: NextRequest): string {
   return hash;
 }
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

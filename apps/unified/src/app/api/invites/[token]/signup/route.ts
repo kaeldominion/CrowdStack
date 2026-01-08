@@ -8,6 +8,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * Sign up with email/password for an invite token
  * This bypasses magic link rate limits for invite-only signups
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { token: string } }

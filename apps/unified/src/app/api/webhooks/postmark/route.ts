@@ -20,6 +20,9 @@ import crypto from "crypto";
  * - Use HTTP Basic Auth in the webhook URL: https://username:password@your-domain.com/api/webhooks/postmark
  * - Or set POSTMARK_API_TOKEN env variable to verify requests (optional)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Read body once for verification and parsing

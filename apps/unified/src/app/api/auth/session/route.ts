@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
  * Returns an HTML page that sets cookies via JavaScript and redirects.
  * This is more reliable than trying to set cookies on a redirect response.
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   console.log("[Session API] Received request");
   

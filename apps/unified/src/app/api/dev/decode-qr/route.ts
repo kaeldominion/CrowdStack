@@ -50,6 +50,9 @@ interface DecodedQR {
  * POST /api/dev/decode-qr
  * Decodes a QR code (JWT token, URL, or invite code) and returns full details
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json();

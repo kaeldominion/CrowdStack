@@ -7,6 +7,9 @@ import * as Sentry from "@sentry/nextjs";
  * Note: Magic links now use the client-side /auth/callback page for better PKCE handling.
  * This route is kept for compatibility with other auth flows.
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const requestUrl = new URL(request.url);

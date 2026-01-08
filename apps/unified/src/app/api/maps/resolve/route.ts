@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
  * API route to resolve short Google Maps URLs and extract coordinates
  * This helps with embedding maps when users provide short URLs like maps.app.goo.gl/XXXX
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const url = searchParams.get("url");

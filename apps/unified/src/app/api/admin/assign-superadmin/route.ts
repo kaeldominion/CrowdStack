@@ -6,6 +6,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * This is a temporary helper for development
  * DELETE THIS IN PRODUCTION
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceRoleClient();

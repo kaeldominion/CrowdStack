@@ -5,6 +5,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
  * GET /api/djs/search
  * Search DJs by name or handle (public endpoint for lineup management)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
