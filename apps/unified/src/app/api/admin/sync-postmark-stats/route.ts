@@ -12,6 +12,9 @@ import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
  * 
  * Body: { days?: number, backfillMissing?: boolean }
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Check permissions

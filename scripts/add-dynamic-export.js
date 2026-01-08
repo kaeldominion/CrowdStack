@@ -30,15 +30,17 @@ function findRoutesNeedingDynamic() {
         // Check if route uses cookies() or createClient() directly
         // OR uses helper functions that internally use cookies (getUserId, getUserVenueId, etc.)
         // OR uses dynamic request properties (request.url, request.headers, etc.)
+        // OR uses role checking functions that use cookies (userHasRoleOrSuperadmin, etc.)
         const usesCookies = /cookies\(\)|createClient\(/.test(content);
         const usesAuthHelpers = /getUserId\(|getUserVenueId\(|getUserPromoterId\(|getUserOrganizerId\(|getUserIdAndOrganizer\(/.test(content);
+        const usesRoleChecks = /userHasRoleOrSuperadmin\(|checkRole\(|getUserRole\(/.test(content);
         const usesDynamicRequest = /request\.url|request\.headers|request\.cookies|request\.nextUrl|searchParams|URLSearchParams|new URL\(/.test(content);
         
         // Check if it already has dynamic export
         const hasDynamic = /export const dynamic/.test(content);
         const hasRuntime = /export const runtime/.test(content);
         
-        if ((usesCookies || usesAuthHelpers || usesDynamicRequest) && !hasDynamic && !hasRuntime) {
+        if ((usesCookies || usesAuthHelpers || usesRoleChecks || usesDynamicRequest) && !hasDynamic && !hasRuntime) {
           routes.push(filePath);
         }
       }

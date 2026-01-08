@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactFormEmail } from "@crowdstack/shared/email/postmark";
 
+// Force dynamic rendering since this route uses request.json() which is dynamic
+export const dynamic = 'force-dynamic';
+
 interface ContactFormData {
   name: string;
   email: string;

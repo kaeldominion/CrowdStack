@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: Request,
   { params }: { params: { organizerId: string } }
