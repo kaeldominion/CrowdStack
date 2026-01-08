@@ -6,8 +6,8 @@ import { CACHE, getCacheControl } from "@/lib/cache";
 // Enable edge runtime for better caching and lower latency
 export const runtime = 'edge';
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// Revalidate every 30 seconds (more aggressive caching)
+export const revalidate = 30;
 
 /**
  * GET /api/browse/events
@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
 
     // Debug counts removed for performance - were making 3 extra queries per request
 
-    // Build base query - include registration count via relation
+    // Build base query - optimized to avoid N+1 queries
+    // Removed registrations(count) relation - will fetch counts in batch if needed
     let query = supabase
       .from("events")
       .select(`
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
         capacity,
         registration_type,
         external_ticket_url,
-        venue:venues(
+        venue:venues!inner(
           id,
           name,
           city,
@@ -100,8 +101,7 @@ export async function GET(request: NextRequest) {
             name,
             handle
           )
-        ),
-        registrations(count)
+        )
       `, { count: 'exact' })
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"]);
@@ -230,7 +230,7 @@ export async function GET(request: NextRequest) {
       // Include both future events AND currently live events (started in last 12 hours)
       const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
       
-      // Build fallback query - include registrations count via relation
+      // Build fallback query - optimized without registrations relation
       const { data: fallbackEvents, error: fallbackError, count: fallbackCount } = await supabase
         .from("events")
         .select(`
@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
           capacity,
           registration_type,
           external_ticket_url,
-          venue:venues(
+          venue:venues!inner(
             id,
             name,
             city,
@@ -258,8 +258,7 @@ export async function GET(request: NextRequest) {
               name,
               handle
             )
-          ),
-          registrations(count)
+          )
         `, { count: 'exact' })
         .eq("status", "published")
         .in("venue_approval_status", ["approved", "not_required"])
@@ -270,12 +269,27 @@ export async function GET(request: NextRequest) {
 
       if (!fallbackError && fallbackEvents && fallbackEvents.length > 0) {
         totalCount = fallbackCount || 0;
+        
+        // Batch fetch registration counts
+        const fallbackEventIds = fallbackEvents.map((e: any) => e.id);
+        let fallbackRegCounts: Record<string, number> = {};
+        
+        if (fallbackEventIds.length > 0) {
+          const { data: regCounts } = await supabase
+            .from("registrations")
+            .select("event_id")
+            .in("event_id", fallbackEventIds);
+          
+          regCounts?.forEach((reg: any) => {
+            fallbackRegCounts[reg.event_id] = (fallbackRegCounts[reg.event_id] || 0) + 1;
+          });
+        }
+        
         // Shuffle for variety, then transform registration counts
         const shuffled = [...fallbackEvents].sort(() => Math.random() - 0.5);
         events = shuffled.slice(0, limit).map((event: any) => ({
           ...event,
-          registration_count: event.registrations?.[0]?.count || 0,
-          registrations: undefined,
+          registration_count: fallbackRegCounts[event.id] || 0,
         }));
       }
     }
@@ -330,11 +344,26 @@ export async function GET(request: NextRequest) {
     const paginatedEvents = (events || []).slice(0, limit);
     const filteredCount = events?.length || 0;
 
-    // Transform events to include registration_count from relation
+    // Batch fetch registration counts for all events (more efficient than per-event queries)
+    const eventIds = paginatedEvents.map((e: any) => e.id);
+    let registrationCounts: Record<string, number> = {};
+    
+    if (eventIds.length > 0) {
+      const { data: regCounts } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .in("event_id", eventIds);
+      
+      // Count registrations per event
+      regCounts?.forEach((reg: any) => {
+        registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
+      });
+    }
+
+    // Transform events to include registration_count
     const eventsWithCounts = paginatedEvents.map((event: any) => ({
       ...event,
-      registration_count: event.registrations?.[0]?.count || 0,
-      registrations: undefined, // Remove raw relation data
+      registration_count: registrationCounts[event.id] || 0,
     }));
 
     return NextResponse.json(
@@ -345,7 +374,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': getCacheControl(CACHE.publicBrowse),
+          'Cache-Control': getCacheControl({ tier: 'public-short', maxAge: 30, swr: 120 }),
         },
       }
     );

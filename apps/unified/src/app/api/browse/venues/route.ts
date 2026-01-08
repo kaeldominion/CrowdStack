@@ -5,8 +5,8 @@ import { CACHE, getCacheControl } from "@/lib/cache";
 // Enable edge runtime for better caching
 export const runtime = 'edge';
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// Revalidate every 30 seconds (more aggressive caching)
+export const revalidate = 30;
 
 /**
  * GET /api/browse/venues
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': getCacheControl(CACHE.publicBrowse),
+          'Cache-Control': getCacheControl({ tier: 'public-short', maxAge: 30, swr: 120 }),
         },
       }
     );

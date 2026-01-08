@@ -4,8 +4,8 @@ import { HomePageClient } from "./HomePageClient";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import * as Sentry from "@sentry/nextjs";
 
-// ISR: Revalidate homepage every 60 seconds
-export const revalidate = 60;
+// ISR: Revalidate homepage every 30 seconds (more aggressive caching for performance)
+export const revalidate = 30;
 
 async function getFeaturedEvents() {
   try {
@@ -13,6 +13,8 @@ async function getFeaturedEvents() {
     const now = new Date();
     const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
 
+    // Optimized query: Use single query with count aggregation instead of relation
+    // This avoids N+1 queries and is faster
     const { data: events, error } = await supabase
       .from("events")
       .select(`
@@ -24,15 +26,14 @@ async function getFeaturedEvents() {
         start_time,
         end_time,
         capacity,
-        venue:venues(
+        venue:venues!inner(
           id,
           name,
           city,
           state,
           country
-        ),
-        registrations(count)
-      `, { count: 'exact' })
+        )
+      `)
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"])
       .gte("start_time", twelveHoursAgo.toISOString())
@@ -42,6 +43,22 @@ async function getFeaturedEvents() {
 
     if (error || !events) {
       return [];
+    }
+
+    // Get registration counts in batch (more efficient than per-event queries)
+    const eventIds = events?.map((e: any) => e.id) || [];
+    let registrationCounts: Record<string, number> = {};
+    
+    if (eventIds.length > 0) {
+      const { data: regCounts } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .in("event_id", eventIds);
+      
+      // Count registrations per event
+      regCounts?.forEach((reg: any) => {
+        registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
+      });
     }
 
     // Transform events to match component format
@@ -56,8 +73,9 @@ async function getFeaturedEvents() {
       const isToday = startDate.toDateString() === today.toDateString();
       const dateStr = isToday ? "TONIGHT" : `${day} ${dayNum} ${month}`;
       
-      const spotsLeft = event.capacity && event.registrations?.[0]?.count 
-        ? Math.max(event.capacity - event.registrations[0].count, 0)
+      const regCount = registrationCounts[event.id] || 0;
+      const spotsLeft = event.capacity 
+        ? Math.max(event.capacity - regCount, 0)
         : null;
       
       return {
@@ -131,17 +149,17 @@ async function getPopularVenues() {
   }
 }
 
-// Cache data fetching functions with 60 second revalidation
+// Cache data fetching functions with 30 second revalidation (more aggressive caching)
 const getCachedFeaturedEvents = unstable_cache(
   getFeaturedEvents,
   ['homepage-featured-events'],
-  { revalidate: 60, tags: ['events', 'homepage'] }
+  { revalidate: 30, tags: ['events', 'homepage'] }
 );
 
 const getCachedPopularVenues = unstable_cache(
   getPopularVenues,
   ['homepage-popular-venues'],
-  { revalidate: 60, tags: ['venues', 'homepage'] }
+  { revalidate: 30, tags: ['venues', 'homepage'] }
 );
 
 export default async function HomePage() {

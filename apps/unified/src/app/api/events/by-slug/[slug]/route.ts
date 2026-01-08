@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getCacheControl } from "@/lib/cache";
+
+// Revalidate every 30 seconds (more aggressive caching)
+export const revalidate = 30;
 
 /**
  * GET /api/events/by-slug/[slug]
@@ -42,6 +46,10 @@ export async function GET(
       event: {
         ...event,
         registration_count: registrationCount || 0,
+      },
+    }, {
+      headers: {
+        'Cache-Control': getCacheControl({ tier: 'public-short', maxAge: 30, swr: 120 }),
       },
     });
   } catch (error: any) {

@@ -8,9 +8,9 @@ import { ReferralTracker } from "@/components/ReferralTracker";
 import { MobileStickyCTAWrapper } from "./MobileStickyCTAWrapper";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
-// ISR: Revalidate event pages every 2 minutes
+// ISR: Revalidate event pages every 30 seconds (more aggressive caching for performance)
 // Events change more frequently than venues (registration counts, status updates)
-export const revalidate = 120;
+export const revalidate = 30;
 
 function getBaseUrl() {
   if (typeof window !== "undefined") {
@@ -30,7 +30,7 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-// Cached event fetch - revalidates every 2 minutes
+// Cached event fetch - revalidates every 30 seconds (more aggressive caching)
 const getEvent = unstable_cache(
   async (slug: string) => {
     try {
