@@ -132,14 +132,20 @@ async function getUserData() {
       .order("created_at", { ascending: false }),
   ]);
 
-  const registrations = (registrationsResult as any).data || [];
+  const registrations = (registrationsResult.data || []) as unknown as Registration[];
 
   // Process XP data
   let totalXp = 0;
   let xpProgressData: XpProgressData | null = null;
   
   if (xpResult.data) {
-    const xpData = xpResult.data as any;
+    const xpData = xpResult.data as {
+      total_xp?: number;
+      level?: number;
+      xp_in_level?: number;
+      xp_for_next_level?: number;
+      progress_pct?: number;
+    };
     totalXp = xpData.total_xp || 0;
     xpProgressData = {
       total_xp: xpData.total_xp || 0,
@@ -177,7 +183,7 @@ async function getUserData() {
   const upcoming: Registration[] = [];
   const past: Registration[] = [];
 
-  registrations.forEach((reg: any) => {
+  registrations.forEach((reg) => {
     if (!reg.event) return;
     const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
     const venue = event?.venue ? (Array.isArray(event.venue) ? event.venue[0] : event.venue) : null;

@@ -52,3 +52,4 @@ COMMENT ON FUNCTION sync_promoter_name_from_attendee() IS 'Automatically syncs p
 COMMENT ON FUNCTION sync_promoter_name_on_attendee_insert() IS 'Syncs promoter name when attendee profile is first created, if promoter name is empty or email-derived. Uses SECURITY DEFINER to access auth.users.';
 
 
+

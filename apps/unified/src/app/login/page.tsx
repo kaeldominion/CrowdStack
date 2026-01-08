@@ -12,7 +12,8 @@ import { AlertCircle, Folder, Mail } from "lucide-react";
 const isIOSSafari = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  // MSStream is a legacy IE/Edge property, safe to check
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
   // Also check for in-app browsers (Mail, Gmail, etc.)
   const isInAppBrowser = /FBAN|FBAV|Instagram|Twitter|Line|Messenger|WhatsApp/.test(ua);
@@ -634,17 +635,19 @@ function LoginContent() {
         
         try {
           // Add timeout to each verification attempt
+          // Supabase types don't include all OTP types, so we use a type assertion
+          // Valid types: "email" | "signup" | "magiclink" | "sms" | "phone_change" | "email_change" | "recovery" | "invite"
           const verifyPromise = supabase.auth.verifyOtp({
             email,
             token: trimmedCode,
-            type: type as any,
+            type: type as "email" | "signup" | "magiclink",
           });
           
-          const timeoutPromise = new Promise((_, reject) => 
+          const timeoutPromise = new Promise<{ error: Error }>((_, reject) => 
             setTimeout(() => reject(new Error("Verification timeout")), 10000)
           );
           
-          const result = await Promise.race([verifyPromise, timeoutPromise]) as any;
+          const result = await Promise.race([verifyPromise, timeoutPromise]);
           
           if (!result.error && result.data?.session) {
             if (process.env.NODE_ENV === "development") {

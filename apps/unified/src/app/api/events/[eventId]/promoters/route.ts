@@ -5,6 +5,38 @@ import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { assignUserRole } from "@crowdstack/shared/auth/roles";
 import { logActivity } from "@crowdstack/shared/activity/log-activity";
+import type { Venue, Promoter } from "@crowdstack/shared/types";
+import { ApiError } from "@/lib/api/error-response";
+
+// Helper type for Supabase nested queries (can be array or single object)
+type SupabaseRelation<T> = T | T[] | null;
+
+// Type for event with venue relation
+interface EventWithVenue {
+  id: string;
+  name: string;
+  slug: string;
+  start_time: string;
+  end_time: string | null;
+  description: string | null;
+  flier_url: string | null;
+  cover_image_url: string | null;
+  venue: SupabaseRelation<Pick<Venue, "id" | "name" | "address" | "city" | "state">>;
+}
+
+// Type for event promoter commission config
+interface EventPromoterCommission {
+  currency?: string | null;
+  per_head_rate?: number | null;
+  per_head_min?: number | null;
+  per_head_max?: number | null;
+  bonus_threshold?: number | null;
+  bonus_amount?: number | null;
+  bonus_tiers?: unknown[] | null;
+  fixed_fee?: number | null;
+  minimum_guests?: number | null;
+  below_minimum_percent?: number | null;
+}
 
 // GET - List all promoters for an event
 export async function GET(
@@ -23,7 +55,7 @@ export async function GET(
     // Verify user has access to this event
     const hasAccess = await checkEventAccess(eventId, userId);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return ApiError.forbidden();
     }
 
     // Get promoters for this event with their stats
@@ -76,11 +108,14 @@ export async function GET(
 
     return NextResponse.json({ promoters: promotersWithStats || [] });
   } catch (error: any) {
-    console.error("Error loading event promoters:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to load promoters" },
-      { status: 500 }
-    );
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error);
+    } else {
+      console.error("Error loading event promoters:", error);
+    }
+    return ApiError.fromError(error, "Failed to load promoters");
   }
 }
 
@@ -126,10 +161,7 @@ export async function POST(
     } = body;
 
     if (!promoter_id && !user_id) {
-      return NextResponse.json(
-        { error: "Either promoter_id or user_id is required" },
-        { status: 400 }
-      );
+      return ApiError.badRequest("Either promoter_id or user_id is required");
     }
 
     let promoter: { id: string; name: string; email?: string | null; created_by: string | null } | null = null;
@@ -151,10 +183,7 @@ export async function POST(
         const { data: userData, error: userError } = await serviceSupabase.auth.admin.getUserById(user_id);
         
         if (userError || !userData?.user) {
-          return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 }
-          );
+          return ApiError.notFound("User not found");
         }
         
         const user = userData.user;
@@ -183,11 +212,8 @@ export async function POST(
           .select("id, name, created_by, user_id")
           .single();
 
-        if (createError || !newPromoter) {
-          return NextResponse.json(
-            { error: "Failed to create promoter profile" },
-            { status: 500 }
-          );
+        if (createError || !newPromoter || !newPromoter.id) {
+          return ApiError.internal("Failed to create promoter profile");
         }
 
         promoter = newPromoter;
@@ -201,10 +227,7 @@ export async function POST(
         .single();
 
       if (promoterError || !fetchedPromoter) {
-        return NextResponse.json(
-          { error: "Promoter not found" },
-          { status: 404 }
-        );
+        return ApiError.notFound("Promoter not found");
       }
 
       promoter = fetchedPromoter;
@@ -246,7 +269,9 @@ export async function POST(
           // Update local reference for role assignment
           promoter = { ...fetchedPromoter, created_by: matchingUserId };
           
-          console.log(`[Promoters API] Linked promoter ${promoter.id} to user ${matchingUserId}`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(`[Promoters API] Linked promoter ${promoter.id} to user ${matchingUserId}`);
+          }
         }
       }
     }
@@ -269,24 +294,31 @@ export async function POST(
           });
         } catch (roleError: any) {
           // Log but don't fail the request - promoter can still be added to event
-          console.warn("Failed to assign promoter role to user:", roleError.message);
+          if (process.env.NODE_ENV === "development") {
+            console.warn("Failed to assign promoter role to user:", roleError.message);
+          }
         }
       }
     }
 
     // Check if already assigned
-    const { data: existing } = await serviceSupabase
+    const { data: existing, error: existingError } = await serviceSupabase
       .from("event_promoters")
       .select("id")
       .eq("event_id", eventId)
       .eq("promoter_id", promoter.id)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
-      return NextResponse.json(
-        { error: "Promoter is already assigned to this event" },
-        { status: 400 }
-      );
+    // If error is not "not found", it's a real error
+    if (existingError && existingError.code !== "PGRST116") {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Promoters API] Error checking existing assignment:", existingError);
+      }
+      return ApiError.internal("Failed to check existing assignment");
+    }
+
+    if (existing && existing.id) {
+      return ApiError.conflict("Promoter is already assigned to this event");
     }
 
     // If template_id is provided, fetch the template and use its values as defaults
@@ -295,14 +327,19 @@ export async function POST(
       // Get organizer ID to verify template ownership
       const organizerId = await getUserOrganizerId();
       if (organizerId) {
-        const { data: template } = await serviceSupabase
+        const { data: template, error: templateError } = await serviceSupabase
           .from("promoter_payout_templates")
           .select("*")
           .eq("id", template_id)
           .eq("organizer_id", organizerId)
-          .single();
+          .maybeSingle();
 
-        if (template) {
+        if (templateError && templateError.code !== "PGRST116") {
+          if (process.env.NODE_ENV === "development") {
+            console.error("[Promoters API] Error fetching template:", templateError);
+          }
+          // Continue without template if there's an error
+        } else if (template && template.id) {
           // Use template values as defaults (will be overridden by explicit body fields)
           templateValues = {
             currency: template.currency,
@@ -331,13 +368,18 @@ export async function POST(
         // Otherwise, check if user is organizer
         const organizerId = await getUserOrganizerId();
         if (organizerId) {
-          const { data: event } = await serviceSupabase
+          const { data: event, error: eventCheckError } = await serviceSupabase
             .from("events")
             .select("organizer_id")
             .eq("id", eventId)
-            .single();
+            .maybeSingle();
           
-          if (event?.organizer_id === organizerId) {
+          if (eventCheckError && eventCheckError.code !== "PGRST116") {
+            if (process.env.NODE_ENV === "development") {
+              console.error("[Promoters API] Error checking event organizer:", eventCheckError);
+            }
+            // Continue with default assigned_by if there's an error
+          } else if (event && event.organizer_id === organizerId) {
             finalAssignedBy = "organizer";
           }
         }
@@ -409,17 +451,23 @@ export async function POST(
       .single();
 
     if (error) {
-      console.error("[Promoters API] Failed to insert event_promoter:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Promoters API] Failed to insert event_promoter:", error);
+      }
       throw error;
     }
 
     // Verify the insert actually worked by fetching it back
     if (!eventPromoter || !eventPromoter.id) {
-      console.error("[Promoters API] Insert succeeded but no data returned");
-      return NextResponse.json(
-        { error: "Failed to add promoter - insert returned no data" },
-        { status: 500 }
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Promoters API] Insert succeeded but no data returned");
+      }
+      return ApiError.internal("Failed to add promoter - insert returned no data");
+    }
+
+    // Validate promoter data exists
+    if (!promoter || !promoter.id) {
+      return ApiError.internal("Invalid promoter data");
     }
 
     // Log activity
@@ -442,18 +490,24 @@ export async function POST(
         ? eventPromoter.promoter[0] 
         : eventPromoter.promoter;
 
-      console.log("[Promoters API] Email flow - promoter data:", {
-        promoterId: promoter?.id,
-        promoterName: promoter?.name,
-        promoterEmail: promoter?.email,
-        promoterCreatedBy: promoter?.created_by,
-        hasPromoter: !!promoter,
-      });
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Promoters API] Email flow - promoter data:", {
+          promoterId: promoter?.id,
+          promoterName: promoter?.name,
+          promoterEmail: promoter?.email,
+          promoterCreatedBy: promoter?.created_by,
+          hasPromoter: !!promoter,
+        });
+      }
 
       if (!promoter) {
-        console.error("[Promoters API] ERROR: Promoter object is null/undefined in response");
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Promoters API] ERROR: Promoter object is null/undefined in response");
+        }
       } else if (!promoter.email) {
-        console.warn("[Promoters API] WARNING: Promoter has no email address, skipping email. Promoter ID:", promoter.id);
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Promoters API] WARNING: Promoter has no email address, skipping email. Promoter ID:", promoter.id);
+        }
       } else {
         // Get event details with venue and flier
         const { data: event, error: eventError } = await serviceSupabase
@@ -473,15 +527,29 @@ export async function POST(
           .single();
 
         if (eventError) {
-          console.error("[Promoters API] ERROR: Failed to fetch event for email:", eventError);
+          if (process.env.NODE_ENV === "development") {
+            console.error("[Promoters API] ERROR: Failed to fetch event for email:", eventError);
+          }
         } else if (!event) {
-          console.error("[Promoters API] ERROR: Event not found for email. EventId:", eventId);
+          if (process.env.NODE_ENV === "development") {
+            console.error("[Promoters API] ERROR: Event not found for email. EventId:", eventId);
+          }
         } else {
-          console.log("[Promoters API] Fetched event for email:", {
-            eventName: event.name,
-            eventSlug: event.slug,
-            venueName: (event.venue as any)?.name,
-          });
+          // Helper to extract venue from Supabase relation (array or single object)
+          const getVenue = (venue: SupabaseRelation<Pick<Venue, "id" | "name" | "address" | "city" | "state">>): Pick<Venue, "id" | "name" | "address" | "city" | "state"> | null => {
+            if (!venue) return null;
+            return Array.isArray(venue) ? venue[0] : venue;
+          };
+          
+          const eventVenue = getVenue((event as unknown as EventWithVenue).venue);
+          
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Promoters API] Fetched event for email:", {
+              eventName: event.name,
+              eventSlug: event.slug,
+              venueName: eventVenue?.name,
+            });
+          }
 
           const { sendEventAssignmentEmail } = await import("@crowdstack/shared/email/promoter-emails");
           const { sendPromoterWelcomeEmail } = await import("@crowdstack/shared/email/promoter-emails");
@@ -495,11 +563,15 @@ export async function POST(
             .limit(1);
 
           const isFirstEvent = !otherEvents || otherEvents.length === 0;
-          console.log("[Promoters API] Is first event for promoter?", isFirstEvent);
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Promoters API] Is first event for promoter?", isFirstEvent);
+          }
 
           if (isFirstEvent) {
             // First event - send welcome email with event_id for tracking
-            console.log("[Promoters API] Sending welcome email to:", promoter.email);
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Promoters API] Sending welcome email to:", promoter.email);
+            }
             const welcomeResult = await sendPromoterWelcomeEmail(
               promoter.id,
               promoter.name,
@@ -507,7 +579,9 @@ export async function POST(
               promoter.created_by || null,
               eventId
             );
-            console.log("[Promoters API] Welcome email result:", welcomeResult);
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Promoters API] Welcome email result:", welcomeResult);
+            }
           }
 
           // Build referral link
@@ -515,12 +589,17 @@ export async function POST(
           const referralLink = `${baseUrl}/e/${event.slug}?ref=${promoter.id}`;
 
           // Send assignment email
-          console.log("[Promoters API] Sending assignment email to:", promoter.email);
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Promoters API] Sending assignment email to:", promoter.email);
+          }
+          const assignmentVenue = getVenue((event as unknown as EventWithVenue).venue);
+          const commission = eventPromoter as EventPromoterCommission;
+          
           const assignmentResult = await sendEventAssignmentEmail(
             promoter.id,
             promoter.name,
             promoter.email,
-            (promoter as any).created_by || null,
+            (promoter as Promoter).created_by || null,
             {
               eventId,
               eventName: event.name,
@@ -528,24 +607,24 @@ export async function POST(
               eventDate: event.start_time,
               eventEndDate: event.end_time,
               eventDescription: event.description,
-              venueName: (event.venue as any)?.name || null,
-              venueAddress: (event.venue as any)?.address || null,
-              venueCity: (event.venue as any)?.city || null,
-              venueState: (event.venue as any)?.state || null,
+              venueName: assignmentVenue?.name || null,
+              venueAddress: assignmentVenue?.address || null,
+              venueCity: assignmentVenue?.city || null,
+              venueState: assignmentVenue?.state || null,
               flierUrl: event.flier_url || event.cover_image_url || null,
               referralLink,
             },
             {
-              currency: (eventPromoter as any).currency,
-              per_head_rate: (eventPromoter as any).per_head_rate,
-              per_head_min: (eventPromoter as any).per_head_min,
-              per_head_max: (eventPromoter as any).per_head_max,
-              bonus_threshold: (eventPromoter as any).bonus_threshold,
-              bonus_amount: (eventPromoter as any).bonus_amount,
-              bonus_tiers: (eventPromoter as any).bonus_tiers,
-              fixed_fee: (eventPromoter as any).fixed_fee,
-              minimum_guests: (eventPromoter as any).minimum_guests,
-              below_minimum_percent: (eventPromoter as any).below_minimum_percent,
+              currency: commission.currency || null,
+              per_head_rate: commission.per_head_rate || null,
+              per_head_min: commission.per_head_min || null,
+              per_head_max: commission.per_head_max || null,
+              bonus_threshold: commission.bonus_threshold || null,
+              bonus_amount: commission.bonus_amount || null,
+              bonus_tiers: (commission.bonus_tiers as unknown) || null,
+              fixed_fee: commission.fixed_fee || null,
+              minimum_guests: commission.minimum_guests || null,
+              below_minimum_percent: commission.below_minimum_percent || null,
             },
             event.currency || "IDR"
           );
@@ -559,7 +638,9 @@ export async function POST(
         }
       }
     } catch (emailError) {
-      console.error("[Promoters API] EXCEPTION in email flow:", emailError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Promoters API] EXCEPTION in email flow:", emailError);
+      }
       // Don't fail the request if email fails
     }
 
@@ -573,11 +654,14 @@ export async function POST(
       }
     });
   } catch (error: any) {
-    console.error("Error adding promoter to event:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to add promoter" },
-      { status: 500 }
-    );
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error);
+    } else {
+      console.error("Error adding promoter to event:", error);
+    }
+    return ApiError.fromError(error, "Failed to add promoter");
   }
 }
 
@@ -598,7 +682,7 @@ export async function DELETE(
     // Verify user has access to manage this event
     const hasAccess = await checkEventAccess(eventId, userId);
     if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return ApiError.forbidden();
     }
 
     // Support both query params and body
@@ -616,25 +700,25 @@ export async function DELETE(
     }
 
     if (!eventPromoterId) {
-      return NextResponse.json(
-        { error: "Event promoter ID is required" },
-        { status: 400 }
-      );
+      return ApiError.badRequest("Event promoter ID is required");
     }
 
     // Verify this event_promoter belongs to this event
-    const { data: eventPromoter } = await serviceSupabase
+    const { data: eventPromoter, error: eventPromoterError } = await serviceSupabase
       .from("event_promoters")
-      .select("id")
+      .select("id, event_id")
       .eq("id", eventPromoterId)
-      .eq("event_id", eventId)
-      .single();
+      .maybeSingle();
 
-    if (!eventPromoter) {
-      return NextResponse.json(
-        { error: "Promoter assignment not found" },
-        { status: 404 }
-      );
+    if (eventPromoterError && eventPromoterError.code !== "PGRST116") {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Promoters API] Error fetching event promoter:", eventPromoterError);
+      }
+      return ApiError.internal("Failed to fetch promoter assignment");
+    }
+
+    if (!eventPromoter || !eventPromoter.id || eventPromoter.event_id !== eventId) {
+      return ApiError.notFound("Promoter assignment not found");
     }
 
     const { error } = await serviceSupabase
@@ -648,11 +732,14 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("Error removing promoter from event:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to remove promoter" },
-      { status: 500 }
-    );
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error);
+    } else {
+      console.error("Error removing promoter from event:", error);
+    }
+    return ApiError.fromError(error, "Failed to remove promoter");
   }
 }
 

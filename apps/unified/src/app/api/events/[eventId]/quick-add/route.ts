@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
 import { trackQuickAdd, trackCheckIn } from "@/lib/analytics/server";
+import { ApiError } from "@/lib/api/error-response";
 
 interface QuickAddRequest {
   name: string;
@@ -40,7 +41,7 @@ export async function POST(
       if (process.env.NODE_ENV === "development") {
         console.log("[Quick Add API] No authenticated user");
       }
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     if (process.env.NODE_ENV === "development") {
@@ -116,7 +117,7 @@ export async function POST(
       if (process.env.NODE_ENV === "development") {
         console.log(`[Quick Add API] User ${userId} does not have access to event ${eventId}`);
       }
-      return NextResponse.json({ error: "Forbidden: No access to this event" }, { status: 403 });
+      return ApiError.forbidden("No access to this event");
     }
 
     const body: QuickAddRequest = await request.json();
@@ -125,7 +126,7 @@ export async function POST(
     }
 
     if (!body.name?.trim()) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      return ApiError.badRequest("Name is required");
     }
 
     // Find or create attendee
@@ -136,13 +137,21 @@ export async function POST(
       if (body.email) orConditions.push(`email.eq.${body.email}`);
       if (body.phone) orConditions.push(`phone.eq.${body.phone}`);
 
-      const { data: existingAttendee } = await serviceSupabase
+      const { data: existingAttendee, error: existingAttendeeError } = await serviceSupabase
         .from("attendees")
         .select("*")
         .or(orConditions.join(","))
-        .single();
+        .maybeSingle();
 
-      if (existingAttendee) {
+      // If error is not "not found", it's a real error
+      if (existingAttendeeError && existingAttendeeError.code !== "PGRST116") {
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Quick Add API] Error checking existing attendee:", existingAttendeeError);
+        }
+        throw existingAttendeeError;
+      }
+
+      if (existingAttendee && existingAttendee.id) {
         if (process.env.NODE_ENV === "development") {
           console.log(`[Quick Add API] Found existing attendee: ${existingAttendee.id}`);
         }
@@ -150,7 +159,7 @@ export async function POST(
       }
     }
 
-    if (!attendee) {
+    if (!attendee || !attendee.id) {
       const { data: created, error: createError } = await serviceSupabase
         .from("attendees")
         .insert({
@@ -161,11 +170,11 @@ export async function POST(
         .select()
         .single();
 
-      if (createError) {
+      if (createError || !created || !created.id) {
         if (process.env.NODE_ENV === "development") {
           console.error("[Quick Add API] Error creating attendee:", createError);
         }
-        throw createError;
+        throw createError || new Error("Failed to create attendee - no data returned");
       }
       if (process.env.NODE_ENV === "development") {
         console.log(`[Quick Add API] Created new attendee: ${created.id}`);
@@ -210,14 +219,27 @@ export async function POST(
       registration = newReg;
     }
 
+    // Validate registration exists
+    if (!registration || !registration.id) {
+      return ApiError.internal("Invalid registration data");
+    }
+
     // Check if already checked in
-    const { data: existingCheckin } = await serviceSupabase
+    const { data: existingCheckin, error: checkinCheckError } = await serviceSupabase
       .from("checkins")
       .select("*")
       .eq("registration_id", registration.id)
-      .single();
+      .maybeSingle();
 
-    if (existingCheckin) {
+    // If error is not "not found", it's a real error
+    if (checkinCheckError && checkinCheckError.code !== "PGRST116") {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Quick Add API] Error checking existing checkin:", checkinCheckError);
+      }
+      throw checkinCheckError;
+    }
+
+    if (existingCheckin && existingCheckin.id) {
       if (process.env.NODE_ENV === "development") {
         console.log(`[Quick Add API] Attendee already checked in`);
       }
@@ -242,27 +264,36 @@ export async function POST(
       .select()
       .single();
 
-    if (checkinError) {
+    if (checkinError || !checkin || !checkin.id) {
       if (process.env.NODE_ENV === "development") {
         console.error("[Quick Add API] Error creating checkin:", checkinError);
       }
-      throw checkinError;
+      throw checkinError || new Error("Failed to create checkin - no data returned");
+    }
+
+    // Validate attendee exists before accessing name
+    if (!attendee || !attendee.id) {
+      return ApiError.internal("Invalid attendee data");
     }
 
     if (process.env.NODE_ENV === "development") {
-      console.log(`[Quick Add API] ✅ Successfully quick-added and checked in ${attendee.name}`);
+      console.log(`[Quick Add API] ✅ Successfully quick-added and checked in ${attendee.name || "attendee"}`);
     }
 
     // Track analytics events
     try {
       // Get event name for tracking
-      const { data: eventData } = await serviceSupabase
+      const { data: eventData, error: eventDataError } = await serviceSupabase
         .from("events")
         .select("name")
         .eq("id", eventId)
-        .single();
+        .maybeSingle();
       
-      const eventName = eventData?.name || "Unknown Event";
+      // Don't fail tracking if event fetch fails
+      const eventName = (eventData && eventData.name) ? eventData.name : "Unknown Event";
+      if (eventDataError && process.env.NODE_ENV === "development") {
+        console.warn("[Quick Add API] Could not fetch event name for tracking:", eventDataError);
+      }
       
       // Track quick-add
       await trackQuickAdd(eventId, eventName, attendee.id, request);
@@ -300,9 +331,6 @@ export async function POST(
     } else {
       console.error("[Quick Add API] Error:", error);
     }
-    return NextResponse.json(
-      { error: error.message || "Failed to quick add" },
-      { status: 500 }
-    );
+    return ApiError.fromError(error, "Failed to quick add");
   }
 }

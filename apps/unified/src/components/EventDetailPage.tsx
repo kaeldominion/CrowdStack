@@ -159,6 +159,8 @@ interface EventData {
   venue_rejection_reason?: string | null;
   show_photo_email_notice?: boolean;
   is_featured?: boolean;
+  registration_type?: string | null;
+  external_ticket_url?: string | null;
   created_at: string;
   organizer?: { id: string; name: string; email: string | null };
   venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
@@ -247,6 +249,7 @@ interface Photo {
 }
 
 interface Album {
+  photo_last_notified_at?: string | null;
   id: string;
   title: string;
   description: string | null;
@@ -827,10 +830,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       }
 
       // Registration type and external ticket URL
-      if (editForm.registration_type !== ((event as any).registration_type || "guestlist")) {
+      const eventRegistrationType = (event as EventData).registration_type || "guestlist";
+      const eventExternalTicketUrl = (event as EventData).external_ticket_url || "";
+      if (editForm.registration_type !== eventRegistrationType) {
         updates.registration_type = editForm.registration_type;
       }
-      if (editForm.external_ticket_url !== ((event as any).external_ticket_url || "")) {
+      if (editForm.external_ticket_url !== eventExternalTicketUrl) {
         updates.external_ticket_url = editForm.external_ticket_url || null;
       }
 
@@ -2836,10 +2841,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               </span>
                             )}
                           </div>
-                          {(album as any).photo_last_notified_at && (
+                          {album.photo_last_notified_at && (
                             <span className="text-xs text-secondary flex items-center gap-1">
                               <Mail className="h-3 w-3" />
-                              Last notified: {new Date((album as any).photo_last_notified_at).toLocaleString()}
+                              Last notified: {new Date(album.photo_last_notified_at).toLocaleString()}
                             </span>
                           )}
                         </div>
@@ -3690,13 +3695,18 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               
                               if (uploadError) {
                                 const actualFileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-                                console.error(`[VideoFlier Client] Supabase upload failed:`, {
-                                  message: uploadError.message,
-                                  statusCode: (uploadError as any).statusCode,
-                                  error: uploadError,
-                                  fileSize: `${actualFileSizeMB}MB`,
-                                  fileName: file.name
-                                });
+                                // Supabase StorageError has statusCode property
+                                const storageError = uploadError as { message?: string; statusCode?: number };
+                                
+                                if (process.env.NODE_ENV === "development") {
+                                  console.error(`[VideoFlier Client] Supabase upload failed:`, {
+                                    message: uploadError.message,
+                                    statusCode: storageError.statusCode,
+                                    error: uploadError,
+                                    fileSize: `${actualFileSizeMB}MB`,
+                                    fileName: file.name
+                                  });
+                                }
                                 
                                 let errorMessage = "Failed to upload video";
                                 const errMsg = uploadError.message?.toLowerCase() || "";
@@ -3713,7 +3723,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                          errMsg.includes("policy") || 
                                          errMsg.includes("unauthorized") ||
                                          errMsg.includes("not allowed") ||
-                                         (uploadError as any).statusCode === 403) {
+                                         storageError.statusCode === 403) {
                                   errorMessage = `Permission denied: You may not have permission to upload videos for this event. Please contact support if this issue persists. (Error: ${uploadError.message})`;
                                 } else {
                                   errorMessage = `Upload failed: ${uploadError.message}. File size: ${actualFileSizeMB}MB`;

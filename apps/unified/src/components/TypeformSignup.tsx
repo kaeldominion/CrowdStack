@@ -659,10 +659,12 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
       
       for (const type of typesToTry) {
         console.log(`[OTP Verify] Trying type: ${type}`);
+        // Supabase types don't include all OTP types, so we use a type assertion
+        // Valid types: "email" | "signup" | "magiclink" | "sms" | "phone_change" | "email_change" | "recovery" | "invite"
         const result = await supabase.auth.verifyOtp({
           email: formData.email,
           token: trimmedCode,
-          type: type as any,
+          type: type as "email" | "signup" | "magiclink",
         });
         
         if (!result.error && result.data?.session) {

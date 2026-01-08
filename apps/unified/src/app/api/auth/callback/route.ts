@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         domain: cookie.domain,
         httpOnly: cookie.httpOnly,
         secure: cookie.secure,
-        sameSite: cookie.sameSite as any,
+        sameSite: (cookie.sameSite as "strict" | "lax" | "none" | undefined) || "lax",
         maxAge: cookie.maxAge,
       });
     });
