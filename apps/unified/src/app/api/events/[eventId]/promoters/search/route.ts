@@ -8,6 +8,9 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
  * Search for users/promoters by email, name, or phone to add to an event
  * Returns both existing promoters and users who can be converted to promoters
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

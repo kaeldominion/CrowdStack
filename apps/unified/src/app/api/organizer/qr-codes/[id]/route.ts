@@ -7,6 +7,9 @@ import { getUserOrganizerIds } from "@/lib/data/get-user-entity";
  * PATCH /api/organizer/qr-codes/[id]
  * Update a QR code (must belong to the organizer)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

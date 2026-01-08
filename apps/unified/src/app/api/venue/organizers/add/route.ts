@@ -4,6 +4,9 @@ import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 
 // POST - Add an organizer to work with the venue (by searching for user email)
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const userId = await getUserId();

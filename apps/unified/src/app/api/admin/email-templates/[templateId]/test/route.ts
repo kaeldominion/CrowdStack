@@ -7,6 +7,9 @@ import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
  * POST /api/admin/email-templates/[templateId]/test
  * Send test email with sample data
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { templateId: string } }

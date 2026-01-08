@@ -7,6 +7,9 @@ import { getUserOrganizerIds } from "@/lib/data/get-user-entity";
  * GET /api/organizer/qr-codes
  * List QR codes for the current organizer
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const userId = await getUserId();

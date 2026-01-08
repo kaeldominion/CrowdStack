@@ -7,6 +7,9 @@ import { getUserVenueIds } from "@/lib/data/get-user-entity";
  * GET /api/venue/qr-codes
  * List QR codes for the current venue(s)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const userId = await getUserId();

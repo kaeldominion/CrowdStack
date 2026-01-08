@@ -7,6 +7,9 @@ import { getUserOrganizerIds } from "@/lib/data/get-user-entity";
  * GET /api/organizer/qr-codes/[id]/stats
  * Get scan statistics for a QR code
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

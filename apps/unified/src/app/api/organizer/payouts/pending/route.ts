@@ -6,6 +6,9 @@ import { getUserId } from "@/lib/auth/check-role";
  * GET /api/organizer/payouts/pending
  * Get all pending payouts for organizer's events
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();

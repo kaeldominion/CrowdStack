@@ -3,6 +3,9 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
 import { logActivity } from "@crowdstack/shared/activity/log-activity";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

@@ -39,6 +39,9 @@ interface EventPromoterCommission {
 }
 
 // GET - List all promoters for an event
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
   { params }: { params: { eventId: string } }

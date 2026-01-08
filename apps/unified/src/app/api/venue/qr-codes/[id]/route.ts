@@ -7,6 +7,9 @@ import { getUserVenueIds } from "@/lib/data/get-user-entity";
  * PATCH /api/venue/qr-codes/[id]
  * Update a QR code (must belong to the venue)
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -7,6 +7,9 @@ import { uploadToStorage } from "@crowdstack/shared/storage/upload";
  * PATCH /api/payouts/[payoutLineId]/mark-paid
  * Mark a payout line as paid with optional proof upload
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { payoutLineId: string } }

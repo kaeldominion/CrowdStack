@@ -8,6 +8,9 @@ import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
  * POST /api/events/[eventId]/closeout/finalize
  * Finalize event closeout: lock check-ins, create payout run, generate statements, trigger emails
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }

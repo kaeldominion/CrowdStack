@@ -3,6 +3,9 @@ import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const userId = await getUserId();

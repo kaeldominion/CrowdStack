@@ -4,6 +4,9 @@ import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 
 // GET - Get organizers that have worked together (same venue)
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const userId = await getUserId();

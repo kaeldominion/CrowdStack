@@ -17,6 +17,9 @@ export interface OrganizerEvent {
   flier_url: string | null;
 }
 
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const organizerId = await getUserOrganizerId();

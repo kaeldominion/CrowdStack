@@ -4,6 +4,9 @@ import { getUserId } from "@/lib/auth/check-role";
 import { getUserPromoterId } from "@/lib/data/get-user-entity";
 
 // GET - Fetch promoter's own requests
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const userId = await getUserId();

@@ -4,6 +4,9 @@ import { getUserId } from "@/lib/auth/check-role";
 import { getUserPromoterId } from "@/lib/data/get-user-entity";
 
 // GET - Browse all upcoming events for promoters to request
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();

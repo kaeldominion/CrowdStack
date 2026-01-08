@@ -6,6 +6,9 @@ import { getUserId } from "@/lib/auth/check-role";
  * GET /api/admin/email-templates
  * List all email templates
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();

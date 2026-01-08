@@ -6,6 +6,9 @@ import { getUserId } from "@/lib/auth/check-role";
  * DELETE /api/registrations/[registrationId]
  * Allow organizers/venues to remove an attendee's registration from an event
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ registrationId: string }> }

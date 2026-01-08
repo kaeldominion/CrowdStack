@@ -5,6 +5,9 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { getUserRolesById } from "@crowdstack/shared/auth/roles";
 
 // GET - Fetch promoter requests for organizer's events
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const userId = await getUserId();

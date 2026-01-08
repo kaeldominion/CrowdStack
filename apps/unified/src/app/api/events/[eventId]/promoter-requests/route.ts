@@ -5,6 +5,9 @@ import { getUserRolesById } from "@crowdstack/shared/auth/roles";
 import { trackPromoterApproved } from "@/lib/analytics/server";
 
 // GET - Fetch promoter requests for an event
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

@@ -27,14 +27,16 @@ function findRoutesNeedingDynamic() {
       } else if (file === 'route.ts' || file === 'route.js') {
         const content = fs.readFileSync(filePath, 'utf8');
         
-        // Check if route uses cookies() or createClient()
+        // Check if route uses cookies() or createClient() directly
+        // OR uses helper functions that internally use cookies (getUserId, getUserVenueId, etc.)
         const usesCookies = /cookies\(\)|createClient\(/.test(content);
+        const usesAuthHelpers = /getUserId\(|getUserVenueId\(|getUserPromoterId\(|getUserOrganizerId\(|getUserIdAndOrganizer\(/.test(content);
         
         // Check if it already has dynamic export
         const hasDynamic = /export const dynamic/.test(content);
         const hasRuntime = /export const runtime/.test(content);
         
-        if (usesCookies && !hasDynamic && !hasRuntime) {
+        if ((usesCookies || usesAuthHelpers) && !hasDynamic && !hasRuntime) {
           routes.push(filePath);
         }
       }

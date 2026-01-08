@@ -12,6 +12,9 @@ import { getEventAccess } from "@crowdstack/shared/auth/event-permissions";
  * - Venue team ONLY inherits permissions if venue owns the event
  * - Venue host (venue team on organizer's event) has very limited access
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }

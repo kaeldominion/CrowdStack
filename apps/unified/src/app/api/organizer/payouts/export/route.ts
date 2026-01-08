@@ -6,6 +6,9 @@ import { getUserId } from "@/lib/auth/check-role";
  * GET /api/organizer/payouts/export
  * Export payouts to CSV
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId();

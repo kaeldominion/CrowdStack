@@ -8,6 +8,9 @@ import { isEventOwner } from "@crowdstack/shared/auth/event-permissions";
  * Transfer event ownership to another user
  * Only the current owner, superadmin, or admin can transfer ownership
  */
+
+// Force dynamic rendering since this route uses cookies() or createClient()
+export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } | Promise<{ eventId: string }> }
