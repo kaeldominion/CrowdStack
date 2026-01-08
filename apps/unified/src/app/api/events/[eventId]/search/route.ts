@@ -38,35 +38,150 @@ export async function GET(
 
     console.log(`[Search API] Searching for "${query}" in event ${params.eventId}`);
 
-    // Search registrations with attendee info
-    const { data: registrations, error } = await serviceSupabase
+    // First, get total registration count to determine if we need stricter matching
+    const { count: totalRegistrations } = await serviceSupabase
+      .from("registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", params.eventId);
+
+    const isLargeEvent = (totalRegistrations || 0) > 1000;
+
+    // Build query with proper database-level filtering
+    // First, get all registrations for the event, then filter by attendee fields
+    let queryBuilder = serviceSupabase
       .from("registrations")
       .select(`
         id,
+        attendee_id,
         attendee:attendees(id, name, email, phone)
       `)
-      .eq("event_id", params.eventId)
-      .limit(showAll ? 100 : 20);
+      .eq("event_id", params.eventId);
+
+    // If query provided, we need to search attendees first, then get their registrations
+    if (query && !showAll) {
+      const searchTerm = query.trim();
+      
+      // For large events, require minimum query length
+      if (isLargeEvent && searchTerm.length < 3) {
+        return NextResponse.json({ results: [] });
+      }
+
+      // Search attendees table directly, then get their registrations for this event
+      const attendeeSearchBuilder = serviceSupabase
+        .from("attendees")
+        .select("id, name, email, phone")
+        .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+
+      // For large events, try "starts with" first
+      if (isLargeEvent) {
+        const startsWithBuilder = serviceSupabase
+          .from("attendees")
+          .select("id, name, email, phone")
+          .or(`name.ilike.${searchTerm}%,email.ilike.${searchTerm}%,phone.ilike.${searchTerm}%`)
+          .limit(50);
+
+        const { data: startsWithAttendees } = await startsWithBuilder;
+
+        if (startsWithAttendees && startsWithAttendees.length > 0) {
+          const attendeeIds = startsWithAttendees.map(a => a.id);
+          queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(50);
+        } else if (searchTerm.length < 4) {
+          // For large events with short queries, only return if we have starts-with matches
+          return NextResponse.json({ results: [] });
+        } else {
+          // Use fuzzy matching but limit strictly
+          const { data: fuzzyAttendees } = await attendeeSearchBuilder.limit(50);
+          if (fuzzyAttendees && fuzzyAttendees.length > 0) {
+            const attendeeIds = fuzzyAttendees.map(a => a.id);
+            queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(50);
+          } else {
+            return NextResponse.json({ results: [] });
+          }
+        }
+      } else {
+        // For smaller events, use fuzzy matching with more results
+        const { data: matchingAttendees } = await attendeeSearchBuilder.limit(100);
+        if (matchingAttendees && matchingAttendees.length > 0) {
+          const attendeeIds = matchingAttendees.map(a => a.id);
+          queryBuilder = queryBuilder.in("attendee_id", attendeeIds).limit(100);
+        } else {
+          return NextResponse.json({ results: [] });
+        }
+      }
+    } else if (showAll) {
+      // Show all registrations (limited)
+      queryBuilder = queryBuilder.limit(500);
+    } else {
+      // No query and not showing all
+      return NextResponse.json({ results: [] });
+    }
+
+    const { data: registrations, error } = await queryBuilder;
 
     if (error) {
       console.error("[Search API] Error:", error);
       return NextResponse.json({ error: "Search failed" }, { status: 500 });
     }
 
-    // Filter by query (name, email, phone) if query provided
+    // Additional client-side filtering for exact matches (prioritize exact matches)
     let filtered = registrations || [];
-    if (query) {
-    const searchLower = query.toLowerCase();
-      filtered = filtered.filter((reg) => {
-        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
-      if (!attendee) return false;
+    if (query && !showAll) {
+      const searchLower = query.toLowerCase().trim();
+      const exactMatches: typeof filtered = [];
+      const startsWithMatches: typeof filtered = [];
+      const fuzzyMatches: typeof filtered = [];
       
-      return (
-        attendee.name?.toLowerCase().includes(searchLower) ||
-        attendee.email?.toLowerCase().includes(searchLower) ||
-        attendee.phone?.includes(query)
-      );
-    });
+      filtered.forEach((reg) => {
+        const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+        if (!attendee) return;
+        
+        const nameMatch = attendee.name?.toLowerCase();
+        const emailMatch = attendee.email?.toLowerCase();
+        const phoneMatch = attendee.phone;
+        
+        // Check for exact matches first
+        const isExactMatch = 
+          nameMatch === searchLower ||
+          emailMatch === searchLower ||
+          phoneMatch === query.trim();
+        
+        // Check for "starts with" matches (better than fuzzy)
+        const startsWith = 
+          nameMatch?.startsWith(searchLower) ||
+          emailMatch?.startsWith(searchLower) ||
+          phoneMatch?.startsWith(query.trim());
+        
+        // Check for fuzzy matches (contains)
+        const isFuzzyMatch = 
+          nameMatch?.includes(searchLower) ||
+          emailMatch?.includes(searchLower) ||
+          phoneMatch?.includes(query.trim());
+        
+        if (isExactMatch) {
+          exactMatches.push(reg);
+        } else if (startsWith) {
+          startsWithMatches.push(reg);
+        } else if (isFuzzyMatch) {
+          fuzzyMatches.push(reg);
+        }
+      });
+      
+      // Prioritize: exact matches, then starts-with, then fuzzy
+      // For large events, only return if we have good matches
+      if (isLargeEvent) {
+        if (exactMatches.length > 0 || startsWithMatches.length > 0) {
+          filtered = [...exactMatches, ...startsWithMatches];
+        } else if (fuzzyMatches.length <= 20) {
+          // Only return fuzzy matches if there are few of them
+          filtered = fuzzyMatches;
+        } else {
+          // Too many fuzzy matches for large event - return empty
+          filtered = [];
+        }
+      } else {
+        // For smaller events, return all matches
+        filtered = [...exactMatches, ...startsWithMatches, ...fuzzyMatches];
+      }
     }
 
     // Get check-in status for each
@@ -149,4 +264,3 @@ export async function GET(
     );
   }
 }
-
