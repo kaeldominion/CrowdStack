@@ -42,7 +42,7 @@ export async function GET(
       .eq("user_id", user.id);
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin");
 
-    // Check if user is venue admin
+    // Check if user is venue admin (via junction table first, then created_by)
     let hasVenueAccess = false;
     if (event.venue_id) {
       const { data: venueUser } = await serviceSupabase
@@ -51,7 +51,20 @@ export async function GET(
         .eq("venue_id", event.venue_id)
         .eq("user_id", user.id)
         .single();
-      hasVenueAccess = !!venueUser;
+      
+      if (venueUser) {
+        hasVenueAccess = true;
+      } else {
+        // Fallback to created_by for backward compatibility
+        const { data: venueCreator } = await serviceSupabase
+          .from("venues")
+          .select("id")
+          .eq("id", event.venue_id)
+          .eq("created_by", user.id)
+          .single();
+        
+        hasVenueAccess = !!venueCreator;
+      }
     }
 
     // Check if user is organizer

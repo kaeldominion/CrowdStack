@@ -15,14 +15,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Verify organizer role or superadmin
-    if (!(await userHasRoleOrSuperadmin("event_organizer"))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const serviceSupabase = createServiceRoleClient();
 
-    // Get user roles to check if superadmin
+    // Get user roles to check permissions
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
@@ -30,6 +25,13 @@ export async function GET(
     
     const roles = userRoles?.map((r) => r.role) || [];
     const isSuperadmin = roles.includes("superadmin");
+    const isOrganizer = roles.includes("event_organizer");
+    const isVenueAdmin = roles.includes("venue_admin");
+
+    // Verify user has organizer or venue admin role (or is superadmin)
+    if (!isSuperadmin && !isOrganizer && !isVenueAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     // Check if user can access this event
     if (!isSuperadmin) {
