@@ -84,6 +84,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       end_time,
       venue_id,
       organizer_id,
+      timezone,
       venue:venues(name)
     `)
     .eq("id", eventId)
@@ -158,10 +159,17 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   const checkInsLast15min =
     checkins?.filter((c: any) => new Date(c.checked_in_at) >= fifteenMinsAgo).length || 0;
 
-  // Calculate peak hour (hour with most check-ins)
+  // Calculate peak hour (hour with most check-ins) using event timezone
+  const eventTimezone = (event as any).timezone || "UTC";
   const hourlyCounts = new Map<number, number>();
   checkins?.forEach((c: any) => {
-    const hour = new Date(c.checked_in_at).getHours();
+    // Convert to event timezone
+    const checkInDate = new Date(c.checked_in_at);
+    const hour = parseInt(checkInDate.toLocaleString("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: eventTimezone,
+    }));
     hourlyCounts.set(hour, (hourlyCounts.get(hour) || 0) + 1);
   });
 

@@ -644,6 +644,22 @@ export async function POST(
             </div>`
           : "";
 
+        // Generate QR code image URL for email
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrToken)}&bgcolor=ffffff&color=000000&margin=10`;
+        const qrPassUrl = `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}/pass?token=${encodeURIComponent(qrToken)}`;
+        
+        // Build QR code HTML
+        const qrCodeHtml = `<div style="text-align: center; margin: 24px 0; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+            <h3 style="color: #FFFFFF; font-size: 16px; font-weight: 600; margin: 0 0 12px 0;">Your Entry Pass</h3>
+            <p style="color: #9CA3AF; font-size: 13px; margin: 0 0 16px 0; line-height: 1.5;">Show this QR code at the door for entry. Save it to your phone for offline access.</p>
+            <div style="display: inline-block; padding: 16px; background: #FFFFFF; border-radius: 8px; margin: 0 0 12px 0;">
+              <img src="${qrCodeUrl}" alt="Event QR Pass" style="width: 200px; height: 200px; display: block;" />
+            </div>
+            <p style="color: #9CA3AF; font-size: 12px; margin: 8px 0 0 0;">
+              <a href="${qrPassUrl}" style="color: #A855F7; text-decoration: underline;">View full pass online</a>
+            </p>
+          </div>`;
+
         await sendTemplateEmail(
           "registration_confirmation",
           attendee.email,
@@ -661,6 +677,9 @@ export async function POST(
             flier_html: flierHtml,
             important_info_html: importantInfoHtml,
             important_info_text: event.important_info ? `Important: ${event.important_info}` : "",
+            qr_code_html: qrCodeHtml,
+            qr_code_url: qrCodeUrl,
+            qr_pass_url: qrPassUrl,
           },
           { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
         );
