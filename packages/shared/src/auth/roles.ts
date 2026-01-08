@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "../supabase/server";
 import { createServiceRoleClient } from "../supabase/server";
 import type { UserRole, UserRoleRecord } from "../types";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Get all roles for the current authenticated user
@@ -91,8 +92,14 @@ export async function getUserRoles(): Promise<UserRole[]> {
     }
 
     if (error) {
-      console.error("[getUserRoles] Failed to get roles:", error.message);
-      if (process.env.NODE_ENV === "development") {
+      // Log to Sentry in production, console in development
+      if (process.env.NODE_ENV === "production") {
+        Sentry.captureException(error, {
+          tags: { component: "getUserRoles" },
+          extra: { userId: user.id, errorMessage: error.message },
+        });
+      } else {
+        console.error("[getUserRoles] Failed to get roles:", error.message);
         console.error("[getUserRoles] Error details:", {
           code: error.code,
           details: error.details,

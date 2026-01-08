@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Server-side auth callback route (fallback)
@@ -7,21 +8,22 @@ import { createServerClient } from "@supabase/ssr";
  * This route is kept for compatibility with other auth flows.
  */
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const redirectParam = requestUrl.searchParams.get("redirect");
-  const origin = requestUrl.origin;
+  try {
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get("code");
+    const redirectParam = requestUrl.searchParams.get("redirect");
+    const origin = requestUrl.origin;
 
-  if (!code) {
-    return NextResponse.redirect(new URL("/login", origin));
-  }
+    if (!code) {
+      return NextResponse.redirect(new URL("/login", origin));
+    }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
-  }
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
+    }
 
   let redirectTo = redirectParam || "/me";
   const response = new NextResponse(null, { status: 200 });
@@ -102,16 +104,30 @@ export async function GET(request: NextRequest) {
   // Use redirect param if provided
   const finalPath = redirectParam || targetPath;
   
-  const redirectResponse = NextResponse.redirect(new URL(finalPath, origin));
-  response.cookies.getAll().forEach((cookie) => {
-    redirectResponse.cookies.set(cookie.name, cookie.value, {
-      path: cookie.path || "/",
-      domain: cookie.domain,
-      httpOnly: cookie.httpOnly,
-      secure: cookie.secure,
-      sameSite: cookie.sameSite as any,
-      maxAge: cookie.maxAge,
+    const redirectResponse = NextResponse.redirect(new URL(finalPath, origin));
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path || "/",
+        domain: cookie.domain,
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite as any,
+        maxAge: cookie.maxAge,
+      });
     });
-  });
-  return redirectResponse;
+    return redirectResponse;
+  } catch (error: any) {
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      Sentry.captureException(error);
+    } else {
+      console.error("[Auth Callback] Error:", error);
+    }
+    
+    // Redirect to login with error
+    const origin = new URL(request.url).origin;
+    return NextResponse.redirect(
+      new URL(`/login?error=auth_callback_failed&details=${encodeURIComponent(error.message || "Unknown error")}`, origin)
+    );
+  }
 }

@@ -194,7 +194,9 @@ function LoginContent() {
         throw new Error(`Account created but failed to sign in: ${signInError?.message || "Unknown error"}. Please try logging in manually.`);
       }
     } catch (err: any) {
-      console.error("[Login] Password signup error:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Login] Password signup error:", err);
+      }
       setError(err.message || "Failed to create account");
     } finally {
       setLoading(false);
@@ -209,7 +211,9 @@ function LoginContent() {
       const session = authData.session;
       
       if (!session) {
-        console.error("[Login] No session in authData");
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Login] No session in authData");
+        }
         setError("Failed to create session");
         setLoading(false);
         return;
@@ -278,7 +282,9 @@ function LoginContent() {
       }
       window.location.href = finalRedirect;
     } catch (err: any) {
-      console.error("[Login] handleSuccessfulAuth error:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Login] handleSuccessfulAuth error:", err);
+      }
       setError("Authentication succeeded but redirect failed. Please go to /me manually.");
       setLoading(false);
     }
@@ -308,7 +314,9 @@ function LoginContent() {
       });
 
       if (signInError) {
-        console.error("[Login] Password login error:", signInError.message);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Login] Password login error:", signInError.message);
+        }
         setError(signInError.message);
         setLoading(false);
         return;
@@ -328,7 +336,9 @@ function LoginContent() {
       }
       
       if (!session) {
-        console.error("[Login] No session in response");
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Login] No session in response");
+        }
         setError("Failed to create session");
         setLoading(false);
         return;
@@ -374,7 +384,9 @@ function LoginContent() {
       }
       
       if (!verifySession) {
-        console.error("[Login] Session not accessible after login. Error:", sessionError);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Login] Session not accessible after login. Error:", sessionError);
+        }
         // Try one more time after a short delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         const { data: { session: retrySession } } = await supabase.auth.getSession();
@@ -433,7 +445,9 @@ function LoginContent() {
 
           // If query fails, log but don't block login - user will go to default /me
           if (rolesError) {
-            console.warn("[Login] Could not fetch user roles:", rolesError.message);
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[Login] Could not fetch user roles:", rolesError.message);
+            }
           } else if (roles && roles.length > 0) {
             const roleNames = roles.map((r: any) => r.role);
             
@@ -464,7 +478,9 @@ function LoginContent() {
           }
         } catch (rolesErr: any) {
           // If roles check fails, continue to default redirect (/me)
-          console.warn("[Login] Error checking user roles, redirecting to default:", rolesErr.message);
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[Login] Error checking user roles, redirecting to default:", rolesErr.message);
+          }
         }
       }
       
@@ -548,9 +564,11 @@ function LoginContent() {
       });
 
       if (magicError) {
-        console.error("[Login] Magic link error:", magicError);
-        console.error("[Login] Error code:", magicError.status);
-        console.error("[Login] Error message:", magicError.message);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Login] Magic link error:", magicError);
+          console.error("[Login] Error code:", magicError.status);
+          console.error("[Login] Error message:", magicError.message);
+        }
         
         const errorMsg = magicError.message.toLowerCase();
         
@@ -575,7 +593,9 @@ function LoginContent() {
         setShowOtpInput(true);
       }
     } catch (err: any) {
-      console.error("[Login] Magic link exception:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Login] Magic link exception:", err);
+      }
       setError(err.message || "An error occurred");
     } finally {
       setLoading(false);
@@ -654,7 +674,9 @@ function LoginContent() {
       }
 
       if (verifyError) {
-        console.error("[OTP Verify] All types failed. Last error:", verifyError.message);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[OTP Verify] All types failed. Last error:", verifyError.message);
+        }
         if (verifyError.message.includes("expired") || verifyError.message.includes("Token has expired") || verifyError.message.includes("has expired")) {
           setOtpError("Code expired. The code is only valid for 60 seconds. Please request a new code.");
         } else if (verifyError.message.includes("invalid") || verifyError.message.includes("Token") || verifyError.message.includes("Invalid")) {
@@ -680,7 +702,9 @@ function LoginContent() {
       }
       await handleSuccessfulAuth(data);
     } catch (err: any) {
-      console.error("[OTP Verify] Exception:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[OTP Verify] Exception:", err);
+      }
       setOtpError(err.message || "Verification failed");
     } finally {
       setVerifyingOtp(false);

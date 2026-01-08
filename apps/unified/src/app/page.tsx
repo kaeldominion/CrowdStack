@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { HomePageClient } from "./HomePageClient";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import * as Sentry from "@sentry/nextjs";
 
 // ISR: Revalidate homepage every 60 seconds
 export const revalidate = 60;
@@ -73,7 +74,12 @@ async function getFeaturedEvents() {
       };
     });
   } catch (error) {
-    console.error("Error fetching featured events:", error);
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      Sentry.captureException(error);
+    } else {
+      console.error("Error fetching featured events:", error);
+    }
     return [];
   }
 }
@@ -115,7 +121,12 @@ async function getPopularVenues() {
       };
     });
   } catch (error) {
-    console.error("Error fetching venues:", error);
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      Sentry.captureException(error);
+    } else {
+      console.error("Error fetching venues:", error);
+    }
     return [];
   }
 }

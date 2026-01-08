@@ -169,7 +169,13 @@ export async function GET(
     );
   } catch (error: any) {
     timer.end(); // Log timing even on error
-    console.error("Failed to fetch venue:", error);
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error);
+    } else {
+      console.error("Failed to fetch venue:", error);
+    }
     return NextResponse.json(
       { error: error.message || "Failed to fetch venue" },
       { status: 500 }

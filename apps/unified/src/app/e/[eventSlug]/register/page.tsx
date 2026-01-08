@@ -17,7 +17,7 @@ export default function RegisterPage() {
   const ref = urlRef || sessionRef; // Prefer URL ref, fallback to sessionStorage
   
   // Debug logging for referral tracking
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
     console.log("[Register] Referral tracking:", { urlRef, sessionRef, ref });
   }
   const magicLinkError = searchParams.get("magic_link_error"); // Error from magic link callback
@@ -72,7 +72,9 @@ export default function RegisterPage() {
         if (eventResponse?.ok) {
           const eventData = await eventResponse.json();
           if (eventData.event) {
-            console.log("[Register] fetchEventData got flier_url:", eventData.event.flier_url);
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Register] fetchEventData got flier_url:", eventData.event.flier_url);
+            }
             setEventDataForSignup({
               name: eventData.event.name,
               venueName: eventData.event.venue?.name || null,
@@ -153,7 +155,9 @@ export default function RegisterPage() {
           setLoading(false);
         }
       } catch (err) {
-        console.error("[Register] Error initializing page:", err);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Register] Error initializing page:", err);
+        }
         setLoading(false);
       }
     };
@@ -207,7 +211,9 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      console.log("handleSignupSubmit called with:", signupData);
+      if (process.env.NODE_ENV === "development") {
+        console.log("handleSignupSubmit called with:", signupData);
+      }
       
       const url = new URL(`/api/events/by-slug/${eventSlug}/register`, window.location.origin);
       if (ref) {
@@ -225,7 +231,9 @@ export default function RegisterPage() {
         requestBody.phone = signupData.whatsapp;
       }
 
-      console.log("Sending registration request:", requestBody);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Sending registration request:", requestBody);
+      }
       
       const response = await fetch(url.toString(), {
         method: "POST",
@@ -234,10 +242,14 @@ export default function RegisterPage() {
       });
 
       const data = await response.json();
-      console.log("[Register] Registration response:", JSON.stringify(data, null, 2));
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Register] Registration response:", JSON.stringify(data, null, 2));
+      }
 
       if (!response.ok) {
-        console.error("[Register] Registration failed:", data.error, data.details);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Register] Registration failed:", data.error, data.details);
+        }
         throw new Error(data.error || data.details || "Registration failed");
       }
 
@@ -267,7 +279,9 @@ export default function RegisterPage() {
             });
           }
         } catch (err) {
-          console.error("Failed to fetch event details:", err);
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to fetch event details:", err);
+          }
         }
       }
       
@@ -300,23 +314,29 @@ export default function RegisterPage() {
         }
       }
     } catch (err) {
-      console.error("Error checking registration:", err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error checking registration:", err);
+      }
     }
     return false;
   };
 
   // Debug current state (v2)
-  console.log("[Register] Render state:", { loading, authenticated, showSignup, success, hasEventDetails: !!eventDetails, error });
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Register] Render state:", { loading, authenticated, showSignup, success, hasEventDetails: !!eventDetails, error });
+  }
 
   // Show success screen if registration is complete (check this FIRST)
   if (success && eventDetails) {
     const flierUrl = eventDetails.flier_url || eventDataForSignup?.flierUrl || null;
-    console.log("[Register] Rendering success screen", { 
-      eventName: eventDetails.name,
-      flierUrl,
-      eventDetailsFlier: eventDetails.flier_url,
-      signupFlier: eventDataForSignup?.flierUrl 
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Rendering success screen", { 
+        eventName: eventDetails.name,
+        flierUrl,
+        eventDetailsFlier: eventDetails.flier_url,
+        signupFlier: eventDataForSignup?.flierUrl 
+      });
+    }
     return (
       <RegistrationSuccess
         eventName={eventDetails.name}
@@ -335,7 +355,9 @@ export default function RegisterPage() {
 
   // If success is true but eventDetails is missing, show a fallback success
   if (success && !eventDetails) {
-    console.log("[Register] Success but no event details - showing fallback");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Success but no event details - showing fallback");
+    }
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4">
         <div className="text-primary text-xl font-bold">Registration Complete!</div>
@@ -346,7 +368,9 @@ export default function RegisterPage() {
 
   // Show error if there is one
   if (error && !loading) {
-    console.log("[Register] Rendering error:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Rendering error:", error);
+    }
     return (
       <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4 p-4">
         <div className="text-accent-error text-xl font-bold">Registration Error</div>
@@ -363,7 +387,9 @@ export default function RegisterPage() {
 
   // Show loading state for any loading scenario
   if (loading) {
-    console.log("[Register] Rendering loading state");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Rendering loading state");
+    }
     return (
       <div className="min-h-screen bg-void flex items-center justify-center">
         <LoadingSpinner text="Loading registration..." size="lg" />
@@ -385,7 +411,9 @@ export default function RegisterPage() {
 
   // If authenticated, show Typeform signup (skip email step, only show missing fields)
   if (authenticated && userEmail && showSignup) {
-    console.log("[Register] Rendering TypeformSignup for authenticated user");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Rendering TypeformSignup for authenticated user");
+    }
     const redirectUrl = buildRedirectUrl() || `/e/${eventSlug}/register`;
     
     return (
@@ -410,7 +438,9 @@ export default function RegisterPage() {
 
   // Show Typeform signup for unauthenticated users
   if (!authenticated) {
-    console.log("[Register] Rendering TypeformSignup for unauthenticated user");
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Register] Rendering TypeformSignup for unauthenticated user");
+    }
     const redirectUrl = buildRedirectUrl();
     
     // If magic link failed, show password fallback immediately
@@ -439,7 +469,9 @@ export default function RegisterPage() {
   }
 
   // Fallback - this should not happen, but handle it gracefully
-  console.log("[Register] Fallback state reached - this should not happen");
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Register] Fallback state reached - this should not happen");
+  }
   return (
     <div className="min-h-screen bg-void flex flex-col items-center justify-center gap-4">
       <div className="text-secondary">Something went wrong...</div>

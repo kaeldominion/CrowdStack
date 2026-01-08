@@ -22,7 +22,9 @@ export async function POST(
   { params }: { params: { eventId: string } }
 ) {
   const eventId = params.eventId;
-  console.log(`[Quick Add API] Starting quick add for event ${eventId}`);
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[Quick Add API] Starting quick add for event ${eventId}`);
+  }
 
   try {
     const cookieStore = await cookies();
@@ -35,11 +37,15 @@ export async function POST(
     const userId = user?.id || localhostUser;
 
     if (!userId) {
-      console.log("[Quick Add API] No authenticated user");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Quick Add API] No authenticated user");
+      }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log(`[Quick Add API] User ${userId} attempting quick add`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Quick Add API] User ${userId} attempting quick add`);
+    }
 
     // Check user roles
     const { data: userRoles } = await serviceSupabase
@@ -107,12 +113,16 @@ export async function POST(
     }
 
     if (!hasAccess) {
-      console.log(`[Quick Add API] User ${userId} does not have access to event ${eventId}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Quick Add API] User ${userId} does not have access to event ${eventId}`);
+      }
       return NextResponse.json({ error: "Forbidden: No access to this event" }, { status: 403 });
     }
 
     const body: QuickAddRequest = await request.json();
-    console.log(`[Quick Add API] Adding attendee: ${body.name}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Quick Add API] Adding attendee: ${body.name}`);
+    }
 
     if (!body.name?.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -133,7 +143,9 @@ export async function POST(
         .single();
 
       if (existingAttendee) {
-        console.log(`[Quick Add API] Found existing attendee: ${existingAttendee.id}`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`[Quick Add API] Found existing attendee: ${existingAttendee.id}`);
+        }
         attendee = existingAttendee;
       }
     }
@@ -150,10 +162,14 @@ export async function POST(
         .single();
 
       if (createError) {
-        console.error("[Quick Add API] Error creating attendee:", createError);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Quick Add API] Error creating attendee:", createError);
+        }
         throw createError;
       }
-      console.log(`[Quick Add API] Created new attendee: ${created.id}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Quick Add API] Created new attendee: ${created.id}`);
+      }
       attendee = created;
     }
 
@@ -167,7 +183,9 @@ export async function POST(
 
     let registration;
     if (existingReg) {
-      console.log(`[Quick Add API] Attendee already registered: ${existingReg.id}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Quick Add API] Attendee already registered: ${existingReg.id}`);
+      }
       registration = existingReg;
     } else {
       const { data: newReg, error: regError } = await serviceSupabase
@@ -181,10 +199,14 @@ export async function POST(
         .single();
 
       if (regError) {
-        console.error("[Quick Add API] Error creating registration:", regError);
+        if (process.env.NODE_ENV === "development") {
+          console.error("[Quick Add API] Error creating registration:", regError);
+        }
         throw regError;
       }
-      console.log(`[Quick Add API] Created registration: ${newReg.id}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Quick Add API] Created registration: ${newReg.id}`);
+      }
       registration = newReg;
     }
 
@@ -196,7 +218,9 @@ export async function POST(
       .single();
 
     if (existingCheckin) {
-      console.log(`[Quick Add API] Attendee already checked in`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Quick Add API] Attendee already checked in`);
+      }
       return NextResponse.json({
         success: true,
         duplicate: true,
@@ -219,11 +243,15 @@ export async function POST(
       .single();
 
     if (checkinError) {
-      console.error("[Quick Add API] Error creating checkin:", checkinError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Quick Add API] Error creating checkin:", checkinError);
+      }
       throw checkinError;
     }
 
-    console.log(`[Quick Add API] ✅ Successfully quick-added and checked in ${attendee.name}`);
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Quick Add API] ✅ Successfully quick-added and checked in ${attendee.name}`);
+    }
 
     // Track analytics events
     try {
@@ -250,7 +278,9 @@ export async function POST(
         request
       );
     } catch (analyticsError) {
-      console.warn("[Quick Add API] Failed to track analytics events:", analyticsError);
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[Quick Add API] Failed to track analytics events:", analyticsError);
+      }
     }
 
     return NextResponse.json({
@@ -263,7 +293,13 @@ export async function POST(
       message: `${attendee.name} added and checked in`,
     });
   } catch (error: any) {
-    console.error("[Quick Add API] Error:", error);
+    // Log to Sentry in production, console in development
+    if (process.env.NODE_ENV === "production") {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error);
+    } else {
+      console.error("[Quick Add API] Error:", error);
+    }
     return NextResponse.json(
       { error: error.message || "Failed to quick add" },
       { status: 500 }

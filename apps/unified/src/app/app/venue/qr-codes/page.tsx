@@ -64,7 +64,9 @@ export default function VenueQRCodesPage() {
         setStats((prev) => ({ ...prev, [qrCodeId]: data.stats }));
       }
     } catch (error) {
-      console.error("Error loading stats:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error loading stats:", error);
+      }
     } finally {
       setLoadingStats((prev) => ({ ...prev, [qrCodeId]: false }));
     }
@@ -77,10 +79,14 @@ export default function VenueQRCodesPage() {
         const data = await response.json();
         setQrCodes(data.qrCodes || []);
       } else {
-        console.error("Failed to load QR codes");
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to load QR codes");
+        }
       }
     } catch (error) {
-      console.error("Error loading QR codes:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error loading QR codes:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -109,7 +115,9 @@ export default function VenueQRCodesPage() {
         alert(error.error || "Failed to create QR code");
       }
     } catch (error) {
-      console.error("Error creating QR code:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating QR code:", error);
+      }
       alert("Failed to create QR code");
     }
   };
@@ -135,7 +143,9 @@ export default function VenueQRCodesPage() {
         alert(error.error || "Failed to update QR code");
       }
     } catch (error) {
-      console.error("Error updating QR code:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error updating QR code:", error);
+      }
       alert("Failed to update QR code");
     }
   };
@@ -157,7 +167,9 @@ export default function VenueQRCodesPage() {
         alert(error.error || "Failed to delete QR code");
       }
     } catch (error) {
-      console.error("Error deleting QR code:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error deleting QR code:", error);
+      }
       alert("Failed to delete QR code");
     }
   };
@@ -279,7 +291,9 @@ export default function VenueQRCodesPage() {
 
       logo.src = "/logos/crowdstack-icon-tricolor-on-transparent.png";
     } catch (error) {
-      console.error("Error generating QR code for download:", error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error generating QR code for download:", error);
+      }
       alert("Failed to generate QR code for download");
     }
   };

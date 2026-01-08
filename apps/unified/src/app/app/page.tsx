@@ -8,16 +8,22 @@ import { UnifiedDashboard } from "@/components/UnifiedDashboard";
  * This page just renders the dashboard with the user's roles
  */
 export default async function UnifiedHomePage() {
-  console.log("[UnifiedHomePage] Starting page render");
+  if (process.env.NODE_ENV === "development") {
+    console.log("[UnifiedHomePage] Starting page render");
+  }
   
   // Get roles (layout already verified auth)
-  console.log("[UnifiedHomePage] Calling getUserRoles()");
+  if (process.env.NODE_ENV === "development") {
+    console.log("[UnifiedHomePage] Calling getUserRoles()");
+  }
   const roles = await getUserRoles();
-  console.log("[UnifiedHomePage] Roles received:", {
-    roles,
-    rolesCount: roles.length,
-    hasSuperadmin: roles.includes("superadmin"),
-  });
+  if (process.env.NODE_ENV === "development") {
+    console.log("[UnifiedHomePage] Roles received:", {
+      roles,
+      rolesCount: roles.length,
+      hasSuperadmin: roles.includes("superadmin"),
+    });
+  }
 
   // Filter to B2B roles only (exclude attendee and door_staff)
   // Superadmin is a B2B role and should have access
@@ -31,7 +37,9 @@ export default async function UnifiedHomePage() {
   // If superadmin with no other B2B roles, include superadmin in the list
   const effectiveRoles = b2bRoles.length > 0 ? b2bRoles : (hasSuperadmin ? ["superadmin" as const] : []);
   
-  console.log("[UnifiedHomePage] Rendering UnifiedDashboard with roles:", effectiveRoles);
+  if (process.env.NODE_ENV === "development") {
+    console.log("[UnifiedHomePage] Rendering UnifiedDashboard with roles:", effectiveRoles);
+  }
 
   return <UnifiedDashboard userRoles={effectiveRoles} />;
 }
