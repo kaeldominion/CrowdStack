@@ -1,7 +1,6 @@
 import "server-only";
 
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
 
 interface PromoterData {
   promoter_id: string;
@@ -37,6 +36,61 @@ interface CloseoutReportData {
 }
 
 /**
+ * Get Chromium executable path and args for the current environment
+ */
+async function getChromiumConfig(): Promise<{ executablePath: string; args: string[] }> {
+  const isVercel = process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+  if (isVercel) {
+    // On Vercel/Lambda, use @sparticuz/chromium
+    const chromium = await import("@sparticuz/chromium");
+
+    // Set graphics mode to avoid GPU issues
+    chromium.default.setGraphicsMode = false;
+
+    return {
+      executablePath: await chromium.default.executablePath(),
+      args: chromium.default.args,
+    };
+  } else {
+    // Local development - try to find system Chrome
+    const possiblePaths = [
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    ];
+
+    const fs = await import("fs");
+    let executablePath = "";
+
+    for (const path of possiblePaths) {
+      if (fs.existsSync(path)) {
+        executablePath = path;
+        break;
+      }
+    }
+
+    if (!executablePath) {
+      throw new Error(
+        "Chrome not found. Please install Google Chrome or set CHROME_PATH environment variable."
+      );
+    }
+
+    return {
+      executablePath: process.env.CHROME_PATH || executablePath,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+    };
+  }
+}
+
+/**
  * Generate a closeout report PDF using Puppeteer
  */
 export async function generateCloseoutReportPDF(
@@ -44,10 +98,11 @@ export async function generateCloseoutReportPDF(
 ): Promise<Buffer> {
   const html = generateReportHTML(data);
 
-  // Use @sparticuz/chromium for Vercel serverless environments
+  const { executablePath, args } = await getChromiumConfig();
+
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
+    args,
+    executablePath,
     headless: true,
   });
 
