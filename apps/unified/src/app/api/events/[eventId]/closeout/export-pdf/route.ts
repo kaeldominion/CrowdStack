@@ -30,7 +30,7 @@ export async function GET(
     // Get event and verify access
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("id, name, currency, organizer_id, venue_id, start_date")
+      .select("id, name, currency, organizer_id, venue_id, start_time")
       .eq("id", params.eventId)
       .single();
 
@@ -243,8 +243,8 @@ export async function GET(
     const totalPayout = promotersWithData.reduce((sum, p) => sum + p.final_payout, 0);
 
     // Format event date if available
-    const eventDate = event.start_date
-      ? new Date(event.start_date).toLocaleDateString("en-US", {
+    const eventDate = event.start_time
+      ? new Date(event.start_time).toLocaleDateString("en-US", {
           weekday: "long",
           year: "numeric",
           month: "long",
