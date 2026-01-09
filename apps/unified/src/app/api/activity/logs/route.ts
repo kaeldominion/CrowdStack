@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserId } from "@/lib/auth/check-role";
 import type { ActivityActionType, ActivityEntityType } from "@crowdstack/shared/activity/log-activity";
 
 
@@ -7,17 +8,15 @@ import type { ActivityActionType, ActivityEntityType } from "@crowdstack/shared/
 export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const userId = await getUserId();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const supabase = createServiceRoleClient();
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("user_id");
+    const filterUserId = searchParams.get("user_id");
     const entityType = searchParams.get("entity_type") as ActivityEntityType | null;
     const entityId = searchParams.get("entity_id");
     const actionType = searchParams.get("action_type") as ActivityActionType | null;
@@ -46,8 +45,8 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1);
 
     // Apply filters
-    if (userId) {
-      query = query.eq("user_id", userId);
+    if (filterUserId) {
+      query = query.eq("user_id", filterUserId);
     }
     if (entityType) {
       query = query.eq("entity_type", entityType);
@@ -80,7 +79,7 @@ export async function GET(request: NextRequest) {
       .from("activity_logs")
       .select("*", { count: "exact", head: true });
 
-    if (userId) countQuery = countQuery.eq("user_id", userId);
+    if (filterUserId) countQuery = countQuery.eq("user_id", filterUserId);
     if (entityType) countQuery = countQuery.eq("entity_type", entityType);
     if (entityId) countQuery = countQuery.eq("entity_id", entityId);
     if (actionType) countQuery = countQuery.eq("action_type", actionType);
