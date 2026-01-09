@@ -13,6 +13,7 @@ import {
   Share2,
   CheckCircle2,
   PartyPopper,
+  MessageCircle,
 } from "lucide-react";
 
 interface Event {
@@ -56,6 +57,7 @@ interface Promoter {
   bio: string | null;
   profile_image_url: string | null;
   instagram_handle: string | null;
+  whatsapp_number: string | null;
 }
 
 interface Stats {
@@ -201,7 +203,7 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-center sm:justify-start gap-3">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                 {promoter.instagram_handle && (
                   <a
                     href={`https://instagram.com/${promoter.instagram_handle}`}
@@ -211,6 +213,17 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
                   >
                     <Instagram className="h-4 w-4" />
                     @{promoter.instagram_handle}
+                  </a>
+                )}
+                {promoter.whatsapp_number && (
+                  <a
+                    href={`https://wa.me/${promoter.whatsapp_number.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp
                   </a>
                 )}
                 <Button variant="secondary" onClick={handleShare}>
