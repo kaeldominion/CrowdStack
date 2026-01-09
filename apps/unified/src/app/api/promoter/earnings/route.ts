@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserPromoterId } from "@/lib/data/get-user-entity";
+import { calculatePromoterPayout, type BonusTier } from "@crowdstack/shared/utils/payout-calculator";
 
 export interface PromoterEventEarnings {
   event_id: string;
@@ -55,7 +56,7 @@ export async function GET() {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get all events this promoter is assigned to
+    // Get all events this promoter is assigned to with full contract fields
     const { data: eventPromoters } = await serviceSupabase
       .from("event_promoters")
       .select(`
@@ -63,6 +64,14 @@ export async function GET() {
         commission_type,
         commission_config,
         per_head_rate,
+        per_head_min,
+        per_head_max,
+        fixed_fee,
+        minimum_guests,
+        below_minimum_percent,
+        bonus_threshold,
+        bonus_amount,
+        bonus_tiers,
         currency,
         events(
           id,
@@ -189,14 +198,36 @@ export async function GET() {
           checkinsCount = count || 0;
         }
 
-        // Calculate estimated commission
-        let estimatedAmount = 0;
-        if (ep.per_head_rate) {
-          estimatedAmount = checkinsCount * parseFloat(ep.per_head_rate);
-        } else if (ep.commission_type === "flat_per_head" && ep.commission_config) {
-          const perHead = ep.commission_config.amount_per_head || ep.commission_config.flat_per_head || 0;
-          estimatedAmount = checkinsCount * perHead;
+        // Parse bonus_tiers if present
+        let bonusTiers: BonusTier[] | null = null;
+        if (ep.bonus_tiers) {
+          try {
+            bonusTiers = typeof ep.bonus_tiers === 'string'
+              ? JSON.parse(ep.bonus_tiers)
+              : ep.bonus_tiers;
+          } catch {
+            bonusTiers = null;
+          }
         }
+
+        // Calculate estimated commission using shared calculation function
+        const breakdown = calculatePromoterPayout(
+          {
+            per_head_rate: ep.per_head_rate ? parseFloat(ep.per_head_rate) : null,
+            per_head_min: ep.per_head_min,
+            per_head_max: ep.per_head_max,
+            fixed_fee: ep.fixed_fee ? parseFloat(ep.fixed_fee) : null,
+            minimum_guests: ep.minimum_guests,
+            below_minimum_percent: ep.below_minimum_percent ? parseFloat(ep.below_minimum_percent) : null,
+            bonus_threshold: ep.bonus_threshold,
+            bonus_amount: ep.bonus_amount ? parseFloat(ep.bonus_amount) : null,
+            bonus_tiers: bonusTiers,
+            manual_adjustment_amount: null, // No manual adjustments for estimates
+          },
+          checkinsCount
+        );
+
+        const estimatedAmount = breakdown.calculated_payout;
 
         earnings.push({
           event_id: event.id,

@@ -948,6 +948,23 @@ export interface PromoterPayoutTemplate {
   updated_at: string;
 }
 
+export interface PayoutBreakdown {
+  per_head_amount: number;
+  per_head_rate: number | null;
+  per_head_counted: number; // After min/max constraints
+  fixed_fee_amount: number;
+  fixed_fee_full: number | null;
+  fixed_fee_percent_applied: number | null; // 100 = full, 50 = half, etc.
+  bonus_amount: number;
+  bonus_details: Array<{
+    type: "legacy" | "tier" | "repeatable";
+    threshold: number;
+    amount: number;
+    label?: string;
+    times_earned?: number; // For repeatable bonuses
+  }>;
+}
+
 export interface CloseoutSummary {
   event_id: string;
   event_name: string;
@@ -959,6 +976,7 @@ export interface CloseoutSummary {
     manual_checkins_override: number | null; // Manual override value
     manual_checkins_reason: string | null; // Reason for override
     calculated_payout: number;
+    payout_breakdown: PayoutBreakdown; // Detailed calculation breakdown
     manual_adjustment_amount: number | null;
     manual_adjustment_reason: string | null;
     final_payout: number;
