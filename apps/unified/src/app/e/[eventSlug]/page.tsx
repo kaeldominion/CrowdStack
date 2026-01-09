@@ -56,7 +56,7 @@ const getEvent = unstable_cache(
           )
         `)
         .eq("slug", slug)
-        .eq("status", "published")
+        .in("status", ["published", "ended"])
         .single();
         
       if (eventError || !event) {
