@@ -46,13 +46,15 @@ export async function GET(
       );
     }
 
-    // Get upcoming events this promoter is assigned to
+    // Get events this promoter is assigned to
     const now = new Date().toISOString();
+
+    // Query all event assignments, then filter in JS to avoid Supabase nested filter issues
     const { data: eventPromotions, error: eventsError } = await supabase
       .from("event_promoters")
       .select(`
         id,
-        events!inner(
+        events(
           id,
           name,
           slug,
@@ -74,18 +76,39 @@ export async function GET(
           )
         )
       `)
-      .eq("promoter_id", promoter.id)
-      .eq("events.status", "published")
-      .gte("events.start_time", now)
-      .order("events.start_time", { ascending: true });
+      .eq("promoter_id", promoter.id);
 
     if (eventsError) {
       console.error("[Promoter Profile API] Error fetching events:", eventsError);
     }
 
+    // Filter and transform events
+    // Filter for published events that haven't ended yet
+    const filteredPromotions = (eventPromotions || []).filter((ep: any) => {
+      const event = ep.events;
+      if (!event) return false;
+
+      const isPublished = event.status === "published";
+
+      // Calculate if event has ended
+      // If end_time is set, use it; otherwise assume 6 hours after start
+      const startTime = new Date(event.start_time);
+      const endTime = event.end_time
+        ? new Date(event.end_time)
+        : new Date(startTime.getTime() + 6 * 60 * 60 * 1000); // 6 hours default
+      const hasNotEnded = endTime >= new Date(now);
+
+      return isPublished && hasNotEnded;
+    });
+
+    // Sort by start_time ascending
+    filteredPromotions.sort((a: any, b: any) => {
+      return new Date(a.events.start_time).getTime() - new Date(b.events.start_time).getTime();
+    });
+
     // Transform events and add registration counts
     const events = await Promise.all(
-      (eventPromotions || []).map(async (ep: any) => {
+      filteredPromotions.map(async (ep: any) => {
         const event = ep.events;
 
         // Get registration count
@@ -114,26 +137,26 @@ export async function GET(
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: pastEventPromotions } = await supabase
-      .from("event_promoters")
-      .select(`
-        events!inner(
-          id,
-          name,
-          slug,
-          start_time,
-          flier_url,
-          venue:venues(name, city)
-        )
-      `)
-      .eq("promoter_id", promoter.id)
-      .eq("events.status", "published")
-      .lt("events.start_time", now)
-      .gte("events.start_time", thirtyDaysAgo.toISOString())
-      .order("events.start_time", { ascending: false })
-      .limit(6);
+    // Filter from all promotions to get past events
+    const pastEventsFiltered = (eventPromotions || [])
+      .filter((ep: any) => {
+        const event = ep.events;
+        if (!event) return false;
+        const isPublished = event.status === "published";
+        const startTime = new Date(event.start_time);
+        const endTime = event.end_time
+          ? new Date(event.end_time)
+          : new Date(startTime.getTime() + 6 * 60 * 60 * 1000);
+        const hasEnded = endTime < new Date(now);
+        const isRecent = startTime >= thirtyDaysAgo;
+        return isPublished && hasEnded && isRecent;
+      })
+      .sort((a: any, b: any) => {
+        return new Date(b.events.start_time).getTime() - new Date(a.events.start_time).getTime();
+      })
+      .slice(0, 6);
 
-    const pastEvents = (pastEventPromotions || []).map((ep: any) => ep.events);
+    const pastEvents = pastEventsFiltered.map((ep: any) => ep.events);
 
     // Get total stats
     const { count: totalEventsPromoted } = await supabase
