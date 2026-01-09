@@ -29,7 +29,54 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all payout lines for events owned by this organizer
+    // Step 1: Get all events for this organizer
+    const { data: events, error: eventsError } = await serviceSupabase
+      .from("events")
+      .select("id")
+      .in("organizer_id", organizerIds);
+
+    if (eventsError) {
+      throw eventsError;
+    }
+
+    const eventIds = events?.map(e => e.id) || [];
+
+    if (eventIds.length === 0) {
+      // No events = no payouts
+      return NextResponse.json({
+        events: [],
+        totals_by_currency: {},
+        total_payouts: 0,
+      });
+    }
+
+    // Step 2: Get payout runs for those events
+    const { data: payoutRuns, error: runsError } = await serviceSupabase
+      .from("payout_runs")
+      .select("id")
+      .in("event_id", eventIds);
+
+    if (runsError) {
+      throw runsError;
+    }
+
+    const payoutRunIds = payoutRuns?.map(pr => pr.id) || [];
+
+    console.log("[Pending Payouts API] organizerIds:", organizerIds);
+    console.log("[Pending Payouts API] eventIds:", eventIds.length, "events");
+    console.log("[Pending Payouts API] payoutRunIds:", payoutRunIds.length, "payout runs");
+
+    if (payoutRunIds.length === 0) {
+      // No payout runs = no payouts
+      console.log("[Pending Payouts API] No payout runs found, returning empty");
+      return NextResponse.json({
+        events: [],
+        totals_by_currency: {},
+        total_payouts: 0,
+      });
+    }
+
+    // Step 3: Get all payout lines for those payout runs with full details
     const { data: payoutLines, error: payoutError } = await serviceSupabase
       .from("payout_lines")
       .select(`
@@ -58,12 +105,14 @@ export async function GET(request: NextRequest) {
         ),
         promoter:promoters(id, name, email)
       `)
-      .in("payout_runs.events.organizer_id", organizerIds)
-      .order("payout_runs.events.start_time", { ascending: false });
+      .in("payout_run_id", payoutRunIds)
+      .order("created_at", { ascending: false });
 
     if (payoutError) {
       throw payoutError;
     }
+
+    console.log("[Pending Payouts API] payoutLines:", payoutLines?.length || 0, "lines");
 
     // Group by event and filter by status
     const url = new URL(request.url);
