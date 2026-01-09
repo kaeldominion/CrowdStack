@@ -58,26 +58,34 @@ export async function GET() {
       console.log("[OrganizerEvents] Event names:", events.map(e => e.name).join(", "));
     }
 
-    // Get registration counts for each event
-    const eventsWithCounts = await Promise.all(
-      (events || []).map(async (event) => {
-        const { count: registrations } = await serviceSupabase
+    // BATCH QUERY OPTIMIZATION: Get all counts in bulk instead of per-event
+    const eventIds = (events || []).map((e) => e.id);
+
+    // Batch fetch all registrations for these events
+    const { data: allRegs } = eventIds.length > 0
+      ? await serviceSupabase
           .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id);
+          .select("event_id, checked_in")
+          .in("event_id", eventIds)
+      : { data: [] };
 
-        const { count: checkins } = await serviceSupabase
-          .from("checkins")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id);
+    // Build counts maps for O(1) lookups
+    const regsByEvent = new Map<string, number>();
+    const checkinsByEvent = new Map<string, number>();
 
-        return {
-          ...event,
-          registrations: registrations || 0,
-          checkins: checkins || 0,
-        };
-      })
-    );
+    (allRegs || []).forEach((reg) => {
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
+      if (reg.checked_in) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    // Map events with stats from pre-computed maps (no additional queries)
+    const eventsWithCounts = (events || []).map((event) => ({
+      ...event,
+      registrations: regsByEvent.get(event.id) || 0,
+      checkins: checkinsByEvent.get(event.id) || 0,
+    }));
 
     return NextResponse.json({ events: eventsWithCounts }, {
       headers: {

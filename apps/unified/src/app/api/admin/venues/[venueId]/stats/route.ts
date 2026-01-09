@@ -27,41 +27,37 @@ export async function GET(
     }
 
     const { venueId } = await params;
+    const now = new Date().toISOString();
 
-    // Get total events count
-    const { count: totalEvents } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("venue_id", venueId);
+    // PARALLEL QUERY OPTIMIZATION: Run independent queries concurrently
+    const [eventsResult, teamMembersResult] = await Promise.all([
+      // Get all events with start_time to compute both total and upcoming
+      supabase
+        .from("events")
+        .select("id, start_time")
+        .eq("venue_id", venueId),
+      // Get team members count
+      supabase
+        .from("venue_users")
+        .select("*", { count: "exact", head: true })
+        .eq("venue_id", venueId),
+    ]);
 
-    // Get upcoming events count
-    const { count: upcomingEvents } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("venue_id", venueId)
-      .gte("start_time", new Date().toISOString());
+    const events = eventsResult.data || [];
+    const eventIds = events.map((e) => e.id);
+    const totalEvents = events.length;
+    const upcomingEvents = events.filter((e) => e.start_time >= now).length;
+    const teamMembers = teamMembersResult.count || 0;
 
-    // Get total unique attendees for this venue's events
-    const { data: eventIds } = await supabase
-      .from("events")
-      .select("id")
-      .eq("venue_id", venueId);
-
+    // Get attendees count only if there are events
     let totalAttendees = 0;
-    if (eventIds && eventIds.length > 0) {
-      const ids = eventIds.map((e: { id: string }) => e.id);
+    if (eventIds.length > 0) {
       const { count } = await supabase
         .from("registrations")
         .select("attendee_id", { count: "exact", head: true })
-        .in("event_id", ids);
+        .in("event_id", eventIds);
       totalAttendees = count || 0;
     }
-
-    // Get team members count
-    const { count: teamMembers } = await supabase
-      .from("venue_users")
-      .select("*", { count: "exact", head: true })
-      .eq("venue_id", venueId);
 
     return NextResponse.json({
       totalEvents: totalEvents || 0,

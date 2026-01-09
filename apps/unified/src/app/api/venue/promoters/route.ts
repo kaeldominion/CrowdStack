@@ -70,71 +70,75 @@ export async function GET() {
       throw promotersError;
     }
 
-    // Get stats for each promoter
-    const promotersWithStats = await Promise.all(
-      (promoters || []).map(async (promoter) => {
-        // Get events this promoter is assigned to at this venue
-        const { data: promoterEvents } = await serviceSupabase
-          .from("event_promoters")
-          .select("event_id, assigned_by")
-          .eq("promoter_id", promoter.id)
-          .in("event_id", eventIds);
+    // BATCH QUERY OPTIMIZATION: Fetch all data in bulk instead of per-promoter
 
-        const promoterEventIds =
-          promoterEvents?.map((ep) => ep.event_id) || [];
+    // Get all event_promoters assignments for these promoters at this venue
+    const { data: allEventPromoters } = await serviceSupabase
+      .from("event_promoters")
+      .select("promoter_id, event_id, assigned_by")
+      .in("promoter_id", promoterIds)
+      .in("event_id", eventIds);
 
-        // Count registrations through this promoter's referrals
-        const { count: referralCount } = await serviceSupabase
-          .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .in("event_id", promoterEventIds)
-          .eq("referral_promoter_id", promoter.id);
+    // Get all registrations referred by these promoters for these events
+    const { data: allReferrals } = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id, referral_promoter_id, checked_in")
+      .in("event_id", eventIds)
+      .in("referral_promoter_id", promoterIds);
 
-        // Get registration IDs for referrals
-        const { data: referrals } = await serviceSupabase
-          .from("registrations")
-          .select("id")
-          .in("event_id", promoterEventIds)
-          .eq("referral_promoter_id", promoter.id);
+    // Build lookup maps for O(1) access
+    const eventsByPromoter = new Map<string, { event_id: string; assigned_by: string | null }[]>();
+    (allEventPromoters || []).forEach((ep) => {
+      const existing = eventsByPromoter.get(ep.promoter_id) || [];
+      existing.push({ event_id: ep.event_id, assigned_by: ep.assigned_by });
+      eventsByPromoter.set(ep.promoter_id, existing);
+    });
 
-        const referralRegIds = referrals?.map((r) => r.id) || [];
-
-        // Count check-ins from referrals
-        let checkinsFromReferrals = 0;
-        if (referralRegIds.length > 0) {
-          const { count: checkinCount } = await serviceSupabase
-            .from("checkins")
-            .select("*", { count: "exact", head: true })
-            .in("registration_id", referralRegIds)
-            .is("undo_at", null);
-
-          checkinsFromReferrals = checkinCount || 0;
+    const referralsByPromoter = new Map<string, number>();
+    const checkinsByPromoter = new Map<string, number>();
+    (allReferrals || []).forEach((reg) => {
+      if (reg.referral_promoter_id) {
+        referralsByPromoter.set(
+          reg.referral_promoter_id,
+          (referralsByPromoter.get(reg.referral_promoter_id) || 0) + 1
+        );
+        if (reg.checked_in) {
+          checkinsByPromoter.set(
+            reg.referral_promoter_id,
+            (checkinsByPromoter.get(reg.referral_promoter_id) || 0) + 1
+          );
         }
+      }
+    });
 
-        const conversionRate =
-          referralCount && referralCount > 0
-            ? Math.round((checkinsFromReferrals / referralCount) * 100)
-            : 0;
+    // Build promoter stats from pre-computed maps (no additional queries)
+    const promotersWithStats = (promoters || []).map((promoter) => {
+      const promoterEvents = eventsByPromoter.get(promoter.id) || [];
+      const referralCount = referralsByPromoter.get(promoter.id) || 0;
+      const checkinsFromReferrals = checkinsByPromoter.get(promoter.id) || 0;
 
-        // Check if promoter was ever assigned directly by venue vs through organizer
-        const hasDirectAssignment = promoterEvents?.some(
-          (ep) => ep.assigned_by === "venue"
-        );
-        const hasIndirectAssignment = promoterEvents?.some(
-          (ep) => ep.assigned_by === "organizer" || ep.assigned_by === null
-        );
+      const conversionRate =
+        referralCount > 0
+          ? Math.round((checkinsFromReferrals / referralCount) * 100)
+          : 0;
 
-        return {
-          ...promoter,
-          events_count: promoterEventIds.length,
-          referrals_count: referralCount || 0,
-          checkins_count: checkinsFromReferrals,
-          conversion_rate: conversionRate,
-          has_direct_assignment: hasDirectAssignment || false,
-          has_indirect_assignment: hasIndirectAssignment || false,
-        };
-      })
-    );
+      const hasDirectAssignment = promoterEvents.some(
+        (ep) => ep.assigned_by === "venue"
+      );
+      const hasIndirectAssignment = promoterEvents.some(
+        (ep) => ep.assigned_by === "organizer" || ep.assigned_by === null
+      );
+
+      return {
+        ...promoter,
+        events_count: promoterEvents.length,
+        referrals_count: referralCount,
+        checkins_count: checkinsFromReferrals,
+        conversion_rate: conversionRate,
+        has_direct_assignment: hasDirectAssignment,
+        has_indirect_assignment: hasIndirectAssignment,
+      };
+    });
 
     return NextResponse.json({ promoters: promotersWithStats });
   } catch (error: any) {
