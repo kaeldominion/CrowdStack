@@ -1607,9 +1607,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           </div>
           <EventStatusStepper
             status={(() => {
-              // Compute effective status based on end_time
+              // Compute effective status based on end_time and closed_at
               const dbStatus = (event.status || "draft") as EventStatus;
-              
+
+              // If closed_at is set, event has been closed out
+              if (event.closed_at) {
+                return "closed" as EventStatus;
+              }
+
               // If event is published and end_time has passed, show as "ended"
               if (dbStatus === "published" && event.end_time) {
                 const endTime = new Date(event.end_time);
@@ -1618,9 +1623,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   return "ended" as EventStatus;
                 }
               }
-              
+
               return dbStatus;
             })()}
+            closedAt={event.closed_at}
             size="md"
             showLabels={true}
           />
