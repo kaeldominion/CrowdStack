@@ -12,18 +12,27 @@ import { calculatePromoterPayout, type BonusTier } from "@crowdstack/shared/util
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
+
+// Allow up to 60 seconds for this route (PDF generation takes time)
+export const maxDuration = 60;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
   try {
+    console.log("[Closeout Finalize] Starting finalize for event:", params.eventId);
+
     const userId = await getUserId();
     if (!userId) {
+      console.log("[Closeout Finalize] No user ID found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    console.log("[Closeout Finalize] User ID:", userId);
 
     const body = await request.json();
     const { total_revenue, closeout_notes } = body;
+    console.log("[Closeout Finalize] Request body received");
 
     const serviceSupabase = createServiceRoleClient();
 
@@ -145,8 +154,10 @@ export async function POST(
 
     // Allow closing events with no promoters - just skip payout calculations
     const hasPromoters = eventPromoters && eventPromoters.length > 0;
+    console.log("[Closeout Finalize] Found", eventPromoters?.length || 0, "promoters for this event");
 
     // Get all check-ins for this event
+    console.log("[Closeout Finalize] Fetching check-ins...");
     const { data: checkins, error: checkinsError } = await serviceSupabase
       .from("checkins")
       .select(`
@@ -160,8 +171,10 @@ export async function POST(
       .is("undo_at", null);
 
     if (checkinsError) {
+      console.error("[Closeout Finalize] Error fetching check-ins:", checkinsError);
       throw checkinsError;
     }
+    console.log("[Closeout Finalize] Found", checkins?.length || 0, "check-ins");
 
     // Count check-ins per promoter
     const promoterCheckins: Record<string, number> = {};
@@ -183,8 +196,10 @@ export async function POST(
       .single();
 
     if (payoutRunError) {
+      console.error("[Closeout Finalize] Error creating payout run:", payoutRunError);
       throw payoutRunError;
     }
+    console.log("[Closeout Finalize] Created payout run:", payoutRun.id);
 
     // Calculate and create payout lines (only if there are promoters)
     const payoutLines = [];
@@ -249,41 +264,48 @@ export async function POST(
       }
     }
 
-    // Only generate PDF and send emails if there are payout lines
+    // Get promoter details (needed for emails even if PDF fails)
     let pdfPath: string | null = null;
     let promoters: any[] = [];
 
     if (payoutLines.length > 0) {
-      // Get promoter details for PDF
+      console.log("[Closeout Finalize] Getting promoter details for", payoutLines.length, "payout lines");
       const promoterIds = payoutLines.map((pl) => pl.promoter_id);
-      const { data: promoterData } = await serviceSupabase
+      const { data: promoterData, error: promoterError } = await serviceSupabase
         .from("promoters")
         .select("*")
         .in("id", promoterIds);
 
+      if (promoterError) {
+        console.error("[Closeout Finalize] Error fetching promoters:", promoterError);
+      }
       promoters = promoterData || [];
+      console.log("[Closeout Finalize] Found", promoters.length, "promoters");
 
-      const payoutLinesWithPromoters = payoutLines.map((pl) => ({
-        ...pl,
-        promoter: promoters.find((p) => p.id === pl.promoter_id),
-      }));
-
-      // Generate PDF and upload
+      // PDF generation is optional - skip if it fails
+      // Puppeteer can be problematic in serverless environments
       try {
+        const payoutLinesWithPromoters = payoutLines.map((pl) => ({
+          ...pl,
+          promoter: promoters.find((p) => p.id === pl.promoter_id),
+        }));
+
+        console.log("[Closeout Finalize] Attempting PDF generation...");
         pdfPath = await generateAndUploadPayoutStatement(
           payoutRun,
           payoutLinesWithPromoters as any,
           event as any
         );
+        console.log("[Closeout Finalize] PDF generated:", pdfPath);
 
         // Update payout run with PDF path
         await serviceSupabase
           .from("payout_runs")
           .update({ statement_pdf_path: pdfPath })
           .eq("id", payoutRun.id);
-      } catch (pdfError) {
-        console.error("[Closeout Finalize] Error generating PDF:", pdfError);
-        // Continue even if PDF generation fails
+      } catch (pdfError: any) {
+        console.error("[Closeout Finalize] PDF generation failed (non-blocking):", pdfError.message || pdfError);
+        // Continue without PDF - payouts are still valid
       }
     } else if (!hasPromoters) {
       // No promoters configured - that's fine, just log it
@@ -292,6 +314,7 @@ export async function POST(
 
     // Mark event as closed out (but keep status as "published" so it stays visible in history)
     // We set closed_at to indicate payouts are finalized, but don't change the public-facing status
+    console.log("[Closeout Finalize] Updating event to mark as closed...");
     const { error: closeError } = await serviceSupabase
       .from("events")
       .update({
@@ -305,8 +328,10 @@ export async function POST(
       .eq("id", params.eventId);
 
     if (closeError) {
+      console.error("[Closeout Finalize] Error updating event:", closeError);
       throw closeError;
     }
+    console.log("[Closeout Finalize] Event marked as closed successfully");
 
     // Send payout ready emails to promoters (non-blocking, only if there are payout lines)
     if (payoutLines.length > 0) {
@@ -349,12 +374,13 @@ export async function POST(
       console.warn("[Closeout Finalize] Failed to emit outbox event:", outboxError);
     }
 
+    console.log("[Closeout Finalize] Finalize completed successfully. Payout lines:", payoutLines.length);
     return NextResponse.json({
       success: true,
       payout_run: payoutRun,
       payout_lines: payoutLines,
       pdf_path: pdfPath,
-      message: hasPromoters 
+      message: hasPromoters
         ? "Event closed successfully. Payouts are now pending payment."
         : "Event closed successfully. No promoters were configured for this event.",
     });
