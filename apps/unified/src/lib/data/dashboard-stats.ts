@@ -1,6 +1,7 @@
 import "server-only";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserOrganizerId, getUserVenueId, getUserPromoterId } from "./get-user-entity";
+import { calculatePromoterPayout, type BonusTier } from "@crowdstack/shared/utils/payout-calculator";
 
 export interface DashboardStats {
   totalEvents: number;
@@ -275,6 +276,14 @@ export async function getPromoterDashboardStats(): Promise<{
       commission_type,
       commission_config,
       per_head_rate,
+      per_head_min,
+      per_head_max,
+      fixed_fee,
+      minimum_guests,
+      below_minimum_percent,
+      bonus_threshold,
+      bonus_amount,
+      bonus_tiers,
       currency,
       events!inner(
         id,
@@ -310,13 +319,36 @@ export async function getPromoterDashboardStats(): Promise<{
       const currency = (ep as any).currency || event?.currency || "USD";
       const checkinsCount = checkinsByActiveEvent.get(ep.event_id) || 0;
 
-      let estimatedAmount = 0;
-      if (ep.per_head_rate) {
-        estimatedAmount = checkinsCount * parseFloat(ep.per_head_rate);
-      } else if (ep.commission_type === "flat_per_head" && ep.commission_config) {
-        const perHead = ep.commission_config.amount_per_head || ep.commission_config.flat_per_head || 0;
-        estimatedAmount = checkinsCount * perHead;
+      // Parse bonus_tiers if present
+      let bonusTiers: BonusTier[] | null = null;
+      if ((ep as any).bonus_tiers) {
+        try {
+          bonusTiers = typeof (ep as any).bonus_tiers === 'string'
+            ? JSON.parse((ep as any).bonus_tiers)
+            : (ep as any).bonus_tiers;
+        } catch {
+          bonusTiers = null;
+        }
       }
+
+      // Calculate estimated earnings using shared calculation function
+      const breakdown = calculatePromoterPayout(
+        {
+          per_head_rate: ep.per_head_rate ? parseFloat(ep.per_head_rate) : null,
+          per_head_min: (ep as any).per_head_min,
+          per_head_max: (ep as any).per_head_max,
+          fixed_fee: (ep as any).fixed_fee ? parseFloat((ep as any).fixed_fee) : null,
+          minimum_guests: (ep as any).minimum_guests,
+          below_minimum_percent: (ep as any).below_minimum_percent ? parseFloat((ep as any).below_minimum_percent) : null,
+          bonus_threshold: (ep as any).bonus_threshold,
+          bonus_amount: (ep as any).bonus_amount ? parseFloat((ep as any).bonus_amount) : null,
+          bonus_tiers: bonusTiers,
+          manual_adjustment_amount: null, // No manual adjustments for estimates
+        },
+        checkinsCount
+      );
+
+      const estimatedAmount = breakdown.calculated_payout;
 
       if (estimatedAmount > 0) {
         ensureCurrency(currency);
