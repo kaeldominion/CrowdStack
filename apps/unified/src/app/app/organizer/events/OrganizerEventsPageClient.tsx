@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button, EmptyState, Badge, Card } from "@crowdstack/ui";
-import { Plus, Calendar, AlertCircle, Clock, History, MapPin, ArrowUpRight } from "lucide-react";
+import { Plus, Calendar, AlertCircle, Clock, History, MapPin, ArrowUpRight, CheckCircle2, DollarSign, Lock } from "lucide-react";
 import Link from "next/link";
 import { EventCard } from "@/components/events/EventCard";
 
@@ -14,10 +14,13 @@ interface Event {
   start_time: string;
   end_time: string | null;
   status: string;
+  closed_at: string | null;
   venue_approval_status: string;
   venue_rejection_reason: string | null;
   registrations: number;
   checkins: number;
+  payouts_pending: number;
+  payouts_paid: number;
   flier_url: string | null;
   cover_image_url: string | null;
   venue: any | null;
@@ -198,61 +201,99 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
               <div className="space-y-2">
                 {pastEvents.map((event) => {
                   const eventDate = new Date(event.start_time);
-                  const conversionRate = event.registrations > 0 
-                    ? Math.round((event.checkins / event.registrations) * 100) 
+                  const conversionRate = event.registrations > 0
+                    ? Math.round((event.checkins / event.registrations) * 100)
                     : 0;
 
+                  // Determine lifecycle status
+                  const isClosed = !!event.closed_at;
+                  const totalPayouts = event.payouts_pending + event.payouts_paid;
+                  const allPaid = totalPayouts > 0 && event.payouts_pending === 0;
+                  const hasPendingPayouts = event.payouts_pending > 0;
+
+                  // Status badge logic
+                  let statusBadge = null;
+                  if (allPaid) {
+                    statusBadge = (
+                      <Badge variant="success" className="!text-[9px] !px-1.5 !py-0 flex items-center gap-0.5">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        Paid
+                      </Badge>
+                    );
+                  } else if (hasPendingPayouts) {
+                    statusBadge = (
+                      <Badge variant="warning" className="!text-[9px] !px-1.5 !py-0 flex items-center gap-0.5">
+                        <DollarSign className="h-2.5 w-2.5" />
+                        {event.payouts_pending} unpaid
+                      </Badge>
+                    );
+                  } else if (isClosed) {
+                    statusBadge = (
+                      <Badge variant="secondary" className="!text-[9px] !px-1.5 !py-0 flex items-center gap-0.5">
+                        <Lock className="h-2.5 w-2.5" />
+                        Closed
+                      </Badge>
+                    );
+                  } else {
+                    statusBadge = (
+                      <Badge variant="secondary" className="!text-[9px] !px-1.5 !py-0">
+                        Ended
+                      </Badge>
+                    );
+                  }
+
                   return (
-                    <Link 
-                      key={event.id} 
+                    <Link
+                      key={event.id}
                       href={`/app/organizer/events/${event.id}`}
                       className="block"
                     >
-                      <div className="flex items-center gap-4 p-4 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/30 hover:bg-active/50 transition-all cursor-pointer group">
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-glass border border-border-subtle hover:border-accent-primary/30 hover:bg-active/50 transition-all cursor-pointer group">
                         {/* Thumbnail */}
                         {event.flier_url && (
-                          <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
+                          <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
                             <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
                           </div>
                         )}
-                        
+
                         {/* Event Info */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-primary line-clamp-1 group-hover:text-accent-secondary transition-colors">
-                            {event.name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-sm text-primary line-clamp-1 group-hover:text-accent-secondary transition-colors">
+                              {event.name}
+                            </h4>
+                            {statusBadge}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-secondary">
                             <Calendar className="h-3 w-3 text-muted flex-shrink-0" />
-                            <span>{eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-                            <span className="text-muted">•</span>
-                            <span>{eventDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
+                            <span>{eventDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                            {event.venue && (
+                              <>
+                                <span className="text-muted">•</span>
+                                <span className="line-clamp-1">{event.venue.name}</span>
+                              </>
+                            )}
                           </div>
-                          {event.venue && (
-                            <div className="flex items-center gap-1.5 mt-0.5 text-sm text-secondary">
-                              <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
-                              <span className="line-clamp-1">{event.venue.name}</span>
-                            </div>
-                          )}
                         </div>
-                        
-                        {/* Stats */}
-                        <div className="hidden sm:flex items-center gap-4 lg:gap-6">
-                          <div className="text-center min-w-[45px]">
-                            <span className="text-sm font-bold text-primary">{event.registrations}</span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Reg.</p>
+
+                        {/* Stats - More Compact */}
+                        <div className="hidden sm:flex items-center gap-3">
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-xs font-bold text-primary">{event.registrations}</span>
+                            <p className="font-mono text-[7px] uppercase tracking-widest text-muted">Reg</p>
                           </div>
-                          <div className="text-center min-w-[45px]">
-                            <span className="text-sm font-bold text-accent-success">{event.checkins}</span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">In</p>
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-xs font-bold text-accent-success">{event.checkins}</span>
+                            <p className="font-mono text-[7px] uppercase tracking-widest text-muted">In</p>
                           </div>
-                          <div className="text-center min-w-[45px]">
-                            <span className={`text-sm font-bold ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
+                          <div className="text-center min-w-[40px]">
+                            <span className={`text-xs font-bold ${conversionRate >= 70 ? "text-accent-success" : conversionRate >= 40 ? "text-accent-warning" : "text-secondary"}`}>
                               {conversionRate}%
                             </span>
-                            <p className="font-mono text-[8px] uppercase tracking-widest text-muted">Conv.</p>
+                            <p className="font-mono text-[7px] uppercase tracking-widest text-muted">Conv</p>
                           </div>
                         </div>
-                        
+
                         {/* Arrow */}
                         <ArrowUpRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors flex-shrink-0" />
                       </div>
