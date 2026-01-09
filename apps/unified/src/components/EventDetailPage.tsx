@@ -311,6 +311,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [promoterFilter, setPromoterFilter] = useState<string>("all");
   const [vipFilter, setVipFilter] = useState<boolean | undefined>(undefined);
   const [togglingVip, setTogglingVip] = useState<string | null>(null);
+  const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [showPromoterModal, setShowPromoterModal] = useState(false);
@@ -769,6 +770,42 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       }
     } catch (error) {
       console.error("Failed to load attendees:", error);
+    }
+  };
+
+  const handleCheckIn = async (registrationId: string) => {
+    if (!eventId) return;
+    
+    setCheckingIn(registrationId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/checkin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registrationId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.error || "Failed to check in attendee";
+        toast.error(errorMessage);
+        return;
+      }
+
+      if (data.success) {
+        toast.success(data.message || "Attendee checked in successfully");
+        // Reload attendees to update the UI
+        loadAttendees();
+        // Reload stats
+        loadStats();
+      } else {
+        toast.error(data.error || "Failed to check in attendee");
+      }
+    } catch (error: any) {
+      console.error("Check-in error:", error);
+      toast.error(error.message || "Failed to check in attendee");
+    } finally {
+      setCheckingIn(null);
     }
   };
 
@@ -2433,13 +2470,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       <TableHead>Status</TableHead>
                       <TableHead>VIP</TableHead>
                       {!isPromoterView && <TableHead>Source</TableHead>}
-                      {!isPromoterView && config.role === "organizer" && (organizerId || event?.organizer_id) && <TableHead>Actions</TableHead>}
+                      {!isPromoterView && (config.role === "organizer" || config.role === "venue") && <TableHead>Actions</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAttendees.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isPromoterView ? 6 : (config.role === "organizer" && (organizerId || event?.organizer_id) ? 8 : 7)} className="text-center text-secondary py-8">
+                        <TableCell colSpan={isPromoterView ? 6 : (config.role === "organizer" || config.role === "venue") ? 8 : 7} className="text-center text-secondary py-8">
                           {isPromoterView ? "You haven't referred any guests to this event yet" : "No attendees found"}
                         </TableCell>
                       </TableRow>
@@ -2502,33 +2539,58 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               )}
                             </TableCell>
                           )}
-                          {!isPromoterView && config.role === "organizer" && (organizerId || event?.organizer_id) && (
+                          {!isPromoterView && (config.role === "organizer" || config.role === "venue") && (
                             <TableCell>
                               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e?.stopPropagation();
-                                    toggleOrganizerVip(attendee.attendee_id, attendee.is_organizer_vip || false);
-                                  }}
-                                  disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
-                                  title={
-                                    attendee.is_global_vip
-                                      ? "Global VIP (system-managed, cannot be changed)"
-                                      : attendee.is_organizer_vip
-                                      ? "Remove organizer VIP"
-                                      : "Mark as organizer VIP"
-                                  }
-                                >
-                                  {togglingVip === attendee.attendee_id ? (
-                                    <InlineSpinner size="xs" />
-                                  ) : attendee.is_organizer_vip ? (
-                                    <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />
-                                  ) : (
-                                    <Sparkles className="h-4 w-4" />
-                                  )}
-                                </Button>
+                                {/* Check-in Button */}
+                                {!attendee.checked_in && (
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e?.stopPropagation();
+                                      handleCheckIn(attendee.id);
+                                    }}
+                                    disabled={checkingIn === attendee.id}
+                                    title="Check in attendee"
+                                  >
+                                    {checkingIn === attendee.id ? (
+                                      <InlineSpinner size="xs" />
+                                    ) : (
+                                      <>
+                                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                                        Check In
+                                      </>
+                                    )}
+                                  </Button>
+                                )}
+                                {/* VIP Toggle Button (organizers only) */}
+                                {config.role === "organizer" && (organizerId || event?.organizer_id) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e?.stopPropagation();
+                                      toggleOrganizerVip(attendee.attendee_id, attendee.is_organizer_vip || false);
+                                    }}
+                                    disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
+                                    title={
+                                      attendee.is_global_vip
+                                        ? "Global VIP (system-managed, cannot be changed)"
+                                        : attendee.is_organizer_vip
+                                        ? "Remove organizer VIP"
+                                        : "Mark as organizer VIP"
+                                    }
+                                  >
+                                    {togglingVip === attendee.attendee_id ? (
+                                      <InlineSpinner size="xs" />
+                                    ) : attendee.is_organizer_vip ? (
+                                      <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />
+                                    ) : (
+                                      <Sparkles className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           )}
