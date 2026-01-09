@@ -119,6 +119,8 @@ export async function GET(
         fixed_fee,
         manual_adjustment_amount,
         manual_adjustment_reason,
+        manual_checkins_override,
+        manual_checkins_reason,
         promoter:promoters(id, name, email)
       `)
       .eq("event_id", params.eventId);
@@ -174,14 +176,19 @@ export async function GET(
     // Calculate payouts for each promoter
     const promoters = eventPromoters.map((ep: any) => {
       const promoter = Array.isArray(ep.promoter) ? ep.promoter[0] : ep.promoter;
-      const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
+      const actualCheckinsCount = promoterCheckins[ep.promoter_id] || 0;
 
-      // Calculate base payout
+      // Use manual override if set, otherwise use actual count
+      const effectiveCheckinsCount = ep.manual_checkins_override !== null
+        ? ep.manual_checkins_override
+        : actualCheckinsCount;
+
+      // Calculate base payout using the effective count
       let calculatedPayout = 0;
 
       // Per-head calculation
       if (ep.per_head_rate !== null && ep.per_head_rate !== undefined) {
-        let countedCheckins = checkinsCount;
+        let countedCheckins = effectiveCheckinsCount;
 
         // Apply min/max constraints
         if (ep.per_head_min !== null && countedCheckins < ep.per_head_min) {
@@ -193,11 +200,11 @@ export async function GET(
         calculatedPayout += countedCheckins * (ep.per_head_rate || 0);
       }
 
-      // Bonus calculation
+      // Bonus calculation (use effective count for bonus threshold check)
       if (
         ep.bonus_threshold !== null &&
         ep.bonus_amount !== null &&
-        checkinsCount >= ep.bonus_threshold
+        effectiveCheckinsCount >= ep.bonus_threshold
       ) {
         calculatedPayout += ep.bonus_amount;
       }
@@ -214,7 +221,10 @@ export async function GET(
       return {
         promoter_id: ep.promoter_id,
         promoter_name: promoter?.name || "Unknown",
-        checkins_count: checkinsCount,
+        checkins_count: effectiveCheckinsCount,
+        actual_checkins_count: actualCheckinsCount,
+        manual_checkins_override: ep.manual_checkins_override,
+        manual_checkins_reason: ep.manual_checkins_reason,
         calculated_payout: calculatedPayout,
         manual_adjustment_amount: ep.manual_adjustment_amount,
         manual_adjustment_reason: ep.manual_adjustment_reason,
@@ -263,7 +273,13 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { promoter_id, manual_adjustment_amount, manual_adjustment_reason } = body;
+    const {
+      promoter_id,
+      manual_adjustment_amount,
+      manual_adjustment_reason,
+      manual_checkins_override,
+      manual_checkins_reason,
+    } = body;
 
     if (!promoter_id) {
       return NextResponse.json(
@@ -364,13 +380,29 @@ export async function PATCH(
       );
     }
 
-    // Update manual adjustment
+    // Build update object with only provided fields
+    const updateData: Record<string, any> = {};
+
+    // Handle adjustment fields if provided
+    if (manual_adjustment_amount !== undefined) {
+      updateData.manual_adjustment_amount = manual_adjustment_amount ?? null;
+    }
+    if (manual_adjustment_reason !== undefined) {
+      updateData.manual_adjustment_reason = manual_adjustment_reason || null;
+    }
+
+    // Handle checkins override fields if provided
+    if (manual_checkins_override !== undefined) {
+      updateData.manual_checkins_override = manual_checkins_override ?? null;
+    }
+    if (manual_checkins_reason !== undefined) {
+      updateData.manual_checkins_reason = manual_checkins_reason || null;
+    }
+
+    // Update the event_promoter record
     const { data: updated, error: updateError } = await serviceSupabase
       .from("event_promoters")
-      .update({
-        manual_adjustment_amount: manual_adjustment_amount ?? null,
-        manual_adjustment_reason: manual_adjustment_reason || null,
-      })
+      .update(updateData)
       .eq("event_id", params.eventId)
       .eq("promoter_id", promoter_id)
       .select()

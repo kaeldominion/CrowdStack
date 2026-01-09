@@ -954,7 +954,10 @@ export interface CloseoutSummary {
   promoters: Array<{
     promoter_id: string;
     promoter_name: string;
-    checkins_count: number;
+    checkins_count: number; // The effective count (override if set, otherwise actual)
+    actual_checkins_count: number; // The real count from registrations
+    manual_checkins_override: number | null; // Manual override value
+    manual_checkins_reason: string | null; // Reason for override
     calculated_payout: number;
     manual_adjustment_amount: number | null;
     manual_adjustment_reason: string | null;
