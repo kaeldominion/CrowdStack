@@ -20,6 +20,13 @@ const nextConfig = {
         './node_modules/@sentry/**/*.js',
       ],
     },
+    // Optimize imports from these packages to reduce bundle size
+    optimizePackageImports: [
+      "@crowdstack/ui",
+      "recharts",
+      "framer-motion",
+      "lucide-react",
+    ],
   },
   // Performance optimizations
   compress: true,
@@ -41,6 +48,8 @@ const nextConfig = {
         hostname: "images.unsplash.com",
       },
     ],
+    // Prefer modern image formats for smaller file sizes
+    formats: ["image/avif", "image/webp"],
   },
   webpack: (config, { isServer }) => {
     // Add aliases for shared package subpaths
@@ -85,8 +94,9 @@ module.exports = withSentryConfig(
     // Upload a larger set of source maps for better debugging
     widenClientFileUpload: true,
 
-    // Transpiles SDK to be compatible with IE11 (increases bundle size)
-    transpileClientSDK: true,
+    // Do NOT transpile SDK for IE11 - we only support modern browsers
+    // This saves ~30-50KB in the client bundle
+    transpileClientSDK: false,
 
     // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
     // This can increase your server load as well as your hosting bill.

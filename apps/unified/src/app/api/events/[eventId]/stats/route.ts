@@ -124,7 +124,8 @@ export async function GET(
       .eq("registrations.event_id", params.eventId)
       .is("undo_at", null);
 
-    // Get promoter stats - query registrations directly by referral_promoter_id
+    // Get promoter stats - BATCH QUERY OPTIMIZATION
+    // Fetch all promoters, registrations, and checkins in bulk instead of N+1 queries
     const { data: eventPromoters } = await serviceSupabase
       .from("event_promoters")
       .select(`
@@ -132,41 +133,65 @@ export async function GET(
       `)
       .eq("event_id", params.eventId);
 
-    const promoterBreakdown = await Promise.all(
-      (eventPromoters || []).map(async (ep: any) => {
+    // Extract valid promoter IDs
+    const promoterIds = (eventPromoters || [])
+      .map((ep: any) => ep.promoter?.id)
+      .filter((id): id is string => !!id);
+
+    // Batch fetch all registrations for this event by these promoters
+    const { data: allPromoterRegs } = promoterIds.length > 0
+      ? await serviceSupabase
+          .from("registrations")
+          .select("id, referral_promoter_id")
+          .eq("event_id", params.eventId)
+          .in("referral_promoter_id", promoterIds)
+      : { data: [] };
+
+    // Get all registration IDs to batch fetch checkins
+    const allRegIds = (allPromoterRegs || []).map((r) => r.id);
+
+    // Batch fetch all checkins for these registrations
+    const { data: allPromoterCheckins } = allRegIds.length > 0
+      ? await serviceSupabase
+          .from("checkins")
+          .select("registration_id")
+          .in("registration_id", allRegIds)
+          .is("undo_at", null)
+      : { data: [] };
+
+    // Build maps for O(1) lookups
+    const regsByPromoter = new Map<string, number>();
+    const checkinRegIds = new Set((allPromoterCheckins || []).map((c) => c.registration_id));
+    const checkinsByPromoter = new Map<string, number>();
+
+    (allPromoterRegs || []).forEach((reg) => {
+      if (reg.referral_promoter_id) {
+        regsByPromoter.set(
+          reg.referral_promoter_id,
+          (regsByPromoter.get(reg.referral_promoter_id) || 0) + 1
+        );
+        if (checkinRegIds.has(reg.id)) {
+          checkinsByPromoter.set(
+            reg.referral_promoter_id,
+            (checkinsByPromoter.get(reg.referral_promoter_id) || 0) + 1
+          );
+        }
+      }
+    });
+
+    // Build promoter breakdown from maps (no additional queries)
+    const validPromoterBreakdown = (eventPromoters || [])
+      .map((ep: any) => {
         const promoterId = ep.promoter?.id;
         if (!promoterId) return null;
-
-        // Get registrations for this promoter
-        const { data: regs } = await serviceSupabase
-          .from("registrations")
-          .select("id")
-          .eq("event_id", params.eventId)
-          .eq("referral_promoter_id", promoterId);
-
-        // Get checkins directly from checkins table
-        let checkinsCount = 0;
-        if (regs && regs.length > 0) {
-          const regIds = regs.map(r => r.id);
-          const { count } = await serviceSupabase
-            .from("checkins")
-            .select("*", { count: "exact", head: true })
-            .in("registration_id", regIds)
-            .is("undo_at", null);
-          checkinsCount = count || 0;
-        }
-        
         return {
           promoter_id: promoterId,
           promoter_name: ep.promoter?.name,
-          registrations: regs?.length || 0,
-          check_ins: checkinsCount,
+          registrations: regsByPromoter.get(promoterId) || 0,
+          check_ins: checkinsByPromoter.get(promoterId) || 0,
         };
       })
-    );
-
-    // Filter out null values
-    const validPromoterBreakdown = promoterBreakdown.filter((p): p is NonNullable<typeof p> => p !== null);
+      .filter((p): p is NonNullable<typeof p> => p !== null);
 
     // Get recent registrations (last 24 hours)
     const yesterday = new Date();

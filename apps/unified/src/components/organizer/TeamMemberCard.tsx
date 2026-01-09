@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Badge } from "@crowdstack/ui";
 import { Crown, Mail } from "lucide-react";
-import type { OrganizerTeamMember } from "@crowdstack/shared/types";
+import type { OrganizerTeamMember, OrganizerPermissions } from "@crowdstack/shared/types";
 
 interface TeamMemberCardProps {
   member: OrganizerTeamMember;
@@ -37,7 +37,7 @@ export function TeamMemberCard({
     if (member.permissions.full_admin === true) return "Full Admin";
     
     // Count enabled permissions
-    const permissionKeys = [
+    const permissionKeys: (keyof OrganizerPermissions)[] = [
       "manage_users",
       "edit_profile",
       "add_events",
@@ -49,7 +49,7 @@ export function TeamMemberCard({
       "publish_photos",
       "manage_payouts",
     ];
-    
+
     const enabledCount = permissionKeys.filter(
       (key) => member.permissions?.[key] === true
     ).length;

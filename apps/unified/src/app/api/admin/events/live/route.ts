@@ -11,14 +11,19 @@ export async function GET() {
     const cookieStore = await cookies();
     const supabase = await createClient();
 
-    // Check for localhost development mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const userId = user?.id || localhostUser;
+    // SECURITY: Only allow localhost fallback in non-production environments
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        console.warn("[Admin Live Events] Using localhost_user_id fallback - DEV ONLY");
+        userId = localhostUser;
+      }
+    }
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -71,31 +76,34 @@ export async function GET() {
       );
     }
 
-    // Get registration and check-in counts for each event
-    const eventsWithStats = await Promise.all(
-      (events || []).map(async (event) => {
-        const { count: registrations } = await serviceClient
+    // BATCH QUERY OPTIMIZATION: Get registration and check-in counts in bulk
+    const eventIds = (events || []).map((e) => e.id);
+
+    // Batch fetch all registrations for these events
+    const { data: allRegs } = eventIds.length > 0
+      ? await serviceClient
           .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id);
+          .select("event_id, checked_in")
+          .in("event_id", eventIds)
+      : { data: [] };
 
-        // Get check-ins from the checkins table, joined with registrations to filter by event_id
-        const { count: checkins } = await serviceClient
-          .from("checkins")
-          .select(`
-            *,
-            registrations!inner(event_id)
-          `, { count: "exact", head: true })
-          .eq("registrations.event_id", event.id)
-          .is("undo_at", null);
+    // Build counts maps for O(1) lookups
+    const regsByEvent = new Map<string, number>();
+    const checkinsByEvent = new Map<string, number>();
 
-        return {
-          ...event,
-          registrations: registrations || 0,
-          checkins: checkins || 0,
-        };
-      })
-    );
+    (allRegs || []).forEach((reg) => {
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
+      if (reg.checked_in) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    // Map events with stats from pre-computed maps (no additional queries)
+    const eventsWithStats = (events || []).map((event) => ({
+      ...event,
+      registrations: regsByEvent.get(event.id) || 0,
+      checkins: checkinsByEvent.get(event.id) || 0,
+    }));
 
     return NextResponse.json({ events: eventsWithStats });
   } catch (error) {

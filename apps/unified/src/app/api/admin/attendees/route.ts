@@ -57,87 +57,107 @@ export async function GET() {
       }, { status: 403 });
     }
 
+    // Fetch attendees with limited columns for performance
     const { data: attendees, error } = await serviceSupabase
       .from("attendees")
-      .select("*")
+      .select("id, name, email, phone, gender, user_id, created_at, updated_at")
       .order("created_at", { ascending: false })
-      .limit(1000); // Limit for performance
+      .limit(1000);
 
     if (error) {
       throw error;
     }
 
-    // Get counts for each attendee
-    const attendeesWithCounts = await Promise.all(
-      (attendees || []).map(async (attendee: any) => {
-        const { count: eventsCount } = await serviceSupabase
-          .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("attendee_id", attendee.id);
+    if (!attendees || attendees.length === 0) {
+      return NextResponse.json({ attendees: [] });
+    }
 
-        // Get check-ins through registrations
-        const { data: registrations } = await serviceSupabase
-          .from("registrations")
-          .select("id")
-          .eq("attendee_id", attendee.id);
-        
-        const regIds = registrations?.map((r) => r.id) || [];
-        let checkinsCount = 0;
-        
-        if (regIds.length > 0) {
-          const { count } = await serviceSupabase
-            .from("checkins")
-            .select("*", { count: "exact", head: true })
-            .in("registration_id", regIds)
-            .is("undo_at", null);
-          checkinsCount = count || 0;
+    // BATCH QUERY OPTIMIZATION: Fetch all related data in bulk instead of N+1 queries
+    const attendeeIds = attendees.map((a) => a.id);
+
+    // 1. Batch fetch all registrations for these attendees
+    const { data: allRegistrations } = await serviceSupabase
+      .from("registrations")
+      .select("id, attendee_id, event_id")
+      .in("attendee_id", attendeeIds);
+
+    // Build maps for O(1) lookups
+    const registrationsByAttendee = new Map<string, Array<{ id: string; event_id: string }>>();
+    const allRegistrationIds: string[] = [];
+    const eventIdsByAttendee = new Map<string, Set<string>>();
+
+    (allRegistrations || []).forEach((reg) => {
+      if (!registrationsByAttendee.has(reg.attendee_id)) {
+        registrationsByAttendee.set(reg.attendee_id, []);
+        eventIdsByAttendee.set(reg.attendee_id, new Set());
+      }
+      registrationsByAttendee.get(reg.attendee_id)!.push({ id: reg.id, event_id: reg.event_id });
+      eventIdsByAttendee.get(reg.attendee_id)!.add(reg.event_id);
+      allRegistrationIds.push(reg.id);
+    });
+
+    // 2. Batch fetch all checkins for these registrations
+    const checkinsByRegistration = new Map<string, number>();
+    if (allRegistrationIds.length > 0) {
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", allRegistrationIds)
+        .is("undo_at", null);
+
+      (allCheckins || []).forEach((checkin) => {
+        const current = checkinsByRegistration.get(checkin.registration_id) || 0;
+        checkinsByRegistration.set(checkin.registration_id, current + 1);
+      });
+    }
+
+    // 3. Batch fetch venue_ids for all events
+    const allEventIds = [...new Set((allRegistrations || []).map((r) => r.event_id))];
+    const venueByEvent = new Map<string, string>();
+    if (allEventIds.length > 0) {
+      const { data: events } = await serviceSupabase
+        .from("events")
+        .select("id, venue_id")
+        .in("id", allEventIds);
+
+      (events || []).forEach((event) => {
+        if (event.venue_id) {
+          venueByEvent.set(event.id, event.venue_id);
         }
+      });
+    }
 
-        // Get unique venues
-        const { data: venueEvents } = await serviceSupabase
-          .from("registrations")
-          .select("event:events(venue_id)")
-          .eq("attendee_id", attendee.id);
+    // 4. Build final response using the pre-fetched data
+    const attendeesWithCounts = attendees.map((attendee) => {
+      const regs = registrationsByAttendee.get(attendee.id) || [];
+      const eventsCount = regs.length;
 
-        const uniqueVenues = new Set(
-          venueEvents?.map((r: any) => r.event?.venue_id).filter(Boolean) || []
-        );
+      // Sum checkins from the registration map
+      let checkinsCount = 0;
+      regs.forEach((reg) => {
+        checkinsCount += checkinsByRegistration.get(reg.id) || 0;
+      });
 
-        // Get user info if linked - query auth.users table (admin only)
-        let userInfo = null;
-        if (attendee.user_id) {
-          // Note: This requires admin access - using service role client
-          // In production, you might want to use Supabase Admin API directly
-          try {
-            const { data: authUser } = await serviceSupabase
-              .from("users") // This won't work directly - need to use Admin API
-              .select("email, created_at, last_sign_in_at")
-              .eq("id", attendee.user_id)
-              .single();
-            
-            // For now, just mark that user_id exists
-            userInfo = {
-              user_id: attendee.user_id,
-              has_account: true,
-            };
-          } catch {
-            // User exists but we can't fetch details without Admin API
-            userInfo = {
-              user_id: attendee.user_id,
-              has_account: true,
-            };
-          }
-        }
+      // Calculate unique venues
+      const venueIds = new Set<string>();
+      regs.forEach((reg) => {
+        const venueId = venueByEvent.get(reg.event_id);
+        if (venueId) venueIds.add(venueId);
+      });
 
-        return {
-          ...attendee,
-          events_count: eventsCount || 0,
-          checkins_count: checkinsCount,
-          venues_count: uniqueVenues.size,
-          user_info: userInfo,
-        };
-      })
-    );
+      // User info
+      const userInfo = attendee.user_id
+        ? { user_id: attendee.user_id, has_account: true }
+        : null;
+
+      return {
+        ...attendee,
+        events_count: eventsCount,
+        checkins_count: checkinsCount,
+        venues_count: venueIds.size,
+        user_info: userInfo,
+      };
+    });
 
     return NextResponse.json({ attendees: attendeesWithCounts });
   } catch (error: any) {
