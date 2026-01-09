@@ -74,7 +74,7 @@ export async function POST(
       }
     }
 
-    // Reset the event - unlock and clear closeout fields
+    // Reset the event - unlock and clear closeout fields (don't touch status)
     const { error: updateError } = await serviceSupabase
       .from("events")
       .update({
@@ -82,7 +82,7 @@ export async function POST(
         closed_at: null,
         closed_by: null,
         closeout_notes: null,
-        status: "published", // Set back to published
+        // NOTE: Don't change status - it stays as published/draft
       })
       .eq("id", eventId);
 
