@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, LoadingSpinner, Badge, EmptyState } from "@crowdstack/ui";
-import { Download, CheckCircle2, Clock, DollarSign, FileText } from "lucide-react";
+import { Download, CheckCircle2, Clock, DollarSign, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Modal } from "@crowdstack/ui";
 import { Input } from "@crowdstack/ui";
@@ -57,6 +57,20 @@ export default function OrganizerPayoutsPage() {
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [paymentNotes, setPaymentNotes] = useState("");
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
+
+  const toggleEvent = (eventId: string) => {
+    setExpandedEvents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     loadPayouts();
@@ -81,24 +95,29 @@ export default function OrganizerPayoutsPage() {
   };
 
   const handleExport = async () => {
+    setExporting(true);
     try {
       const response = await fetch(
         `/api/organizer/payouts/export?status=${statusFilter}`
       );
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `payouts-export-${new Date().toISOString().split("T")[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to export payouts");
       }
-    } catch (error) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payouts-export-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error: any) {
       console.error("Failed to export payouts:", error);
-      alert("Failed to export payouts");
+      alert(error.message || "Failed to export payouts");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -189,7 +208,7 @@ export default function OrganizerPayoutsPage() {
             <option value="paid">Paid</option>
             <option value="confirmed">Confirmed</option>
           </select>
-          <Button variant="secondary" onClick={handleExport}>
+          <Button variant="secondary" onClick={handleExport} loading={exporting} disabled={exporting}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -214,7 +233,7 @@ export default function OrganizerPayoutsPage() {
         </Card>
       )}
 
-      {/* Events List */}
+      {/* Events List - Compact Expandable */}
       {events.length === 0 ? (
         <EmptyState
           icon={<DollarSign className="h-12 w-12" />}
@@ -226,86 +245,113 @@ export default function OrganizerPayoutsPage() {
           }
         />
       ) : (
-        <div className="space-y-6">
-          {events.map((eventGroup) => (
-            <Card key={eventGroup.event_id}>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-                  <div>
-                    <h3 className="text-lg font-semibold text-primary">
-                      {eventGroup.event_name}
-                    </h3>
-                    <p className="text-sm text-secondary mt-1">
-                      {new Date(eventGroup.event_date).toLocaleDateString()} •{" "}
-                      {formatCurrency(eventGroup.total_amount, eventGroup.currency)}
-                    </p>
-                  </div>
-                  <Link href={`/app/organizer/events/${eventGroup.event_id}`}>
-                    <Button variant="ghost" size="sm">
-                      View Event
-                    </Button>
-                  </Link>
-                </div>
+        <div className="space-y-2">
+          {events.map((eventGroup) => {
+            const isExpanded = expandedEvents.has(eventGroup.event_id);
+            const pendingCount = eventGroup.payouts.filter(p => p.payment_status === "pending_payment").length;
+            const paidCount = eventGroup.payouts.filter(p => p.payment_status === "paid" || p.payment_status === "confirmed").length;
 
-                <div className="space-y-3">
-                  {eventGroup.payouts.map((payout) => (
-                    <div
-                      key={payout.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-active/50 border border-border-subtle"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div className="font-medium text-primary">
-                            {payout.promoter.name}
+            return (
+              <Card key={eventGroup.event_id} className="overflow-hidden">
+                {/* Compact Header Row - Always Visible */}
+                <button
+                  onClick={() => toggleEvent(eventGroup.event_id)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-active/30 transition-colors text-left"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted flex-shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted flex-shrink-0" />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-primary text-sm truncate">
+                        {eventGroup.event_name}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {new Date(eventGroup.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      {pendingCount > 0 && (
+                        <Badge variant="warning" className="!text-[10px] !px-1.5 !py-0.5">
+                          {pendingCount} pending
+                        </Badge>
+                      )}
+                      {paidCount > 0 && (
+                        <Badge variant="success" className="!text-[10px] !px-1.5 !py-0.5">
+                          {paidCount} paid
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="font-mono text-sm font-bold text-primary min-w-[80px] text-right">
+                      {formatCurrency(eventGroup.total_amount, eventGroup.currency)}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="border-t border-border-subtle bg-active/20">
+                    <div className="divide-y divide-border-subtle">
+                      {eventGroup.payouts.map((payout) => (
+                        <div
+                          key={payout.id}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-active/30 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-primary truncate">
+                                {payout.promoter.name}
+                              </span>
+                              {getStatusBadge(payout.payment_status)}
+                            </div>
+                            <div className="text-[11px] text-muted mt-0.5">
+                              {payout.checkins_count} check-ins
+                              {payout.payment_notes && ` • ${payout.payment_notes}`}
+                            </div>
                           </div>
-                          {getStatusBadge(payout.payment_status)}
-                        </div>
-                        <div className="text-xs text-secondary mt-1">
-                          {payout.checkins_count} check-ins •{" "}
-                          {payout.promoter.email || "No email"}
-                        </div>
-                        {payout.payment_notes && (
-                          <div className="text-xs text-secondary mt-1">
-                            Notes: {payout.payment_notes}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-primary">
-                            {formatCurrency(
-                              payout.commission_amount,
-                              eventGroup.currency
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="font-mono text-sm font-semibold text-primary">
+                              {formatCurrency(payout.commission_amount, eventGroup.currency)}
+                            </span>
+                            {payout.payment_status === "pending_payment" && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="!text-xs !px-2 !py-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPayout(payout);
+                                  setShowMarkPaidModal(true);
+                                }}
+                              >
+                                Pay
+                              </Button>
                             )}
                           </div>
-                          {payout.payment_marked_at && (
-                            <div className="text-xs text-secondary">
-                              Paid{" "}
-                              {new Date(
-                                payout.payment_marked_at
-                              ).toLocaleDateString()}
-                            </div>
-                          )}
                         </div>
-                        {payout.payment_status === "pending_payment" && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedPayout(payout);
-                              setShowMarkPaidModal(true);
-                            }}
-                          >
-                            Mark Paid
-                          </Button>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          ))}
+
+                    {/* Event Actions Footer */}
+                    <div className="flex items-center justify-end gap-2 px-4 py-2 bg-active/10 border-t border-border-subtle">
+                      <Link href={`/app/organizer/events/${eventGroup.event_id}`}>
+                        <Button variant="ghost" size="sm" className="!text-xs">
+                          View Event
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
 

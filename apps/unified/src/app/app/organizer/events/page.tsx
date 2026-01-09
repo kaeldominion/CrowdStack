@@ -9,10 +9,13 @@ interface Event {
   start_time: string;
   end_time: string | null;
   status: string;
+  closed_at: string | null;
   venue_approval_status: string;
   venue_rejection_reason: string | null;
   registrations: number;
   checkins: number;
+  payouts_pending: number;
+  payouts_paid: number;
   flier_url: string | null;
   cover_image_url: string | null;
   venue: any | null;
@@ -63,6 +66,7 @@ async function getOrganizerEvents() {
       start_time,
       end_time,
       status,
+      closed_at,
       venue_approval_status,
       venue_rejection_reason,
       capacity,
@@ -80,15 +84,17 @@ async function getOrganizerEvents() {
     return { events: [] };
   }
 
-  // Get registration and checkin counts using efficient aggregation
+  // Get registration, checkin, and payout counts using efficient aggregation
   const eventIds = events?.map(e => e.id) || [];
   let registrationCounts: Record<string, number> = {};
   let checkinCounts: Record<string, number> = {};
+  let payoutsPending: Record<string, number> = {};
+  let payoutsPaid: Record<string, number> = {};
 
   if (eventIds.length > 0) {
     // Use parallel queries with aggregation for better performance
-    const [regCountsResult, checkinCountsResult] = await Promise.all([
-      // Count registrations per event using RPC or grouped query
+    const [regCountsResult, checkinCountsResult, payoutsResult] = await Promise.all([
+      // Count registrations per event
       serviceSupabase
         .from("registrations")
         .select("event_id")
@@ -98,7 +104,15 @@ async function getOrganizerEvents() {
         .from("checkins")
         .select("registrations!inner(event_id)")
         .in("registrations.event_id", eventIds)
-        .is("undo_at", null)
+        .is("undo_at", null),
+      // Get payout lines with event info
+      serviceSupabase
+        .from("payout_lines")
+        .select(`
+          payment_status,
+          payout_runs!inner(event_id)
+        `)
+        .in("payout_runs.event_id", eventIds)
     ]);
 
     // Count registrations per event (in-memory aggregation of just event_ids)
@@ -113,6 +127,18 @@ async function getOrganizerEvents() {
         checkinCounts[eventId] = (checkinCounts[eventId] || 0) + 1;
       }
     });
+
+    // Count payouts per event by status
+    (payoutsResult.data || []).forEach((payout: any) => {
+      const eventId = payout.payout_runs?.event_id;
+      if (eventId) {
+        if (payout.payment_status === "paid" || payout.payment_status === "confirmed") {
+          payoutsPaid[eventId] = (payoutsPaid[eventId] || 0) + 1;
+        } else {
+          payoutsPending[eventId] = (payoutsPending[eventId] || 0) + 1;
+        }
+      }
+    });
   }
 
   // Add counts to events
@@ -120,6 +146,8 @@ async function getOrganizerEvents() {
     ...event,
     registrations: registrationCounts[event.id] || 0,
     checkins: checkinCounts[event.id] || 0,
+    payouts_pending: payoutsPending[event.id] || 0,
+    payouts_paid: payoutsPaid[event.id] || 0,
   }));
 
   return { events: eventsWithCounts };
