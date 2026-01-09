@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
 import { Button, InlineSpinner } from "@crowdstack/ui";
 import { Calendar, MapPin, AlertCircle, ArrowLeft } from "lucide-react";
 import { TableBookingSection } from "@/components/TableBookingSection";
@@ -106,12 +105,12 @@ export default function DirectBookingPage() {
           </div>
           <h1 className="text-xl font-bold text-white mb-2">Booking Link Invalid</h1>
           <p className="text-gray-400 mb-6">{error || "This booking link could not be found."}</p>
-          <Button variant="secondary" asChild>
-            <Link href="/">
+          <Link href="/">
+            <Button variant="secondary">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Go Home
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </div>
     );
@@ -166,10 +165,19 @@ export default function DirectBookingPage() {
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {format(eventDate, "EEEE, MMMM d, yyyy")}
+                {eventDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </span>
               <span className="flex items-center gap-1">
-                {format(eventDate, "h:mm a")}
+                {eventDate.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
               </span>
             </div>
 
