@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, Button, Input, Modal } from "@crowdstack/ui";
-import { Eye, Edit2, Users, Clock } from "lucide-react";
+import { Eye, Edit2, Users, Clock, Download } from "lucide-react";
 import type { CloseoutSummary } from "@crowdstack/shared/types";
 
 interface Attendee {
@@ -46,6 +46,34 @@ export function CheckinConfirmStep({
   } | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/closeout/export-pdf`);
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to export PDF");
+      }
+
+      // Get the blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || "closeout-report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      console.error("Failed to export PDF:", err);
+      alert(err.message || "Failed to export PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleEdit = (promoter: (typeof summary.promoters)[0]) => {
     setEditingPromoter(promoter.promoter_id);
@@ -361,13 +389,25 @@ export function CheckinConfirmStep({
         </div>
       </Modal>
 
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="ghost" onClick={onBack}>
-          Back
+      <div className="flex justify-between items-center pt-4">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleExportPDF}
+          loading={exporting}
+          disabled={exporting}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export PDF
         </Button>
-        <Button type="button" variant="primary" onClick={onNext}>
-          Continue to Payouts
-        </Button>
+        <div className="flex gap-3">
+          <Button type="button" variant="ghost" onClick={onBack}>
+            Back
+          </Button>
+          <Button type="button" variant="primary" onClick={onNext}>
+            Continue to Payouts
+          </Button>
+        </div>
       </div>
     </div>
   );
