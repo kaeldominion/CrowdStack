@@ -106,85 +106,20 @@ async function getFeaturedEvents() {
   }
 }
 
-async function getPopularVenues() {
-  try {
-    const supabase = createServiceRoleClient();
-
-    // Fetch venues with all tags, then filter music tags in JS (simpler and more reliable)
-    // The venue_tags relation is small, so filtering in JS is fine
-    const { data: venues, error } = await supabase
-      .from("venues")
-      .select(`
-        id,
-        name,
-        slug,
-        city,
-        country,
-        cover_image_url,
-        logo_url,
-        venue_tags(tag_type, tag_value)
-      `)
-      .order("name", { ascending: true })
-      .limit(4);
-
-    if (error || !venues) {
-      return [];
-    }
-
-    // Transform venues to match component format
-    return venues.map((venue: any) => {
-      // Filter music tags in JS (small dataset, fast operation)
-      const musicTags = Array.isArray(venue.venue_tags) 
-        ? venue.venue_tags.filter((t: any) => t.tag_type === "music")
-        : [];
-      return {
-        id: venue.id,
-        name: venue.name,
-        slug: venue.slug || venue.id,
-        city: venue.city || "",
-        country: venue.country || "",
-        image: venue.cover_image_url || venue.logo_url || "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&h=400&fit=crop",
-        tags: musicTags.map((t: { tag_type: string; tag_value: string }) => t.tag_value) || [],
-      };
-    });
-  } catch (error) {
-    // Log to Sentry in production, console in development
-    if (process.env.NODE_ENV === "production") {
-      Sentry.captureException(error);
-    } else {
-      console.error("Error fetching venues:", error);
-    }
-    return [];
-  }
-}
-
-// Cache data fetching functions with optimized revalidation times
-// Longer cache times improve performance by increasing cache hit rate
+// Cache data fetching function with optimized revalidation time
 const getCachedFeaturedEvents = unstable_cache(
   getFeaturedEvents,
   ['homepage-featured-events'],
-  { revalidate: 60, tags: ['events', 'homepage'] } // 60s - events change more frequently
-);
-
-const getCachedPopularVenues = unstable_cache(
-  getPopularVenues,
-  ['homepage-popular-venues'],
-  { revalidate: 300, tags: ['venues', 'homepage'] } // 5min - venues change less frequently
+  { revalidate: 60, tags: ['events', 'homepage'] } // 60s - events change frequently
 );
 
 export default async function HomePage() {
-  // Fetch data in parallel on the server with caching
-  const [featuredEvents, popularVenues] = await Promise.all([
-    getCachedFeaturedEvents(),
-    getCachedPopularVenues(),
-  ]);
+  // Fetch featured events on the server with caching
+  const featuredEvents = await getCachedFeaturedEvents();
 
   return (
     <Suspense fallback={<HomePageSkeleton />}>
-      <HomePageClient 
-        initialEvents={featuredEvents}
-        initialVenues={popularVenues}
-      />
+      <HomePageClient initialEvents={featuredEvents} />
     </Suspense>
   );
 }

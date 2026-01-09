@@ -33,11 +33,6 @@ const EventShowcaseCard = dynamic(() => import("@/components/homepage/EventShowc
   loading: () => <div className="h-[500px] w-full bg-raised rounded-2xl animate-pulse" />
 });
 
-const VenueShowcaseCard = dynamic(() => import("@/components/homepage/VenueShowcaseCard").then(mod => ({ default: mod.VenueShowcaseCard })), {
-  ssr: false,
-  loading: () => <div className="h-48 w-full bg-raised rounded-2xl animate-pulse" />
-});
-
 const HeroEventCarousel = dynamic(() => import("@/components/homepage/HeroEventCarousel").then(mod => ({ default: mod.HeroEventCarousel })), {
   ssr: false,
   loading: () => <div className="w-80 sm:w-96 h-[600px] bg-raised rounded-2xl animate-pulse" />
@@ -50,10 +45,9 @@ const MobileEventCarousel = dynamic(() => import("@/components/homepage/MobileEv
 
 interface HomePageClientProps {
   initialEvents: any[];
-  initialVenues: any[];
 }
 
-export function HomePageClient({ initialEvents, initialVenues }: HomePageClientProps) {
+export function HomePageClient({ initialEvents }: HomePageClientProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -265,52 +259,6 @@ export function HomePageClient({ initialEvents, initialVenues }: HomePageClientP
       {mounted && (
         <MobileEventCarousel events={initialEvents} loading={false} />
       )}
-
-      {/* Popular Venues Section */}
-      <section className="py-24 relative overflow-hidden -mt-24">
-        <div className="absolute inset-0 bg-gradient-to-b from-void via-accent-secondary/5 to-transparent pointer-events-none" />
-        
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <div>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-secondary mb-2 block">
-                Top Destinations
-            </span>
-              <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-primary">
-                Popular Venues
-            </h2>
-          </div>
-            <Link href="/browse">
-              <motion.button
-                className="text-sm font-semibold text-secondary hover:text-primary transition-colors flex items-center gap-1 group"
-                whileHover={{ x: 5 }}
-              >
-                Explore venues
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-            </Link>
-          </motion.div>
-
-          {/* Venues Grid */}
-          {initialVenues.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {initialVenues.map((venue, index) => (
-                <VenueShowcaseCard key={venue.id} venue={venue} index={index} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-secondary">
-              <p>No venues available at the moment.</p>
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* How It Works Section */}
       <section className="py-24 border-t border-border-subtle relative overflow-hidden">
