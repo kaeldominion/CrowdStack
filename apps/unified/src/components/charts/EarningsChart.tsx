@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface EarningsChartProps {
@@ -7,7 +8,8 @@ interface EarningsChartProps {
   height?: number;
 }
 
-export function EarningsChart({ data, height = 200 }: EarningsChartProps) {
+// Memoized to prevent re-renders when parent state changes but data hasn't
+export const EarningsChart = memo(function EarningsChart({ data, height = 200 }: EarningsChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
@@ -40,5 +42,5 @@ export function EarningsChart({ data, height = 200 }: EarningsChartProps) {
       </LineChart>
     </ResponsiveContainer>
   );
-}
+});
 
