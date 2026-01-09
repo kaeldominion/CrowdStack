@@ -619,30 +619,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         const data = await response.json();
         console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
         
-        // Auto-update status to "ended" if end_time has passed and status is "published"
-        if (data.event?.status === "published" && data.event?.end_time) {
-          const endTime = new Date(data.event.end_time);
-          const now = new Date();
-          if (endTime < now) {
-            // Automatically update status to "ended"
-            try {
-              const updateResponse = await fetch(config.eventApiEndpoint, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "ended" }),
-              });
-              if (updateResponse.ok) {
-                const updatedData = await updateResponse.json();
-                data.event = updatedData.event; // Update local data
-                console.log("Auto-updated event status to 'ended'");
-              }
-            } catch (updateError) {
-              console.error("Failed to auto-update event status:", updateError);
-              // Continue with original data even if update fails
-            }
-          }
-        }
-        
+        // NOTE: We no longer auto-update status to "ended" in the database
+        // Events stay "published" forever so they remain visible in attendee history
+        // The UI can display them as "past" based on end_time without changing DB status
+
         setEvent(data.event);
         // Load event tags
         loadEventTags();

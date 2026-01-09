@@ -30,7 +30,7 @@ export async function POST(
     // Get event and verify access
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("id, name, currency, organizer_id, venue_id, status")
+      .select("id, name, currency, organizer_id, venue_id, status, closed_at")
       .eq("id", params.eventId)
       .single();
 
@@ -38,8 +38,8 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check if already closed
-    if (event.status === "closed") {
+    // Check if already closed (using closed_at since we don't change status anymore)
+    if (event.closed_at) {
       return NextResponse.json(
         { error: "Event is already closed" },
         { status: 400 }
@@ -290,16 +290,17 @@ export async function POST(
       console.log("[Closeout Finalize] Event closed with no promoters configured");
     }
 
-    // Close the event
+    // Mark event as closed out (but keep status as "published" so it stays visible in history)
+    // We set closed_at to indicate payouts are finalized, but don't change the public-facing status
     const { error: closeError } = await serviceSupabase
       .from("events")
       .update({
-        status: "closed",
+        // NOTE: We intentionally don't change status - events stay "published" for attendee history
         closed_at: new Date().toISOString(),
         closed_by: userId,
         closeout_notes: closeout_notes || null,
         total_revenue: total_revenue || null,
-        locked_at: new Date().toISOString(), // Also lock to prevent further changes
+        locked_at: new Date().toISOString(), // Lock to prevent further payout changes
       })
       .eq("id", params.eventId);
 
