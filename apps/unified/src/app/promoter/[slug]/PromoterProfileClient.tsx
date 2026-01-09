@@ -447,7 +447,7 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
                             By {event.organizer?.name || "Unknown"}
                           </span>
                           <span className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-bold rounded-lg group-hover:shadow-lg transition-shadow">
-                            Register Free
+                            Join Guestlist
                           </span>
                         </div>
                       </div>
