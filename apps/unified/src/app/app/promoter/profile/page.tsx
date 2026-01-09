@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BentoCard } from "@/components/BentoCard";
-import { Button, Input, Textarea } from "@crowdstack/ui";
-import { Save, Check, User, Mail, Phone, Link2, Instagram, Copy, ExternalLink, Globe } from "lucide-react";
+import { Button, Input, Textarea, InlineSpinner } from "@crowdstack/ui";
+import { Save, Check, User, Mail, Phone, Link2, Instagram, Copy, ExternalLink, Globe, Camera, X, MessageCircle } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 import Link from "next/link";
+import Image from "next/image";
 
 interface PromoterProfile {
   id: string;
@@ -16,16 +17,19 @@ interface PromoterProfile {
   bio: string | null;
   profile_image_url: string | null;
   instagram_handle: string | null;
+  whatsapp_number: string | null;
   is_public: boolean;
 }
 
 export default function PromoterProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [profile, setProfile] = useState<PromoterProfile | null>(null);
   const [saved, setSaved] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [slugCopied, setSlugCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
@@ -39,7 +43,7 @@ export default function PromoterProfilePage() {
 
       const { data: promoter } = await supabase
         .from("promoters")
-        .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, is_public")
+        .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
         .eq("created_by", user.id)
         .single();
 
@@ -59,6 +63,84 @@ export default function PromoterProfilePage() {
       ...profile,
       [field]: value === "" ? null : value,
     });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setErrors({ avatar: "Please select a JPEG, PNG, or WebP image" });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors({ avatar: "Image must be smaller than 5MB" });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setErrors({});
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/promoter/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload avatar");
+      }
+
+      // Update local state with new avatar URL
+      if (profile) {
+        setProfile({ ...profile, profile_image_url: data.avatar_url });
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err: any) {
+      setErrors({ avatar: err.message || "Failed to upload avatar" });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!confirm("Are you sure you want to delete your profile photo?")) return;
+
+    setUploadingAvatar(true);
+    setErrors({});
+
+    try {
+      const response = await fetch("/api/promoter/profile/avatar", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete avatar");
+      }
+
+      // Update local state
+      if (profile) {
+        setProfile({ ...profile, profile_image_url: null });
+      }
+    } catch (err: any) {
+      setErrors({ avatar: err.message || "Failed to delete avatar" });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const saveProfile = async () => {
@@ -93,6 +175,7 @@ export default function PromoterProfilePage() {
           slug: profile.slug || null,
           bio: profile.bio || null,
           instagram_handle: profile.instagram_handle || null,
+          whatsapp_number: profile.whatsapp_number || null,
           is_public: profile.is_public,
           updated_at: new Date().toISOString(),
         })
@@ -211,6 +294,74 @@ export default function PromoterProfilePage() {
           )}
 
           <div className="space-y-4">
+            {/* Profile Photo */}
+            <div>
+              <label className="block text-sm font-medium text-primary mb-3">
+                Profile Photo
+              </label>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  {profile.profile_image_url ? (
+                    <Image
+                      src={profile.profile_image_url}
+                      alt={profile.name}
+                      width={96}
+                      height={96}
+                      className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-3xl font-black text-white border-4 border-white/20">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                      <InlineSpinner size="lg" className="text-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingAvatar}
+                    >
+                      <Camera className="h-4 w-4 mr-2" />
+                      {profile.profile_image_url ? "Change" : "Upload"}
+                    </Button>
+                    {profile.profile_image_url && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleDeleteAvatar}
+                        disabled={uploadingAvatar}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  {errors.avatar && (
+                    <p className="text-xs text-accent-error">{errors.avatar}</p>
+                  )}
+                  <p className="text-xs text-muted">
+                    JPEG, PNG, or WebP. Max 5MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Profile URL (Slug) */}
             <div>
               <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
@@ -262,19 +413,37 @@ export default function PromoterProfilePage() {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
-                <Instagram className="h-4 w-4" />
-                Instagram
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted">@</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                  <Instagram className="h-4 w-4" />
+                  Instagram
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted">@</span>
+                  <Input
+                    value={profile.instagram_handle || ""}
+                    onChange={(e) => updateField("instagram_handle", e.target.value.replace(/^@/, ''))}
+                    placeholder="yourhandle"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp
+                </label>
                 <Input
-                  value={profile.instagram_handle || ""}
-                  onChange={(e) => updateField("instagram_handle", e.target.value.replace(/^@/, ''))}
-                  placeholder="yourhandle"
-                  className="flex-1"
+                  value={profile.whatsapp_number || ""}
+                  onChange={(e) => updateField("whatsapp_number", e.target.value)}
+                  placeholder="+62 812 3456 7890"
+                  className="w-full"
                 />
+                <p className="text-xs text-muted mt-1">
+                  Include country code for clickable link
+                </p>
               </div>
             </div>
 

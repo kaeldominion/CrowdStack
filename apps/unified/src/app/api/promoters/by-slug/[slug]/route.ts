@@ -25,6 +25,7 @@ export async function GET(
         bio,
         profile_image_url,
         instagram_handle,
+        whatsapp_number,
         is_public
       `)
       .eq("slug", slug)
@@ -158,6 +159,7 @@ export async function GET(
         bio: promoter.bio,
         profile_image_url: promoter.profile_image_url,
         instagram_handle: promoter.instagram_handle,
+        whatsapp_number: promoter.whatsapp_number,
       },
       upcoming_events: events,
       past_events: pastEvents,
