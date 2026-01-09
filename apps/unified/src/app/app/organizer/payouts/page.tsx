@@ -326,7 +326,7 @@ export default function OrganizerPayoutsPage() {
                                 size="sm"
                                 className="!text-xs !px-2 !py-1"
                                 onClick={(e) => {
-                                  e.stopPropagation();
+                                  e?.stopPropagation();
                                   setSelectedPayout(payout);
                                   setShowMarkPaidModal(true);
                                 }}
