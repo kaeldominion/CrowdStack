@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId } from "@/lib/auth/check-role";
 import { generateAndUploadPayoutStatement } from "@crowdstack/shared/pdf/generate-statement";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
+import { calculatePromoterPayout, type BonusTier } from "@crowdstack/shared/utils/payout-calculator";
 
 /**
  * POST /api/events/[eventId]/closeout/finalize
@@ -127,9 +128,14 @@ export async function POST(
         per_head_max,
         bonus_threshold,
         bonus_amount,
+        bonus_tiers,
         fixed_fee,
+        minimum_guests,
+        below_minimum_percent,
         manual_adjustment_amount,
-        manual_adjustment_reason
+        manual_adjustment_reason,
+        manual_checkins_override,
+        manual_checkins_reason
       `)
       .eq("event_id", params.eventId);
 
@@ -184,50 +190,49 @@ export async function POST(
     const payoutLines = [];
     if (hasPromoters) {
       for (const ep of eventPromoters) {
-        const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
+        const actualCheckinsCount = promoterCheckins[ep.promoter_id] || 0;
 
-        // Calculate base payout
-        let calculatedPayout = 0;
+        // Use manual override if set, otherwise use actual count
+        const effectiveCheckinsCount = ep.manual_checkins_override !== null
+          ? ep.manual_checkins_override
+          : actualCheckinsCount;
 
-        // Per-head calculation
-        if (ep.per_head_rate !== null && ep.per_head_rate !== undefined) {
-          let countedCheckins = checkinsCount;
-
-          // Apply min/max constraints
-          if (ep.per_head_min !== null && countedCheckins < ep.per_head_min) {
-            countedCheckins = 0;
-          } else if (ep.per_head_max !== null && countedCheckins > ep.per_head_max) {
-            countedCheckins = ep.per_head_max;
+        // Parse bonus_tiers if it's a string (JSONB from DB)
+        let bonusTiers: BonusTier[] | null = null;
+        if (ep.bonus_tiers) {
+          try {
+            bonusTiers = typeof ep.bonus_tiers === 'string'
+              ? JSON.parse(ep.bonus_tiers)
+              : ep.bonus_tiers;
+          } catch {
+            bonusTiers = null;
           }
-
-          calculatedPayout += countedCheckins * (ep.per_head_rate || 0);
         }
 
-        // Bonus calculation
-        if (
-          ep.bonus_threshold !== null &&
-          ep.bonus_amount !== null &&
-          checkinsCount >= ep.bonus_threshold
-        ) {
-          calculatedPayout += ep.bonus_amount;
-        }
-
-        // Fixed fee
-        if (ep.fixed_fee !== null && ep.fixed_fee !== undefined) {
-          calculatedPayout += ep.fixed_fee;
-        }
-
-        // Manual adjustment
-        const manualAdjustment = ep.manual_adjustment_amount || 0;
-        const finalPayout = calculatedPayout + manualAdjustment;
+        // Use shared calculation function for consistent payouts
+        const breakdown = calculatePromoterPayout(
+          {
+            per_head_rate: ep.per_head_rate ? parseFloat(ep.per_head_rate) : null,
+            per_head_min: ep.per_head_min,
+            per_head_max: ep.per_head_max,
+            fixed_fee: ep.fixed_fee ? parseFloat(ep.fixed_fee) : null,
+            minimum_guests: ep.minimum_guests,
+            below_minimum_percent: ep.below_minimum_percent ? parseFloat(ep.below_minimum_percent) : null,
+            bonus_threshold: ep.bonus_threshold,
+            bonus_amount: ep.bonus_amount ? parseFloat(ep.bonus_amount) : null,
+            bonus_tiers: bonusTiers,
+            manual_adjustment_amount: ep.manual_adjustment_amount ? parseFloat(ep.manual_adjustment_amount) : null,
+          },
+          effectiveCheckinsCount
+        );
 
         const { data: payoutLine, error: lineError } = await serviceSupabase
           .from("payout_lines")
           .insert({
             payout_run_id: payoutRun.id,
             promoter_id: ep.promoter_id,
-            checkins_count: checkinsCount,
-            commission_amount: finalPayout,
+            checkins_count: effectiveCheckinsCount,
+            commission_amount: breakdown.final_payout,
             payment_status: "pending_payment",
           })
           .select()
