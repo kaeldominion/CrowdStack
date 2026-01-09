@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, LoadingSpinner, Card } from "@crowdstack/ui";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Download } from "lucide-react";
 import Link from "next/link";
 import { CloseoutWizard } from "@/components/closeout/CloseoutWizard";
 
@@ -22,6 +22,7 @@ export default function EventCloseoutPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadEvent();
@@ -49,6 +50,33 @@ export default function EventCloseoutPage() {
     setTimeout(() => {
       router.push(`/app/organizer/events/${eventId}`);
     }, 2000);
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/closeout/export-pdf`);
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to export PDF");
+      }
+
+      // Get the blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || "closeout-report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      console.error("Failed to export PDF:", err);
+      alert(err.message || "Failed to export PDF");
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading) {
@@ -109,7 +137,16 @@ export default function EventCloseoutPage() {
                 </p>
               </div>
             </div>
-            <div className="pt-4">
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="secondary"
+                onClick={handleExportPDF}
+                loading={exporting}
+                disabled={exporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export PDF
+              </Button>
               <Link href={`/app/organizer/payouts`}>
                 <Button variant="primary">View Payouts</Button>
               </Link>
