@@ -2,6 +2,44 @@
 
 export type AppEnvironment = "local" | "beta" | "prod";
 
+// ============================================
+// Common Metadata Types (replacing Record<string, any>)
+// ============================================
+
+/** Metadata for user role assignments */
+export interface UserRoleMetadata {
+  source?: "admin" | "invite" | "self_signup" | "api";
+  assigned_reason?: string;
+  created_by?: string;
+  created_at?: string;
+  is_bootstrap?: boolean;
+  [key: string]: unknown; // Allow additional fields
+}
+
+/** Metadata for invite tokens */
+export interface InviteTokenMetadata {
+  venue_id?: string;
+  organizer_id?: string;
+  event_id?: string;
+  promoter_id?: string;
+  pre_assigned_events?: string[];
+  invited_by_name?: string;
+  invitee_name?: string;
+  invitee_email?: string;
+  [key: string]: unknown;
+}
+
+/** Metadata for activity logs */
+export interface ActivityMetadata {
+  event_id?: string;
+  registration_id?: string;
+  old_value?: unknown;
+  new_value?: unknown;
+  attendee_name?: string;
+  checked_in_by?: string;
+  [key: string]: unknown;
+}
+
 export interface AppConfig {
   env: AppEnvironment;
   version: string;
@@ -38,7 +76,7 @@ export interface UserRoleRecord {
   id: string;
   user_id: string;
   role: UserRole;
-  metadata: Record<string, any>;
+  metadata: UserRoleMetadata;
   created_at: string;
   updated_at: string;
 }
@@ -47,7 +85,7 @@ export interface InviteToken {
   id: string;
   token: string;
   role: UserRole;
-  metadata: Record<string, any>;
+  metadata: InviteTokenMetadata;
   used_at: string | null;
   created_by: string | null;
   created_at: string;
@@ -221,7 +259,7 @@ export interface OrganizerTeamMember {
   updated_at?: string;
   assigned_at?: string; // From organizer_users
   assigned_by?: string; // From organizer_users
-  permissions?: any; // From organizer_users
+  permissions?: OrganizerPermissions; // From organizer_users
   is_owner?: boolean; // True if this is the organizer owner (created_by)
 }
 

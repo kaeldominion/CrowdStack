@@ -36,9 +36,17 @@ export async function POST(
     const serviceSupabase = createServiceRoleClient();
 
     // Get user - support localhost dev mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
     const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || localhostUser;
+
+    // SECURITY: Only allow localhost fallback in non-production environments
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        console.warn("[Quick Add API] Using localhost_user_id fallback - DEV ONLY");
+        userId = localhostUser;
+      }
+    }
 
     if (!userId) {
       if (process.env.NODE_ENV === "development") {

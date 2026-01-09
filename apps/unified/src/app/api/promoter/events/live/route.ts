@@ -73,41 +73,47 @@ export async function GET() {
       );
     }
 
-    // Get registration and check-in counts for each event (promoter-specific)
-    const eventsWithStats = await Promise.all(
-      (events || []).map(async (event) => {
-        // Get all registrations for this event through this promoter's referral
-        const { count: registrations } = await serviceClient
+    // BATCH QUERY OPTIMIZATION: Get promoter-specific stats in bulk
+    const eventIdsFromEvents = (events || []).map((e) => e.id);
+
+    // Batch fetch all registrations for this promoter across all events
+    const { data: allPromoterRegs } = eventIdsFromEvents.length > 0
+      ? await serviceClient
           .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id)
-          .eq("referral_promoter_id", promoterId);
+          .select("id, event_id")
+          .in("event_id", eventIdsFromEvents)
+          .eq("referral_promoter_id", promoterId)
+      : { data: [] };
 
-        // Get check-ins for this promoter's referrals
-        const { data: regs } = await serviceClient
-          .from("registrations")
-          .select("id")
-          .eq("event_id", event.id)
-          .eq("referral_promoter_id", promoterId);
+    // Get all registration IDs for batch checkin lookup
+    const allRegIds = (allPromoterRegs || []).map((r) => r.id);
 
-        const regIds = regs?.map((r) => r.id) || [];
-        let checkinCount = 0;
-        if (regIds.length > 0) {
-          const { count } = await serviceClient
-            .from("checkins")
-            .select("*", { count: "exact", head: true })
-            .in("registration_id", regIds)
-            .is("undo_at", null);
-          checkinCount = count || 0;
-        }
+    // Batch fetch all checkins for these registrations
+    const { data: allCheckins } = allRegIds.length > 0
+      ? await serviceClient
+          .from("checkins")
+          .select("registration_id")
+          .in("registration_id", allRegIds)
+          .is("undo_at", null)
+      : { data: [] };
 
-        return {
-          ...event,
-          registrations: registrations || 0,
-          checkins: checkinCount,
-        };
-      })
-    );
+    // Build lookup maps for O(1) access
+    const regsByEvent = new Map<string, number>();
+    const checkinRegIds = new Set((allCheckins || []).map((c) => c.registration_id));
+    const checkinsByEvent = new Map<string, number>();
+
+    (allPromoterRegs || []).forEach((reg) => {
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
+      if (checkinRegIds.has(reg.id)) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    const eventsWithStats = (events || []).map((event) => ({
+      ...event,
+      registrations: regsByEvent.get(event.id) || 0,
+      checkins: checkinsByEvent.get(event.id) || 0,
+    }));
 
     return NextResponse.json({ events: eventsWithStats });
   } catch (error) {

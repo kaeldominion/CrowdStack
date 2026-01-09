@@ -11,14 +11,19 @@ export async function GET() {
     const cookieStore = await cookies();
     const supabase = await createClient();
 
-    // Check for localhost development mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const userId = user?.id || localhostUser;
+    // SECURITY: Only allow localhost fallback in non-production environments
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        console.warn("[Admin Analytics] Using localhost_user_id fallback - DEV ONLY");
+        userId = localhostUser;
+      }
+    }
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -270,36 +275,31 @@ export async function GET() {
       }
     });
 
-    // Get user details for top referrers
+    // Get user details for top referrers - BATCH QUERY OPTIMIZATION
     const topReferrerUserIds = Object.entries(referrerCounts)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10)
       .map(([userId]) => userId);
 
-    const topReferrers = await Promise.all(
-      topReferrerUserIds.map(async (userId) => {
-        try {
-          const { data: user } = await serviceClient.auth.admin.getUserById(userId);
-          const { data: attendee } = await serviceClient
-            .from("attendees")
-            .select("name")
-            .eq("user_id", userId)
-            .single();
-          
-          return {
-            userId,
-            name: attendee?.name || user?.user?.email || "Unknown",
-            referrals: referrerCounts[userId],
-          };
-        } catch {
-          return {
-            userId,
-            name: "Unknown",
-            referrals: referrerCounts[userId],
-          };
-        }
-      })
+    // Batch fetch all attendee names in a single query
+    const { data: attendeeNames } = topReferrerUserIds.length > 0
+      ? await serviceClient
+          .from("attendees")
+          .select("user_id, name")
+          .in("user_id", topReferrerUserIds)
+      : { data: [] };
+
+    // Build name lookup map for O(1) access
+    const nameByUserId = new Map<string, string>(
+      (attendeeNames || []).map((a) => [a.user_id, a.name])
     );
+
+    // Map top referrers with pre-fetched names (no N+1 queries)
+    const topReferrers = topReferrerUserIds.map((userId) => ({
+      userId,
+      name: nameByUserId.get(userId) || "Unknown",
+      referrals: referrerCounts[userId],
+    }));
 
     // Calculate growth metrics
     const now = new Date();

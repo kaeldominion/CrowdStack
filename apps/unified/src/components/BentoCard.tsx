@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, memo } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@crowdstack/ui";
 
@@ -11,7 +11,8 @@ interface BentoCardProps {
   onClick?: () => void;
 }
 
-export function BentoCard({ children, className = "", span = 1, onClick }: BentoCardProps) {
+// Memoized to prevent unnecessary re-renders in dashboard grids
+export const BentoCard = memo(function BentoCard({ children, className = "", span = 1, onClick }: BentoCardProps) {
   return (
     <motion.div
       className={cn(
@@ -64,5 +65,7 @@ export function BentoCard({ children, className = "", span = 1, onClick }: Bento
       </div>
     </motion.div>
   );
-}
+});
+
+BentoCard.displayName = "BentoCard";
 

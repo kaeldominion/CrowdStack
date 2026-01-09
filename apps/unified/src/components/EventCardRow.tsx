@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Ticket, MapPin, Check, ExternalLink, Eye } from "lucide-react";
+import { Ticket, MapPin, Check, ExternalLink } from "lucide-react";
 import { Card, Badge } from "@crowdstack/ui";
 import { ShareButton } from "@/components/ShareButton";
 import { usePrefetch } from "@/lib/hooks/use-prefetch";
@@ -55,7 +55,8 @@ interface EventCardRowProps {
   className?: string;
 }
 
-export function EventCardRow({
+// Memoized to prevent unnecessary re-renders in event lists
+export const EventCardRow = memo(function EventCardRow({
   event,
   recentAttendees = [],
   registration,
@@ -73,22 +74,18 @@ export function EventCardRow({
   const isAttending = !!registration;
   const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
 
-  // Format date
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+  // Memoize formatted date and time to avoid recalculation on re-renders
+  const formattedDateTime = useMemo(() => {
+    const date = new Date(event.start_time);
     const day = date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
     const dayNum = date.getDate();
     const month = date.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
-    return `${day} ${dayNum} ${month}`;
-  };
+    const time = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return { date: `${day} ${dayNum} ${month}`, time };
+  }, [event.start_time]);
 
-  // Format time
-  const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-  };
-
-  const startTime = formatTime(event.start_time);
+  const startTime = formattedDateTime.time;
+  const formatDate = useCallback(() => formattedDateTime.date, [formattedDateTime.date]);
 
   // Handle QR pass click
   const handleViewPass = async (e: React.MouseEvent) => {
@@ -196,7 +193,7 @@ export function EventCardRow({
           {/* Top Row: Date + Status */}
           <div className="flex items-center justify-between gap-2">
             <p className="font-mono text-[9px] font-bold text-accent-secondary tracking-wide">
-              {formatDate(event.start_time)} • {startTime}
+              {formattedDateTime.date} • {startTime}
             </p>
             {getStatusBadge()}
           </div>
@@ -309,4 +306,6 @@ export function EventCardRow({
       </Card>
     </Link>
   );
-}
+});
+
+EventCardRow.displayName = "EventCardRow";

@@ -30,10 +30,19 @@ export async function POST(
     const supabase = await createClient();
     const serviceSupabase = createServiceRoleClient();
 
-    // Get user - support localhost dev mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
+    // Get authenticated user
     const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id || localhostUser;
+
+    // Development-only fallback for localhost testing
+    // SECURITY: Only enabled in non-production environments
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        console.warn("[Check-in API] Using localhost_user_id fallback - DEV ONLY");
+        userId = localhostUser;
+      }
+    }
 
     if (!userId) {
       console.log("[Check-in API] No authenticated user");
@@ -127,11 +136,9 @@ export async function POST(
     const { qr_token, registration_id } = body;
 
     let registrationId: string;
-    let tokenSource = "registration_id";
 
     if (qr_token) {
       console.log(`[Check-in API] Verifying QR token`);
-      tokenSource = "qr_token";
       
       try {
         const payload = verifyQRPassToken(qr_token);

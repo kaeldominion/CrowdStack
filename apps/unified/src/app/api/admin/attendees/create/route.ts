@@ -24,16 +24,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const serviceSupabase = createServiceRoleClient();
 
-    // Check if attendee already exists
-    const { data: existing } = await serviceSupabase
-      .from("attendees")
-      .select("id")
-      .or(
-        body.phone
-          ? `phone.eq.${body.phone}${body.email ? ",email.eq." + body.email : ""}`
-          : `email.eq.${body.email}`
-      )
-      .single();
+    // Validate input
+    if (!body.phone && !body.email) {
+      return NextResponse.json(
+        { error: "Either phone or email is required" },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY FIX: Use separate parameterized queries instead of string interpolation
+    // to prevent filter injection attacks
+    let existing = null;
+
+    // Check by phone if provided
+    if (body.phone) {
+      const { data: byPhone } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("phone", body.phone)
+        .limit(1)
+        .maybeSingle();
+
+      if (byPhone) {
+        existing = byPhone;
+      }
+    }
+
+    // Check by email if provided and no phone match
+    if (!existing && body.email) {
+      const { data: byEmail } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("email", body.email)
+        .limit(1)
+        .maybeSingle();
+
+      if (byEmail) {
+        existing = byEmail;
+      }
+    }
 
     if (existing) {
       return NextResponse.json(

@@ -69,11 +69,13 @@ export async function POST(request: NextRequest) {
       startedAt: new Date().toISOString(),
     };
 
+    // SECURITY: Reduced impersonation timeout from 2 hours to 30 minutes
+    // This limits the window for potential abuse if admin credentials are compromised
     cookieStore.set(IMPERSONATION_COOKIE, JSON.stringify(impersonationData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 2, // 2 hours max
+      maxAge: 60 * 30, // 30 minutes max (reduced from 2 hours)
       path: "/",
     });
 

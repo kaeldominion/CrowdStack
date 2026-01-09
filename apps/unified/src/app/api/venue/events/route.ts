@@ -64,26 +64,49 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    // Get registration and checkin counts for each event
-    const eventsWithCounts = await Promise.all(
-      (events || []).map(async (event) => {
-        const { count: registrations } = await serviceSupabase
-          .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id);
+    if (!events || events.length === 0) {
+      return NextResponse.json({ events: [] });
+    }
 
-        const { count: checkins } = await serviceSupabase
-          .from("checkins")
-          .select("*", { count: "exact", head: true })
-          .eq("event_id", event.id);
+    // BATCH QUERY OPTIMIZATION: Fetch all counts in bulk instead of N+1 queries
+    const eventIds = events.map((e) => e.id);
 
-        return {
-          ...event,
-          registrations: registrations || 0,
-          checkins: checkins || 0,
-        };
-      })
-    );
+    // 1. Batch fetch all registrations for these events
+    const { data: allRegistrations } = await serviceSupabase
+      .from("registrations")
+      .select("event_id")
+      .in("event_id", eventIds);
+
+    // Build count map
+    const registrationsByEvent = new Map<string, number>();
+    (allRegistrations || []).forEach((reg) => {
+      const current = registrationsByEvent.get(reg.event_id) || 0;
+      registrationsByEvent.set(reg.event_id, current + 1);
+    });
+
+    // 2. Batch fetch all checkins for these events (via registration join)
+    const { data: allCheckins } = await serviceSupabase
+      .from("checkins")
+      .select("registration_id, registrations!inner(event_id)")
+      .in("registrations.event_id", eventIds)
+      .is("undo_at", null);
+
+    // Build count map
+    const checkinsByEvent = new Map<string, number>();
+    (allCheckins || []).forEach((checkin: any) => {
+      const eventId = checkin.registrations?.event_id;
+      if (eventId) {
+        const current = checkinsByEvent.get(eventId) || 0;
+        checkinsByEvent.set(eventId, current + 1);
+      }
+    });
+
+    // 3. Build final response
+    const eventsWithCounts = events.map((event) => ({
+      ...event,
+      registrations: registrationsByEvent.get(event.id) || 0,
+      checkins: checkinsByEvent.get(event.id) || 0,
+    }));
 
     return NextResponse.json({ events: eventsWithCounts });
   } catch (error: any) {

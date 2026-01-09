@@ -208,6 +208,7 @@ export default function OrganizerSettingsPage() {
       view_settings: false,
       manage_door_staff: false,
       view_financials: false,
+      manage_guests: false,
     });
   };
 

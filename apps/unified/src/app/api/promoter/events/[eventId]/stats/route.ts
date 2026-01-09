@@ -16,15 +16,11 @@ export async function GET(
     const cookieStore = await cookies();
     const supabase = await createClient();
 
-    // Check for localhost development mode
-    const localhostUser = cookieStore.get("localhost_user_id")?.value;
-    console.log("[Promoter Stats] localhostUser:", localhostUser);
-
     const {
       data: { user },
       error: authError,
     } = await getUserWithRetry(supabase);
-    
+
     // Handle network errors gracefully
     if (authError && authError.message?.includes("fetch failed")) {
       console.error("[Promoter Stats] Network error fetching user:", authError);
@@ -33,10 +29,18 @@ export async function GET(
         { status: 503 }
       );
     }
-    
+
     console.log("[Promoter Stats] auth user:", user?.id, user?.email);
 
-    const userId = user?.id || localhostUser;
+    // SECURITY: Only allow localhost fallback in non-production environments
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        console.warn("[Promoter Stats] Using localhost_user_id fallback - DEV ONLY");
+        userId = localhostUser;
+      }
+    }
     console.log("[Promoter Stats] userId:", userId);
 
     if (!userId) {
