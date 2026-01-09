@@ -45,7 +45,7 @@ export async function POST(
       );
     }
 
-    // Verify access (organizer or venue admin)
+    // Verify access (organizer or venue admin/team member)
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
@@ -57,24 +57,56 @@ export async function POST(
     let hasAccess = isSuperadmin;
 
     if (!hasAccess) {
-      const { data: organizer } = await serviceSupabase
+      // Check if user is organizer creator
+      const { data: organizerCreator } = await serviceSupabase
         .from("organizers")
         .select("id")
+        .eq("id", event.organizer_id)
         .eq("created_by", userId)
         .single();
 
-      if (organizer && event.organizer_id === organizer.id) {
+      if (organizerCreator) {
         hasAccess = true;
       }
 
-      if (!hasAccess && event.venue_id) {
-        const { data: venue } = await serviceSupabase
-          .from("venues")
-          .select("id, created_by")
-          .eq("id", event.venue_id)
+      // Check if user is organizer team member
+      if (!hasAccess) {
+        const { data: organizerUser } = await serviceSupabase
+          .from("organizer_users")
+          .select("id")
+          .eq("organizer_id", event.organizer_id)
+          .eq("user_id", userId)
           .single();
 
-        if (venue && venue.created_by === userId) {
+        if (organizerUser) {
+          hasAccess = true;
+        }
+      }
+
+      // Check if user is venue creator
+      if (!hasAccess && event.venue_id) {
+        const { data: venueCreator } = await serviceSupabase
+          .from("venues")
+          .select("id")
+          .eq("id", event.venue_id)
+          .eq("created_by", userId)
+          .single();
+
+        if (venueCreator) {
+          hasAccess = true;
+        }
+      }
+
+      // Check if user is venue team member
+      if (!hasAccess && event.venue_id) {
+        const { data: venueUser } = await serviceSupabase
+          .from("venue_users")
+          .select("id")
+          .eq("venue_id", event.venue_id)
+          .eq("user_id", userId)
+          .single();
+
+        if (venueUser) {
           hasAccess = true;
         }
       }
