@@ -1,0 +1,406 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
+import { getCurrencySymbol } from "@/lib/constants/currencies";
+
+export const dynamic = "force-dynamic";
+
+interface BookTableRequest {
+  table_id: string;
+  guest_name: string;
+  guest_email: string;
+  guest_whatsapp: string;
+  party_size: number;
+  special_requests?: string;
+}
+
+interface EventWithVenue {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  start_time: string;
+  timezone: string | null;
+  table_booking_mode: string | null;
+  venue_id: string;
+  currency: string | null;
+  venue: {
+    id: string;
+    name: string;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    currency: string | null;
+  } | null;
+}
+
+interface TableWithZone {
+  id: string;
+  name: string;
+  capacity: number;
+  minimum_spend: number | null;
+  deposit_amount: number | null;
+  is_active: boolean;
+  zone: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+/**
+ * POST /api/events/[eventId]/tables/book
+ * Submit a table booking request
+ *
+ * Query params:
+ * - ref: promoter referral code (optional)
+ * - code: direct booking link code (optional)
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { eventId: string } }
+) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const serviceSupabase = createServiceRoleClient();
+    const body: BookTableRequest = await request.json();
+
+    const { searchParams } = new URL(request.url);
+    const refCode = searchParams.get("ref");
+    const linkCode = searchParams.get("code");
+
+    // Validate required fields
+    if (!body.table_id || !body.guest_name || !body.guest_email || !body.guest_whatsapp) {
+      return NextResponse.json(
+        { error: "Missing required fields: table_id, guest_name, guest_email, guest_whatsapp" },
+        { status: 400 }
+      );
+    }
+
+    // Validate party size
+    const partySize = body.party_size || 1;
+    if (partySize < 1 || partySize > 50) {
+      return NextResponse.json(
+        { error: "Party size must be between 1 and 50" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.guest_email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // Get event details
+    const { data: eventData, error: eventError } = await serviceSupabase
+      .from("events")
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        start_time,
+        timezone,
+        table_booking_mode,
+        venue_id,
+        currency,
+        venue:venues(
+          id,
+          name,
+          address,
+          city,
+          state,
+          country,
+          currency
+        )
+      `)
+      .eq("id", params.eventId)
+      .single();
+
+    if (eventError || !eventData) {
+      return NextResponse.json(
+        { error: "Event not found" },
+        { status: 404 }
+      );
+    }
+
+    // Type assertion to fix Supabase's nested relation type inference
+    const event = eventData as unknown as EventWithVenue;
+
+    if (event.status !== "published") {
+      return NextResponse.json(
+        { error: "Event is not available for bookings" },
+        { status: 400 }
+      );
+    }
+
+    // Check booking mode access
+    const bookingMode = event.table_booking_mode || "disabled";
+    let isDirectLinkBooking = false;
+
+    if (linkCode) {
+      // Verify the booking link
+      const { data: bookingLink } = await serviceSupabase
+        .from("table_booking_links")
+        .select("id, table_id, is_active, expires_at")
+        .eq("code", linkCode)
+        .eq("event_id", params.eventId)
+        .single();
+
+      if (bookingLink && bookingLink.is_active) {
+        const isExpired = bookingLink.expires_at && new Date(bookingLink.expires_at) < new Date();
+        if (!isExpired) {
+          isDirectLinkBooking = true;
+          // If link specifies a table, ensure it matches
+          if (bookingLink.table_id && bookingLink.table_id !== body.table_id) {
+            return NextResponse.json(
+              { error: "This booking link is for a specific table" },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
+    if (!isDirectLinkBooking) {
+      if (bookingMode === "disabled") {
+        return NextResponse.json(
+          { error: "Table booking is not enabled for this event" },
+          { status: 400 }
+        );
+      }
+
+      if (bookingMode === "promoter_only" && !refCode) {
+        return NextResponse.json(
+          { error: "Table booking requires a promoter referral link" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Get table details
+    const { data: tableData, error: tableError } = await serviceSupabase
+      .from("venue_tables")
+      .select(`
+        id,
+        name,
+        capacity,
+        minimum_spend,
+        deposit_amount,
+        is_active,
+        zone:table_zones(id, name)
+      `)
+      .eq("id", body.table_id)
+      .eq("venue_id", event.venue_id)
+      .single();
+
+    if (tableError || !tableData) {
+      return NextResponse.json(
+        { error: "Table not found" },
+        { status: 404 }
+      );
+    }
+
+    // Type assertion to fix Supabase's nested relation type inference
+    const table = tableData as unknown as TableWithZone;
+
+    if (!table.is_active) {
+      return NextResponse.json(
+        { error: "This table is not available" },
+        { status: 400 }
+      );
+    }
+
+    // Check event-specific availability
+    const { data: availability } = await serviceSupabase
+      .from("event_table_availability")
+      .select("is_available, override_minimum_spend, override_deposit")
+      .eq("event_id", params.eventId)
+      .eq("table_id", body.table_id)
+      .single();
+
+    if (availability && availability.is_available === false) {
+      return NextResponse.json(
+        { error: "This table is not available for this event" },
+        { status: 400 }
+      );
+    }
+
+    // Calculate effective minimum spend and deposit
+    const effectiveMinimumSpend = availability?.override_minimum_spend ?? table.minimum_spend;
+    const effectiveDeposit = availability?.override_deposit ?? table.deposit_amount;
+
+    // Resolve promoter attribution
+    let promoterId: string | null = null;
+    let resolvedRefCode: string | null = refCode;
+
+    if (refCode) {
+      // Check if ref is a promoter ID (UUID format)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(refCode)) {
+        const { data: promoter } = await serviceSupabase
+          .from("promoters")
+          .select("id")
+          .eq("id", refCode)
+          .single();
+
+        if (promoter) {
+          promoterId = promoter.id;
+        } else {
+          // Check if it's a user ID who is also a promoter
+          const { data: userPromoter } = await serviceSupabase
+            .from("promoters")
+            .select("id")
+            .eq("created_by", refCode)
+            .single();
+
+          if (userPromoter) {
+            promoterId = userPromoter.id;
+          }
+        }
+      }
+    }
+
+    // Try to link to existing attendee
+    let attendeeId: string | null = null;
+
+    // If user is authenticated, find their attendee record
+    if (user?.id) {
+      const { data: userAttendee } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (userAttendee) {
+        attendeeId = userAttendee.id;
+      }
+    }
+
+    // If no attendee found by user, try by email
+    if (!attendeeId) {
+      const { data: emailAttendee } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("email", body.guest_email)
+        .single();
+
+      if (emailAttendee) {
+        attendeeId = emailAttendee.id;
+      }
+    }
+
+    // Create the booking
+    const { data: booking, error: bookingError } = await serviceSupabase
+      .from("table_bookings")
+      .insert({
+        event_id: params.eventId,
+        table_id: body.table_id,
+        attendee_id: attendeeId,
+        guest_name: body.guest_name,
+        guest_email: body.guest_email,
+        guest_whatsapp: body.guest_whatsapp,
+        party_size: partySize,
+        special_requests: body.special_requests || null,
+        promoter_id: promoterId,
+        referral_code: resolvedRefCode,
+        status: "pending",
+        minimum_spend: effectiveMinimumSpend,
+        deposit_required: effectiveDeposit,
+      })
+      .select()
+      .single();
+
+    if (bookingError) {
+      console.error("Error creating booking:", bookingError);
+      return NextResponse.json(
+        { error: "Failed to create booking" },
+        { status: 500 }
+      );
+    }
+
+    // Send confirmation email
+    try {
+      const currency = event.currency || event.venue?.currency || "USD";
+      const currencySymbol = getCurrencySymbol(currency);
+
+      // Format date/time
+      const startTime = event.start_time ? new Date(event.start_time) : null;
+      const eventTimezone = event.timezone || "UTC";
+
+      const eventDate = startTime
+        ? startTime.toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            timeZone: eventTimezone,
+          })
+        : "TBA";
+
+      // Build deposit instructions
+      const depositInstructions = effectiveDeposit
+        ? "Please contact the venue to arrange your deposit payment. Your booking will be confirmed once the deposit is received."
+        : "";
+
+      await sendTemplateEmail(
+        "table_booking_request",
+        body.guest_email,
+        attendeeId,
+        {
+          guest_name: body.guest_name,
+          event_name: event.name,
+          event_date: eventDate,
+          table_name: table.name,
+          zone_name: table.zone?.name || "General",
+          party_size: partySize.toString(),
+          minimum_spend: effectiveMinimumSpend?.toFixed(2) || "0",
+          currency_symbol: currencySymbol,
+          deposit_required: effectiveDeposit ? "true" : "",
+          deposit_amount: effectiveDeposit?.toFixed(2) || "0",
+          deposit_instructions: depositInstructions,
+        },
+        {
+          event_id: params.eventId,
+          booking_id: booking.id,
+        }
+      );
+    } catch (emailError) {
+      console.error("Failed to send booking confirmation email:", emailError);
+      // Don't fail the booking if email fails
+    }
+
+    return NextResponse.json({
+      success: true,
+      booking: {
+        id: booking.id,
+        status: booking.status,
+        table_name: table.name,
+        zone_name: table.zone?.name,
+        minimum_spend: effectiveMinimumSpend,
+        deposit_required: effectiveDeposit,
+        party_size: partySize,
+      },
+      event: {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+      },
+      message: effectiveDeposit
+        ? "Your table booking request has been received. Please arrange your deposit to confirm."
+        : "Your table booking request has been received. We will contact you shortly to confirm.",
+    });
+  } catch (error: any) {
+    console.error("Error in table booking:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to process booking" },
+      { status: 500 }
+    );
+  }
+}

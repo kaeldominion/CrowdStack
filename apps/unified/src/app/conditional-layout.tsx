@@ -99,10 +99,11 @@ export function ConditionalLayout({
   // They should not have any padding from the conditional layout
   const isEventPage = pathname.startsWith("/e/") && !pathname.includes("/register") && !pathname.includes("/pass");
   const isPhotoPage = pathname.startsWith("/p/");
+  const isPromoterPage = pathname.startsWith("/promoter/"); // Promoter profile pages have full-bleed gradient
   const isMePage = pathname === "/me"; // ME page has hero gradient that needs to extend behind nav
   const isLandingPage = pathname === "/" || pathname === "/for-business"; // Landing pages have their own BETA banner
   const isContentPage = pathname === "/faq" || pathname === "/contact"; // Content pages handle their own layout
-  const handlesOwnLayout = isEventPage || isPhotoPage || isMePage || isLandingPage || isContentPage;
+  const handlesOwnLayout = isEventPage || isPhotoPage || isPromoterPage || isMePage || isLandingPage || isContentPage;
   
   // Pages that handle own layout: no padding (they manage nav clearance themselves)
   // Routes that have their own nested layouts with DockNav (don't render DockNav here)

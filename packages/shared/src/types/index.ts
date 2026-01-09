@@ -121,7 +121,8 @@ export interface Venue {
   instagram_url: string | null;
   instagram_handle?: string | null;
   capacity?: number | null;
-  default_currency?: string | null;
+  currency?: string | null;
+  default_currency?: string | null; // Deprecated, use currency
   created_by: string | null;
   created_at: string;
   updated_at: string;

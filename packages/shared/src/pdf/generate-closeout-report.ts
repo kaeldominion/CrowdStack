@@ -1,6 +1,7 @@
 import "server-only";
 
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 interface PromoterData {
   promoter_id: string;
@@ -43,9 +44,11 @@ export async function generateCloseoutReportPDF(
 ): Promise<Buffer> {
   const html = generateReportHTML(data);
 
+  // Use @sparticuz/chromium for Vercel serverless environments
   const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   try {
