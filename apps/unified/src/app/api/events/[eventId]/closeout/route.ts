@@ -301,7 +301,7 @@ export async function PATCH(
     // Verify event access (same logic as GET)
     const { data: event } = await serviceSupabase
       .from("events")
-      .select("id, organizer_id, venue_id, status")
+      .select("id, organizer_id, venue_id, status, closed_at")
       .eq("id", params.eventId)
       .single();
 
@@ -380,8 +380,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if event is already closed
-    if (event.status === "closed") {
+    // Check if event is already closed (using closed_at since we don't change status anymore)
+    if (event.closed_at) {
       return NextResponse.json(
         { error: "Event is already closed. Cannot modify adjustments." },
         { status: 400 }
