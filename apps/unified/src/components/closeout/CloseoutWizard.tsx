@@ -128,6 +128,34 @@ export function CloseoutWizard({
     }
   };
 
+  const handleCheckinOverrideUpdate = async (
+    promoterId: string,
+    overrideCount: number | null,
+    overrideReason: string | null
+  ) => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/closeout`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promoter_id: promoterId,
+          manual_checkins_override: overrideCount,
+          manual_checkins_reason: overrideReason,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update checkin override");
+      }
+
+      // Reload summary to reflect changes
+      await loadSummary();
+    } catch (err: any) {
+      setError(err.message || "Failed to update checkin override");
+    }
+  };
+
   const steps = [
     { number: 1, label: "Confirm Check-ins" },
     { number: 2, label: "Review Payouts" },
@@ -195,8 +223,11 @@ export function CloseoutWizard({
             {currentStep === 1 && (
               <CheckinConfirmStep
                 summary={summary}
+                eventId={eventId}
                 onNext={handleNext}
                 onBack={handleBack}
+                onCheckinOverrideUpdate={handleCheckinOverrideUpdate}
+                onReload={loadSummary}
               />
             )}
             {currentStep === 2 && (
