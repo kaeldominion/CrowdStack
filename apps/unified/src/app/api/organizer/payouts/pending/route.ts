@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId } from "@/lib/auth/check-role";
+import { getUserOrganizerIds } from "@/lib/data/get-user-entity";
 
 /**
  * GET /api/organizer/payouts/pending
@@ -18,14 +19,10 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get user's organizer ID
-    const { data: organizer } = await serviceSupabase
-      .from("organizers")
-      .select("id")
-      .eq("created_by", userId)
-      .single();
+    // Get all organizer IDs the user has access to (creator or team member)
+    const organizerIds = await getUserOrganizerIds();
 
-    if (!organizer) {
+    if (organizerIds.length === 0) {
       return NextResponse.json(
         { error: "Organizer not found" },
         { status: 404 }
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest) {
         ),
         promoter:promoters(id, name, email)
       `)
-      .eq("payout_runs.events.organizer_id", organizer.id)
+      .in("payout_runs.events.organizer_id", organizerIds)
       .order("payout_runs.events.start_time", { ascending: false });
 
     if (payoutError) {
