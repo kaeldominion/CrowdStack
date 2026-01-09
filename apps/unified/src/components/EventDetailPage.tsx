@@ -162,6 +162,12 @@ interface EventData {
   registration_type?: string | null;
   external_ticket_url?: string | null;
   created_at: string;
+  // Closeout fields
+  closed_at?: string | null;
+  closed_by?: string | null;
+  locked_at?: string | null;
+  closeout_notes?: string | null;
+  total_revenue?: number | null;
   organizer?: { id: string; name: string; email: string | null };
   venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
   event_promoters?: Array<{
