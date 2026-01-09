@@ -1380,23 +1380,16 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             {/* Nav Items */}
             {navLoading ? (
               <>
-                {/* Browse link for all users */}
-                <Link 
-                  href="/browse" 
-                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
-                >
-                  Browse
-                </Link>
                 {/* FAQ link */}
-                <Link 
-                  href="/faq" 
+                <Link
+                  href="/faq"
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
                 >
                   FAQ
                 </Link>
                 {/* Login button */}
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 shadow-lg"
                 >
                   Login
@@ -1405,18 +1398,11 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
             ) : navUser ? (
               <>
                 {/* ME link */}
-                <Link 
-                  href="/me" 
+                <Link
+                  href="/me"
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
                 >
                   Me
-                </Link>
-                {/* Browse link */}
-                <Link 
-                  href="/browse" 
-                  className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
-                >
-                  Browse
                 </Link>
                 {/* Avatar Dropdown */}
                 <div className="relative" ref={profileRef}>
@@ -1477,16 +1463,16 @@ export function TypeformSignup({ onSubmit, isLoading = false, redirectUrl, onEma
               </>
             ) : (
               <>
-                {/* Browse link for all users */}
-                <Link 
-                  href="/browse" 
+                {/* FAQ link */}
+                <Link
+                  href="/faq"
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-secondary hover:text-white hover:bg-active/50"
                 >
-                  Browse
+                  FAQ
                 </Link>
                 {/* Login button with gradient */}
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap text-void bg-gradient-to-r from-accent-secondary to-accent-primary hover:opacity-90 shadow-lg"
                 >
                   Login

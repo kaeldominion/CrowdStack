@@ -39,18 +39,18 @@ interface ModeItem {
 }
 
 // Public nav items (logged out users) - Login button is separate with gradient styling
+// NOTE: Browse feature hidden for now - focusing on Ops platform
 const PUBLIC_NAV_ITEMS: NavItem[] = [
-  { href: "/browse", label: "Browse", icon: Compass },
   { href: "/faq", label: "FAQ", icon: HelpCircle },
 ];
 
 // Additional nav item for landing page only
 const FOR_BUSINESS_ITEM: NavItem = { href: "/for-business", label: "For Business", icon: Building2 };
 
-// Attendee nav items (for /me routes) - ME | BROWSE | MODE
+// Attendee nav items (for /me routes) - ME | MODE
+// NOTE: Browse feature hidden for now - focusing on Ops platform
 const ATTENDEE_NAV_ITEMS: NavItem[] = [
   { href: "/me", label: "Me", icon: User, exact: true },
-  { href: "/browse", label: "Browse", icon: Compass },
 ];
 
 // Mode dropdown items - role-based dashboards
@@ -63,10 +63,10 @@ const MODE_ITEMS: ModeItem[] = [
 ];
 
 // Dashboard nav items - simplified for pill (details in sidebar)
-// All dashboard routes (admin, venue, organizer, promoter, dj) use ME | BROWSE | MODE
+// All dashboard routes (admin, venue, organizer, promoter, dj) use ME | MODE
+// NOTE: Browse feature hidden for now - focusing on Ops platform
 const DASHBOARD_NAV_ITEMS: NavItem[] = [
   { href: "/me", label: "Me", icon: User, exact: true },
-  { href: "/browse", label: "Browse", icon: Compass },
 ];
 
 export function DockNav() {
