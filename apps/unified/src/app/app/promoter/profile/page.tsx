@@ -118,7 +118,7 @@ export default function PromoterProfilePage() {
 
   const copyProfileUrl = () => {
     if (!profile?.slug) return;
-    const url = `${window.location.origin}/p/${profile.slug}`;
+    const url = `${window.location.origin}/promoter/${profile.slug}`;
     navigator.clipboard.writeText(url);
     setSlugCopied(true);
     setTimeout(() => setSlugCopied(false), 2000);
@@ -151,7 +151,7 @@ export default function PromoterProfilePage() {
     );
   }
 
-  const profileUrl = profile.slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${profile.slug}` : null;
+  const profileUrl = profile.slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/promoter/${profile.slug}` : null;
 
   return (
     <div className="space-y-6">
@@ -182,7 +182,7 @@ export default function PromoterProfilePage() {
               <Button variant="secondary" size="sm" onClick={copyProfileUrl}>
                 {slugCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
-              <Link href={`/p/${profile.slug}`} target="_blank">
+              <Link href={`/promoter/${profile.slug}`} target="_blank">
                 <Button variant="secondary" size="sm">
                   <ExternalLink className="h-4 w-4" />
                 </Button>
@@ -218,7 +218,7 @@ export default function PromoterProfilePage() {
                 Profile URL
               </label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted whitespace-nowrap">crowdstack.app/p/</span>
+                <span className="text-sm text-muted whitespace-nowrap">crowdstack.app/promoter/</span>
                 <Input
                   value={profile.slug || ""}
                   onChange={(e) => updateField("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
