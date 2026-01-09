@@ -1507,12 +1507,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "lineup", label: "Lineup" });
   }
-  // Tables tab - show for venues only when enabled
+  // Tables tab - show for venues only (manages table availability)
   if (config.canViewTables && config.role === "venue") {
     tabs.push({ value: "tables", label: "Tables" });
   }
-  // Bookings tab - show for venues only when enabled
-  if (config.canViewBookings && config.role === "venue") {
+  // Bookings tab - show for venues and organizers when enabled
+  if (config.canViewBookings && (config.role === "venue" || config.role === "organizer")) {
     tabs.push({ value: "bookings", label: "Bookings" });
   }
 
@@ -3496,8 +3496,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </TabsContent>
           )}
 
-          {/* Bookings Tab - Venue Only */}
-          {config.canViewBookings && config.role === "venue" && (
+          {/* Bookings Tab - Venue and Organizer */}
+          {config.canViewBookings && (config.role === "venue" || config.role === "organizer") && (
             <TabsContent value="bookings" className="space-y-4">
               <Card>
                 <div className="mb-4">

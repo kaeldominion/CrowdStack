@@ -22,6 +22,7 @@ export default function OrganizerEventDetailPage() {
         canManageDoorStaff: true,
         canViewAttendees: true,
         canViewPromoters: true,
+        canViewBookings: true,
         canViewPhotos: true,
         canViewSettings: true,
         canViewStats: true,
