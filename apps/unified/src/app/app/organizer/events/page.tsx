@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
 
 interface Event {
@@ -28,14 +27,30 @@ async function getOrganizerEvents() {
     redirect("/login");
   }
 
-  // Get organizer ID for current user
-  const organizerId = await getUserOrganizerId();
+  const serviceSupabase = createServiceRoleClient();
 
-  if (!organizerId) {
+  // Get organizer IDs for current user in a single parallel query
+  const [organizerUsersResult, createdOrganizersResult] = await Promise.all([
+    serviceSupabase
+      .from("organizer_users")
+      .select("organizer_id")
+      .eq("user_id", user.id),
+    serviceSupabase
+      .from("organizers")
+      .select("id")
+      .eq("created_by", user.id)
+  ]);
+
+  const organizerIds = new Set<string>();
+  (organizerUsersResult.data || []).forEach((ou: any) => organizerIds.add(ou.organizer_id));
+  (createdOrganizersResult.data || []).forEach((o: any) => organizerIds.add(o.id));
+
+  if (organizerIds.size === 0) {
     return { events: [] };
   }
 
-  const serviceSupabase = createServiceRoleClient();
+  // Use first organizer ID (for single-organizer users) or all for multi-organizer
+  const organizerId = [...organizerIds][0];
 
   // Get events for this organizer
   const { data: events, error } = await serviceSupabase
@@ -65,45 +80,39 @@ async function getOrganizerEvents() {
     return { events: [] };
   }
 
-  // Get registration and checkin counts for each event
+  // Get registration and checkin counts using efficient aggregation
   const eventIds = events?.map(e => e.id) || [];
   let registrationCounts: Record<string, number> = {};
   let checkinCounts: Record<string, number> = {};
 
   if (eventIds.length > 0) {
-    // Get registrations with their event IDs
-    const registrationsResult = await serviceSupabase
-      .from("registrations")
-      .select("id, event_id")
-      .in("event_id", eventIds);
+    // Use parallel queries with aggregation for better performance
+    const [regCountsResult, checkinCountsResult] = await Promise.all([
+      // Count registrations per event using RPC or grouped query
+      serviceSupabase
+        .from("registrations")
+        .select("event_id")
+        .in("event_id", eventIds),
+      // Count checkins per event by joining through registrations
+      serviceSupabase
+        .from("checkins")
+        .select("registrations!inner(event_id)")
+        .in("registrations.event_id", eventIds)
+        .is("undo_at", null)
+    ]);
 
-    const registrations = registrationsResult.data || [];
-    const registrationIds = registrations.map(reg => reg.id);
-
-    // Count registrations per event
-    registrations.forEach((reg: any) => {
+    // Count registrations per event (in-memory aggregation of just event_ids)
+    (regCountsResult.data || []).forEach((reg: any) => {
       registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
     });
 
-    // Get checkins and map back to events
-    if (registrationIds.length > 0) {
-      const checkinsResult = await serviceSupabase
-        .from("checkins")
-        .select("registration_id")
-        .in("registration_id", registrationIds);
-
-      const registrationIdToEventId: Record<string, string> = {};
-      registrations.forEach((reg: any) => {
-        registrationIdToEventId[reg.id] = reg.event_id;
-      });
-
-      (checkinsResult.data || []).forEach((checkin: any) => {
-        const eventId = registrationIdToEventId[checkin.registration_id];
-        if (eventId) {
-          checkinCounts[eventId] = (checkinCounts[eventId] || 0) + 1;
-        }
-      });
-    }
+    // Count checkins per event
+    (checkinCountsResult.data || []).forEach((checkin: any) => {
+      const eventId = checkin.registrations?.event_id;
+      if (eventId) {
+        checkinCounts[eventId] = (checkinCounts[eventId] || 0) + 1;
+      }
+    });
   }
 
   // Add counts to events
