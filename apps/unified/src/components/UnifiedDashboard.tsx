@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight, Briefcase } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight, Briefcase, Share2, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { EarningsChart } from "@/components/charts/EarningsChart";
 import { createBrowserClient } from "@crowdstack/shared";
 import { DJProfileSelector } from "@/components/DJProfileSelector";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
@@ -133,6 +134,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     eventsPromotedCount: 0,
   });
   const [djHandle, setDJHandle] = useState<string | null>(null);
+  const [promoterProfile, setPromoterProfile] = useState<{
+    id: string;
+    name: string;
+    slug: string | null;
+    bio: string | null;
+    profile_image_url: string | null;
+    instagram_handle: string | null;
+    is_public: boolean;
+  } | null>(null);
+  const [profileLinkCopied, setProfileLinkCopied] = useState(false);
 
   const isVenue = userRoles.includes("venue_admin");
   const isOrganizer = userRoles.includes("event_organizer");
@@ -237,6 +248,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           .then((data) => {
             setPromoterStats(data.stats || promoterStats);
             setPromoterChartData(data.earningsChartData || []);
+            if (data.promoter) {
+              setPromoterProfile(data.promoter);
+            }
           })
           .catch((e) => console.error("Failed to load promoter stats:", e))
       );
@@ -943,6 +957,108 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               </Button>
             </Link>
           </div>
+
+          {/* Public Profile Card with QR Code */}
+          {promoterProfile && (
+            <BentoCard span={4} className="bg-gradient-to-r from-accent-primary/10 to-accent-secondary/10 border-accent-primary/30">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* QR Code */}
+                {promoterProfile.slug && promoterProfile.is_public && (
+                  <div className="flex-shrink-0 flex flex-col items-center">
+                    <div className="bg-white p-2 rounded-xl">
+                      <BeautifiedQRCode
+                        url={`${typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/${promoterProfile.slug}`}
+                        size={140}
+                        logoSize={30}
+                      />
+                    </div>
+                    <p className="text-[10px] text-white/40 mt-2 text-center">Scan to view profile</p>
+                  </div>
+                )}
+
+                {/* Profile Info */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Globe className="h-4 w-4 text-accent-primary" />
+                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                        Your Public Profile
+                      </p>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{promoterProfile.name}</h3>
+                    {promoterProfile.slug && promoterProfile.is_public ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-white/60">
+                          Share your profile link - guests who register through it are automatically attributed to you!
+                        </p>
+                        <div className="flex items-center gap-2 p-2 bg-white/5 rounded-md border border-white/10">
+                          <code className="text-sm text-white/80 font-mono flex-1 truncate">
+                            {typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/{promoterProfile.slug}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const url = `${window.location.origin}/promoter/${promoterProfile.slug}`;
+                              navigator.clipboard.writeText(url);
+                              setProfileLinkCopied(true);
+                              setTimeout(() => setProfileLinkCopied(false), 2000);
+                            }}
+                            className="text-xs"
+                          >
+                            {profileLinkCopied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <a
+                            href={`${typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/${promoterProfile.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button variant="primary" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                              <ExternalLink className="h-4 w-4 ml-2" />
+                            </Button>
+                          </a>
+                          <Link href="/app/promoter/profile">
+                            <Button variant="secondary" size="sm">
+                              Edit Profile
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-white/60">
+                          {!promoterProfile.slug
+                            ? "Set up your profile URL to get a shareable link and QR code"
+                            : "Your profile is currently private. Make it public to share with guests."}
+                        </p>
+                        <Link href="/app/promoter/profile">
+                          <Button variant="primary" size="sm">
+                            {!promoterProfile.slug ? "Set Up Profile" : "Make Profile Public"}
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Conversion Stats */}
+                <div className="flex-shrink-0 flex flex-col gap-3 md:border-l md:border-white/10 md:pl-6">
+                  <div className="text-center md:text-right">
+                    <p className="text-3xl font-bold text-white">{promoterStats.conversionRate}%</p>
+                    <p className="text-xs text-white/50">Conversion Rate</p>
+                  </div>
+                  <div className="text-center md:text-right">
+                    <p className="text-2xl font-bold text-accent-primary">{promoterStats.avgPerEvent}</p>
+                    <p className="text-xs text-white/50">Avg per Event</p>
+                  </div>
+                </div>
+              </div>
+            </BentoCard>
+          )}
 
           {/* Stats Summary */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">

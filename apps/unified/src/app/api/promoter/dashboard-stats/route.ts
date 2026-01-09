@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getPromoterDashboardStats, getPromoterEarningsChartData } from "@/lib/data/dashboard-stats";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
@@ -20,8 +21,16 @@ export async function GET() {
     const stats = await getPromoterDashboardStats();
     const earningsChartData = await getPromoterEarningsChartData();
 
+    // Fetch promoter profile info for dashboard display
+    const serviceSupabase = createServiceRoleClient();
+    const { data: promoter } = await serviceSupabase
+      .from("promoters")
+      .select("id, name, slug, bio, profile_image_url, instagram_handle, is_public")
+      .eq("created_by", user.id)
+      .single();
+
     return NextResponse.json(
-      { stats, earningsChartData },
+      { stats, earningsChartData, promoter },
       {
         headers: {
           'Cache-Control': getCacheControl(CACHE.dashboardStats),
