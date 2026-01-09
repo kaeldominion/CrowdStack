@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Card, Badge, LoadingSpinner, Button } from "@crowdstack/ui";
+import { Card, Badge, LoadingSpinner, Button, InlineSpinner } from "@crowdstack/ui";
 import {
   Calendar,
   MapPin,
@@ -14,7 +14,10 @@ import {
   CheckCircle2,
   PartyPopper,
   MessageCircle,
+  Camera,
+  Pencil,
 } from "lucide-react";
+import { createBrowserClient } from "@crowdstack/shared";
 
 interface Event {
   id: string;
@@ -77,10 +80,31 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        // Check if current user owns this profile
+        const supabase = createBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: userPromoter } = await supabase
+            .from("promoters")
+            .select("id")
+            .eq("created_by", user.id)
+            .single();
+
+          if (userPromoter && userPromoter.id === promoterId) {
+            setIsOwner(true);
+          }
+        }
+
+        // Load profile data
         const response = await fetch(`/api/promoters/by-slug/${slug}`);
         if (response.ok) {
           const data = await response.json();
@@ -97,7 +121,58 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
     };
 
     loadProfile();
-  }, [slug]);
+  }, [slug, promoterId]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setAvatarError("Please select a JPEG, PNG, or WebP image");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("Image must be smaller than 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setAvatarError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/promoter/profile/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to upload avatar");
+      }
+
+      // Update local state with new avatar URL
+      if (promoter) {
+        setPromoter({ ...promoter, profile_image_url: data.avatar_url });
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err: any) {
+      setAvatarError(err.message || "Failed to upload avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -160,22 +235,64 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
         <div className="max-w-4xl mx-auto px-4 pt-24">
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8">
-            {/* Avatar */}
-            <div className="relative">
+            {/* Avatar with inline edit */}
+            <div className="relative group">
               {promoter.profile_image_url ? (
                 <Image
                   src={promoter.profile_image_url}
                   alt={promoter.name}
                   width={120}
                   height={120}
-                  className="rounded-full border-4 border-accent-primary/30 object-cover"
+                  className="rounded-full border-4 border-accent-primary/30 object-cover w-[120px] h-[120px]"
                 />
               ) : (
                 <div className="w-[120px] h-[120px] rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-4xl font-black text-white">
                   {promoter.name.charAt(0).toUpperCase()}
                 </div>
               )}
+
+              {/* Upload overlay - only show for owner */}
+              {isOwner && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    disabled={uploadingAvatar}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <InlineSpinner size="lg" className="text-white" />
+                    ) : (
+                      <div className="flex flex-col items-center text-white">
+                        <Camera className="h-6 w-6 mb-1" />
+                        <span className="text-xs font-medium">Change</span>
+                      </div>
+                    )}
+                  </button>
+                </>
+              )}
+
+              {/* Edit badge for owner */}
+              {isOwner && !uploadingAvatar && (
+                <div className="absolute -bottom-1 -right-1 bg-accent-primary rounded-full p-1.5 shadow-lg">
+                  <Pencil className="h-3 w-3 text-white" />
+                </div>
+              )}
             </div>
+
+            {/* Avatar error message */}
+            {avatarError && (
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-1 rounded-lg whitespace-nowrap">
+                {avatarError}
+              </div>
+            )}
 
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
@@ -184,6 +301,14 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
                 <Badge variant="secondary" className="!bg-accent-primary/20 !text-accent-primary">
                   Promoter
                 </Badge>
+                {isOwner && (
+                  <Link href="/app/promoter/profile">
+                    <Badge variant="secondary" className="!bg-white/10 !text-white/60 hover:!bg-white/20 cursor-pointer">
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Edit
+                    </Badge>
+                  </Link>
+                )}
               </div>
 
               {promoter.bio && (
