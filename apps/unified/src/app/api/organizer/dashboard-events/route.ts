@@ -57,19 +57,30 @@ export async function GET() {
     const upcomingEvents: OrganizerEvent[] = [];
     const pastEvents: OrganizerEvent[] = [];
 
-    // Get registration and checkin counts for all events
+    // BATCH QUERY OPTIMIZATION: Get all counts in bulk instead of per-event
+    const eventIds = (events || []).map((e) => e.id);
+
+    // Batch fetch all registrations for these events
+    const { data: allRegs } = eventIds.length > 0
+      ? await serviceSupabase
+          .from("registrations")
+          .select("event_id, checked_in")
+          .in("event_id", eventIds)
+      : { data: [] };
+
+    // Build counts maps for O(1) lookups
+    const regsByEvent = new Map<string, number>();
+    const checkinsByEvent = new Map<string, number>();
+
+    (allRegs || []).forEach((reg) => {
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
+      if (reg.checked_in) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    // Process events using pre-computed maps (no additional queries)
     for (const event of events || []) {
-      const { count: registrations } = await serviceSupabase
-        .from("registrations")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", event.id);
-
-      const { count: checkins } = await serviceSupabase
-        .from("checkins")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", event.id)
-        .is("undo_at", null);
-
       const eventData: OrganizerEvent = {
         id: event.id,
         name: event.name,
@@ -79,8 +90,8 @@ export async function GET() {
         status: event.status,
         venue_approval_status: event.venue_approval_status,
         venue_name: Array.isArray(event.venue) ? event.venue[0]?.name : (event.venue as any)?.name || null,
-        registrations: registrations || 0,
-        checkins: checkins || 0,
+        registrations: regsByEvent.get(event.id) || 0,
+        checkins: checkinsByEvent.get(event.id) || 0,
         capacity: event.capacity,
         flier_url: event.flier_url,
       };
@@ -91,11 +102,11 @@ export async function GET() {
       // Check if event is live
       if (startTime <= now && (!endTime || endTime >= now) && event.status === "published") {
         liveEvents.push(eventData);
-      } 
+      }
       // Check if event is upcoming
       else if (startTime > now && event.status === "published") {
         upcomingEvents.push(eventData);
-      } 
+      }
       // Past events
       else if (startTime < now || event.status === "completed") {
         pastEvents.push(eventData);

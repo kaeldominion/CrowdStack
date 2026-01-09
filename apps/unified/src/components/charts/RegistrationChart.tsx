@@ -1,13 +1,15 @@
 "use client";
 
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from "recharts";
+import { memo } from "react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface RegistrationChartProps {
   data: Array<{ date: string; registrations: number; checkins: number }>;
   height?: number;
 }
 
-export function RegistrationChart({ data, height = 200 }: RegistrationChartProps) {
+// Memoized to prevent re-renders when parent state changes but data hasn't
+export const RegistrationChart = memo(function RegistrationChart({ data, height = 200 }: RegistrationChartProps) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
@@ -59,5 +61,5 @@ export function RegistrationChart({ data, height = 200 }: RegistrationChartProps
       </AreaChart>
     </ResponsiveContainer>
   );
-}
+});
 

@@ -81,35 +81,34 @@ export async function GET() {
       });
     }
 
-    // Get registration and checkin stats for each event
+    // BATCH QUERY OPTIMIZATION: Get all stats in bulk instead of per-event
     const now = new Date();
+
+    // Batch fetch all registrations for this promoter across all events
+    const { data: allPromoterRegs } = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id, checked_in")
+      .in("event_id", eventIds)
+      .eq("referral_promoter_id", promoterId);
+
+    // Build counts maps for O(1) lookups
+    const regsByEvent = new Map<string, number>();
+    const checkinsByEvent = new Map<string, number>();
+
+    (allPromoterRegs || []).forEach((reg) => {
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
+      if (reg.checked_in) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    // Process events using pre-computed maps (no additional queries)
     const enrichedEvents: PromoterDashboardEvent[] = [];
+    const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app";
 
     for (const event of events) {
-      // Get registrations this promoter brought
-      const { count: registrations } = await serviceSupabase
-        .from("registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("event_id", event.id)
-        .eq("referral_promoter_id", promoterId);
-
-      // Get checkins from this promoter's registrations
-      const { data: promoterRegs } = await serviceSupabase
-        .from("registrations")
-        .select("id")
-        .eq("event_id", event.id)
-        .eq("referral_promoter_id", promoterId);
-
-      let checkins = 0;
-      if (promoterRegs && promoterRegs.length > 0) {
-        const regIds = promoterRegs.map(r => r.id);
-        const { count } = await serviceSupabase
-          .from("checkins")
-          .select("*", { count: "exact", head: true })
-          .in("registration_id", regIds)
-          .is("undo_at", null);
-        checkins = count || 0;
-      }
+      const registrations = regsByEvent.get(event.id) || 0;
+      const checkins = checkinsByEvent.get(event.id) || 0;
 
       const startTime = new Date(event.start_time);
       const endTime = event.end_time ? new Date(event.end_time) : new Date(startTime.getTime() + 6 * 60 * 60 * 1000); // Default 6 hours
@@ -117,10 +116,6 @@ export async function GET() {
       const isLive = now >= startTime && now <= endTime && event.status === "published";
       const isUpcoming = now < startTime && event.status === "published";
       const isPast = now > endTime || event.status === "completed";
-
-      // Generate referral link
-      const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app";
-      const referralLink = `${baseUrl}/e/${event.slug}?ref=${promoterId}`;
 
       enrichedEvents.push({
         id: event.id,
@@ -131,11 +126,11 @@ export async function GET() {
         status: event.status,
         flier_url: event.flier_url,
         venue_name: (event.venue as any)?.name || null,
-        referral_link: referralLink,
-        registrations: registrations || 0,
-        checkins: checkins,
-        conversionRate: registrations && registrations > 0 
-          ? Math.round((checkins / registrations) * 100) 
+        referral_link: `${baseUrl}/e/${event.slug}?ref=${promoterId}`,
+        registrations,
+        checkins,
+        conversionRate: registrations > 0
+          ? Math.round((checkins / registrations) * 100)
           : 0,
         isLive,
         isUpcoming,
