@@ -96,7 +96,9 @@ import {
   Crown,
   Sparkles,
   RefreshCw,
+  Layers,
 } from "lucide-react";
+import { getCurrencySymbol } from "@/lib/constants/currencies";
 import Link from "next/link";
 import { DoorStaffModal } from "@/components/DoorStaffModal";
 import { PromoterManagementModal } from "@/components/PromoterManagementModal";
@@ -111,6 +113,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 import { EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
+import { BookingsTab } from "@/components/BookingsTab";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
 
@@ -120,6 +123,7 @@ interface EventDetailConfig {
   statsApiEndpoint?: string;
   attendeesApiEndpoint?: string;
   approveApiEndpoint?: string;
+  tablesApiEndpoint?: string;
   backUrl: string;
   liveUrl: string;
   canEdit?: boolean;
@@ -130,6 +134,8 @@ interface EventDetailConfig {
   canViewPhotos?: boolean;
   canViewSettings?: boolean;
   canViewStats?: boolean;
+  canViewTables?: boolean;
+  canViewBookings?: boolean;
   canApprove?: boolean;
   canPublish?: boolean;
   showVenueApproval?: boolean;
@@ -161,6 +167,7 @@ interface EventData {
   is_featured?: boolean;
   registration_type?: string | null;
   external_ticket_url?: string | null;
+  table_booking_mode?: "disabled" | "promoter_only" | "direct" | null;
   created_at: string;
   // Closeout fields
   closed_at?: string | null;
@@ -363,6 +370,41 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [showQRModal, setShowQRModal] = useState(false);
   const [copiedReferral, setCopiedReferral] = useState(false);
 
+  // Event tables state (for venue table availability)
+  interface EventTableData {
+    id: string;
+    name: string;
+    capacity: number;
+    minimum_spend: number | null;
+    deposit_amount: number | null;
+    notes: string | null;
+    zone: { id: string; name: string; display_order: number };
+    availability: {
+      is_available: boolean;
+      override_minimum_spend: number | null;
+      override_deposit: number | null;
+      notes: string | null;
+    } | null;
+    effective_minimum_spend: number | null;
+    effective_deposit: number | null;
+  }
+  interface ZoneWithTables {
+    zone: { id: string; name: string; display_order: number };
+    tables: EventTableData[];
+  }
+  const [eventTablesData, setEventTablesData] = useState<ZoneWithTables[]>([]);
+  const [loadingTables, setLoadingTables] = useState(false);
+  const [savingTables, setSavingTables] = useState(false);
+  const [tableChanges, setTableChanges] = useState<Map<string, {
+    is_available: boolean;
+    override_minimum_spend: number | null;
+    override_deposit: number | null;
+    notes: string | null;
+  }>>(new Map());
+  const [tablesCurrency, setTablesCurrency] = useState<string>("USD");
+  const [bookingMode, setBookingMode] = useState<"disabled" | "promoter_only" | "direct">("disabled");
+  const [savingBookingMode, setSavingBookingMode] = useState(false);
+
   // Load current user ID for referral attribution
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -522,6 +564,30 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   }, [activeTab, event, leaderboard.length, loadingLeaderboard]);
 
+  // Load event tables when tab is selected
+  useEffect(() => {
+    if (activeTab === "tables" && event && config.canViewTables && config.tablesApiEndpoint && eventTablesData.length === 0 && !loadingTables) {
+      const loadEventTables = async () => {
+        setLoadingTables(true);
+        try {
+          const response = await fetch(config.tablesApiEndpoint!.replace("[eventId]", event.id));
+          if (response.ok) {
+            const data = await response.json();
+            setEventTablesData(data.groupedByZone || []);
+            if (data.currency) {
+              setTablesCurrency(data.currency);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to load event tables:", error);
+        } finally {
+          setLoadingTables(false);
+        }
+      };
+      loadEventTables();
+    }
+  }, [activeTab, event, config.canViewTables, config.tablesApiEndpoint, eventTablesData.length, loadingTables]);
+
   // Generate referral link for promoter
   // Get referral code based on role
   const getReferralCode = () => {
@@ -626,6 +692,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
         // Status stays as published/draft - "ended" is determined by date, not status
         setEvent(data.event);
+        // Set booking mode from event data
+        if (data.event.table_booking_mode) {
+          setBookingMode(data.event.table_booking_mode);
+        }
         // Load event tags
         loadEventTags();
         // Set organizer ID for organizer role (for their own referral link)
@@ -1437,6 +1507,14 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "lineup", label: "Lineup" });
   }
+  // Tables tab - show for venues only when enabled
+  if (config.canViewTables && config.role === "venue") {
+    tabs.push({ value: "tables", label: "Tables" });
+  }
+  // Bookings tab - show for venues only when enabled
+  if (config.canViewBookings && config.role === "venue") {
+    tabs.push({ value: "bookings", label: "Bookings" });
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -1864,6 +1942,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 {tab.value === "photos" && <ImageIcon className="h-4 w-4 mr-1" />}
                 {tab.value === "email-stats" && <Mail className="h-4 w-4 mr-1" />}
                 {tab.value === "leaderboard" && <Trophy className="h-4 w-4 mr-1" />}
+                {tab.value === "tables" && <Layers className="h-4 w-4 mr-1" />}
                 {tab.label}
               </TabsTrigger>
             ))}
@@ -3119,6 +3198,316 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </div>
                 </Card>
               )}
+            </TabsContent>
+          )}
+
+          {/* Tables Tab - Venue Only */}
+          {config.canViewTables && config.role === "venue" && (
+            <TabsContent value="tables" className="space-y-4">
+              {/* Booking Mode Selector */}
+              <Card>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-primary">Table Booking Mode</h3>
+                    <p className="text-sm text-secondary mt-1">
+                      Control how guests can request table bookings for this event.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={bookingMode}
+                      onChange={async (e) => {
+                        const newMode = e.target.value as "disabled" | "promoter_only" | "direct";
+                        if (!event) return;
+                        setSavingBookingMode(true);
+                        try {
+                          const response = await fetch(config.eventApiEndpoint, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ table_booking_mode: newMode }),
+                          });
+                          if (response.ok) {
+                            setBookingMode(newMode);
+                            toast.success("Booking mode updated");
+                          } else {
+                            const errorData = await response.json();
+                            toast.error(errorData.error || "Failed to update booking mode");
+                          }
+                        } catch (error) {
+                          toast.error("Failed to update booking mode");
+                        } finally {
+                          setSavingBookingMode(false);
+                        }
+                      }}
+                      disabled={savingBookingMode}
+                      className="px-3 py-2 bg-surface border border-border rounded-lg text-primary min-w-[200px]"
+                    >
+                      <option value="disabled">Disabled - Tables hidden</option>
+                      <option value="promoter_only">Promoter Only - Via referral links</option>
+                      <option value="direct">Direct - Anyone can request</option>
+                    </select>
+                    {savingBookingMode && <InlineSpinner />}
+                  </div>
+                </div>
+                {bookingMode !== "disabled" && (
+                  <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <p className="text-sm text-blue-400">
+                      {bookingMode === "promoter_only"
+                        ? "Tables will only be shown to guests who arrive via a promoter's referral link."
+                        : "Tables will be visible to all guests on the event page. Anyone can request a booking."}
+                    </p>
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold text-primary">Table Availability</h2>
+                    <p className="text-sm text-secondary mt-1">
+                      Configure which tables are available for this event and set per-event pricing overrides.
+                    </p>
+                  </div>
+                  {tableChanges.size > 0 && (
+                    <Button
+                      variant="primary"
+                      disabled={savingTables}
+                      onClick={async () => {
+                        if (!config.tablesApiEndpoint || !event) return;
+                        setSavingTables(true);
+                        try {
+                          const updates = Array.from(tableChanges.entries()).map(([tableId, changes]) => ({
+                            table_id: tableId,
+                            ...changes,
+                          }));
+                          const response = await fetch(
+                            config.tablesApiEndpoint.replace("[eventId]", event.id),
+                            {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ updates }),
+                            }
+                          );
+                          if (response.ok) {
+                            toast.success("Table availability saved");
+                            setTableChanges(new Map());
+                            // Reload tables data
+                            const reloadResponse = await fetch(config.tablesApiEndpoint.replace("[eventId]", event.id));
+                            if (reloadResponse.ok) {
+                              const data = await reloadResponse.json();
+                              setEventTablesData(data.groupedByZone || []);
+                              if (data.currency) {
+                                setTablesCurrency(data.currency);
+                              }
+                            }
+                          } else {
+                            const errorData = await response.json();
+                            toast.error(errorData.error || "Failed to save");
+                          }
+                        } catch (error) {
+                          toast.error("Failed to save table availability");
+                        } finally {
+                          setSavingTables(false);
+                        }
+                      }}
+                    >
+                      {savingTables ? <InlineSpinner className="mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                      Save Changes ({tableChanges.size})
+                    </Button>
+                  )}
+                </div>
+
+                {loadingTables ? (
+                  <div className="flex items-center justify-center py-12">
+                    <LoadingSpinner />
+                  </div>
+                ) : eventTablesData.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Layers className="h-12 w-12 text-muted mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-primary mb-2">No Tables Configured</h3>
+                    <p className="text-secondary mb-4">
+                      Set up your venue's table inventory in the Tables management page.
+                    </p>
+                    <Link href="/app/venue/tables">
+                      <Button variant="secondary">
+                        <Layers className="h-4 w-4 mr-2" />
+                        Manage Tables
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {eventTablesData.map((zoneGroup) => {
+                      const getTableState = (table: EventTableData) => {
+                        const changes = tableChanges.get(table.id);
+                        if (changes) return changes;
+                        return {
+                          is_available: table.availability?.is_available ?? true,
+                          override_minimum_spend: table.availability?.override_minimum_spend ?? null,
+                          override_deposit: table.availability?.override_deposit ?? null,
+                          notes: table.availability?.notes ?? null,
+                        };
+                      };
+
+                      const updateTable = (tableId: string, field: string, value: any) => {
+                        const table = eventTablesData.flatMap(z => z.tables).find(t => t.id === tableId);
+                        if (!table) return;
+
+                        const currentState = getTableState(table);
+                        const newState = { ...currentState, [field]: value };
+
+                        // Check if this is back to the original state
+                        const originalState = {
+                          is_available: table.availability?.is_available ?? true,
+                          override_minimum_spend: table.availability?.override_minimum_spend ?? null,
+                          override_deposit: table.availability?.override_deposit ?? null,
+                          notes: table.availability?.notes ?? null,
+                        };
+
+                        const isUnchanged =
+                          newState.is_available === originalState.is_available &&
+                          newState.override_minimum_spend === originalState.override_minimum_spend &&
+                          newState.override_deposit === originalState.override_deposit &&
+                          newState.notes === originalState.notes;
+
+                        setTableChanges((prev) => {
+                          const next = new Map(prev);
+                          if (isUnchanged) {
+                            next.delete(tableId);
+                          } else {
+                            next.set(tableId, newState);
+                          }
+                          return next;
+                        });
+                      };
+
+                      return (
+                        <div key={zoneGroup.zone.id} className="border border-border rounded-lg overflow-hidden">
+                          <div className="bg-glass/50 px-4 py-3 border-b border-border">
+                            <h3 className="font-semibold text-primary">{zoneGroup.zone.name}</h3>
+                          </div>
+                          <div className="divide-y divide-border">
+                            {zoneGroup.tables.map((table) => {
+                              const state = getTableState(table);
+                              const hasChanges = tableChanges.has(table.id);
+
+                              return (
+                                <div
+                                  key={table.id}
+                                  className={`px-4 py-3 ${hasChanges ? "bg-accent-primary/5" : ""}`}
+                                >
+                                  <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-primary">{table.name}</span>
+                                        <Badge variant="outline" className="text-xs">
+                                          {table.capacity} seats
+                                        </Badge>
+                                        {hasChanges && (
+                                          <Badge variant="secondary" className="text-xs bg-accent-primary/20">
+                                            Modified
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <div className="text-sm text-secondary mt-1">
+                                        Default: {table.minimum_spend ? `${getCurrencySymbol(tablesCurrency)}${table.minimum_spend} min` : "No minimum"}
+                                        {table.deposit_amount ? ` / ${getCurrencySymbol(tablesCurrency)}${table.deposit_amount} deposit` : ""}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant={state.is_available ? "primary" : "ghost"}
+                                        size="sm"
+                                        onClick={() => updateTable(table.id, "is_available", !state.is_available)}
+                                      >
+                                        {state.is_available ? (
+                                          <>
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Available
+                                          </>
+                                        ) : (
+                                          <>
+                                            <X className="h-4 w-4 mr-1" />
+                                            Unavailable
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Override Fields */}
+                                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                      <label className="text-xs text-secondary block mb-1">
+                                        Min Spend Override
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        placeholder={table.minimum_spend ? `${getCurrencySymbol(tablesCurrency)}${table.minimum_spend}` : "No minimum"}
+                                        value={state.override_minimum_spend ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateTable(table.id, "override_minimum_spend", val);
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-secondary block mb-1">
+                                        Deposit Override
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        placeholder={table.deposit_amount ? `${getCurrencySymbol(tablesCurrency)}${table.deposit_amount}` : "No deposit"}
+                                        value={state.override_deposit ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value ? parseFloat(e.target.value) : null;
+                                          updateTable(table.id, "override_deposit", val);
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-secondary block mb-1">
+                                        Notes
+                                      </label>
+                                      <Input
+                                        type="text"
+                                        placeholder="e.g., Reserved for Smith party"
+                                        value={state.notes ?? ""}
+                                        onChange={(e) => {
+                                          const val = e.target.value || null;
+                                          updateTable(table.id, "notes", val);
+                                        }}
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Bookings Tab - Venue Only */}
+          {config.canViewBookings && config.role === "venue" && (
+            <TabsContent value="bookings" className="space-y-4">
+              <Card>
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold text-primary">Table Bookings</h2>
+                  <p className="text-sm text-secondary mt-1">
+                    Manage table booking requests for this event.
+                  </p>
+                </div>
+                <BookingsTab eventId={event.id} />
+              </Card>
             </TabsContent>
           )}
         </Tabs>

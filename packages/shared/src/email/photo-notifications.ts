@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createServiceRoleClient } from "../supabase/server";
 import { sendTemplateEmail } from "./template-renderer";
 
 interface PhotosLiveEmailOptions {

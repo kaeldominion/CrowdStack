@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { userHasRoleOrSuperadmin, getUserId } from "@/lib/auth/check-role";
+import { maskEmail, maskPhone } from "@/lib/data/mask-pii";
 
 export type ReferralSource = "direct" | "venue" | "organizer" | "promoter" | "user_referral";
 
@@ -315,6 +316,17 @@ export async function GET(
         is_global_vip: globalVipSet.has(reg.attendee_id),
       };
     });
+
+    // PRIVACY PROTECTION: Mask contact data for all non-superadmin users
+    // CrowdStack protects attendee privacy - venues and organizers cannot bulk extract contact lists
+    // Only superadmins can access raw contact data
+    if (!isSuperadmin) {
+      attendees = attendees.map(a => ({
+        ...a,
+        email: a.email ? maskEmail(a.email) : null,
+        phone: a.phone ? maskPhone(a.phone) : null,
+      }));
+    }
 
     // For promoters, filter to only their referrals
     if (isPromoter && userPromoterId && !isSuperadmin && !isVenueAdmin && !isOrganizer) {

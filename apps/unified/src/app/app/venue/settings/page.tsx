@@ -7,7 +7,9 @@ import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent
 import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin } from "lucide-react";
 import Image from "next/image";
 import { MapPreview } from "@/components/venue/MapPreview";
+import { VenuePaymentSettings } from "@/components/VenuePaymentSettings";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
+import { CURRENCIES } from "@/lib/constants/currencies";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 
 interface VenueSettingsData {
@@ -443,6 +445,7 @@ export default function VenueSettingsPage() {
           <TabsTrigger value="tags">Tags</TabsTrigger>
           <TabsTrigger value="policies">Policies</TabsTrigger>
           <TabsTrigger value="defaults">Defaults</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -513,6 +516,27 @@ export default function VenueSettingsPage() {
                   value={data.venue.email || ""}
                   onChange={(e) => updateVenueField("email", e.target.value)}
                 />
+              </div>
+
+              {/* Currency Selection */}
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">
+                  Base Currency
+                </label>
+                <p className="text-xs text-secondary mb-2">
+                  Used for table pricing, minimum spends, and deposits. Events can override this.
+                </p>
+                <select
+                  value={data.venue.currency || "USD"}
+                  onChange={(e) => updateVenueField("currency", e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 bg-glass border border-border rounded-lg text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary"
+                >
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.code} ({currency.symbol}) - {currency.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {errors.save && <p className="text-accent-error text-sm">{errors.save}</p>}
@@ -1122,6 +1146,13 @@ export default function VenueSettingsPage() {
                 )}
               </div>
             </div>
+          </Card>
+        </TabsContent>
+
+        {/* Payments Tab */}
+        <TabsContent value="payments">
+          <Card>
+            <VenuePaymentSettings />
           </Card>
         </TabsContent>
       </Tabs>

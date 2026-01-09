@@ -34,6 +34,7 @@ import {
   Merge,
   Palette,
   QrCode,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -79,6 +80,8 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
   {
     title: "Manage",
     items: [
+      { href: "/app/venue/insights", label: "Insights", icon: TrendingUp },
+      { href: "/app/venue/tables", label: "Tables", icon: Layers },
       { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Ticket },
       { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
       { href: "/app/venue/qr-codes", label: "QR Codes", icon: QrCode },
@@ -118,6 +121,7 @@ const ORGANIZER_SIDEBAR_ITEMS: SidebarSection[] = [
   {
     title: "Tools",
     items: [
+      { href: "/app/organizer/insights", label: "Insights", icon: TrendingUp },
       { href: "/app/organizer/qr-codes", label: "QR Codes", icon: QrCode },
       { href: "/app/organizer/settings", label: "Settings", icon: Settings },
     ],

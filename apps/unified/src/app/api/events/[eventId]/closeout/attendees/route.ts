@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId } from "@/lib/auth/check-role";
+import { maskEmail, maskPhone } from "@/lib/data/mask-pii";
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,8 @@ export async function GET(
 
     let hasAccess = isSuperadmin;
 
+    // PRIVACY PROTECTION: Only organizers and superadmins can access individual attendee data
+    // Venues should use aggregated insights instead - they cannot export raw contact lists
     if (!hasAccess) {
       // Check if user is organizer creator
       const { data: organizerCreator } = await serviceSupabase
@@ -79,33 +82,8 @@ export async function GET(
         }
       }
 
-      // Check if user is venue creator
-      if (!hasAccess && event.venue_id) {
-        const { data: venueCreator } = await serviceSupabase
-          .from("venues")
-          .select("id")
-          .eq("id", event.venue_id)
-          .eq("created_by", userId)
-          .single();
-
-        if (venueCreator) {
-          hasAccess = true;
-        }
-      }
-
-      // Check if user is venue team member
-      if (!hasAccess && event.venue_id) {
-        const { data: venueUser } = await serviceSupabase
-          .from("venue_users")
-          .select("id")
-          .eq("venue_id", event.venue_id)
-          .eq("user_id", userId)
-          .single();
-
-        if (venueUser) {
-          hasAccess = true;
-        }
-      }
+      // NOTE: Venue access intentionally removed to protect attendee privacy
+      // Venues cannot access individual attendee contact data from closeout
     }
 
     if (!hasAccess) {
@@ -141,16 +119,21 @@ export async function GET(
       throw checkinsError;
     }
 
-    // Format the response
+    // Format the response with privacy protection
+    // PRIVACY PROTECTION: Mask contact data for all non-superadmin users
+    // Organizers can see who checked in (for payout verification) but not raw contact info
     const attendees = (checkins || []).map((checkin: any) => {
       const reg = checkin.registration;
       const attendee = Array.isArray(reg?.attendee) ? reg.attendee[0] : reg?.attendee;
+      const rawEmail = attendee?.email || null;
+      const rawPhone = attendee?.phone || null;
+
       return {
         registration_id: reg?.id || null,
         attendee_id: attendee?.id || null,
         name: attendee?.name || "Unknown",
-        email: attendee?.email || null,
-        phone: attendee?.phone || null,
+        email: isSuperadmin ? rawEmail : maskEmail(rawEmail),
+        phone: isSuperadmin ? rawPhone : maskPhone(rawPhone),
         checked_in_at: checkin.checked_in_at,
       };
     });

@@ -25,6 +25,7 @@ import { CalendarButtons } from "@/components/CalendarButtons";
 import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
 import { useReferralUserId } from "@/components/ReferralTracker";
 import { EventLineup } from "@/components/EventLineup";
+import { TableBookingSection } from "@/components/TableBookingSection";
 
 // Helper to construct Google Maps URL from address
 function getGoogleMapsUrl(venue: any): string | null {
@@ -432,7 +433,14 @@ export function EventPageContent({
             eventId={event.id}
             eventName={event.name}
           />
-          
+
+          {/* Table Booking */}
+          <TableBookingSection
+            eventId={event.id}
+            eventName={event.name}
+            refCode={searchParams?.get("ref")}
+          />
+
           {/* Promoter Request */}
           <PromoterRequestButton eventId={event.id} eventSlug={params.eventSlug} />
         </div>
@@ -642,15 +650,22 @@ export function EventPageContent({
 
             {/* Event Lineup */}
             <EventLineup eventId={event.id} />
-            
+
             {/* Photo Gallery */}
             <PhotoGalleryPreview
               eventSlug={params.eventSlug}
               eventId={event.id}
               eventName={event.name}
             />
+
+            {/* Table Booking */}
+            <TableBookingSection
+              eventId={event.id}
+              eventName={event.name}
+              refCode={searchParams?.get("ref")}
+            />
           </div>
-          
+
           {/* Right Column - Actions */}
           <div className="lg:col-span-3">
             <div className="sticky top-24 space-y-4">
