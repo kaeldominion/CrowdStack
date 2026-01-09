@@ -618,31 +618,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         const data = await response.json();
         console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
 
-        // Auto-update status to "ended" if event time has passed
-        // Events remain visible to users (published/ended are both shown on public pages)
-        const eventData = data.event;
-        if (eventData.status === "published") {
-          const now = new Date();
-          const endTime = eventData.end_time ? new Date(eventData.end_time) : null;
-          const startTime = eventData.start_time ? new Date(eventData.start_time) : null;
-
-          // Event is considered ended if end_time passed, or if no end_time and start_time + 6 hours passed
-          const eventEndedTime = endTime || (startTime ? new Date(startTime.getTime() + 6 * 60 * 60 * 1000) : null);
-
-          if (eventEndedTime && now > eventEndedTime) {
-            // Update status to ended in the database
-            fetch(config.eventApiEndpoint, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "ended" }),
-            }).catch((err) => console.error("Failed to auto-update event status to ended:", err));
-
-            // Update local state immediately
-            eventData.status = "ended";
-          }
-        }
-
-        setEvent(eventData);
+        // Status stays as published/draft - "ended" is determined by date, not status
+        setEvent(data.event);
         // Load event tags
         loadEventTags();
         // Set organizer ID for organizer role (for their own referral link)
@@ -1539,14 +1516,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           )}
           {config.canPublish && event && (() => {
             const needsVenueApproval = event.venue_id && event.venue_approval_status !== "approved";
-            const status = event.status || "draft";
-            const isPublished = status === "published";
-            const isEnded = status === "ended";
-
-            // Ended events are past events - don't show publish/unpublish controls
-            if (isEnded) {
-              return null;
-            }
+            const isPublished = (event.status || "draft") === "published";
 
             if (isPublished) {
               return (
