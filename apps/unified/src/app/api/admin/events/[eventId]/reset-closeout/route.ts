@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserId, userHasRole } from "@/lib/auth/check-role";
+import { getUserId } from "@/lib/auth/check-role";
 
 /**
  * POST /api/admin/events/[eventId]/reset-closeout
@@ -19,13 +19,18 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const serviceSupabase = createServiceRoleClient();
+
     // Only superadmins can reset closeouts
-    const isSuperadmin = await userHasRole("superadmin");
+    const { data: userRoles } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    const isSuperadmin = userRoles?.some(r => r.role === "superadmin");
     if (!isSuperadmin) {
       return NextResponse.json({ error: "Forbidden - Superadmin only" }, { status: 403 });
     }
-
-    const serviceSupabase = createServiceRoleClient();
     const eventId = params.eventId;
 
     // Get current event state
