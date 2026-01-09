@@ -36,6 +36,7 @@ interface Promoter {
   name: string;
   email: string | null;
   phone: string | null;
+  slug: string | null;
   created_at: string;
   events_count: number;
   referrals_count: number;

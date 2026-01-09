@@ -62,7 +62,7 @@ export async function GET() {
     // Get promoter details
     const { data: promoters, error: promotersError } = await serviceSupabase
       .from("promoters")
-      .select("id, name, email, phone, created_at")
+      .select("id, name, email, phone, slug, created_at")
       .in("id", promoterIds)
       .order("name", { ascending: true });
 

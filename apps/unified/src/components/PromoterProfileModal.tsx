@@ -1,6 +1,7 @@
 "use client";
 
-import { Modal, Badge } from "@crowdstack/ui";
+import Link from "next/link";
+import { Modal, Badge, Button } from "@crowdstack/ui";
 import {
   Users,
   Mail,
@@ -9,6 +10,7 @@ import {
   Ticket,
   TrendingUp,
   Info,
+  ExternalLink,
 } from "lucide-react";
 
 interface Promoter {
@@ -16,6 +18,7 @@ interface Promoter {
   name: string;
   email: string | null;
   phone: string | null;
+  slug: string | null;
   created_at: string;
   events_count: number;
   referrals_count: number;
@@ -63,6 +66,16 @@ export function PromoterProfileModal({
               <Users className="h-6 w-6" />
               {promoter.name}
             </h2>
+            {promoter.slug && (
+              <Link
+                href={`/promoter/${promoter.slug}`}
+                target="_blank"
+                className="inline-flex items-center gap-1 mt-2 text-sm text-purple-400 hover:text-purple-300"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                View Public Profile
+              </Link>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             {promoter.has_direct_assignment && (
