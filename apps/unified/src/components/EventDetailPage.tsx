@@ -1539,8 +1539,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           )}
           {config.canPublish && event && (() => {
             const needsVenueApproval = event.venue_id && event.venue_approval_status !== "approved";
-            const isPublished = (event.status || "draft") === "published";
-            
+            const status = event.status || "draft";
+            const isPublished = status === "published";
+            const isEnded = status === "ended";
+
+            // Ended events are past events - don't show publish/unpublish controls
+            if (isEnded) {
+              return null;
+            }
+
             if (isPublished) {
               return (
                 <Button
