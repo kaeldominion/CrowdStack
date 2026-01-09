@@ -113,36 +113,45 @@ export async function GET(
     }
 
     // Get checked-in attendees referred by this promoter
+    // Query from checkins table (not registrations.checked_in) to get accurate data
     const { data: checkins, error: checkinsError } = await serviceSupabase
-      .from("registrations")
+      .from("checkins")
       .select(`
         id,
-        checked_in,
-        attendee:attendees(
+        checked_in_at,
+        checked_in_by,
+        registration:registrations!inner(
           id,
-          name,
-          email,
-          phone
+          event_id,
+          referral_promoter_id,
+          attendee:attendees(
+            id,
+            name,
+            email,
+            phone
+          )
         )
       `)
-      .eq("event_id", params.eventId)
-      .eq("referral_promoter_id", promoterId)
-      .eq("checked_in", true)
-      .order("created_at", { ascending: false });
+      .eq("registration.event_id", params.eventId)
+      .eq("registration.referral_promoter_id", promoterId)
+      .is("undo_at", null)
+      .order("checked_in_at", { ascending: false });
 
     if (checkinsError) {
       throw checkinsError;
     }
 
     // Format the response
-    const attendees = (checkins || []).map((reg: any) => {
-      const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
+    const attendees = (checkins || []).map((checkin: any) => {
+      const reg = checkin.registration;
+      const attendee = Array.isArray(reg?.attendee) ? reg.attendee[0] : reg?.attendee;
       return {
-        registration_id: reg.id,
+        registration_id: reg?.id || null,
         attendee_id: attendee?.id || null,
         name: attendee?.name || "Unknown",
         email: attendee?.email || null,
         phone: attendee?.phone || null,
+        checked_in_at: checkin.checked_in_at,
       };
     });
 

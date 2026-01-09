@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, Button, Input, Modal } from "@crowdstack/ui";
-import { Eye, Edit2, X, Users } from "lucide-react";
+import { Eye, Edit2, Users, Clock } from "lucide-react";
 import type { CloseoutSummary } from "@crowdstack/shared/types";
 
 interface Attendee {
@@ -11,6 +11,7 @@ interface Attendee {
   name: string;
   email: string | null;
   phone: string | null;
+  checked_in_at: string;
 }
 
 interface CheckinConfirmStepProps {
@@ -321,19 +322,32 @@ export function CheckinConfirmStep({
                     key={attendee.registration_id}
                     className="p-3 rounded-lg bg-active/50 border border-border-subtle"
                   >
-                    <div className="font-medium text-primary">
-                      {attendee.name}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-primary">
+                          {attendee.name}
+                        </div>
+                        {attendee.email && (
+                          <div className="text-xs text-secondary mt-1 truncate">
+                            {attendee.email}
+                          </div>
+                        )}
+                        {attendee.phone && (
+                          <div className="text-xs text-secondary">
+                            {attendee.phone}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-secondary whitespace-nowrap">
+                        <Clock className="h-3 w-3" />
+                        {new Date(attendee.checked_in_at).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
                     </div>
-                    {attendee.email && (
-                      <div className="text-xs text-secondary mt-1">
-                        {attendee.email}
-                      </div>
-                    )}
-                    {attendee.phone && (
-                      <div className="text-xs text-secondary">
-                        {attendee.phone}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
