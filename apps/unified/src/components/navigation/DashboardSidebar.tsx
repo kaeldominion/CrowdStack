@@ -100,7 +100,6 @@ const ORGANIZER_SIDEBAR_ITEMS: SidebarSection[] = [
     items: [
       { href: "/app/organizer/events", label: "My Events", icon: Calendar },
       { href: "/app/organizer/events/new", label: "Create Event", icon: Calendar },
-      { href: "/app/organizer/gigs", label: "DJ Gigs", icon: Music },
     ],
   },
   {
