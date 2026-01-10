@@ -1499,9 +1499,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     // Promoter filter
     if (promoterFilter !== "all" && attendee.promoter_id !== promoterFilter) return false;
     
-    // VIP filter
+    // VIP filter - includes all VIP types
     if (vipFilter !== undefined) {
-      const isVip = attendee.is_organizer_vip || attendee.is_global_vip;
+      const isVip = attendee.is_organizer_vip || attendee.is_global_vip || attendee.is_event_vip;
       if (vipFilter !== isVip) return false;
     }
     
