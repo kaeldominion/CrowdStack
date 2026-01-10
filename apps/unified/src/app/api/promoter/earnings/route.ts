@@ -57,6 +57,7 @@ export async function GET() {
     const serviceSupabase = createServiceRoleClient();
 
     // Get all events this promoter is assigned to with full contract fields
+    // Include venue for currency fallback
     const { data: eventPromoters } = await serviceSupabase
       .from("event_promoters")
       .select(`
@@ -80,7 +81,8 @@ export async function GET() {
           start_time,
           status,
           closed_at,
-          currency
+          currency,
+          venue:venues(currency)
         )
       `)
       .eq("promoter_id", promoterId)
@@ -133,7 +135,12 @@ export async function GET() {
       const event = Array.isArray(ep.events) ? ep.events[0] : ep.events;
       if (!event) continue;
 
-      const currency = ep.currency || event.currency || "USD";
+      // Get venue from event (handle Supabase nested relation types)
+      const venue = (event as any).venue;
+      const venueCurrency = Array.isArray(venue) ? venue[0]?.currency : venue?.currency;
+
+      // Currency fallback: event_promoters > event > venue > IDR (default for Bali)
+      const currency = ep.currency || event.currency || venueCurrency || "IDR";
       const payoutLine = payoutByEvent[event.id];
 
       // Initialize currency in summary if needed

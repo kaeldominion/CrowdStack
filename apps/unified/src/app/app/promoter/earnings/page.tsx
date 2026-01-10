@@ -151,84 +151,109 @@ export default function PromoterEarningsPage() {
         <p className="text-secondary mt-1">Track your commission payments across all events</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="!p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Total Earnings</p>
-              <p className="text-2xl font-bold text-primary font-mono">
-                {formatCurrency(summary.total, primaryCurrency)}
-              </p>
+      {/* Summary Cards - Show per-currency when multiple currencies exist */}
+      {Object.keys(summary.by_currency).length <= 1 ? (
+        // Single currency - show simple summary
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="!p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Total Earnings</p>
+                <p className="text-2xl font-bold text-primary font-mono">
+                  {formatCurrency(summary.total, primaryCurrency)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-accent-primary" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-accent-primary" />
-            </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="!p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Paid</p>
-              <p className="text-2xl font-bold text-accent-success font-mono">
-                {formatCurrency(summary.confirmed, primaryCurrency)}
-              </p>
+          <Card className="!p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Paid</p>
+                <p className="text-2xl font-bold text-accent-success font-mono">
+                  {formatCurrency(summary.confirmed, primaryCurrency)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-accent-success/10 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-accent-success" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-accent-success/10 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-accent-success" />
-            </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="!p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Pending</p>
-              <p className="text-2xl font-bold text-accent-warning font-mono">
-                {formatCurrency(summary.pending, primaryCurrency)}
-              </p>
+          <Card className="!p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Pending</p>
+                <p className="text-2xl font-bold text-accent-warning font-mono">
+                  {formatCurrency(summary.pending, primaryCurrency)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-accent-warning/10 flex items-center justify-center">
+                <Clock className="h-5 w-5 text-accent-warning" />
+              </div>
             </div>
-            <div className="w-10 h-10 rounded-lg bg-accent-warning/10 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-accent-warning" />
-            </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="!p-4">
+          <Card className="!p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Estimated</p>
+                <p className="text-2xl font-bold text-blue-400 font-mono">
+                  {formatCurrency(summary.estimated, primaryCurrency)}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-blue-400" />
+              </div>
+            </div>
+          </Card>
+        </div>
+      ) : (
+        // Multiple currencies - show breakdown by currency
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-secondary font-medium mb-1">Estimated</p>
-              <p className="text-2xl font-bold text-blue-400 font-mono">
-                {formatCurrency(summary.estimated, primaryCurrency)}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-blue-400" />
-            </div>
+            <h3 className="text-sm font-bold text-primary">Earnings by Currency</h3>
+            <p className="text-xs text-secondary">{events.length} events across {Object.keys(summary.by_currency).length} currencies</p>
           </div>
-        </Card>
-      </div>
-
-      {/* Multi-currency breakdown if applicable */}
-      {Object.keys(summary.by_currency).length > 1 && (
-        <Card className="!p-4">
-          <h3 className="text-sm font-bold text-primary mb-3">Earnings by Currency</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(summary.by_currency).map(([currency, amounts]) => (
-              <div key={currency} className="p-3 bg-raised rounded-lg">
-                <p className="text-xs text-secondary mb-1">{currency}</p>
-                <p className="text-lg font-bold font-mono text-primary">
+              <Card key={currency} className="!p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-lg font-bold text-primary">{currency}</span>
+                  <div className="w-8 h-8 rounded-lg bg-accent-primary/10 flex items-center justify-center">
+                    <DollarSign className="h-4 w-4 text-accent-primary" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-primary font-mono mb-3">
                   {formatCurrency(amounts.total, currency)}
                 </p>
-                <div className="flex gap-2 mt-1 text-[10px]">
-                  <span className="text-accent-success">✓ {formatCurrency(amounts.confirmed, currency)}</span>
-                  <span className="text-accent-warning">⏳ {formatCurrency(amounts.pending, currency)}</span>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-secondary mb-0.5">Paid</p>
+                    <p className="font-mono font-medium text-accent-success">
+                      {formatCurrency(amounts.confirmed, currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-secondary mb-0.5">Pending</p>
+                    <p className="font-mono font-medium text-accent-warning">
+                      {formatCurrency(amounts.pending, currency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-secondary mb-0.5">Estimated</p>
+                    <p className="font-mono font-medium text-blue-400">
+                      {formatCurrency(amounts.estimated, currency)}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Filter Tabs */}
