@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine, Mail } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -155,6 +155,12 @@ export default function AdminDashboardPage() {
       href: "/admin/tools/brand-assets",
       description: "Download logos, icons, and brand materials",
       icon: <Download className="h-6 w-6" />,
+    },
+    {
+      name: "Email Signature Generator",
+      href: "/admin/tools/email-signature",
+      description: "Create professional email signatures for your team",
+      icon: <Mail className="h-6 w-6" />,
     },
     {
       name: "XP Ledger",

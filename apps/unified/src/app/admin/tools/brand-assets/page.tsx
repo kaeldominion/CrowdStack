@@ -330,7 +330,7 @@ export default function BrandAssetsPage() {
               <div className="flex justify-between items-end">
                 <div>
                   <h3 className="text-primary font-bold">Tri-Color</h3>
-                  <p className="text-[10px] text-secondary uppercase tracking-widest">Icon</p>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">Dark BG</p>
                 </div>
                 <Button
                   size="sm"
@@ -342,6 +342,34 @@ export default function BrandAssetsPage() {
               </div>
             </Card>
 
+            {/* Tri-Color Inverted on White (for Light Backgrounds) */}
+            <Card className="!p-6">
+              <div className="w-full aspect-square bg-white rounded-xl border border-border-subtle flex items-center justify-center mb-4">
+                <CrowdStackLogo color="tricolor-inverted" className="w-24 h-24" />
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-primary font-bold">Tri-Color</h3>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">Light BG</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="!bg-gradient-to-r !from-purple-500 !to-blue-500"
+                  onClick={() => downloadLogo("tricolor-inverted", "white")}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Light Background Icons */}
+        <div className="mb-12">
+          <h2 className="text-sm font-bold text-secondary uppercase tracking-widest mb-6 pb-4 border-b border-border-subtle">
+            Light Background Icons
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Black on White */}
             <Card className="!p-6">
               <div className="w-full aspect-square bg-white rounded-xl border border-border-subtle flex items-center justify-center mb-4">
@@ -410,7 +438,7 @@ export default function BrandAssetsPage() {
               </div>
             </Card>
 
-            {/* Tri-Color Transparent */}
+            {/* Tri-Color Transparent (Dark BG) */}
             <Card className="!p-6">
               <CheckeredBg className="w-full aspect-square rounded-xl border border-border-subtle mb-4 bg-[#1a1a1a]">
                 <CrowdStackLogo color="tricolor" className="w-24 h-24" />
@@ -418,12 +446,32 @@ export default function BrandAssetsPage() {
               <div className="flex justify-between items-end">
                 <div>
                   <h3 className="text-primary font-bold">Tri-Color</h3>
-                  <p className="text-[10px] text-secondary uppercase tracking-widest">Transparent</p>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">Dark BG</p>
                 </div>
                 <Button
                   size="sm"
                   className="!bg-gradient-to-r !from-purple-500 !to-blue-500"
                   onClick={() => downloadLogo("tricolor", "transparent")}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+
+            {/* Tri-Color Inverted Transparent (Light BG) */}
+            <Card className="!p-6">
+              <CheckeredBg className="w-full aspect-square rounded-xl border border-border-subtle mb-4 bg-slate-200">
+                <CrowdStackLogo color="tricolor-inverted" className="w-24 h-24" />
+              </CheckeredBg>
+              <div className="flex justify-between items-end">
+                <div>
+                  <h3 className="text-primary font-bold">Tri-Color</h3>
+                  <p className="text-[10px] text-secondary uppercase tracking-widest">Light BG</p>
+                </div>
+                <Button
+                  size="sm"
+                  className="!bg-gradient-to-r !from-purple-500 !to-blue-500"
+                  onClick={() => downloadLogo("tricolor-inverted", "transparent")}
                 >
                   <Download className="w-4 h-4" />
                 </Button>
