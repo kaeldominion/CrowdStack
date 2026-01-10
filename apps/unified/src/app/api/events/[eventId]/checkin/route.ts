@@ -207,6 +207,94 @@ export async function POST(
     const attendeeName = attendee?.name || "Unknown Attendee";
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
 
+    // Fetch VIP status for this attendee
+    let vipStatus = {
+      isVip: false,
+      isGlobalVip: false,
+      isVenueVip: false,
+      isOrganizerVip: false,
+      isEventVip: false,
+      vipReasons: [] as string[],
+    };
+
+    try {
+      // Get event info for venue_id and organizer_id
+      const { data: eventInfo } = await serviceSupabase
+        .from("events")
+        .select("venue_id, organizer_id")
+        .eq("id", eventId)
+        .single();
+
+      const attendeeId = registration.attendee_id;
+
+      // Check global VIP
+      const { data: attendeeData } = await serviceSupabase
+        .from("attendees")
+        .select("is_global_vip, global_vip_reason")
+        .eq("id", attendeeId)
+        .single();
+
+      if (attendeeData?.is_global_vip) {
+        vipStatus.isGlobalVip = true;
+        vipStatus.isVip = true;
+        if (attendeeData.global_vip_reason) {
+          vipStatus.vipReasons.push(`Global VIP: ${attendeeData.global_vip_reason}`);
+        } else {
+          vipStatus.vipReasons.push("Global VIP");
+        }
+      }
+
+      // Check venue VIP
+      if (eventInfo?.venue_id) {
+        const { data: venueVip } = await serviceSupabase
+          .from("venue_vips")
+          .select("reason")
+          .eq("venue_id", eventInfo.venue_id)
+          .eq("attendee_id", attendeeId)
+          .maybeSingle();
+
+        if (venueVip) {
+          vipStatus.isVenueVip = true;
+          vipStatus.isVip = true;
+          vipStatus.vipReasons.push(venueVip.reason ? `Venue VIP: ${venueVip.reason}` : "Venue VIP");
+        }
+      }
+
+      // Check organizer VIP
+      if (eventInfo?.organizer_id) {
+        const { data: organizerVip } = await serviceSupabase
+          .from("organizer_vips")
+          .select("reason")
+          .eq("organizer_id", eventInfo.organizer_id)
+          .eq("attendee_id", attendeeId)
+          .maybeSingle();
+
+        if (organizerVip) {
+          vipStatus.isOrganizerVip = true;
+          vipStatus.isVip = true;
+          vipStatus.vipReasons.push(organizerVip.reason ? `Organizer VIP: ${organizerVip.reason}` : "Organizer VIP");
+        }
+      }
+
+      // Check event-specific VIP (stored on registration)
+      const { data: regVipData } = await serviceSupabase
+        .from("registrations")
+        .select("is_event_vip, event_vip_reason")
+        .eq("id", registrationId)
+        .single();
+
+      if (regVipData?.is_event_vip) {
+        vipStatus.isEventVip = true;
+        vipStatus.isVip = true;
+        vipStatus.vipReasons.push(regVipData.event_vip_reason ? `Event VIP: ${regVipData.event_vip_reason}` : "Event VIP");
+      }
+
+      console.log(`[Check-in API] VIP status for ${attendeeName}:`, vipStatus);
+    } catch (vipError) {
+      console.warn(`[Check-in API] Error fetching VIP status:`, vipError);
+      // Continue without VIP info - non-critical
+    }
+
     // Check if already checked in (idempotent)
     // Use upsert to handle race conditions gracefully
     const { data: existingCheckin } = await serviceSupabase
@@ -458,7 +546,8 @@ export async function POST(
       attendee_id: registration.attendee_id,
       registration_id: registrationId,
       attendee: attendee,
-      message: isDuplicate 
+      vip_status: vipStatus,
+      message: isDuplicate
         ? `${attendeeName} was already checked in`
         : `${attendeeName} checked in successfully`,
     });

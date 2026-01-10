@@ -1,58 +1,110 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
-import { Users, Search, Download, Plus, Upload, ExternalLink, User, Eye, Phone, Mail, Instagram, Calendar, MapPin, CheckCircle2, X, ChevronRight, Link as LinkIcon } from "lucide-react";
+import { Users, Search, Download, Plus, Upload, ExternalLink, User, Eye, Phone, Mail, Instagram, Calendar, MapPin, CheckCircle2, X, ChevronRight, Link as LinkIcon, Loader2 } from "lucide-react";
 import { AddAttendeeModal } from "@/components/AddAttendeeModal";
 import { ImportCSVModal } from "@/components/ImportCSVModal";
 import Link from "next/link";
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export default function AdminAttendeesPage() {
   const [attendees, setAttendees] = useState<any[]>([]);
-  const [filteredAttendees, setFilteredAttendees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedAttendee, setSelectedAttendee] = useState<any | null>(null);
   const [attendeeEvents, setAttendeeEvents] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadAttendees();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterAttendees();
-  }, [search, attendees]);
+    setAttendees([]);
+    setPagination(null);
+    setLoading(true);
+    loadAttendees(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadAttendees = async () => {
+  const loadAttendees = async (page: number = 1, searchQuery: string = "") => {
     try {
-      const response = await fetch("/api/admin/attendees");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/attendees?${params}`);
       if (!response.ok) throw new Error("Failed to load attendees");
       const data = await response.json();
-      setAttendees(data.attendees || []);
+
+      if (page === 1) {
+        setAttendees(data.attendees || []);
+      } else {
+        setAttendees(prev => [...prev, ...(data.attendees || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading attendees:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterAttendees = () => {
-    let filtered = [...attendees];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (a) =>
-          a.name?.toLowerCase().includes(searchLower) ||
-          a.email?.toLowerCase().includes(searchLower) ||
-          a.phone?.includes(search) ||
-          a.instagram_handle?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadAttendees(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    setFilteredAttendees(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   const loadAttendeeEvents = async (attendeeId: string) => {
     setLoadingEvents(true);
@@ -123,7 +175,8 @@ export default function AdminAttendeesPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredAttendees.length} of {attendees.length} attendees
+              Showing {attendees.length} of {pagination?.total || 0} attendees
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -143,14 +196,14 @@ export default function AdminAttendeesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAttendees.length === 0 ? (
+                  {attendees.length === 0 && !loading ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-secondary">
-                        No attendees found
+                        {debouncedSearch ? `No attendees found matching "${debouncedSearch}"` : "No attendees found"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredAttendees.map((attendee) => (
+                    attendees.map((attendee) => (
                       <TableRow 
                         key={attendee.id} 
                         hover
@@ -214,6 +267,29 @@ export default function AdminAttendeesPage() {
               </Table>
             </div>
           </Card>
+
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more attendees...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && attendees.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || attendees.length} attendees loaded
+              </p>
+            )}
+          </div>
 
           {/* Attendee Profile Modal */}
           <Modal
@@ -409,7 +485,10 @@ export default function AdminAttendeesPage() {
             isOpen={showAddModal}
             onClose={() => setShowAddModal(false)}
             onSuccess={() => {
-              loadAttendees();
+              setAttendees([]);
+              setPagination(null);
+              setLoading(true);
+              loadAttendees(1, debouncedSearch);
             }}
           />
 
@@ -417,7 +496,10 @@ export default function AdminAttendeesPage() {
             isOpen={showImportModal}
             onClose={() => setShowImportModal(false)}
             onSuccess={() => {
-              loadAttendees();
+              setAttendees([]);
+              setPagination(null);
+              setLoading(true);
+              loadAttendees(1, debouncedSearch);
             }}
           />
         </Container>

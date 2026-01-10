@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Input, Modal, Card, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, LoadingSpinner, InlineSpinner, VipStatus } from "@crowdstack/ui";
-import { 
-  QrCode, 
-  Search, 
-  UserPlus, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  QrCode,
+  Search,
+  UserPlus,
+  CheckCircle2,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   Camera,
   CameraOff,
@@ -23,10 +24,21 @@ import {
   ExternalLink,
   TrendingUp,
   UserCheck,
+  Crown,
+  Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
  import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
+
+interface VipStatus {
+  isVip: boolean;
+  isGlobalVip: boolean;
+  isVenueVip: boolean;
+  isOrganizerVip: boolean;
+  isEventVip: boolean;
+  vipReasons: string[];
+}
 
 interface CheckInResult {
   id: string;
@@ -36,6 +48,7 @@ interface CheckInResult {
   timestamp: string;
   attendee_id?: string;
   registration_id?: string;
+  vipStatus?: VipStatus;
 }
 
 interface EventInfo {
@@ -112,6 +125,9 @@ export default function DoorScannerPage() {
   // Quick add modal
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({ name: "", email: "", phone: "" });
+
+  // VIP acknowledgement modal
+  const [showVipAcknowledge, setShowVipAcknowledge] = useState(false);
   const [quickAddLoading, setQuickAddLoading] = useState(false);
   
   // QR code modal
@@ -273,13 +289,23 @@ export default function DoorScannerPage() {
           timestamp: new Date().toISOString(),
           attendee_id: data.attendee_id,
           registration_id: data.registration_id,
+          vipStatus: data.vip_status,
         };
         setLastCheckIn(result);
-        setFlashColor(data.duplicate ? null : "green");
-        setRecentScans((prev) => [result, ...prev].slice(0, 10));
-        if (!data.duplicate) {
+
+        // If VIP, show VIP acknowledgement modal instead of auto-dismissing
+        if (data.vip_status?.isVip) {
+          setShowVipAcknowledge(true);
+          setFlashColor("green"); // Still flash green for success
           setTimeout(() => setFlashColor(null), 500);
+        } else {
+          setFlashColor(data.duplicate ? null : "green");
+          if (!data.duplicate) {
+            setTimeout(() => setFlashColor(null), 500);
+          }
         }
+
+        setRecentScans((prev) => [result, ...prev].slice(0, 10));
         loadStats();
         setSearchQuery("");
         setSearchResults([]);
@@ -635,25 +661,70 @@ export default function DoorScannerPage() {
             exit={{ opacity: 0, y: 20 }}
           >
             <Card className={
-              lastCheckIn.status === "success"
+              lastCheckIn.vipStatus?.isVip
+                ? "border-amber-500/50 bg-amber-500/10 ring-2 ring-amber-500/30"
+                : lastCheckIn.status === "success"
                 ? "border-accent-success/30 bg-accent-success/5"
                 : lastCheckIn.status === "duplicate"
                 ? "border-accent-warning/30 bg-accent-warning/5"
                 : "border-accent-error/30 bg-accent-error/5"
             }>
+              {/* VIP Banner */}
+              {lastCheckIn.vipStatus?.isVip && (
+                <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-4 py-2 -mx-4 -mt-4 mb-4 rounded-t-lg flex items-center justify-center gap-2">
+                  <Crown className="h-5 w-5" />
+                  <span className="font-bold text-lg">VIP GUEST</span>
+                  <Crown className="h-5 w-5" />
+                </div>
+              )}
               <div className="flex items-center gap-3">
                 {getStatusBadge(lastCheckIn.status)}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-primary truncate">{lastCheckIn.name}</p>
+                  <p className={`font-semibold truncate ${lastCheckIn.vipStatus?.isVip ? 'text-xl text-amber-400' : 'text-primary'}`}>
+                    {lastCheckIn.name}
+                  </p>
                   <p className="text-sm text-secondary">{lastCheckIn.message}</p>
+                  {/* VIP Reasons */}
+                  {lastCheckIn.vipStatus?.isVip && lastCheckIn.vipStatus.vipReasons.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {lastCheckIn.vipStatus.vipReasons.map((reason, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-amber-300">
+                          <Star className="h-3 w-3 flex-shrink-0" />
+                          <span>{reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={() => setLastCheckIn(null)}
-                  className="p-1 text-muted hover:text-primary rounded"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                {!lastCheckIn.vipStatus?.isVip && (
+                  <button
+                    onClick={() => setLastCheckIn(null)}
+                    className="p-1 text-muted hover:text-primary rounded"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
+              {/* VIP Acknowledgement Button */}
+              {lastCheckIn.vipStatus?.isVip && showVipAcknowledge && (
+                <div className="mt-4 pt-4 border-t border-amber-500/30">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full !bg-amber-500 hover:!bg-amber-600 !text-black font-bold"
+                    onClick={() => {
+                      setShowVipAcknowledge(false);
+                      setLastCheckIn(null);
+                    }}
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Acknowledge VIP
+                  </Button>
+                  <p className="text-xs text-amber-300/70 text-center mt-2">
+                    Tap to confirm you have acknowledged this VIP guest
+                  </p>
+                </div>
+              )}
             </Card>
           </motion.div>
         )}

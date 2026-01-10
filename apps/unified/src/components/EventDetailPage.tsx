@@ -232,6 +232,8 @@ interface Attendee {
   referred_by_user_name: string | null;
   is_organizer_vip?: boolean;
   is_global_vip?: boolean;
+  is_event_vip?: boolean;
+  event_vip_reason?: string | null;
 }
 
 interface PromoterOption {
@@ -310,8 +312,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [sourceFilter, setSourceFilter] = useState<ReferralSource | "all">("all");
   const [promoterFilter, setPromoterFilter] = useState<string>("all");
   const [vipFilter, setVipFilter] = useState<boolean | undefined>(undefined);
-  const [togglingVip, setTogglingVip] = useState<string | null>(null);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [togglingVip, setTogglingVip] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
   const [showPromoterModal, setShowPromoterModal] = useState(false);
@@ -806,6 +808,34 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       toast.error(error.message || "Failed to check in attendee");
     } finally {
       setCheckingIn(null);
+    }
+  };
+
+  // Toggle event VIP status for a registration (promoter only)
+  const handleToggleEventVip = async (registrationId: string, isCurrentlyVip?: boolean) => {
+    setTogglingVip(registrationId);
+    try {
+      const response = await fetch(`/api/promoter/registrations/${registrationId}/vip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to update VIP status");
+        return;
+      }
+
+      toast.success(data.message || "VIP status updated");
+      // Reload attendees to update the UI
+      loadAttendees();
+    } catch (error: any) {
+      console.error("Toggle VIP error:", error);
+      toast.error(error.message || "Failed to update VIP status");
+    } finally {
+      setTogglingVip(null);
     }
   };
 
@@ -2554,7 +2584,35 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                               {attendee.is_organizer_vip && (
                                 <VipBadge level="organizer" variant="badge" size="xs" />
                               )}
-                              {!attendee.is_global_vip && !attendee.is_organizer_vip && (
+                              {attendee.is_event_vip && (
+                                <Badge variant="default" className="bg-amber-500/20 text-amber-400 border-amber-500/30 flex items-center gap-1 text-xs">
+                                  <Star className="h-3 w-3" />
+                                  Event VIP
+                                </Badge>
+                              )}
+                              {/* Promoter VIP Toggle - only show for promoters viewing their own referrals */}
+                              {isPromoterView && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleEventVip(attendee.id, attendee.is_event_vip);
+                                  }}
+                                  disabled={togglingVip === attendee.id}
+                                  className={`p-1.5 rounded-md border transition-colors ${
+                                    attendee.is_event_vip
+                                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30"
+                                      : "bg-white/5 border-border text-secondary hover:text-amber-400 hover:border-amber-500/30"
+                                  }`}
+                                  title={attendee.is_event_vip ? "Remove Event VIP" : "Mark as Event VIP"}
+                                >
+                                  {togglingVip === attendee.id ? (
+                                    <InlineSpinner size="xs" />
+                                  ) : (
+                                    <Crown className="h-4 w-4" />
+                                  )}
+                                </button>
+                              )}
+                              {!attendee.is_global_vip && !attendee.is_organizer_vip && !attendee.is_event_vip && !isPromoterView && (
                                 <span className="text-xs text-secondary">—</span>
                               )}
                             </div>

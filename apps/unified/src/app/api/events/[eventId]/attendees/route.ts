@@ -174,6 +174,8 @@ export async function GET(
         registered_at,
         referral_promoter_id,
         referred_by_user_id,
+        is_event_vip,
+        event_vip_reason,
         attendee:attendees(
           id,
           name,
@@ -309,11 +311,13 @@ export async function GET(
         promoter_id: reg.referral_promoter_id || null,
         promoter_name: reg.referral_promoter_id ? promoterMap.get(reg.referral_promoter_id) || "Unknown Promoter" : null,
         referred_by_user_id: reg.referred_by_user_id || null,
-        referred_by_user_name: reg.referred_by_user_id && !reg.referral_promoter_id 
-          ? userReferrerMap.get(reg.referred_by_user_id) || "Unknown User" 
+        referred_by_user_name: reg.referred_by_user_id && !reg.referral_promoter_id
+          ? userReferrerMap.get(reg.referred_by_user_id) || "Unknown User"
           : null,
         is_organizer_vip: organizerVipSet.has(reg.attendee_id),
         is_global_vip: globalVipSet.has(reg.attendee_id),
+        is_event_vip: reg.is_event_vip || false,
+        event_vip_reason: reg.event_vip_reason || null,
       };
     });
 

@@ -6,8 +6,18 @@ import { cookies } from "next/headers";
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = searchParams.get("search") || "";
+
+    // Ensure reasonable limits
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -57,19 +67,40 @@ export async function GET() {
       }, { status: 403 });
     }
 
-    // Fetch attendees with limited columns for performance
-    const { data: attendees, error } = await serviceSupabase
+    // Build the query with optional search
+    let query = serviceSupabase
       .from("attendees")
-      .select("id, name, email, phone, gender, user_id, created_at, updated_at")
+      .select("id, name, surname, email, phone, gender, user_id, instagram_handle, created_at, updated_at", { count: "exact" });
+
+    // Apply search filter if provided
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,surname.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,instagram_handle.ilike.%${search}%`);
+    }
+
+    // Apply ordering and pagination
+    const { data: attendees, error, count } = await query
       .order("created_at", { ascending: false })
-      .limit(1000);
+      .range(offset, offset + safeLimit - 1);
 
     if (error) {
       throw error;
     }
 
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / safeLimit);
+    const hasMore = safePage < totalPages;
+
     if (!attendees || attendees.length === 0) {
-      return NextResponse.json({ attendees: [] });
+      return NextResponse.json({
+        attendees: [],
+        pagination: {
+          page: safePage,
+          limit: safeLimit,
+          total: totalCount,
+          totalPages,
+          hasMore: false
+        }
+      });
     }
 
     // BATCH QUERY OPTIMIZATION: Fetch all related data in bulk instead of N+1 queries
@@ -159,7 +190,16 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ attendees: attendeesWithCounts });
+    return NextResponse.json({
+      attendees: attendeesWithCounts,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total: totalCount,
+        totalPages,
+        hasMore
+      }
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch attendees" },
