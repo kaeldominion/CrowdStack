@@ -1,4 +1,8 @@
 import { createServiceRoleClient } from "../supabase/server";
+import {
+  sendVenueApprovalRequestEmail,
+  sendEventApprovalResultEmail,
+} from "../email/send-notification";
 
 export interface NotificationData {
   user_id: string;
@@ -122,15 +126,18 @@ export async function getOrganizerUserIds(organizerId: string): Promise<string[]
 
 /**
  * Notify venue admins about a new event pending approval
+ * Sends both in-app notifications and emails
  */
 export async function notifyVenueOfPendingEvent(
   venueId: string,
   eventId: string,
   eventName: string,
-  organizerName: string
+  organizerName: string,
+  eventDate?: string
 ): Promise<void> {
   console.log("[Notification] notifyVenueOfPendingEvent called:", { venueId, eventId, eventName, organizerName });
-  
+
+  const supabase = createServiceRoleClient();
   const userIds = await getVenueUserIds(venueId);
   console.log("[Notification] Venue user IDs found:", userIds);
 
@@ -139,6 +146,14 @@ export async function notifyVenueOfPendingEvent(
     return;
   }
 
+  // Get venue name for email
+  const { data: venue } = await supabase
+    .from("venues")
+    .select("name")
+    .eq("id", venueId)
+    .single();
+
+  // Send in-app notifications
   const notifications: NotificationData[] = userIds.map((userId) => ({
     user_id: userId,
     type: "event_pending_approval",
@@ -150,6 +165,35 @@ export async function notifyVenueOfPendingEvent(
 
   await sendNotifications(notifications);
   console.log("[Notification] Pending event notifications sent successfully");
+
+  // Also send emails to venue admins
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
+  const approvalLink = `${baseUrl}/app/venue/events/pending`;
+
+  // Get user emails from auth.users
+  const { data: users } = await supabase.rpc("get_users_by_ids", {
+    user_ids: userIds,
+  });
+
+  if (users && users.length > 0) {
+    for (const user of users) {
+      if (user.email) {
+        try {
+          await sendVenueApprovalRequestEmail(
+            user.email,
+            venue?.name || "Venue Admin",
+            eventName,
+            organizerName,
+            approvalLink,
+            eventId,
+            eventDate
+          );
+        } catch (emailError) {
+          console.error("[Notification] Failed to send venue email:", emailError);
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -177,6 +221,7 @@ export async function notifyVenueOfAutoApprovedEvent(
 
 /**
  * Notify organizer about event approval
+ * Sends both in-app notifications and emails
  */
 export async function notifyOrganizerOfApproval(
   organizerId: string,
@@ -186,8 +231,10 @@ export async function notifyOrganizerOfApproval(
   approved: boolean,
   rejectionReason?: string
 ): Promise<void> {
+  const supabase = createServiceRoleClient();
   const userIds = await getOrganizerUserIds(organizerId);
 
+  // Send in-app notifications
   const notifications: NotificationData[] = userIds.map((userId) => ({
     user_id: userId,
     type: approved ? "event_approved" : "event_rejected",
@@ -200,5 +247,37 @@ export async function notifyOrganizerOfApproval(
   }));
 
   await sendNotifications(notifications);
+
+  // Also send emails to organizer users
+  const { data: users } = await supabase.rpc("get_users_by_ids", {
+    user_ids: userIds,
+  });
+
+  // Get organizer name for email
+  const { data: organizer } = await supabase
+    .from("organizers")
+    .select("name")
+    .eq("id", organizerId)
+    .single();
+
+  if (users && users.length > 0) {
+    for (const user of users) {
+      if (user.email) {
+        try {
+          await sendEventApprovalResultEmail(
+            user.email,
+            organizer?.name || "Organizer",
+            eventName,
+            venueName,
+            approved,
+            rejectionReason,
+            eventId
+          );
+        } catch (emailError) {
+          console.error("[Notification] Failed to send organizer email:", emailError);
+        }
+      }
+    }
+  }
 }
 

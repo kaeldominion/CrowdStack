@@ -1,78 +1,54 @@
 import "server-only";
 
 import { createServiceRoleClient } from "../supabase/server";
-import { logMessage } from "./log-message";
-
-interface EmailNotificationData {
-  to: string;
-  subject: string;
-  htmlBody: string;
-  textBody?: string;
-}
-
-/**
- * Send a notification email
- * 
- * NOTE: This currently uses Supabase Auth OTP as a workaround.
- * For production, integrate with Resend, SendGrid, or similar.
- * For now, we just log the email and rely on in-app notifications.
- */
-export async function sendNotificationEmail(data: EmailNotificationData): Promise<void> {
-  // TODO: Integrate with a proper email service like Resend
-  // For now, just log that we would send an email
-  console.log("[Email Notification]", {
-    to: data.to,
-    subject: data.subject,
-    // Don't log body for privacy
-  });
-
-  await logMessage(
-    data.to,
-    data.subject,
-    "pending",
-    "Email notification queued (in-app notification sent instead)"
-  );
-}
+import { sendTemplateEmail } from "./template-renderer";
+import { sendEmail } from "./postmark";
 
 /**
  * Send venue approval request email
+ * Uses the database-driven template system via Postmark
  */
 export async function sendVenueApprovalRequestEmail(
   venueEmail: string,
   venueName: string,
   eventName: string,
   organizerName: string,
-  approvalLink: string
-): Promise<void> {
-  await sendNotificationEmail({
+  approvalLink: string,
+  eventId?: string,
+  eventDate?: string
+): Promise<{ success: boolean; error?: string }> {
+  console.log("[Venue Notification] Sending approval request email", {
     to: venueEmail,
-    subject: `[Action Required] Event Approval Request: ${eventName}`,
-    htmlBody: `
-      <h1>New Event Pending Your Approval</h1>
-      <p>Hello ${venueName},</p>
-      <p><strong>${organizerName}</strong> would like to host an event at your venue:</p>
-      <p><strong>Event:</strong> ${eventName}</p>
-      <p>Please review and approve or reject this event:</p>
-      <a href="${approvalLink}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-        Review Event
-      </a>
-    `,
-    textBody: `
-      New Event Pending Your Approval
-      
-      Hello ${venueName},
-      
-      ${organizerName} would like to host an event at your venue:
-      
-      Event: ${eventName}
-      
-      Please review and approve or reject this event at: ${approvalLink}
-    `,
+    eventName,
   });
+
+  const result = await sendTemplateEmail(
+    "venue_approval_request",
+    venueEmail,
+    null, // Venue users don't have a single user_id
+    {
+      venue_name: venueName,
+      organizer_name: organizerName,
+      event_name: eventName,
+      event_date: eventDate || "TBD",
+      approval_link: approvalLink,
+    },
+    {
+      event_id: eventId || null,
+      email_type: "venue_approval_request",
+    }
+  );
+
+  if (!result.success) {
+    console.error("[Venue Notification] Failed to send approval request:", result.error);
+  }
+
+  return result;
 }
 
 /**
  * Send event approval/rejection notification email to organizer
+ * Uses the database-driven template system via Postmark
  */
 export async function sendEventApprovalResultEmail(
   organizerEmail: string,
@@ -80,33 +56,43 @@ export async function sendEventApprovalResultEmail(
   eventName: string,
   venueName: string,
   approved: boolean,
-  rejectionReason?: string
-): Promise<void> {
-  const subject = approved
-    ? `Good News! Your event "${eventName}" has been approved`
-    : `Update: Your event "${eventName}" was not approved`;
+  rejectionReason?: string,
+  eventId?: string,
+  eventLink?: string
+): Promise<{ success: boolean; error?: string }> {
+  const templateSlug = approved ? "event_approved" : "event_rejected";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
+  const defaultEventLink = eventId
+    ? `${baseUrl}/app/organizer/events/${eventId}`
+    : `${baseUrl}/app/organizer/events`;
 
-  const htmlBody = approved
-    ? `
-      <h1>Event Approved!</h1>
-      <p>Hello ${organizerName},</p>
-      <p>Great news! <strong>${venueName}</strong> has approved your event:</p>
-      <p><strong>Event:</strong> ${eventName}</p>
-      <p>You can now publish your event and start promoting it.</p>
-    `
-    : `
-      <h1>Event Not Approved</h1>
-      <p>Hello ${organizerName},</p>
-      <p>Unfortunately, <strong>${venueName}</strong> has not approved your event:</p>
-      <p><strong>Event:</strong> ${eventName}</p>
-      ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ""}
-      <p>You can edit your event and try a different venue, or contact the venue directly.</p>
-    `;
-
-  await sendNotificationEmail({
+  console.log("[Venue Notification] Sending approval result email", {
     to: organizerEmail,
-    subject,
-    htmlBody,
+    eventName,
+    approved,
   });
+
+  const result = await sendTemplateEmail(
+    templateSlug,
+    organizerEmail,
+    null,
+    {
+      organizer_name: organizerName,
+      venue_name: venueName,
+      event_name: eventName,
+      event_link: eventLink || defaultEventLink,
+      rejection_reason: rejectionReason || "",
+    },
+    {
+      event_id: eventId || null,
+      email_type: templateSlug,
+    }
+  );
+
+  if (!result.success) {
+    console.error("[Venue Notification] Failed to send approval result:", result.error);
+  }
+
+  return result;
 }
 

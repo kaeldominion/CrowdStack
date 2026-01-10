@@ -3,38 +3,59 @@ import "server-only";
 import { createServiceRoleClient } from "../supabase/server";
 import { sendTemplateEmail } from "./template-renderer";
 
-interface BonusNotificationState {
-  promoterId: string;
-  eventId: string;
-  threshold80Sent: boolean;
-  threshold100Sent: boolean;
-}
-
-// In-memory cache to track sent notifications (prevents duplicates in same session)
-// In production, consider using Redis or database table
-const notificationCache = new Map<string, BonusNotificationState>();
+type NotificationType = "80_percent" | "100_percent";
 
 /**
- * Get or create notification state for promoter/event
+ * Check if a bonus notification has already been sent (using database)
  */
-function getNotificationState(
+async function hasNotificationBeenSent(
   promoterId: string,
-  eventId: string
-): BonusNotificationState {
-  const key = `${promoterId}:${eventId}`;
-  if (!notificationCache.has(key)) {
-    notificationCache.set(key, {
-      promoterId,
-      eventId,
-      threshold80Sent: false,
-      threshold100Sent: false,
-    });
+  eventId: string,
+  notificationType: NotificationType
+): Promise<boolean> {
+  const supabase = createServiceRoleClient();
+
+  const { data, error } = await supabase
+    .from("bonus_notifications_sent")
+    .select("id")
+    .eq("promoter_id", promoterId)
+    .eq("event_id", eventId)
+    .eq("notification_type", notificationType)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    // PGRST116 = no rows returned (which is expected if not sent)
+    console.error("[Bonus Notification] Error checking notification status:", error);
   }
-  return notificationCache.get(key)!;
+
+  return !!data;
+}
+
+/**
+ * Mark a bonus notification as sent (persists to database)
+ */
+async function markNotificationSent(
+  promoterId: string,
+  eventId: string,
+  notificationType: NotificationType
+): Promise<void> {
+  const supabase = createServiceRoleClient();
+
+  const { error } = await supabase.from("bonus_notifications_sent").insert({
+    promoter_id: promoterId,
+    event_id: eventId,
+    notification_type: notificationType,
+  });
+
+  if (error && error.code !== "23505") {
+    // 23505 = duplicate key (already exists, which is fine)
+    console.error("[Bonus Notification] Error recording notification:", error);
+  }
 }
 
 /**
  * Send bonus progress notification
+ * Uses database to track sent notifications (persists across server restarts)
  */
 export async function sendBonusProgressNotification(
   promoterId: string,
@@ -53,10 +74,15 @@ export async function sendBonusProgressNotification(
   }
 
   const progress = (checkinsCount / bonusThreshold) * 100;
-  const state = getNotificationState(promoterId, eventId);
 
   // Check if we should send 80% notification
-  if (progress >= 80 && progress < 100 && !state.threshold80Sent) {
+  if (progress >= 80 && progress < 100) {
+    // Check database if already sent
+    const alreadySent = await hasNotificationBeenSent(promoterId, eventId, "80_percent");
+    if (alreadySent) {
+      return { success: true, sent: false };
+    }
+
     const remaining = bonusThreshold - checkinsCount;
     const result = await sendTemplateEmail(
       "bonus_progress_80",
@@ -78,14 +104,20 @@ export async function sendBonusProgressNotification(
     );
 
     if (result.success) {
-      state.threshold80Sent = true;
+      await markNotificationSent(promoterId, eventId, "80_percent");
       return { success: true, sent: true };
     }
     return result;
   }
 
   // Check if we should send 100% notification
-  if (progress >= 100 && !state.threshold100Sent) {
+  if (progress >= 100) {
+    // Check database if already sent
+    const alreadySent = await hasNotificationBeenSent(promoterId, eventId, "100_percent");
+    if (alreadySent) {
+      return { success: true, sent: false };
+    }
+
     const result = await sendTemplateEmail(
       "bonus_achieved",
       promoterEmail,
@@ -105,7 +137,7 @@ export async function sendBonusProgressNotification(
     );
 
     if (result.success) {
-      state.threshold100Sent = true;
+      await markNotificationSent(promoterId, eventId, "100_percent");
       return { success: true, sent: true };
     }
     return result;
