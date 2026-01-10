@@ -2098,6 +2098,43 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <h2 className="text-lg font-semibold text-primary">Share Event</h2>
                   </div>
 
+                  {/* Public Event Page Link */}
+                  {event.slug && (
+                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium text-primary">Public Event Page</p>
+                        <a
+                          href={`/e/${event.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-accent-secondary text-sm inline-flex items-center gap-1 transition-colors"
+                        >
+                          <Eye className="h-3 w-3" />
+                          View
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-primary/30 overflow-hidden">
+                          <Globe className="h-3 w-3 text-primary flex-shrink-0" />
+                          <code className="text-xs text-primary truncate">
+                            {typeof window !== 'undefined' ? window.location.origin : ''}/e/{event.slug}
+                          </code>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const url = `${window.location.origin}/e/${event.slug}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Event link copied!");
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Your Tracking Link (for promoters and organizers) */}
                   {((config.role === "promoter" && promoterId) || (config.role === "organizer" && currentUserId)) && (
                     <div className="space-y-3 p-3 bg-accent-secondary/5 rounded-lg border border-accent-secondary/20">

@@ -5,7 +5,6 @@ import "./globals.css";
 import { ConditionalLayout } from "./conditional-layout";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { CrispChat } from "@/components/CrispChat";
 import { NavigationProgress } from "@/components/NavigationProgress";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ToastProvider } from "@crowdstack/ui";
@@ -53,7 +52,6 @@ export default function RootLayout({
             <ConditionalLayout>{children}</ConditionalLayout>
             <Analytics />
             <SpeedInsights />
-            <CrispChat />
           </ToastProvider>
         </QueryProvider>
       </body>
