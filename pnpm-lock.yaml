@@ -123,7 +123,7 @@ importers:
 
   packages/shared:
     dependencies:
-      '@sparticuz/chromium':
+      '@sparticuz/chromium-min':
         specifier: ^143.0.4
         version: 143.0.4
       '@supabase/ssr':
@@ -1628,8 +1628,8 @@ packages:
       - supports-color
     dev: false
 
-  /@sparticuz/chromium@143.0.4:
-    resolution: {integrity: sha512-/6I7uQTRhRDD2/gGPQ1Gkf+Dqk0RYDACPJDZfSzz0OWk4JmUTonNHPXbrn6UIklOHlnDLf8xAAzkOZKB/cJpLA==}
+  /@sparticuz/chromium-min@143.0.4:
+    resolution: {integrity: sha512-vAV731SUEVH0FUmMc+404ZoRq0glq7DlhEGpAX0C7/rXupZ0HasOIJHbrjNNNE+VElenkdmwBm8MVTzwYcFPyQ==}
     engines: {node: '>=20.11.0'}
     dependencies:
       follow-redirects: 1.15.11

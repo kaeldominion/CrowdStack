@@ -35,6 +35,10 @@ interface CloseoutReportData {
   generated_at: Date;
 }
 
+// Chromium binary URL for @sparticuz/chromium-min (must match package version)
+const CHROMIUM_BINARY_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
+
 /**
  * Get Chromium executable path and args for the current environment
  */
@@ -42,14 +46,15 @@ async function getChromiumConfig(): Promise<{ executablePath: string; args: stri
   const isVercel = process.env.VERCEL === "1" || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
   if (isVercel) {
-    // On Vercel/Lambda, use @sparticuz/chromium
-    const chromium = await import("@sparticuz/chromium");
+    // On Vercel/Lambda, use @sparticuz/chromium-min with runtime download
+    const chromium = await import("@sparticuz/chromium-min");
 
     // Set graphics mode to avoid GPU issues
     chromium.default.setGraphicsMode = false;
 
     return {
-      executablePath: await chromium.default.executablePath(),
+      // chromium-min requires a URL to download the binary at runtime
+      executablePath: await chromium.default.executablePath(CHROMIUM_BINARY_URL),
       args: chromium.default.args,
     };
   } else {
