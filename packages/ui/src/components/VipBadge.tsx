@@ -2,9 +2,9 @@
 
 import { ReactNode } from "react";
 import { cn } from "../utils/cn";
-import { Crown, Star, Sparkles } from "lucide-react";
+import { Crown, Star, Sparkles, Zap } from "lucide-react";
 
-export type VipLevel = "global" | "venue" | "organizer" | "none";
+export type VipLevel = "global" | "venue" | "organizer" | "event" | "none";
 export type VipVariant = "badge" | "pill" | "icon" | "label";
 
 export interface VipBadgeProps {
@@ -83,6 +83,18 @@ export function VipBadge({
         label: "text-accent-secondary",
       },
       glow: "shadow-[0_0_12px_rgba(59,130,246,0.3)]",
+    },
+    event: {
+      icon: Zap,
+      label: "VIP",
+      fullLabel: scopeName ? `${scopeName} VIP` : "EVENT VIP",
+      colors: {
+        badge: "bg-emerald-500/20 border-emerald-400/50 text-emerald-400",
+        pill: "bg-emerald-500 text-white",
+        icon: "bg-emerald-500/20 text-emerald-400",
+        label: "text-emerald-400",
+      },
+      glow: "shadow-[0_0_12px_rgba(52,211,153,0.3)]",
     },
   };
 
@@ -182,12 +194,14 @@ export interface VipStatusProps {
   isGlobalVip?: boolean;
   isVenueVip?: boolean;
   isOrganizerVip?: boolean;
+  isEventVip?: boolean;
   venueName?: string;
   organizerName?: string;
+  eventName?: string;
   variant?: VipVariant;
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
-  /** Show only the highest level (global > venue > organizer) */
+  /** Show only the highest level (global > venue > organizer > event) */
   showHighestOnly?: boolean;
 }
 
@@ -195,15 +209,17 @@ export function VipStatus({
   isGlobalVip = false,
   isVenueVip = false,
   isOrganizerVip = false,
+  isEventVip = false,
   venueName,
   organizerName,
+  eventName,
   variant = "badge",
   size = "sm",
   className,
   showHighestOnly = false,
 }: VipStatusProps) {
-  const hasAnyVip = isGlobalVip || isVenueVip || isOrganizerVip;
-  
+  const hasAnyVip = isGlobalVip || isVenueVip || isOrganizerVip || isEventVip;
+
   if (!hasAnyVip) return null;
 
   if (showHighestOnly) {
@@ -217,6 +233,9 @@ export function VipStatus({
     if (isOrganizerVip) {
       return <VipBadge level="organizer" variant={variant} size={size} scopeName={organizerName} className={className} />;
     }
+    if (isEventVip) {
+      return <VipBadge level="event" variant={variant} size={size} scopeName={eventName} className={className} />;
+    }
     return null;
   }
 
@@ -226,6 +245,7 @@ export function VipStatus({
       {isGlobalVip && <VipBadge level="global" variant={variant} size={size} />}
       {isVenueVip && <VipBadge level="venue" variant={variant} size={size} scopeName={venueName} />}
       {isOrganizerVip && <VipBadge level="organizer" variant={variant} size={size} scopeName={organizerName} />}
+      {isEventVip && <VipBadge level="event" variant={variant} size={size} scopeName={eventName} />}
     </div>
   );
 }

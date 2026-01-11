@@ -1,0 +1,677 @@
+"use client";
+
+import { useState, useRef, useMemo, useCallback } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  Button,
+  Badge,
+  Input,
+  Select,
+  InlineSpinner,
+  useToast,
+  VipBadge,
+} from "@crowdstack/ui";
+import {
+  Users,
+  UserCheck,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Crown,
+  Share2,
+  RefreshCw,
+  Star,
+  Sparkles,
+  QrCode,
+  Copy,
+} from "lucide-react";
+import Link from "next/link";
+import { InlineEditField } from "@/components/inline/InlineEditField";
+import { EventDetailRole } from "@/components/EventDetailPage";
+
+// Types
+type ReferralSource = "direct" | "venue" | "organizer" | "promoter" | "user_referral";
+
+interface Attendee {
+  id: string;
+  attendee_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  registration_date: string;
+  checked_in: boolean;
+  check_in_time: string | null;
+  referral_source: ReferralSource;
+  promoter_id: string | null;
+  promoter_name: string | null;
+  referred_by_user_id: string | null;
+  referred_by_user_name: string | null;
+  is_organizer_vip?: boolean;
+  is_venue_vip?: boolean;
+  is_global_vip?: boolean;
+  is_event_vip?: boolean;
+  event_vip_reason?: string | null;
+  notes?: string | null;
+}
+
+interface PromoterOption {
+  id: string;
+  name: string;
+}
+
+interface AttendeeStats {
+  total: number;
+  checked_in: number;
+  not_checked_in: number;
+  by_source: {
+    direct: number;
+    promoter: number;
+    user_referral: number;
+  };
+}
+
+interface InviteQRCode {
+  id: string;
+  invite_code: string;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  created_at: string;
+}
+
+interface AttendeesTabProps {
+  eventId: string;
+  role: EventDetailRole;
+  attendees: Attendee[];
+  attendeeStats: AttendeeStats | null;
+  promoterOptions: PromoterOption[];
+  inviteCodes: InviteQRCode[];
+  isPromoterView: boolean;
+  organizerId: string | null;
+  eventOrganizerId?: string;
+  venueId?: string | null;
+  onRefresh: () => void;
+  onCheckIn: (registrationId: string) => Promise<void>;
+  onToggleEventVip: (registrationId: string, isCurrentlyVip?: boolean) => Promise<void>;
+  onToggleOrganizerVip: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
+  onToggleVenueVip: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
+  checkingIn: string | null;
+  togglingVip: string | null;
+}
+
+// Row height for virtual scrolling
+const ROW_HEIGHT = 36;
+
+export function AttendeesTab({
+  eventId,
+  role,
+  attendees,
+  attendeeStats,
+  promoterOptions,
+  inviteCodes,
+  isPromoterView,
+  organizerId,
+  eventOrganizerId,
+  venueId,
+  onRefresh,
+  onCheckIn,
+  onToggleEventVip,
+  onToggleOrganizerVip,
+  onToggleVenueVip,
+  checkingIn,
+  togglingVip,
+}: AttendeesTabProps) {
+  const toast = useToast();
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
+  const [sourceFilter, setSourceFilter] = useState<ReferralSource | "all">("all");
+  const [promoterFilter, setPromoterFilter] = useState<string>("all");
+  const [vipFilter, setVipFilter] = useState<boolean | undefined>(undefined);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+
+  // Mask functions for privacy
+  const maskEmail = useCallback((email: string | null): string => {
+    if (!email) return "-";
+    if (role === "admin") return email;
+    const [local, domain] = email.split("@");
+    if (!domain) return email;
+    const maskedLocal = local.length > 2
+      ? `${local[0]}${"*".repeat(Math.min(local.length - 2, 4))}${local[local.length - 1]}`
+      : "**";
+    return `${maskedLocal}@${domain}`;
+  }, [role]);
+
+  const maskPhone = useCallback((phone: string | null): string => {
+    if (!phone) return "-";
+    if (role === "admin") return phone;
+    if (phone.length <= 4) return "**" + phone.slice(-2);
+    return "**" + phone.slice(-4);
+  }, [role]);
+
+  // Filter attendees
+  const filteredAttendees = useMemo(() => {
+    return attendees.filter((attendee) => {
+      if (statusFilter === "checked_in" && !attendee.checked_in) return false;
+      if (statusFilter === "not_checked_in" && attendee.checked_in) return false;
+      if (sourceFilter !== "all" && attendee.referral_source !== sourceFilter) return false;
+      if (promoterFilter !== "all" && attendee.promoter_id !== promoterFilter) return false;
+      if (vipFilter !== undefined) {
+        const isVip = attendee.is_organizer_vip || attendee.is_global_vip || attendee.is_event_vip;
+        if (vipFilter !== isVip) return false;
+      }
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        attendee.name.toLowerCase().includes(query) ||
+        attendee.email?.toLowerCase().includes(query) ||
+        attendee.promoter_name?.toLowerCase().includes(query) ||
+        attendee.phone?.includes(query)
+      );
+    });
+  }, [attendees, statusFilter, sourceFilter, promoterFilter, vipFilter, searchQuery]);
+
+  // Virtual scrolling
+  const rowVirtualizer = useVirtualizer({
+    count: filteredAttendees.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 15,
+  });
+
+  const copyInviteLink = (inviteCode: string) => {
+    let baseUrl = "";
+    if (typeof window !== "undefined") {
+      const origin = window.location.origin;
+      if (origin.includes("app.crowdstack.app")) {
+        baseUrl = origin.replace("app.crowdstack.app", "crowdstack.app");
+      } else if (origin.includes("app-beta.crowdstack.app")) {
+        baseUrl = origin.replace("app-beta.crowdstack.app", "beta.crowdstack.app");
+      } else {
+        baseUrl = origin;
+      }
+    }
+    const link = `${baseUrl}/i/${inviteCode}`;
+    navigator.clipboard.writeText(link);
+    setCopiedInviteId(inviteCode);
+    setTimeout(() => setCopiedInviteId(null), 2000);
+  };
+
+  // Save notes handler
+  const handleSaveNotes = useCallback(async (registrationId: string, notes: string) => {
+    try {
+      const response = await fetch(`/api/events/${eventId}/registrations/${registrationId}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save notes");
+      }
+      toast.success("Notes saved");
+    } catch (error) {
+      toast.error("Failed to save notes");
+      throw error;
+    }
+  }, [eventId, toast]);
+
+  return (
+    <div className="space-y-4">
+      {/* Tracking QR Codes Section (for organizers) */}
+      {role === "organizer" && (
+        <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--accent-secondary)]">
+                Tracking QR Codes
+              </h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Create QR codes with unique tracking links for promoters, flyers, or campaigns
+              </p>
+            </div>
+            <Link href={`/app/organizer/events/${eventId}/invites`}>
+              <Button variant="secondary" size="sm">
+                <QrCode className="h-3.5 w-3.5 mr-1.5" />
+                {inviteCodes.length > 0 ? "Manage" : "Create"}
+              </Button>
+            </Link>
+          </div>
+          {inviteCodes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {inviteCodes.slice(0, 3).map((invite) => (
+                <div
+                  key={invite.id}
+                  className="p-3 bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <code className="text-xs font-mono font-semibold text-[var(--text-primary)]">
+                      {invite.invite_code}
+                    </code>
+                    <button
+                      onClick={() => copyInviteLink(invite.invite_code)}
+                      className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                    >
+                      {copiedInviteId === invite.invite_code ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)] space-y-0.5">
+                    <p>
+                      Uses: {invite.used_count}
+                      {invite.max_uses ? ` / ${invite.max_uses}` : " (unlimited)"}
+                    </p>
+                    {invite.expires_at && (
+                      <p>Expires: {new Date(invite.expires_at).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 border border-dashed border-[var(--border-subtle)] rounded-lg">
+              <QrCode className="h-6 w-6 text-[var(--text-muted)] mx-auto mb-1" />
+              <p className="text-xs text-[var(--text-secondary)]">No tracking QR codes yet</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stats Summary - Compact horizontal chips */}
+      {attendeeStats && !isPromoterView && (
+        <div className="flex flex-wrap gap-2">
+          <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+            <span className="text-sm font-bold text-[var(--text-primary)]">{attendeeStats.total}</span>
+            <span className="text-xs text-[var(--text-muted)]">Total</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+            <span className="text-sm font-bold text-[var(--accent-success)]">{attendeeStats.checked_in}</span>
+            <span className="text-xs text-[var(--text-muted)]">Checked In</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+            <span className="text-sm font-bold text-[var(--accent-warning)]">{attendeeStats.not_checked_in}</span>
+            <span className="text-xs text-[var(--text-muted)]">Pending</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+            <span className="text-sm font-bold text-[var(--text-primary)]">{attendeeStats.by_source.direct}</span>
+            <span className="text-xs text-[var(--text-muted)]">Direct</span>
+          </div>
+          <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+            <span className="text-sm font-bold text-[var(--accent-secondary)]">{attendeeStats.by_source.promoter}</span>
+            <span className="text-xs text-[var(--text-muted)]">Promoters</span>
+          </div>
+        </div>
+      )}
+
+      {/* Promoter View Header */}
+      {isPromoterView && (
+        <div className="p-3 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-[var(--text-primary)]" />
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Your Referrals</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Showing only guests you brought to this event
+              </p>
+            </div>
+          </div>
+          {attendeeStats && (
+            <div className="flex gap-4 mt-2">
+              <div>
+                <span className="text-lg font-bold text-[var(--text-primary)]">{attendeeStats.total}</span>
+                <span className="text-xs text-[var(--text-secondary)] ml-1">registered</span>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-[var(--accent-success)]">{attendeeStats.checked_in}</span>
+                <span className="text-xs text-[var(--text-secondary)] ml-1">checked in</span>
+              </div>
+              <div>
+                <span className="text-lg font-bold text-[var(--text-primary)]">
+                  {attendeeStats.total > 0 ? Math.round((attendeeStats.checked_in / attendeeStats.total) * 100) : 0}%
+                </span>
+                <span className="text-xs text-[var(--text-secondary)] ml-1">conversion</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main Attendees Section */}
+      <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+        {/* Header with title and search */}
+        <div className="p-3 border-b border-[var(--border-subtle)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-[var(--accent-secondary)]">
+                {isPromoterView ? "Your Guests" : "Attendees"}
+              </h3>
+              <span className="text-xs text-[var(--text-muted)]">({filteredAttendees.length})</span>
+              <button
+                onClick={onRefresh}
+                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                title="Refresh list"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <Input
+              placeholder="Search name, email, promoter..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-[200px] h-7 text-xs"
+            />
+          </div>
+
+          {/* Filters Row - Compact */}
+          {!isPromoterView && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {/* Status Pills */}
+              <div className="flex gap-0.5 bg-[var(--bg-raised)] rounded-md p-0.5">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
+                    statusFilter === "all"
+                      ? "bg-[var(--accent-primary)] text-white"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setStatusFilter("checked_in")}
+                  className={`px-2 py-0.5 text-[10px] rounded flex items-center gap-0.5 transition-colors ${
+                    statusFilter === "checked_in"
+                      ? "bg-[var(--accent-success)] text-white"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  <UserCheck className="h-2.5 w-2.5" />
+                  In
+                </button>
+                <button
+                  onClick={() => setStatusFilter("not_checked_in")}
+                  className={`px-2 py-0.5 text-[10px] rounded flex items-center gap-0.5 transition-colors ${
+                    statusFilter === "not_checked_in"
+                      ? "bg-[var(--accent-warning)] text-white"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  <Clock className="h-2.5 w-2.5" />
+                  Pending
+                </button>
+              </div>
+
+              {/* Source Filter */}
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value as ReferralSource | "all")}
+                className="h-6 px-1.5 text-[10px] bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded text-[var(--text-secondary)]"
+              >
+                <option value="all">All Sources</option>
+                <option value="direct">Direct</option>
+                <option value="promoter">Promoter</option>
+                <option value="user_referral">User Referral</option>
+              </select>
+
+              {/* Promoter Filter */}
+              {promoterOptions.length > 0 && (
+                <select
+                  value={promoterFilter}
+                  onChange={(e) => setPromoterFilter(e.target.value)}
+                  className="h-6 px-1.5 text-[10px] bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded text-[var(--text-secondary)]"
+                >
+                  <option value="all">All Promoters</option>
+                  {promoterOptions.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+
+              {/* VIP Filter */}
+              <button
+                onClick={() => setVipFilter(vipFilter === true ? undefined : true)}
+                className={`px-2 py-0.5 text-[10px] rounded flex items-center gap-0.5 transition-colors ${
+                  vipFilter === true
+                    ? "bg-amber-500/30 text-amber-400 border border-amber-500/50"
+                    : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-amber-400"
+                }`}
+              >
+                <Crown className="h-2.5 w-2.5" />
+                VIP
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Privacy Notice */}
+        {role !== "admin" && (
+          <div className="px-3 py-1.5 bg-[var(--accent-primary)]/5 border-b border-[var(--border-subtle)]">
+            <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Contact details masked for privacy. Admin access required for full information.
+            </p>
+          </div>
+        )}
+
+        {/* Table Header */}
+        <div className="grid grid-cols-[auto_1fr_1fr_80px_80px_60px_100px_auto] gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="w-6"></div>
+          <div>Name</div>
+          <div>Email</div>
+          <div>Registered</div>
+          <div>Status</div>
+          <div>VIP</div>
+          <div>Notes</div>
+          <div className="w-16">Actions</div>
+        </div>
+
+        {/* Virtual Scrolling Container */}
+        <div
+          ref={parentRef}
+          className="overflow-auto"
+          style={{ height: Math.min(filteredAttendees.length * ROW_HEIGHT + 20, 500) }}
+        >
+          {filteredAttendees.length === 0 ? (
+            <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+              {isPromoterView
+                ? "You haven't referred any guests to this event yet"
+                : "No attendees found"}
+            </div>
+          ) : (
+            <div
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                width: "100%",
+                position: "relative",
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                const attendee = filteredAttendees[virtualItem.index];
+                return (
+                  <div
+                    key={attendee.id}
+                    className="grid grid-cols-[auto_1fr_1fr_80px_80px_60px_100px_auto] gap-2 items-center px-3 hover:bg-white/5 transition-colors border-b border-[var(--border-subtle)]/50"
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    {/* Check-in Toggle */}
+                    <div className="w-6">
+                      {!isPromoterView && (role === "organizer" || role === "venue") && (
+                        <button
+                          onClick={() => !attendee.checked_in && onCheckIn(attendee.id)}
+                          disabled={checkingIn === attendee.id || attendee.checked_in}
+                          className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
+                            attendee.checked_in
+                              ? "bg-[var(--accent-success)]/20 text-[var(--accent-success)]"
+                              : "bg-[var(--bg-raised)] text-[var(--text-muted)] hover:text-[var(--accent-success)] hover:bg-[var(--accent-success)]/10"
+                          }`}
+                          title={attendee.checked_in ? `Checked in at ${attendee.check_in_time ? new Date(attendee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}` : "Check in"}
+                        >
+                          {checkingIn === attendee.id ? (
+                            <InlineSpinner size="xs" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Name */}
+                    <div className="text-xs font-medium text-[var(--text-primary)] truncate">
+                      {attendee.name}
+                    </div>
+
+                    {/* Email */}
+                    <div className="text-xs text-[var(--text-secondary)] truncate">
+                      {maskEmail(attendee.email)}
+                    </div>
+
+                    {/* Registered Date */}
+                    <div className="text-[10px] text-[var(--text-muted)]">
+                      {new Date(attendee.registration_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      {attendee.checked_in ? (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)]">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          In
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)]">
+                          <Clock className="h-2.5 w-2.5" />
+                          Pending
+                        </span>
+                      )}
+                    </div>
+
+                    {/* VIP Badges */}
+                    <div className="flex items-center gap-0.5">
+                      {attendee.is_global_vip && (
+                        <VipBadge level="global" variant="badge" size="xs" />
+                      )}
+                      {attendee.is_venue_vip && (
+                        <VipBadge level="venue" variant="badge" size="xs" />
+                      )}
+                      {attendee.is_organizer_vip && (
+                        <VipBadge level="organizer" variant="badge" size="xs" />
+                      )}
+                      {attendee.is_event_vip && (
+                        <VipBadge level="event" variant="badge" size="xs" />
+                      )}
+                    </div>
+
+                    {/* VIP Toggles */}
+                    <div className="flex items-center gap-0.5">
+                      {/* Event VIP Toggle - available for venue, organizer, and promoter */}
+                      {["venue", "organizer", "promoter", "admin"].includes(role) && (
+                        <button
+                          onClick={() => onToggleEventVip(attendee.id, attendee.is_event_vip)}
+                          disabled={togglingVip === attendee.id}
+                          className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                            attendee.is_event_vip
+                              ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-emerald-400"
+                          }`}
+                          title={attendee.is_event_vip ? "Remove Event VIP" : "Mark as Event VIP"}
+                        >
+                          {togglingVip === attendee.id ? (
+                            <InlineSpinner size="xs" />
+                          ) : (
+                            <VipBadge level="event" variant="icon" size="xs" iconOnly />
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notes */}
+                    <div className="min-w-0">
+                      {(role === "organizer" || role === "venue" || role === "admin") && (
+                        <InlineEditField
+                          value={attendee.notes || ""}
+                          onSave={(notes) => handleSaveNotes(attendee.id, notes)}
+                          placeholder="Add note..."
+                        />
+                      )}
+                    </div>
+
+                    {/* Actions - Role-specific VIP toggles */}
+                    <div className="w-20 flex items-center gap-1">
+                      {/* Venue VIP Toggle - for venue admins only */}
+                      {role === "venue" && venueId && (
+                        <button
+                          onClick={() => onToggleVenueVip(attendee.attendee_id, attendee.is_venue_vip || false)}
+                          disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
+                          className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                            attendee.is_venue_vip
+                              ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30"
+                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-[var(--accent-primary)]"
+                          }`}
+                          title={
+                            attendee.is_global_vip
+                              ? "Global VIP (cannot change)"
+                              : attendee.is_venue_vip
+                                ? "Remove Venue VIP"
+                                : "Mark as Venue VIP"
+                          }
+                        >
+                          {togglingVip === attendee.attendee_id ? (
+                            <InlineSpinner size="xs" />
+                          ) : (
+                            <Star className={`h-3.5 w-3.5 ${attendee.is_venue_vip ? "fill-current" : ""}`} />
+                          )}
+                        </button>
+                      )}
+                      {/* Organizer VIP Toggle - for organizers only */}
+                      {role === "organizer" && (organizerId || eventOrganizerId) && (
+                        <button
+                          onClick={() => onToggleOrganizerVip(attendee.attendee_id, attendee.is_organizer_vip || false)}
+                          disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
+                          className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                            attendee.is_organizer_vip
+                              ? "bg-[var(--accent-secondary)]/20 text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/30"
+                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-[var(--accent-secondary)]"
+                          }`}
+                          title={
+                            attendee.is_global_vip
+                              ? "Global VIP (cannot change)"
+                              : attendee.is_organizer_vip
+                                ? "Remove Organizer VIP"
+                                : "Mark as Organizer VIP"
+                          }
+                        >
+                          {togglingVip === attendee.attendee_id ? (
+                            <InlineSpinner size="xs" />
+                          ) : (
+                            <Sparkles className={`h-3.5 w-3.5 ${attendee.is_organizer_vip ? "fill-current" : ""}`} />
+                          )}
+                        </button>
+                      )}
+                      {/* Source indicator */}
+                      {attendee.referral_source === "promoter" && attendee.promoter_name && (
+                        <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[40px]" title={attendee.promoter_name}>
+                          {attendee.promoter_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

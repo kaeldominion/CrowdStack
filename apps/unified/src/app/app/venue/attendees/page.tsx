@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge } from "@crowdstack/ui";
-import { VipBadge } from "@crowdstack/ui";
-import { Search, Filter, Download, Flag, User, UserCheck, Crown, Star } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Input, Button, Card } from "@crowdstack/ui";
+import { Search, Filter, Download, Crown } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { AttendeesDashboardList } from "@/components/dashboard/AttendeesDashboardList";
 
 export default function VenueAttendeesPage() {
   const [attendees, setAttendees] = useState<VenueAttendee[]>([]);
-  const [filteredAttendees, setFilteredAttendees] = useState<VenueAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
   const [venueId, setVenueId] = useState<string | null>(null);
+  const [togglingVipId, setTogglingVipId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     has_check_in: undefined as boolean | undefined,
     is_flagged: undefined as boolean | undefined,
@@ -24,16 +24,12 @@ export default function VenueAttendeesPage() {
     loadAttendees();
   }, []);
 
-  useEffect(() => {
-    filterAttendees();
-  }, [search, filters, attendees]);
-
   const loadAttendees = async () => {
     try {
       const response = await fetch("/api/venue/attendees");
       if (!response.ok) throw new Error("Failed to load attendees");
       const data = await response.json();
-      setAttendees(data.attendees || data); // Handle both old and new format
+      setAttendees(data.attendees || data);
       if (data.venueId) {
         setVenueId(data.venueId);
       }
@@ -44,7 +40,7 @@ export default function VenueAttendeesPage() {
     }
   };
 
-  const filterAttendees = () => {
+  const filteredAttendees = useMemo(() => {
     let filtered = [...attendees];
 
     // Search filter
@@ -54,7 +50,7 @@ export default function VenueAttendeesPage() {
         (a) =>
           a.name.toLowerCase().includes(searchLower) ||
           a.email?.toLowerCase().includes(searchLower) ||
-          a.phone.includes(search)
+          a.phone?.includes(search)
       );
     }
 
@@ -79,16 +75,8 @@ export default function VenueAttendeesPage() {
       );
     }
 
-    setFilteredAttendees(filtered);
-  };
-
-  const getStrikeBadge = (strikes: number | null) => {
-    if (!strikes || strikes === 0) return null;
-    if (strikes === 1) return <Badge variant="warning">1 Strike</Badge>;
-    if (strikes === 2) return <Badge variant="warning">2 Strikes</Badge>;
-    if (strikes >= 3) return <Badge variant="error">Banned</Badge>;
-    return null;
-  };
+    return filtered;
+  }, [search, filters, attendees]);
 
   const toggleVenueVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
     if (!venueId) {
@@ -96,16 +84,15 @@ export default function VenueAttendeesPage() {
       return;
     }
 
+    setTogglingVipId(attendeeId);
     try {
       if (isCurrentlyVip) {
-        // Remove VIP
         const response = await fetch(
           `/api/venue/attendees/${attendeeId}/vip?venueId=${venueId}`,
           { method: "DELETE" }
         );
         if (!response.ok) throw new Error("Failed to remove VIP");
       } else {
-        // Add VIP
         const response = await fetch(`/api/venue/attendees/${attendeeId}/vip`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -113,217 +100,148 @@ export default function VenueAttendeesPage() {
         });
         if (!response.ok) throw new Error("Failed to add VIP");
       }
-      // Reload attendees
       await loadAttendees();
     } catch (error) {
       console.error("Error toggling VIP:", error);
       alert("Failed to update VIP status");
+    } finally {
+      setTogglingVipId(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-secondary">Loading attendees...</div>
-      </div>
-    );
-  }
+  // Stats
+  const stats = useMemo(() => {
+    const total = attendees.length;
+    const vips = attendees.filter(a => a.is_venue_vip || a.is_global_vip).length;
+    const withAccount = attendees.filter(a => a.user_id).length;
+    const checkedIn = attendees.filter(a => a.total_check_ins > 0).length;
+    return { total, vips, withAccount, checkedIn };
+  }, [attendees]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Attendee Database</h1>
-          <p className="mt-2 text-sm text-secondary">
-            All attendees who have registered or checked in to events at your venue
+          <h1 className="font-mono text-xl font-bold uppercase tracking-widest text-[var(--text-primary)]">
+            Attendee Database
+          </h1>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+            All attendees who have registered or checked in at your venue
           </p>
         </div>
-        <Button variant="secondary" disabled title="Export functionality is disabled to protect attendee privacy. Use messaging features to communicate with your audience.">
-          <Download className="h-4 w-4 mr-2" />
-          Export (Disabled)
+        <Button variant="secondary" size="sm" disabled title="Export disabled to protect privacy">
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          Export
         </Button>
       </div>
 
-      {/* Access Scope Explanation */}
-      <Card className="bg-accent-secondary/10 border-accent-secondary/20 hidden md:block">
-        <div className="p-4">
-          <p className="text-sm text-white/80">
-            <strong>Privacy Protection:</strong> You're viewing attendees who registered or checked in at your venue.
-            CrowdStack protects attendee privacy - you only see guests who interacted with you directly.
-            Contact details are masked for security. Use our messaging features to communicate with your audience.
-          </p>
+      {/* Privacy Notice */}
+      <div className="hidden md:block p-3 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg">
+        <p className="text-xs text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">Privacy Protection:</strong> Contact details are masked.
+          Use messaging features to communicate with your audience.
+        </p>
+      </div>
+
+      {/* Stats Chips */}
+      <div className="flex flex-wrap gap-2">
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--text-primary)]">{stats.total}</span>
+          <span className="text-xs text-[var(--text-muted)]">Total</span>
         </div>
-      </Card>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-amber-400">{stats.vips}</span>
+          <span className="text-xs text-[var(--text-muted)]">VIPs</span>
+        </div>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--accent-success)]">{stats.checkedIn}</span>
+          <span className="text-xs text-[var(--text-muted)]">Attended</span>
+        </div>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--accent-primary)]">{stats.withAccount}</span>
+          <span className="text-xs text-[var(--text-muted)]">Linked</span>
+        </div>
+      </div>
 
       {/* Search and Filters */}
-      <Card>
-        <div className="p-3 space-y-3">
+      <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl p-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
             <Input
               placeholder="Search by name, email, or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full"
+              className="h-8 text-sm"
             />
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant={filters.has_check_in === true ? "primary" : "secondary"}
+          <div className="flex gap-1.5 flex-wrap">
+            <button
               onClick={() =>
                 setFilters({
                   ...filters,
                   has_check_in: filters.has_check_in === true ? undefined : true,
                 })
               }
+              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
+                filters.has_check_in === true
+                  ? "bg-[var(--accent-success)] text-white"
+                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="h-3 w-3" />
               Checked In
-            </Button>
-            <Button
-              variant={filters.is_flagged === true ? "primary" : "secondary"}
+            </button>
+            <button
               onClick={() =>
                 setFilters({
                   ...filters,
                   is_flagged: filters.is_flagged === true ? undefined : true,
                 })
               }
+              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
+                filters.is_flagged === true
+                  ? "bg-[var(--accent-error)] text-white"
+                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
             >
-              <Flag className="h-4 w-4 mr-2" />
               Flagged
-            </Button>
-            <Button
-              variant={filters.is_vip === true ? "primary" : "secondary"}
+            </button>
+            <button
               onClick={() =>
                 setFilters({
                   ...filters,
                   is_vip: filters.is_vip === true ? undefined : true,
                 })
               }
+              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
+                filters.is_vip === true
+                  ? "bg-amber-500/30 text-amber-400 border border-amber-500/50"
+                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-amber-400"
+              }`}
             >
-              <Crown className="h-4 w-4 mr-2" />
+              <Crown className="h-3 w-3" />
               VIP
-            </Button>
+            </button>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Results Count */}
-      <div className="text-sm text-white/60">
+      <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
         Showing {filteredAttendees.length} of {attendees.length} attendees
       </div>
 
-      {/* Attendees Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>VIP</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Events</TableHead>
-                <TableHead>Check-ins</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Event</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAttendees.length === 0 ? (
-                <TableRow>
-                  <TableCell className="text-center py-8 text-secondary">
-                    No attendees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAttendees.map((attendee) => (
-                  <TableRow 
-                    key={attendee.id} 
-                    hover 
-                    onClick={() => setSelectedAttendeeId(attendee.id)}
-                  >
-                    <TableCell className="font-medium">{attendee.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {attendee.email && (
-                          <div className="text-sm text-secondary">{attendee.email}</div>
-                        )}
-                        <div className="text-sm text-secondary">{attendee.phone}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {attendee.is_global_vip && (
-                          <VipBadge level="global" variant="badge" size="xs" />
-                        )}
-                        {attendee.is_venue_vip && (
-                          <VipBadge level="venue" variant="badge" size="xs" />
-                        )}
-                        {!attendee.is_global_vip && !attendee.is_venue_vip && (
-                          <span className="text-xs text-secondary">—</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {attendee.user_id ? (
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="h-4 w-4 text-success" />
-                          <span className="text-xs text-secondary">Linked</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-secondary">No account</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{attendee.events_attended}</TableCell>
-                    <TableCell>{attendee.total_check_ins}</TableCell>
-                    <TableCell>{getStrikeBadge(attendee.strike_count)}</TableCell>
-                    <TableCell className="text-sm text-secondary">
-                      {attendee.last_event_at
-                        ? new Date(attendee.last_event_at).toLocaleDateString()
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {/* Flag attendee - TODO: implement flag modal */}}
-                          title="Flag attendee"
-                        >
-                          <Flag className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e?.stopPropagation();
-                            toggleVenueVip(attendee.id, attendee.is_venue_vip);
-                          }}
-                          disabled={attendee.is_global_vip}
-                          title={
-                            attendee.is_global_vip
-                              ? "Global VIP (system-managed, cannot be changed)"
-                              : attendee.is_venue_vip
-                              ? "Remove venue VIP"
-                              : "Mark as venue VIP"
-                          }
-                        >
-                          {attendee.is_venue_vip ? (
-                            <Star className="h-4 w-4 text-accent-primary fill-accent-primary" />
-                          ) : (
-                            <Star className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {/* Attendees List */}
+      <AttendeesDashboardList
+        attendees={filteredAttendees}
+        role="venue"
+        entityId={venueId}
+        onSelectAttendee={(a) => setSelectedAttendeeId(a.id)}
+        onToggleVip={toggleVenueVip}
+        togglingVipId={togglingVipId}
+        isLoading={loading}
+      />
 
       <AttendeeDetailModal
         isOpen={!!selectedAttendeeId}

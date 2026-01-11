@@ -114,6 +114,7 @@ import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 import { EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
 import { BookingsTab } from "@/components/BookingsTab";
+import { AttendeesTab } from "@/components/event-detail/AttendeesTab";
 
 export type EventDetailRole = "organizer" | "venue" | "promoter" | "admin";
 
@@ -234,6 +235,7 @@ interface Attendee {
   is_global_vip?: boolean;
   is_event_vip?: boolean;
   event_vip_reason?: string | null;
+  notes?: string | null;
 }
 
 interface PromoterOption {
@@ -307,11 +309,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [isPromoterView, setIsPromoterView] = useState(config.role === "promoter");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "checked_in" | "not_checked_in">("all");
-  const [sourceFilter, setSourceFilter] = useState<ReferralSource | "all">("all");
-  const [promoterFilter, setPromoterFilter] = useState<string>("all");
-  const [vipFilter, setVipFilter] = useState<boolean | undefined>(undefined);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [togglingVip, setTogglingVip] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -340,7 +337,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [showUnpublishForUploadModal, setShowUnpublishForUploadModal] = useState(false);
   const [pendingUploadResolver, setPendingUploadResolver] = useState<((value: boolean) => void) | null>(null);
   const [showRepublishPrompt, setShowRepublishPrompt] = useState(false);
-  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [organizers, setOrganizers] = useState<any[]>([]);
   const [promoterRequests, setPromoterRequests] = useState<Array<{
     id: string;
@@ -842,7 +838,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const toggleOrganizerVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
     // Use organizerId from state, or fallback to event's organizer_id
     const currentOrganizerId = organizerId || event?.organizer_id;
-    
+
     if (!currentOrganizerId) {
       toast.error("Organizer ID not found");
       return;
@@ -865,20 +861,65 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           body: JSON.stringify({ organizerId: currentOrganizerId }),
         });
       }
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error || `Failed to ${isCurrentlyVip ? "remove" : "add"} VIP status`;
         console.error("VIP toggle error:", errorMessage, response.status, errorData);
         throw new Error(errorMessage);
       }
-      
+
       // Reload attendees
       await loadAttendees();
       toast.success(isCurrentlyVip ? "VIP status removed" : "Attendee marked as VIP");
     } catch (error) {
       console.error("Error toggling VIP:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to update VIP status";
+      toast.error(errorMessage);
+    } finally {
+      setTogglingVip(null);
+    }
+  };
+
+  const toggleVenueVip = async (attendeeId: string, isCurrentlyVip: boolean) => {
+    const currentVenueId = event?.venue_id;
+
+    if (!currentVenueId) {
+      toast.error("Venue ID not found");
+      return;
+    }
+
+    setTogglingVip(attendeeId);
+    try {
+      let response: Response;
+      if (isCurrentlyVip) {
+        // Remove VIP
+        response = await fetch(
+          `/api/venue/attendees/${attendeeId}/vip?venueId=${currentVenueId}`,
+          { method: "DELETE" }
+        );
+      } else {
+        // Add VIP
+        response = await fetch(`/api/venue/attendees/${attendeeId}/vip`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ venueId: currentVenueId }),
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Failed to ${isCurrentlyVip ? "remove" : "add"} venue VIP status`;
+        console.error("Venue VIP toggle error:", errorMessage, response.status, errorData);
+        throw new Error(errorMessage);
+      }
+
+      // Reload attendees
+      await loadAttendees();
+      toast.success(isCurrentlyVip ? "Venue VIP status removed" : "Attendee marked as Venue VIP");
+    } catch (error) {
+      console.error("Error toggling Venue VIP:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update Venue VIP status";
       toast.error(errorMessage);
     } finally {
       setTogglingVip(null);
@@ -1396,32 +1437,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  const copyInviteLink = (inviteCode: string) => {
-    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/i/${inviteCode}`;
-    navigator.clipboard.writeText(url);
-    setCopiedInviteId(inviteCode);
-    setTimeout(() => setCopiedInviteId(null), 2000);
-  };
-
-  // Mask email and phone for privacy
-  const maskEmail = (email: string | null): string => {
-    if (!email) return "-";
-    if (config.role === "admin") return email; // Admin sees full email
-    const [local, domain] = email.split("@");
-    if (!domain) return email;
-    const maskedLocal = local.length > 2 
-      ? `${local[0]}${"*".repeat(Math.min(local.length - 2, 4))}${local[local.length - 1]}`
-      : "**";
-    return `${maskedLocal}@${domain}`;
-  };
-
-  const maskPhone = (phone: string | null): string => {
-    if (!phone) return "-";
-    if (config.role === "admin") return phone; // Admin sees full phone
-    if (phone.length <= 4) return "**" + phone.slice(-2);
-    return "**" + phone.slice(-4);
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       weekday: "short",
@@ -1486,35 +1501,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         return null;
     }
   };
-
-  // Filter attendees by search, status, source, promoter, and VIP
-  const filteredAttendees = attendees.filter((attendee) => {
-    // Status filter
-    if (statusFilter === "checked_in" && !attendee.checked_in) return false;
-    if (statusFilter === "not_checked_in" && attendee.checked_in) return false;
-    
-    // Source filter
-    if (sourceFilter !== "all" && attendee.referral_source !== sourceFilter) return false;
-    
-    // Promoter filter
-    if (promoterFilter !== "all" && attendee.promoter_id !== promoterFilter) return false;
-    
-    // VIP filter - includes all VIP types
-    if (vipFilter !== undefined) {
-      const isVip = attendee.is_organizer_vip || attendee.is_global_vip || attendee.is_event_vip;
-      if (vipFilter !== isVip) return false;
-    }
-    
-    // Search filter
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      attendee.name.toLowerCase().includes(query) ||
-      attendee.email?.toLowerCase().includes(query) ||
-      attendee.promoter_name?.toLowerCase().includes(query) ||
-      attendee.phone?.includes(query)
-    );
-  });
 
   // Use chart data from API, or generate empty array if not available
   const chartData = stats?.chart_data || [];
@@ -1604,6 +1590,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {event.name}
             </h1>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Owner Badge - show for venue role to distinguish organizer vs venue events */}
+              {config.role === "venue" && event.organizer && (
+                <Badge color="blue" variant="outline" size="sm" title={`Organized by ${event.organizer.name}`}>
+                  <Users className="h-3 w-3 mr-1" />
+                  {event.organizer.name}
+                </Badge>
+              )}
               {getStatusBadge(event.status)}
               {config.showVenueApproval && getApprovalBadge(event.venue_approval_status)}
             </div>
@@ -2299,402 +2292,26 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           </TabsContent>
 
           {config.canViewAttendees && (
-            <TabsContent value="attendees" className="space-y-4">
-              {/* Invite/Tracking QR Codes Section (for organizers) */}
-              {config.role === "organizer" && (
-                <Card>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold text-primary">Tracking QR Codes</h2>
-                      <p className="text-sm text-secondary mt-1">Create QR codes with unique tracking links for promoters, flyers, or campaigns</p>
-                    </div>
-                    <Link href={`/app/organizer/events/${eventId}/invites`}>
-                      <Button variant="secondary" size="sm">
-                        <QrCode className="h-4 w-4 mr-2" />
-                        {inviteCodes.length > 0 ? "Manage QR Codes" : "Create QR Code"}
-                      </Button>
-                    </Link>
-                  </div>
-                  {inviteCodes.length > 0 ? (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {inviteCodes.slice(0, 3).map((invite) => (
-                          <div key={invite.id} className="p-4 border border-border rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <code className="text-sm font-mono font-semibold">{invite.invite_code}</code>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copyInviteLink(invite.invite_code)}
-                              >
-                                {copiedInviteId === invite.invite_code ? (
-                                  <CheckCircle2 className="h-4 w-4 text-success" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                            <div className="text-xs text-secondary space-y-1">
-                              {invite.max_uses ? (
-                                <p>Uses: {invite.used_count} / {invite.max_uses}</p>
-                              ) : (
-                                <p>Uses: {invite.used_count} (unlimited)</p>
-                              )}
-                              {invite.expires_at && (
-                                <p>Expires: {new Date(invite.expires_at).toLocaleDateString()}</p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {inviteCodes.length > 3 && (
-                        <div className="mt-4 text-center">
-                          <Link href={`/app/organizer/events/${eventId}/invites`}>
-                            <Button variant="ghost" size="sm">
-                              View all {inviteCodes.length} QR codes
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-center py-6 border border-dashed border-border rounded-lg">
-                      <QrCode className="h-8 w-8 text-muted mx-auto mb-2" />
-                      <p className="text-sm text-secondary">No tracking QR codes yet</p>
-                      <p className="text-xs text-muted mt-1">Create QR codes to track registrations from different sources</p>
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* Attendee Stats Summary */}
-              {attendeeStats && !isPromoterView && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                  <Card className="p-4">
-                    <div className="text-2xl font-bold text-primary">{attendeeStats.total}</div>
-                    <div className="text-sm text-secondary">Total Registered</div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="text-2xl font-bold text-success">{attendeeStats.checked_in}</div>
-                    <div className="text-sm text-secondary">Checked In</div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="text-2xl font-bold text-warning">{attendeeStats.not_checked_in}</div>
-                    <div className="text-sm text-secondary">Not Checked In</div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="text-2xl font-bold text-info">{attendeeStats.by_source.direct}</div>
-                    <div className="text-sm text-secondary">Direct</div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="text-2xl font-bold text-primary">{attendeeStats.by_source.promoter}</div>
-                    <div className="text-sm text-secondary">Via Promoters</div>
-                  </Card>
-                </div>
-              )}
-
-              {/* Promoter View Header */}
-              {isPromoterView && (
-                <Card className="mb-4 p-4 bg-accent-secondary/10 border-accent-secondary/20">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold text-primary">Your Referrals</h3>
-                      <p className="text-sm text-secondary">
-                        Showing only guests you brought to this event
-                      </p>
-                    </div>
-                  </div>
-                  {attendeeStats && (
-                    <div className="flex gap-6 mt-4">
-                      <div>
-                        <span className="text-2xl font-bold text-primary">{attendeeStats.total}</span>
-                        <span className="text-sm text-secondary ml-2">registered</span>
-                      </div>
-                      <div>
-                        <span className="text-2xl font-bold text-success">{attendeeStats.checked_in}</span>
-                        <span className="text-sm text-secondary ml-2">checked in</span>
-                      </div>
-                      <div>
-                        <span className="text-2xl font-bold text-primary">
-                          {attendeeStats.total > 0 ? Math.round((attendeeStats.checked_in / attendeeStats.total) * 100) : 0}%
-                        </span>
-                        <span className="text-sm text-secondary ml-2">conversion</span>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              <Card>
-                {/* Header with title and search */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-semibold text-primary">
-                      {isPromoterView ? "Your Guests" : "Attendees"} ({filteredAttendees.length})
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => loadAttendees()}
-                      title="Refresh attendees list"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="Search by name, email, or promoter..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-xs"
-                  />
-                </div>
-
-                {/* Filters Row */}
-                {!isPromoterView && (
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    {/* Status Filter */}
-                    <div className="flex gap-1">
-                      <Button
-                        variant={statusFilter === "all" ? "primary" : "secondary"}
-                        size="sm"
-                        onClick={() => setStatusFilter("all")}
-                      >
-                        All
-                      </Button>
-                      <Button
-                        variant={statusFilter === "checked_in" ? "primary" : "secondary"}
-                        size="sm"
-                        onClick={() => setStatusFilter("checked_in")}
-                      >
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        Checked In
-                      </Button>
-                      <Button
-                        variant={statusFilter === "not_checked_in" ? "primary" : "secondary"}
-                        size="sm"
-                        onClick={() => setStatusFilter("not_checked_in")}
-                      >
-                        <Clock className="h-3 w-3 mr-1" />
-                        Not Checked In
-                      </Button>
-                    </div>
-
-                    {/* Source Filter */}
-                    <Select
-                      value={sourceFilter}
-                      onChange={(e) => setSourceFilter(e.target.value as ReferralSource | "all")}
-                      options={[
-                        { value: "all", label: "All Sources" },
-                        { value: "direct", label: "Direct Registration" },
-                        { value: "promoter", label: "Via Promoter" },
-                        { value: "user_referral", label: "User Referral" },
-                      ]}
-                    />
-
-                    {/* Promoter Filter (only if promoters exist) */}
-                    {promoterOptions.length > 0 && (
-                      <Select
-                        value={promoterFilter}
-                        onChange={(e) => setPromoterFilter(e.target.value)}
-                        options={[
-                          { value: "all", label: "All Promoters" },
-                          ...promoterOptions.map((p) => ({ value: p.id, label: p.name })),
-                        ]}
-                      />
-                    )}
-
-                    {/* VIP Filter */}
-                    <Button
-                      variant={vipFilter === true ? "primary" : "secondary"}
-                      size="sm"
-                      onClick={() => setVipFilter(vipFilter === true ? undefined : true)}
-                    >
-                      <Crown className="h-3 w-3 mr-1" />
-                      VIP
-                    </Button>
-                  </div>
-                )}
-
-                {/* Privacy Notice */}
-                {config.role !== "admin" && (
-                  <div className="mb-4 p-3 bg-info/10 border border-info/20 rounded-lg">
-                    <p className="text-sm text-secondary">
-                      <AlertCircle className="h-4 w-4 inline mr-1" />
-                      Contact details are masked for privacy. Only admins can see full information.
-                    </p>
-                  </div>
-                )}
-
-                {/* Attendees Table */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Registered</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>VIP</TableHead>
-                      {!isPromoterView && <TableHead>Source</TableHead>}
-                      {!isPromoterView && (config.role === "organizer" || config.role === "venue") && <TableHead>Actions</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAttendees.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={isPromoterView ? 6 : (config.role === "organizer" || config.role === "venue") ? 8 : 7} className="text-center text-secondary py-8">
-                          {isPromoterView ? "You haven't referred any guests to this event yet" : "No attendees found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAttendees.map((attendee) => (
-                        <TableRow key={attendee.id}>
-                          <TableCell className="font-medium">{attendee.name}</TableCell>
-                          <TableCell>{maskEmail(attendee.email)}</TableCell>
-                          <TableCell>{maskPhone(attendee.phone)}</TableCell>
-                          <TableCell>
-                            {new Date(attendee.registration_date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {attendee.checked_in ? (
-                              <div className="flex flex-col gap-0.5">
-                                <Badge variant="success" className="flex items-center gap-1 w-fit">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Checked In
-                                </Badge>
-                                {attendee.check_in_time && (
-                                  <span className="text-xs text-secondary">
-                                    {new Date(attendee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <Badge variant="default" className="flex items-center gap-1 w-fit">
-                                <Clock className="h-3 w-3" />
-                                Registered
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              {attendee.is_global_vip && (
-                                <VipBadge level="global" variant="badge" size="xs" />
-                              )}
-                              {attendee.is_organizer_vip && (
-                                <VipBadge level="organizer" variant="badge" size="xs" />
-                              )}
-                              {attendee.is_event_vip && (
-                                <Badge variant="default" className="bg-amber-500/20 text-amber-400 border-amber-500/30 flex items-center gap-1 text-xs">
-                                  <Star className="h-3 w-3" />
-                                  Event VIP
-                                </Badge>
-                              )}
-                              {/* Promoter VIP Toggle - only show for promoters viewing their own referrals */}
-                              {isPromoterView && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleEventVip(attendee.id, attendee.is_event_vip);
-                                  }}
-                                  disabled={togglingVip === attendee.id}
-                                  className={`p-1.5 rounded-md border transition-colors ${
-                                    attendee.is_event_vip
-                                      ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30"
-                                      : "bg-white/5 border-border text-secondary hover:text-amber-400 hover:border-amber-500/30"
-                                  }`}
-                                  title={attendee.is_event_vip ? "Remove Event VIP" : "Mark as Event VIP"}
-                                >
-                                  {togglingVip === attendee.id ? (
-                                    <InlineSpinner size="xs" />
-                                  ) : (
-                                    <Crown className="h-4 w-4" />
-                                  )}
-                                </button>
-                              )}
-                              {!attendee.is_global_vip && !attendee.is_organizer_vip && !attendee.is_event_vip && !isPromoterView && (
-                                <span className="text-xs text-secondary">—</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          {!isPromoterView && (
-                            <TableCell>
-                              {attendee.referral_source === "promoter" && attendee.promoter_name ? (
-                                <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                                  <Users className="h-3 w-3" />
-                                  {attendee.promoter_name}
-                                </Badge>
-                              ) : attendee.referral_source === "user_referral" && attendee.referred_by_user_name ? (
-                                <Badge variant="primary" className="flex items-center gap-1 w-fit">
-                                  <Share2 className="h-3 w-3" />
-                                  {attendee.referred_by_user_name}
-                                </Badge>
-                              ) : (
-                                <span className="text-secondary text-sm">Direct</span>
-                              )}
-                            </TableCell>
-                          )}
-                          {!isPromoterView && (config.role === "organizer" || config.role === "venue") && (
-                            <TableCell>
-                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                {/* Check-in Button */}
-                                {!attendee.checked_in && (
-                                  <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e?.stopPropagation();
-                                      handleCheckIn(attendee.id);
-                                    }}
-                                    disabled={checkingIn === attendee.id}
-                                    title="Check in attendee"
-                                  >
-                                    {checkingIn === attendee.id ? (
-                                      <InlineSpinner size="xs" />
-                                    ) : (
-                                      <>
-                                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                                        Check In
-                                      </>
-                                    )}
-                                  </Button>
-                                )}
-                                {/* VIP Toggle Button (organizers only) */}
-                                {config.role === "organizer" && (organizerId || event?.organizer_id) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e?.stopPropagation();
-                                      toggleOrganizerVip(attendee.attendee_id, attendee.is_organizer_vip || false);
-                                    }}
-                                    disabled={togglingVip === attendee.attendee_id || attendee.is_global_vip}
-                                    title={
-                                      attendee.is_global_vip
-                                        ? "Global VIP (system-managed, cannot be changed)"
-                                        : attendee.is_organizer_vip
-                                        ? "Remove organizer VIP"
-                                        : "Mark as organizer VIP"
-                                    }
-                                  >
-                                    {togglingVip === attendee.attendee_id ? (
-                                      <InlineSpinner size="xs" />
-                                    ) : attendee.is_organizer_vip ? (
-                                      <Sparkles className="h-4 w-4 text-accent-secondary fill-accent-secondary" />
-                                    ) : (
-                                      <Sparkles className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </Card>
+            <TabsContent value="attendees">
+              <AttendeesTab
+                eventId={eventId}
+                role={config.role}
+                attendees={attendees}
+                attendeeStats={attendeeStats}
+                promoterOptions={promoterOptions}
+                inviteCodes={inviteCodes}
+                isPromoterView={isPromoterView}
+                organizerId={organizerId}
+                eventOrganizerId={event.organizer_id}
+                venueId={event.venue_id}
+                onRefresh={loadAttendees}
+                onCheckIn={handleCheckIn}
+                onToggleEventVip={handleToggleEventVip}
+                onToggleOrganizerVip={toggleOrganizerVip}
+                onToggleVenueVip={toggleVenueVip}
+                checkingIn={checkingIn}
+                togglingVip={togglingVip}
+              />
             </TabsContent>
           )}
 

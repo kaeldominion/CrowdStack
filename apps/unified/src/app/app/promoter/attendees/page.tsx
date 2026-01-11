@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
-import { Search, Download, User, TrendingUp } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Input, Button, Tabs, TabsList, TabsTrigger } from "@crowdstack/ui";
+import { Download, TrendingUp } from "lucide-react";
 import type { PromoterAttendee } from "@/lib/data/attendees-promoter";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { AttendeesDashboardList } from "@/components/dashboard/AttendeesDashboardList";
 
 export default function PromoterAttendeesPage() {
   const [attendees, setAttendees] = useState<PromoterAttendee[]>([]);
-  const [filteredAttendees, setFilteredAttendees] = useState<PromoterAttendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
@@ -18,11 +18,8 @@ export default function PromoterAttendeesPage() {
     loadAttendees();
   }, [category]);
 
-  useEffect(() => {
-    filterAttendees();
-  }, [search, attendees]);
-
   const loadAttendees = async () => {
+    setLoading(true);
     try {
       const url = new URL("/api/promoter/attendees", window.location.origin);
       if (category !== "all") {
@@ -39,136 +36,104 @@ export default function PromoterAttendeesPage() {
     }
   };
 
-  const filterAttendees = () => {
-    let filtered = [...attendees];
+  const filteredAttendees = useMemo(() => {
+    if (!search) return attendees;
 
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (a) =>
-          a.name.toLowerCase().includes(searchLower) ||
-          a.email?.toLowerCase().includes(searchLower) ||
-          a.phone.includes(search)
-      );
-    }
-
-    setFilteredAttendees(filtered);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-secondary">Loading attendees...</div>
-      </div>
+    const searchLower = search.toLowerCase();
+    return attendees.filter(
+      (a) =>
+        a.name.toLowerCase().includes(searchLower) ||
+        a.email?.toLowerCase().includes(searchLower) ||
+        a.phone?.includes(search)
     );
-  }
+  }, [search, attendees]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = attendees.length;
+    const totalReferrals = attendees.reduce((sum, a) => sum + (a.referral_count || 0), 0);
+    const upcoming = attendees.reduce((sum, a) => sum + (a.upcoming_signups || 0), 0);
+    const totalCheckins = attendees.reduce((sum, a) => sum + (a.total_check_ins || 0), 0);
+    return { total, totalReferrals, upcoming, totalCheckins };
+  }, [attendees]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">My Attendees</h1>
-          <p className="mt-2 text-sm text-secondary">
-            People who registered through your referrals or are signed up for upcoming events
+          <h1 className="font-mono text-xl font-bold uppercase tracking-widest text-[var(--text-primary)]">
+            My Attendees
+          </h1>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+            People who registered through your referrals
           </p>
         </div>
-        <Button variant="secondary" disabled title="Export functionality is disabled to protect attendee privacy. Use messaging features to communicate with your audience.">
-          <Download className="h-4 w-4 mr-2" />
-          Export (Disabled)
+        <Button variant="secondary" size="sm" disabled title="Export disabled to protect privacy">
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          Export
         </Button>
       </div>
 
-      {/* Access Scope Explanation */}
-      <Card className="bg-accent-secondary/10 border-accent-secondary/20">
-        <div className="p-4">
-          <p className="text-sm text-primary">
-            <strong>Privacy Protection:</strong> You're viewing attendees who registered through your referrals.
-            CrowdStack protects attendee privacy - you only see guests who registered via your promotion links.
-            Contact details are masked for security. Use our messaging features to communicate with your audience.
-          </p>
-        </div>
-      </Card>
+      {/* Privacy Notice */}
+      <div className="p-3 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg">
+        <p className="text-xs text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">Privacy Protection:</strong> You're viewing attendees who registered through your referrals.
+          Contact details are masked for security.
+        </p>
+      </div>
 
-      <Card>
-        <div className="p-6 space-y-4">
-          <Tabs value={category} onValueChange={(v) => setCategory(v as any)}>
-            <TabsList>
-              <TabsTrigger value="all">All Referrals</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Input
-            placeholder="Search by name, email, or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
-          />
+      {/* Stats Chips */}
+      <div className="flex flex-wrap gap-2">
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--text-primary)]">{stats.total}</span>
+          <span className="text-xs text-[var(--text-muted)]">People</span>
         </div>
-      </Card>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--accent-success)]">{stats.totalReferrals}</span>
+          <span className="text-xs text-[var(--text-muted)]">Referrals</span>
+        </div>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--accent-primary)]">{stats.upcoming}</span>
+          <span className="text-xs text-[var(--text-muted)]">Upcoming</span>
+        </div>
+        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
+          <span className="text-sm font-bold text-[var(--accent-secondary)]">{stats.totalCheckins}</span>
+          <span className="text-xs text-[var(--text-muted)]">Check-ins</span>
+        </div>
+      </div>
 
-      <div className="text-sm text-secondary">
+      {/* Search and Category Tabs */}
+      <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl p-3 space-y-3">
+        <Tabs value={category} onValueChange={(v) => setCategory(v as "all" | "upcoming")}>
+          <TabsList className="h-8">
+            <TabsTrigger value="all" className="text-xs">All Referrals</TabsTrigger>
+            <TabsTrigger value="upcoming" className="text-xs flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Upcoming Events
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Input
+          placeholder="Search by name, email, or phone..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 text-sm"
+        />
+      </div>
+
+      {/* Results Count */}
+      <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
         Showing {filteredAttendees.length} of {attendees.length} attendees
       </div>
 
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Referrals</TableHead>
-                <TableHead>Upcoming</TableHead>
-                <TableHead>Check-ins</TableHead>
-                <TableHead>Last Event</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAttendees.length === 0 ? (
-                <TableRow>
-                  <TableCell className="text-center py-8 text-secondary">
-                    No attendees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredAttendees.map((attendee) => (
-                  <TableRow 
-                    key={attendee.id} 
-                    hover 
-                    onClick={() => setSelectedAttendeeId(attendee.id)}
-                  >
-                    <TableCell className="font-medium">{attendee.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {attendee.email && (
-                          <div className="text-sm text-secondary">{attendee.email}</div>
-                        )}
-                        <div className="text-sm text-secondary">{attendee.phone}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {attendee.referral_count > 0 && (
-                        <Badge variant="success">{attendee.referral_count}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {attendee.upcoming_signups > 0 && (
-                        <Badge variant="primary">{attendee.upcoming_signups}</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{attendee.total_check_ins}</TableCell>
-                    <TableCell className="text-sm text-secondary">
-                      {attendee.last_event_at
-                        ? new Date(attendee.last_event_at).toLocaleDateString()
-                        : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+      {/* Attendees List */}
+      <AttendeesDashboardList
+        attendees={filteredAttendees}
+        role="promoter"
+        onSelectAttendee={(a) => setSelectedAttendeeId(a.id)}
+        isLoading={loading}
+      />
 
       <AttendeeDetailModal
         isOpen={!!selectedAttendeeId}

@@ -22,6 +22,7 @@ interface AttendeeWithSource {
   referred_by_user_name: string | null;
   is_organizer_vip?: boolean;
   is_global_vip?: boolean;
+  notes?: string | null;
 }
 
 /**
@@ -176,6 +177,7 @@ export async function GET(
         referred_by_user_id,
         is_event_vip,
         event_vip_reason,
+        notes,
         attendee:attendees(
           id,
           name,
@@ -318,6 +320,7 @@ export async function GET(
         is_global_vip: globalVipSet.has(reg.attendee_id),
         is_event_vip: reg.is_event_vip || false,
         event_vip_reason: reg.event_vip_reason || null,
+        notes: reg.notes || null,
       };
     });
 
