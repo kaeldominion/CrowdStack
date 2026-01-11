@@ -80,11 +80,18 @@ export default function VenueSettingsPage() {
 
     try {
       const payload: any = { venue: data.venue };
-      
+
       // Include tags if on tags tab
       if (tab === "tags") {
         payload.tags = data.tags;
       }
+
+      console.log(`[Venue Settings] Saving ${tab}`, {
+        venueId: venueId || "from-session",
+        description: data.venue.description?.substring(0, 50),
+        address: data.venue.address,
+        google_maps_url: data.venue.google_maps_url?.substring(0, 50),
+      });
 
       const url = venueId ? `/api/venue/settings?venueId=${venueId}` : "/api/venue/settings";
       const response = await fetch(url, {
@@ -93,22 +100,36 @@ export default function VenueSettingsPage() {
         body: JSON.stringify(payload),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to save");
+        throw new Error(result.error || "Failed to save");
       }
 
-      const result = await response.json();
+      console.log(`[Venue Settings] Save response:`, {
+        description: result.venue?.description?.substring(0, 50),
+        address: result.venue?.address,
+        updated_at: result.venue?.updated_at,
+      });
+
+      // Verify the save actually worked
+      if (tab === "profile" && data.venue.description && result.venue?.description !== data.venue.description) {
+        console.error("[Venue Settings] WARNING: Description mismatch after save!", {
+          sent: data.venue.description?.substring(0, 50),
+          returned: result.venue?.description?.substring(0, 50),
+        });
+      }
 
       // Reload to get updated data
       await loadSettings();
-      
+
       // Show success indicator
       setSavedTab(tab);
       setTimeout(() => {
         setSavedTab(null);
       }, 3000); // Hide after 3 seconds
     } catch (error: any) {
+      console.error("[Venue Settings] Save failed:", error);
       setErrors({ save: error.message });
     } finally {
       setSaving(false);

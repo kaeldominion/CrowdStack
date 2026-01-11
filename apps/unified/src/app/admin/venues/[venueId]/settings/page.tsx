@@ -74,10 +74,16 @@ export default function AdminVenueSettingsPage() {
 
     try {
       const payload: any = { venue: data.venue };
-      
+
       if (tab === "tags") {
         payload.tags = data.tags;
       }
+
+      console.log(`[Admin Settings] Saving ${tab} for venue ${venueId}`, {
+        description: data.venue.description?.substring(0, 50),
+        address: data.venue.address,
+        google_maps_url: data.venue.google_maps_url?.substring(0, 50),
+      });
 
       const response = await fetch(`/api/venue/settings?venueId=${venueId}`, {
         method: "PUT",
@@ -85,15 +91,31 @@ export default function AdminVenueSettingsPage() {
         body: JSON.stringify(payload),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to save");
+        throw new Error(result.error || "Failed to save");
+      }
+
+      console.log(`[Admin Settings] Save response:`, {
+        description: result.venue?.description?.substring(0, 50),
+        address: result.venue?.address,
+        updated_at: result.venue?.updated_at,
+      });
+
+      // Verify the save actually worked by checking if key fields match
+      if (tab === "profile" && data.venue.description && result.venue?.description !== data.venue.description) {
+        console.error("[Admin Settings] WARNING: Description mismatch after save!", {
+          sent: data.venue.description?.substring(0, 50),
+          returned: result.venue?.description?.substring(0, 50),
+        });
       }
 
       await loadSettings();
       setSavedTab(tab);
       setTimeout(() => setSavedTab(null), 3000);
     } catch (error: any) {
+      console.error("[Admin Settings] Save failed:", error);
       setErrors({ save: error.message });
     } finally {
       setSaving(false);
