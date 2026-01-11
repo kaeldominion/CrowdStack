@@ -518,6 +518,16 @@ export default function VenueSettingsPage() {
                 />
               </div>
 
+              {/* Capacity */}
+              <Input
+                label="Capacity"
+                type="number"
+                value={data.venue.capacity || ""}
+                onChange={(e) => updateVenueField("capacity", e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="500"
+                helperText="Maximum venue capacity for guests"
+              />
+
               {/* Currency Selection */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
