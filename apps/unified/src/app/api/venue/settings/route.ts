@@ -328,7 +328,7 @@ export async function PUT(request: NextRequest) {
         .eq("id", venueId)
         .single();
 
-      console.log(`[Venue Settings PUT] Updating venue: ${venueId}, current slug: ${currentVenue?.slug}`);
+      console.log(`[Venue Settings PUT] Updating venue: ${venueId}, current slug: ${currentVenue?.slug}, name: ${body.venue?.name}`);
       console.log(`[Venue Settings PUT] Incoming fields:`, Object.keys(body.venue));
 
       const updateData: any = {};

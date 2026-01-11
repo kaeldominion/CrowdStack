@@ -60,6 +60,13 @@ export default function VenueSettingsPage() {
       const result = await response.json();
       // Handle nested structure from API
       const venueData = result.venue || result;
+
+      console.log(`[Venue Settings] Loaded venue:`, {
+        id: venueData.id,
+        slug: venueData.slug,
+        name: venueData.name,
+      });
+
       setData({
         venue: venueData,
         gallery: venueData.gallery || [],
@@ -107,6 +114,9 @@ export default function VenueSettingsPage() {
       }
 
       console.log(`[Venue Settings] Save response:`, {
+        id: result.venue?.id,
+        slug: result.venue?.slug,
+        name: result.venue?.name,
         description: result.venue?.description?.substring(0, 50),
         address: result.venue?.address,
         updated_at: result.venue?.updated_at,
