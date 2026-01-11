@@ -230,45 +230,92 @@ export default function AdminVenueSettingsPage() {
     }
   };
 
-  const extractAddressFromGoogleMaps = async () => {
-    if (!data?.venue.google_maps_url) return;
+  // Try to extract coordinates from URL client-side (works for full URLs)
+  const extractCoordsFromUrlClientSide = (url: string): { lat: number; lng: number } | null => {
+    if (!url) return null;
 
+    // Pattern 1: @lat,lng (most common)
+    let match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+
+    // Pattern 2: !3dlat!4dlng
+    match = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+
+    // Pattern 3: ?q=lat,lng
+    match = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      if (!isNaN(lat) && !isNaN(lng)) return { lat, lng };
+    }
+
+    return null;
+  };
+
+  const extractAddressFromGoogleMaps = async () => {
+    if (!data?.venue.google_maps_url) {
+      setExtractError("Please enter a Google Maps URL first");
+      return;
+    }
+
+    const url = data.venue.google_maps_url;
     setExtractingAddress(true);
     setExtractError(null);
     setExtractSuccess(false);
 
+    // First, try client-side extraction (instant, no API needed)
+    const clientCoords = extractCoordsFromUrlClientSide(url);
+    if (clientCoords) {
+      // Update local state with coordinates
+      setData({
+        ...data,
+        venue: {
+          ...data.venue,
+          latitude: clientCoords.lat,
+          longitude: clientCoords.lng,
+        },
+      });
+      setExtractSuccess(true);
+      setExtractingAddress(false);
+      setTimeout(() => setExtractSuccess(false), 3000);
+      return;
+    }
+
+    // If client-side fails (short URL), try server-side
     try {
       const response = await fetch(`/api/venue/settings/extract-address?venueId=${venueId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ googleMapsUrl: data.venue.google_maps_url }),
+        body: JSON.stringify({ google_maps_url: url }),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to extract address");
-      }
 
       const result = await response.json();
 
-      if (result.address || result.city || result.state || result.country) {
-        setData({
-          ...data,
-          venue: {
-            ...data.venue,
-            address: result.address || data.venue.address,
-            city: result.city || data.venue.city,
-            state: result.state || data.venue.state,
-            country: result.country || data.venue.country,
-          },
-        });
-        setExtractSuccess(true);
-        setTimeout(() => setExtractSuccess(false), 3000);
-      } else {
-        throw new Error("Could not extract address from URL");
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to extract address");
       }
+
+      // Reload to get updated coordinates and address
+      await loadSettings();
+      setExtractSuccess(true);
+      setTimeout(() => setExtractSuccess(false), 3000);
     } catch (error: any) {
-      setExtractError(error.message);
+      // Provide helpful error message for short URLs
+      const isShortUrl = /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url);
+      if (isShortUrl) {
+        setExtractError("Short URL extraction requires Google Maps API key. Please open the link in your browser and copy the full URL, or enter coordinates manually below.");
+      } else {
+        setExtractError(error.message || "Failed to extract address from URL");
+      }
     } finally {
       setExtractingAddress(false);
     }
@@ -424,15 +471,40 @@ export default function AdminVenueSettingsPage() {
       <TabsContent value="location">
         <Card className="!p-6">
           <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Location</h3>
+
+            {/* Setup Instructions - show when no coordinates */}
+            {!(data.venue.latitude && data.venue.longitude) && (
+              <div className="bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 rounded-lg p-4">
+                <h4 className="font-semibold text-[var(--text-primary)] mb-2">How to set up venue location</h4>
+                <ol className="text-sm text-[var(--text-secondary)] space-y-2 list-decimal list-inside">
+                  <li>Open <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="text-[var(--accent-primary)] hover:underline">Google Maps</a> and search for the venue</li>
+                  <li>Copy the <strong>full URL</strong> from the browser&apos;s address bar (not a short link)</li>
+                  <li>Paste it below and click <strong>&quot;Extract Address &amp; Coordinates&quot;</strong></li>
+                  <li>Once coordinates are saved, you can replace the URL with a shorter link if needed</li>
+                </ol>
+              </div>
+            )}
+
+            {/* Success state - show when coordinates configured */}
+            {data.venue.latitude && data.venue.longitude && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
+                <p className="text-sm text-emerald-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" />
+                  <span><strong>Location configured!</strong> Map coordinates are saved. You can use any Google Maps URL format now.</span>
+                </p>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">
+              <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                 Google Maps URL
               </label>
               <div className="flex gap-2">
                 <Input
                   value={data.venue.google_maps_url || ""}
                   onChange={(e) => updateVenueField("google_maps_url", e.target.value)}
-                  placeholder="https://maps.google.com/..."
+                  placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/place/..."
                   className="flex-1"
                 />
                 <Button
@@ -445,88 +517,138 @@ export default function AdminVenueSettingsPage() {
                   ) : (
                     <MapPin className="h-4 w-4" />
                   )}
-                  <span className="ml-2">Extract Address</span>
+                  <span className="ml-2">Extract Address &amp; Coordinates</span>
                 </Button>
               </div>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                {data.venue.latitude && data.venue.longitude
+                  ? "Coordinates saved. You can use a short link now - it will be used for the 'Open in Maps' button."
+                  : "Paste the full Google Maps URL first to extract coordinates, then you can replace with a short link."
+                }
+              </p>
               {extractError && (
-                <p className="text-sm text-accent-error mt-2">{extractError}</p>
+                <p className="text-sm text-[var(--accent-error)] mt-2">{extractError}</p>
               )}
               {extractSuccess && (
-                <p className="text-sm text-accent-success mt-2 flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4" /> Address extracted successfully
+                <p className="text-sm text-emerald-400 mt-2 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" /> Coordinates extracted successfully!
                 </p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">
-                Street Address
-              </label>
-              <Input
-                value={data.venue.address || ""}
-                onChange={(e) => updateVenueField("address", e.target.value)}
-                placeholder="123 Main St"
+            {/* Map Preview */}
+            {data.venue.google_maps_url && (
+              <MapPreview
+                mapsUrl={data.venue.google_maps_url}
+                lat={data.venue.latitude}
+                lng={data.venue.longitude}
+                address={data.venue.address}
+                city={data.venue.city}
+                state={data.venue.state}
+                country={data.venue.country}
               />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  City
-                </label>
-                <Input
-                  value={data.venue.city || ""}
-                  onChange={(e) => updateVenueField("city", e.target.value)}
-                  placeholder="New York"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  State
-                </label>
-                <Input
-                  value={data.venue.state || ""}
-                  onChange={(e) => updateVenueField("state", e.target.value)}
-                  placeholder="NY"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Country
-                </label>
-                <Input
-                  value={data.venue.country || ""}
-                  onChange={(e) => updateVenueField("country", e.target.value)}
-                  placeholder="US"
-                />
-              </div>
-            </div>
-
-            {(data.venue.latitude || data.venue.address) && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Map Preview
-                </label>
-                <MapPreview 
-                  lat={data.venue.latitude} 
-                  lng={data.venue.longitude}
-                  address={data.venue.address}
-                  city={data.venue.city}
-                  state={data.venue.state}
-                  mapsUrl={data.venue.google_maps_url || ""}
-                />
-              </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+            {/* Address Fields */}
+            <div className="border-t border-[var(--border-subtle)] pt-6">
+              <h4 className="text-md font-semibold text-[var(--text-primary)] mb-4">Address</h4>
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
+                Enter the venue address manually below.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                    Street Address
+                  </label>
+                  <Input
+                    value={data.venue.address || ""}
+                    onChange={(e) => updateVenueField("address", e.target.value)}
+                    placeholder="123 Main Street, 12345"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                      City
+                    </label>
+                    <Input
+                      value={data.venue.city || ""}
+                      onChange={(e) => updateVenueField("city", e.target.value)}
+                      placeholder="New York"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                      State/Province
+                    </label>
+                    <Input
+                      value={data.venue.state || ""}
+                      onChange={(e) => updateVenueField("state", e.target.value)}
+                      placeholder="NY"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                    Country
+                  </label>
+                  <Input
+                    value={data.venue.country || ""}
+                    onChange={(e) => updateVenueField("country", e.target.value)}
+                    placeholder="US"
+                  />
+                </div>
+
+                {/* Manual Coordinates Entry */}
+                <div className="border-t border-[var(--border-subtle)] pt-4 mt-4">
+                  <p className="text-sm text-[var(--text-secondary)] mb-3">
+                    <strong>Map Coordinates</strong> - Required for map preview. Get these from Google Maps URL or enter manually.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                        Latitude
+                      </label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={data.venue.latitude || ""}
+                        onChange={(e) => updateVenueField("latitude", e.target.value ? parseFloat(e.target.value) : null)}
+                        placeholder="-8.8123456"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">
+                        Longitude
+                      </label>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={data.venue.longitude || ""}
+                        onChange={(e) => updateVenueField("longitude", e.target.value ? parseFloat(e.target.value) : null)}
+                        placeholder="115.1234567"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    Tip: In Google Maps, right-click on the location → &quot;What&apos;s here?&quot; to see coordinates
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-subtle)]">
               {savedTab === "location" && (
-                <span className="text-sm text-accent-success flex items-center gap-1">
+                <span className="text-sm text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="h-4 w-4" /> Saved
                 </span>
               )}
               <Button onClick={() => saveSettings("location")} disabled={saving}>
                 {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Changes
+                Save Location
               </Button>
             </div>
           </div>
