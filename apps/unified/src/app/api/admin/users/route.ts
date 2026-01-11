@@ -32,24 +32,86 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get auth users with pagination
-    const { data: authUsersData, error: authError } = await serviceSupabase.auth.admin.listUsers({
-      page: safePage,
-      perPage: safeLimit,
-    });
+    let authUsers: any[] = [];
+    let totalFromAuth = 0;
 
-    if (authError) {
-      console.error("[Admin Users] Error listing users:", authError);
-      throw authError;
-    }
-
-    let authUsers = authUsersData?.users || [];
-    const totalFromAuth = (authUsersData as any)?.total || authUsers.length;
-
-    // Filter by search query if provided (client-side filter since Supabase auth doesn't support server-side search)
+    // If searching, we need to search across ALL users since Supabase Auth doesn't support server-side search
     if (searchQuery && searchQuery.trim().length > 0) {
       const searchLower = searchQuery.toLowerCase();
-      authUsers = authUsers.filter((u) => u.email?.toLowerCase().includes(searchLower));
+
+      // First, search attendees table for matching name/email (this is searchable)
+      const { data: matchingAttendees } = await serviceSupabase
+        .from("attendees")
+        .select("user_id, name, surname, email")
+        .or(`name.ilike.%${searchQuery}%,surname.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .not("user_id", "is", null)
+        .limit(100);
+
+      const matchedUserIds = new Set<string>(
+        (matchingAttendees || []).map((a) => a.user_id).filter(Boolean)
+      );
+
+      // Also fetch auth users in batches to search by email
+      // Supabase listUsers maxes at 1000 per page
+      let allAuthUsers: any[] = [];
+      let fetchPage = 1;
+      const maxPages = 10; // Limit to prevent infinite loops (10 * 1000 = 10,000 users max)
+
+      while (fetchPage <= maxPages) {
+        const { data: batchData, error: batchError } = await serviceSupabase.auth.admin.listUsers({
+          page: fetchPage,
+          perPage: 1000,
+        });
+
+        if (batchError || !batchData?.users?.length) break;
+
+        allAuthUsers = [...allAuthUsers, ...batchData.users];
+        totalFromAuth = (batchData as any)?.total || allAuthUsers.length;
+
+        // Stop if we've fetched all users
+        if (allAuthUsers.length >= totalFromAuth) break;
+        fetchPage++;
+      }
+
+      // Filter auth users by email match OR by matched attendee user_ids
+      authUsers = allAuthUsers.filter((u) =>
+        u.email?.toLowerCase().includes(searchLower) || matchedUserIds.has(u.id)
+      );
+
+      // Apply pagination to search results
+      const startIndex = (safePage - 1) * safeLimit;
+      const paginatedUsers = authUsers.slice(startIndex, startIndex + safeLimit);
+      const searchTotal = authUsers.length;
+
+      if (paginatedUsers.length === 0) {
+        return NextResponse.json({
+          users: [],
+          pagination: {
+            page: safePage,
+            limit: safeLimit,
+            total: searchTotal,
+            totalPages: Math.ceil(searchTotal / safeLimit),
+            hasMore: false,
+          },
+        });
+      }
+
+      authUsers = paginatedUsers;
+      totalFromAuth = searchTotal;
+    } else {
+      // No search - use normal pagination
+      const { data: authUsersData, error: authError } = await serviceSupabase.auth.admin.listUsers({
+        page: safePage,
+        perPage: safeLimit,
+      });
+
+      if (authError) {
+        console.error("[Admin Users] Error listing users:", authError);
+        throw authError;
+      }
+
+      authUsers = authUsersData?.users || [];
+      totalFromAuth = (authUsersData as any)?.total || authUsers.length;
     }
 
     if (authUsers.length === 0) {
