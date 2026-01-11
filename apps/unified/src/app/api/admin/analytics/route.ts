@@ -80,8 +80,8 @@ export async function GET() {
       serviceClient.from("organizers").select("*", { count: "exact", head: true }),
       // Total promoters
       serviceClient.from("promoters").select("*", { count: "exact", head: true }),
-      // Total DJs
-      serviceClient.from("dj_profiles").select("*", { count: "exact", head: true }),
+      // Total DJs (using djs table, not dj_profiles)
+      serviceClient.from("djs").select("*", { count: "exact", head: true }),
       // Role distribution
       serviceClient.from("user_roles").select("role"),
       // Recent registrations (last 30 days, grouped by day)
@@ -151,9 +151,9 @@ export async function GET() {
           id
         `)
         .not("referred_by_user_id", "is", null),
-      // Top DJs by event appearances
+      // Top DJs by event appearances (using djs table, not dj_profiles)
       serviceClient
-        .from("dj_profiles")
+        .from("djs")
         .select(`
           id,
           name,
