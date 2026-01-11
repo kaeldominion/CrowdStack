@@ -587,18 +587,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   }, [activeTab, event, config.canViewTables, config.tablesApiEndpoint, eventTablesData.length, loadingTables]);
 
-  // Generate referral link for promoter
-  // Get referral code based on role
+  // Generate referral link for any user
+  // Get referral code based on role - ALWAYS include for tracking
   const getReferralCode = () => {
+    // Promoters use their promoter ID for commission tracking
     if (config.role === "promoter" && promoterId) {
       return promoterId;
     }
-    // For organizers, ALWAYS use the logged-in user's ID (not the organizer owner)
-    // This ensures team members get their own attribution, and the organizer owner
-    // gets tracked as themselves (not as the organizer entity)
-    // The logged-in user might not be a promoter, which is fine - they own the organizer
-    // so they wouldn't earn commissions anyway unless specifically set as a promoter
-    if (config.role === "organizer" && currentUserId) {
+    // All other roles use their user ID for tracking
+    // This ensures all shares are attributed to the person sharing
+    if (currentUserId) {
       return `user_${currentUserId}`;
     }
     return null;
@@ -2085,70 +2083,54 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Share Event Card */}
               <Card>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Share className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold text-primary">Share Event</h2>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Share className="h-5 w-5 text-primary" />
+                      <h2 className="text-lg font-semibold text-primary">Share Event</h2>
+                    </div>
+                    <a
+                      href={`/e/${event.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-accent-secondary text-sm inline-flex items-center gap-1 transition-colors"
+                    >
+                      <Eye className="h-3 w-3" />
+                      Preview
+                    </a>
                   </div>
 
-                  {/* Public Event Page Link */}
+                  {/* Share Link - Always includes referral code for tracking */}
                   {event.slug && (
-                    <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-primary">Public Event Page</p>
-                        <a
-                          href={`/e/${event.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:text-accent-secondary text-sm inline-flex items-center gap-1 transition-colors"
-                        >
-                          <Eye className="h-3 w-3" />
-                          View
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-primary/30 overflow-hidden">
-                          <Globe className="h-3 w-3 text-primary flex-shrink-0" />
-                          <code className="text-xs text-primary truncate">
-                            {typeof window !== 'undefined' ? window.location.origin : ''}/e/{event.slug}
-                          </code>
-                        </div>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            const url = `${window.location.origin}/e/${event.slug}`;
-                            navigator.clipboard.writeText(url);
-                            toast.success("Event link copied!");
-                          }}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Your Tracking Link (for promoters and organizers) */}
-                  {((config.role === "promoter" && promoterId) || (config.role === "organizer" && currentUserId)) && (
                     <div className="space-y-3 p-3 bg-accent-secondary/5 rounded-lg border border-accent-secondary/20">
                       <div className="flex items-center justify-between">
                         <div className="text-sm font-medium text-primary">
-                          {config.role === "promoter" ? "Your Referral Link" : "Your Tracking Link"}
+                          {config.role === "promoter" ? "Your Referral Link" : "Your Share Link"}
                         </div>
-                        <Badge variant="secondary" className="bg-accent-secondary/20 text-primary text-xs">
-                          {config.role === "promoter" ? "Earn commissions" : "Track referrals"}
-                        </Badge>
+                        {config.role === "promoter" && (
+                          <Badge variant="secondary" className="bg-accent-secondary/20 text-primary text-xs">
+                            Earn commissions
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-void rounded border border-primary/30 overflow-hidden">
-                          <LinkIcon className="h-3 w-3 text-primary flex-shrink-0" />
-                          <code className="text-xs text-primary truncate">{getReferralLink()}</code>
+                          <LinkIcon className="h-3 w-3 text-accent-secondary flex-shrink-0" />
+                          <code className="text-xs text-primary truncate">
+                            {getReferralLink() || `${typeof window !== 'undefined' ? window.location.origin : ''}/e/${event.slug}`}
+                          </code>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button
                           variant="primary"
                           size="sm"
-                          onClick={copyReferralLink}
+                          onClick={() => {
+                            const link = getReferralLink() || `${window.location.origin}/e/${event.slug}`;
+                            navigator.clipboard.writeText(link);
+                            setCopiedReferral(true);
+                            toast.success("Link copied!");
+                            setTimeout(() => setCopiedReferral(false), 2000);
+                          }}
                         >
                           {copiedReferral ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
                           {copiedReferral ? "Copied!" : "Copy"}
@@ -2157,7 +2139,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                           variant="primary"
                           size="sm"
                           onClick={async () => {
-                            const link = getReferralLink();
+                            const link = getReferralLink() || `${window.location.origin}/e/${event.slug}`;
                             if (navigator.share) {
                               try {
                                 await navigator.share({
@@ -2187,15 +2169,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                           QR
                         </Button>
                       </div>
-                      
-                      {/* Compact Referral Explainer */}
-                      <div className="pt-2 border-t border-primary/10">
-                        <p className="text-xs text-secondary">
-                          {config.role === "promoter" 
-                            ? "Share to earn commissions when referrals attend" 
-                            : "Track registrations from your personal shares"}
-                        </p>
-                      </div>
+
+                      {/* Tracking info */}
+                      {getReferralCode() && (
+                        <div className="pt-2 border-t border-primary/10">
+                          <p className="text-xs text-secondary">
+                            {config.role === "promoter"
+                              ? "Share to earn commissions when referrals attend"
+                              : "Registrations from this link are tracked to you"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
