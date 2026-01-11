@@ -37,8 +37,10 @@ interface VenueEvent {
 
 async function getVenue(slug: string) {
   try {
+    // Add timestamp to bust any edge/CDN caching
+    const cacheBuster = Date.now();
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/api/venues/by-slug/${slug}`,
+      `${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/api/venues/by-slug/${slug}?_t=${cacheBuster}`,
       { cache: 'no-store' } // Always fetch fresh data
     );
 
