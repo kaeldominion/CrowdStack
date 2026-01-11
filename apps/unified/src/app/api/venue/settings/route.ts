@@ -328,6 +328,7 @@ export async function PUT(request: NextRequest) {
         .single();
 
       const updateData: any = {};
+      // These must match actual database columns on venues table
       const allowedFields = [
         "name",
         "slug",
@@ -340,8 +341,7 @@ export async function PUT(request: NextRequest) {
         "phone",
         "email",
         "website",
-        "instagram_url",
-        "instagram_handle",
+        "instagram_url",        // NOT instagram_handle
         "logo_url",
         "cover_image_url",
         "latitude",
@@ -354,8 +354,8 @@ export async function PUT(request: NextRequest) {
         "default_registration_questions",
         "default_commission_rules",
         "default_message_templates",
-        "base_currency",
-        "capacity",
+        "currency",             // NOT base_currency
+        "capacity",             // Added via migration 171
       ];
 
       // Process allowed fields (no automatic address extraction - user must use "Update Address" button)

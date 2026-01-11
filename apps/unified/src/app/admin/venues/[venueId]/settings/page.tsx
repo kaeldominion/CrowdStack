@@ -441,9 +441,9 @@ export default function AdminVenueSettingsPage() {
                   Instagram Handle
                 </label>
                 <Input
-                  value={data.venue.instagram_handle || ""}
-                  onChange={(e) => updateVenueField("instagram_handle", e.target.value)}
-                  placeholder="@venuename"
+                  value={data.venue.instagram_url || ""}
+                  onChange={(e) => updateVenueField("instagram_url", e.target.value)}
+                  placeholder="@venuename or instagram.com/venuename"
                 />
               </div>
             </div>

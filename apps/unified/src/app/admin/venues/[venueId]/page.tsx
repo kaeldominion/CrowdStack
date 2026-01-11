@@ -17,7 +17,7 @@ interface VenueData {
   email?: string;
   phone?: string;
   website?: string;
-  instagram_handle?: string;
+  instagram_url?: string;
   description?: string;
   capacity?: number;
   google_maps_url?: string;
@@ -103,7 +103,7 @@ export default function AdminVenueOverviewPage() {
   }
 
   const hasLocation = venue.latitude && venue.longitude;
-  const hasContactInfo = venue.email || venue.phone || venue.website || venue.instagram_handle;
+  const hasContactInfo = venue.email || venue.phone || venue.website || venue.instagram_url;
 
   return (
     <div className="space-y-6">
@@ -228,16 +228,16 @@ export default function AdminVenueOverviewPage() {
                       </a>
                     </div>
                   )}
-                  {venue.instagram_handle && (
+                  {venue.instagram_url && (
                     <div className="flex items-center gap-2 text-sm">
                       <Instagram className="h-4 w-4 text-pink-500" />
                       <a
-                        href={`https://instagram.com/${venue.instagram_handle.replace('@', '')}`}
+                        href={`https://instagram.com/${venue.instagram_url.replace('@', '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[var(--text-primary)] hover:underline"
                       >
-                        {venue.instagram_handle.startsWith('@') ? venue.instagram_handle : `@${venue.instagram_handle}`}
+                        {venue.instagram_url.startsWith('@') ? venue.instagram_url : `@${venue.instagram_url}`}
                       </a>
                     </div>
                   )}
