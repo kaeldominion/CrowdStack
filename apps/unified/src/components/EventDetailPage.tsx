@@ -687,7 +687,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       const response = await fetch(config.eventApiEndpoint);
       if (response.ok) {
         const data = await response.json();
-        console.log("Event data loaded:", data.event?.name, "Promoters:", data.event?.event_promoters?.length, data.event?.event_promoters);
 
         // Status stays as published/draft - "ended" is determined by date, not status
         setEvent(data.event);
@@ -733,15 +732,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
   const loadStats = async () => {
     if (!config.statsApiEndpoint) {
-      console.log("No stats endpoint configured");
       return;
     }
     try {
-      console.log("Loading stats from:", config.statsApiEndpoint);
       const response = await fetch(config.statsApiEndpoint);
       if (response.ok) {
         const data = await response.json();
-        console.log("Stats loaded:", data);
         setStats(data);
       } else {
         console.error("Stats API returned error:", response.status, await response.text());
@@ -952,15 +948,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     setSaving(true);
     try {
       const updates: Record<string, any> = {};
-      
-      // Debug logging for date comparison
-      console.log("[EventEdit] Comparing dates:", {
-        editForm_start: editForm.start_time,
-        event_start_raw: event.start_time,
-        event_start_sliced: event.start_time?.slice(0, 16),
-        are_different: editForm.start_time !== event.start_time?.slice(0, 16),
-      });
-      
+
       if (editForm.name !== event.name) updates.name = editForm.name;
       if (editForm.slug !== event.slug) updates.slug = editForm.slug;
       if (editForm.description !== (event.description || "")) updates.description = editForm.description || null;
@@ -972,7 +960,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         updates.end_time = editForm.end_time ? new Date(editForm.end_time).toISOString() : null;
       }
       
-      console.log("[EventEdit] Updates to save:", updates);
       if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
@@ -983,11 +970,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       const currentPhotoNotice = Boolean(event.show_photo_email_notice);
       if (editForm.show_photo_email_notice !== currentPhotoNotice) {
         updates.show_photo_email_notice = editForm.show_photo_email_notice;
-        console.log("[EventEdit] Photo email notice changed:", {
-          from: currentPhotoNotice,
-          to: editForm.show_photo_email_notice,
-          eventValue: event.show_photo_email_notice,
-        });
       }
 
       // Registration type and external ticket URL
@@ -1012,9 +994,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         ? config.eventApiEndpoint
         : `/api/events/${eventId}`;
 
-      console.log("[EventEdit] Sending to endpoint:", endpoint);
-      console.log("[EventEdit] Request body:", JSON.stringify(updates));
-      
       const response = await fetch(endpoint, {
         method: config.role === "venue" ? "PUT" : "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -1025,8 +1004,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         ),
       });
 
-      console.log("[EventEdit] Response status:", response.status);
-      
       if (!response.ok) {
         const error = await response.json();
         console.error("[EventEdit] Error response:", error);
@@ -1034,8 +1011,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       }
 
       const responseData = await response.json();
-      console.log("[EventEdit] Success response:", responseData);
-      console.log("[EventEdit] Saved start_time:", responseData.event?.start_time);
 
       await loadEventData();
       setShowEditModal(false);
@@ -1169,13 +1144,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   };
 
   const loadPromoterRequests = async () => {
-    console.log("Loading promoter requests for event:", eventId);
     try {
       const response = await fetch(`/api/events/${eventId}/promoter-requests`);
-      console.log("Promoter requests response status:", response.status);
       if (response.ok) {
         const data = await response.json();
-        console.log("Promoter requests loaded:", data);
         setPromoterRequests(data.requests || []);
       } else {
         const errorData = await response.text();
@@ -1196,16 +1168,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       });
 
       const data = await response.json();
-      console.log(`Promoter request ${action} response:`, data);
-      
+
       if (response.ok) {
         // Remove the request from the list
         setPromoterRequests((prev) => prev.filter((r) => r.id !== requestId));
         // If approved, reload event data to get updated promoters list
         if (action === "approve") {
-          console.log("Reloading event data after approval...");
           await loadEventData(false);
-          console.log("Event data reloaded");
         }
       } else {
         alert(data.error || `Failed to ${action} request`);
@@ -3797,10 +3766,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             
-                            // Log file details for debugging
                             const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-                            console.log(`[VideoFlier Client] Selected file: ${file.name}, size: ${fileSizeMB}MB, type: ${file.type}`);
-                            
+
                             // Validate size client-side (50MB max - Supabase Storage limit)
                             const maxSizeBytes = 50 * 1024 * 1024; // 50MB
                             
@@ -3893,8 +3860,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                                 .getPublicUrl(uploadData.path);
                               
                               const publicUrl = urlData.publicUrl;
-                              console.log(`[VideoFlier Client] Upload successful: ${publicUrl}`);
-                              
+
                               // Update event record via API (lightweight request, just the URL)
                               const updateResponse = await fetch(`/api/organizer/events/${eventId}/video-flier`, {
                                 method: "POST",

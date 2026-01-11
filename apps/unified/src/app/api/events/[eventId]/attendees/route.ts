@@ -45,8 +45,7 @@ export async function GET(
   
   try {
     const userId = await getUserId();
-    console.log("[EventAttendees] User ID:", userId, "Event ID:", eventId);
-    
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -159,10 +158,7 @@ export async function GET(
       }
     }
 
-    console.log("[EventAttendees] Access check:", { hasAccess, isSuperadmin, isVenueAdmin, isOrganizer, isPromoter, userOrganizerId, userVenueId, userPromoterId });
-    
     if (!hasAccess) {
-      console.log("[EventAttendees] Access denied for user", userId);
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -215,7 +211,6 @@ export async function GET(
             undo_at: c.undo_at,
           });
         });
-        console.log(`[EventAttendees] Found ${checkins?.length || 0} checkins for ${regIds.length} registrations`);
       }
     }
 
@@ -283,8 +278,6 @@ export async function GET(
       });
     }
 
-    console.log("[EventAttendees] Total registrations:", registrations?.length);
-    
     // Format results with source tracking
     let attendees: AttendeeWithSource[] = (registrations || []).map((reg: any) => {
       const checkin = checkinMap.get(reg.id) || null;
