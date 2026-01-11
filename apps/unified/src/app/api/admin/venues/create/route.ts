@@ -28,10 +28,13 @@ export async function POST(request: NextRequest) {
       .from("venues")
       .insert({
         name: body.name,
+        google_maps_url: body.google_maps_url || null,
+        latitude: body.latitude || null,
+        longitude: body.longitude || null,
         address: body.address || null,
         city: body.city || null,
         state: body.state || null,
-        country: body.country || "US",
+        country: body.country || null,
         phone: body.phone || null,
         email: body.email || null,
         website: body.website || null,
