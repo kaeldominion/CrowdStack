@@ -234,24 +234,46 @@ export default function VenueSettingsPage() {
     }
   };
 
+  // Image upload state
+  const [uploadingImage, setUploadingImage] = useState<"logo" | "cover" | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+
   const handleImageUpload = async (type: "logo" | "cover", file: File) => {
     if (!data) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", type);
+    setUploadingImage(type);
+    setImageUploadError(null);
 
     try {
-      // For now, we'll use a simple approach - in production, upload to storage first
-      // This would need to be implemented with proper storage upload
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const url = reader.result as string;
-        updateVenueField(type === "logo" ? "logo_url" : "cover_image_url", url);
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Build URL with type and optional venueId
+      const params = new URLSearchParams({ type });
+      if (venueId) params.set("venueId", venueId);
+
+      const response = await fetch(`/api/venue/upload-image?${params}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload image");
+      }
+
+      const result = await response.json();
+
+      // Update local state with the storage URL
+      updateVenueField(type === "logo" ? "logo_url" : "cover_image_url", result.url);
+
+      // Reload settings to ensure we have the latest data
+      await loadSettings();
+    } catch (error: any) {
       console.error("Failed to upload image:", error);
+      setImageUploadError(error.message || "Failed to upload image");
+    } finally {
+      setUploadingImage(null);
     }
   };
 
@@ -749,26 +771,69 @@ export default function VenueSettingsPage() {
             <div className="space-y-6">
               <h2 className="text-2xl font-semibold text-primary">Branding</h2>
 
+              {/* Image Upload Error */}
+              {imageUploadError && (
+                <div className="flex items-center gap-2 bg-accent-error/10 text-accent-error border border-accent-error/20 rounded-lg p-3">
+                  <X className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{imageUploadError}</p>
+                  <button
+                    onClick={() => setImageUploadError(null)}
+                    className="ml-auto p-1 hover:bg-accent-error/20 rounded"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Logo Upload */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">Logo</label>
                 <p className="text-xs text-secondary mb-3">
-                  Recommended: 512×512px (square), PNG with transparent background. Max 2MB.
+                  Recommended: 512×512px (square), PNG with transparent background. Max 5MB.
                 </p>
-                {data.venue.logo_url ? (
-                  <div className="relative w-32 h-32 border-2 border-border mb-2">
-                    <Image src={data.venue.logo_url} alt="Logo" fill sizes="128px" className="object-contain" />
+                <div className="flex items-start gap-4">
+                  {data.venue.logo_url ? (
+                    <div className="relative w-32 h-32 border-2 border-border rounded-lg overflow-hidden flex-shrink-0">
+                      <Image src={data.venue.logo_url} alt="Logo" fill sizes="128px" className="object-contain" />
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-secondary text-xs">No logo</span>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload("logo", file);
+                      }}
+                      className="hidden"
+                      id="logo-upload"
+                      disabled={uploadingImage === "logo"}
+                    />
+                    <label
+                      htmlFor="logo-upload"
+                      className={`inline-flex items-center gap-2 px-4 py-2 bg-glass border border-border rounded-lg text-sm cursor-pointer hover:bg-white/5 transition-colors ${
+                        uploadingImage === "logo" ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      {uploadingImage === "logo" ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          Upload Logo
+                        </>
+                      )}
+                    </label>
+                    <p className="text-xs text-secondary">JPEG, PNG, or WebP</p>
                   </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload("logo", file);
-                  }}
-                  className="text-sm"
-                />
+                </div>
               </div>
 
               {/* Cover Image Upload */}
@@ -778,37 +843,49 @@ export default function VenueSettingsPage() {
                   Recommended: 1920×640px (3:1 aspect ratio), JPG or PNG. Max 5MB. This image appears at the top of your public venue page.
                 </p>
                 {data.venue.cover_image_url ? (
-                  <div className="relative w-full h-48 border-2 border-border mb-2">
+                  <div className="relative w-full h-48 border-2 border-border rounded-lg overflow-hidden mb-3">
                     <Image src={data.venue.cover_image_url} alt="Cover" fill sizes="100vw" className="object-cover" />
                   </div>
-                ) : null}
+                ) : (
+                  <div className="w-full h-48 border-2 border-dashed border-border rounded-lg flex items-center justify-center mb-3">
+                    <span className="text-secondary text-sm">No cover image</span>
+                  </div>
+                )}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleImageUpload("cover", file);
                   }}
-                  className="text-sm"
+                  className="hidden"
+                  id="cover-upload"
+                  disabled={uploadingImage === "cover"}
                 />
+                <label
+                  htmlFor="cover-upload"
+                  className={`inline-flex items-center gap-2 px-4 py-2 bg-glass border border-border rounded-lg text-sm cursor-pointer hover:bg-white/5 transition-colors ${
+                    uploadingImage === "cover" ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {uploadingImage === "cover" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload Cover
+                    </>
+                  )}
+                </label>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="primary"
-                  onClick={() => saveSettings("branding")}
-                  disabled={saving}
-                  loading={saving}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Branding
-                </Button>
-                {savedTab === "branding" && (
-                  <div className="flex items-center gap-2 text-accent-success animate-in fade-in duration-300">
-                    <Check className="h-4 w-4" />
-                    <span className="text-sm font-medium">Saved!</span>
-                  </div>
-                )}
+              <div className="bg-accent-primary/10 border border-accent-primary/20 rounded-lg p-3">
+                <p className="text-xs text-secondary">
+                  <strong>Note:</strong> Images are uploaded immediately when selected and saved to the database. No need to click "Save Branding" for image changes.
+                </p>
               </div>
             </div>
           </Card>

@@ -20,6 +20,8 @@ export async function GET(
     const supabase = createServiceRoleClient();
 
     // Get venue by slug
+    console.log(`[Venue API] Fetching venue with slug: "${params.slug}"`);
+
     const { data: venue, error: venueError } = await supabase
       .from("venues")
       .select("*")
@@ -27,11 +29,14 @@ export async function GET(
       .single();
 
     if (venueError || !venue) {
+      console.log(`[Venue API] Venue not found for slug: "${params.slug}", error:`, venueError);
       return NextResponse.json(
         { error: "Venue not found" },
         { status: 404 }
       );
     }
+
+    console.log(`[Venue API] Found venue: id=${venue.id}, name=${venue.name}, logo_url=${venue.logo_url?.substring(0, 50)}...`);
 
     // Get gallery images (ordered by display_order, hero first)
     const { data: gallery } = await supabase
