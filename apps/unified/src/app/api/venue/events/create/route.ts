@@ -209,6 +209,7 @@ export async function POST(request: NextRequest) {
         show_photo_email_notice: body.show_photo_email_notice || false,
         registration_type: body.registration_type || "guestlist",
         external_ticket_url: body.external_ticket_url || null,
+        flier_url: body.flier_url || null,
       })
       .select()
       .single();

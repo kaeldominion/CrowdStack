@@ -1,17 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Textarea, Card } from "@crowdstack/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
+import { TIMEZONE_GROUPS, getLocalTimezone } from "@/lib/constants/timezones";
 
 export default function VenueNewEventPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [organizers, setOrganizers] = useState<any[]>([]);
   const [promoters, setPromoters] = useState<any[]>([]);
+  const [flierFile, setFlierFile] = useState<File | null>(null);
+  const [flierPreview, setFlierPreview] = useState<string | null>(null);
+  const [uploadingFlier, setUploadingFlier] = useState(false);
+  const flierInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -20,6 +26,7 @@ export default function VenueNewEventPage() {
     start_time: "",
     end_time: "",
     capacity: "",
+    timezone: getLocalTimezone(),
     selected_promoters: [] as string[],
     create_new_organizer: false,
     new_organizer_name: "",
@@ -142,11 +149,77 @@ export default function VenueNewEventPage() {
     }
   };
 
+  const handleFlierSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Please select a JPEG, PNG, or WebP image");
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be less than 10MB");
+      return;
+    }
+
+    setFlierFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFlierPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeFlier = () => {
+    setFlierFile(null);
+    setFlierPreview(null);
+    if (flierInputRef.current) {
+      flierInputRef.current.value = "";
+    }
+  };
+
+  const uploadFlier = async (eventId: string): Promise<string | null> => {
+    if (!flierFile) return null;
+
+    setUploadingFlier(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", flierFile);
+      formDataUpload.append("eventId", eventId);
+      formDataUpload.append("type", "flier");
+
+      const response = await fetch("/api/events/upload-image", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to upload flier");
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error("Error uploading flier:", error);
+      return null;
+    } finally {
+      setUploadingFlier(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // First upload flier if selected (we need to create event first to get ID)
+      // So we'll create with flier_url: null, then update after upload
       const eventData: any = {
         name: formData.name,
         slug: formData.slug,
@@ -154,6 +227,7 @@ export default function VenueNewEventPage() {
         start_time: new Date(formData.start_time).toISOString(),
         end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
         capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+        timezone: formData.timezone,
         organizer_id: formData.organizer_id || undefined,
         create_new_organizer: formData.create_new_organizer,
         new_organizer_name: formData.new_organizer_name || undefined,
@@ -179,7 +253,22 @@ export default function VenueNewEventPage() {
       }
 
       const data = await response.json();
-      router.push(`/app/venue/events/${data.event.id}`);
+      const eventId = data.event.id;
+
+      // Upload flier if selected
+      if (flierFile) {
+        const flierUrl = await uploadFlier(eventId);
+        if (flierUrl) {
+          // Update event with flier URL
+          await fetch(`/api/venue/events/${eventId}/edit`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ flier_url: flierUrl }),
+          });
+        }
+      }
+
+      router.push(`/app/venue/events/${eventId}`);
     } catch (error: any) {
       alert(error.message || "Failed to create event");
     } finally {
@@ -285,6 +374,29 @@ export default function VenueNewEventPage() {
             />
           </div>
 
+          {/* Timezone */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-2">Timezone</label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+              className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
+            >
+              {Object.entries(TIMEZONE_GROUPS).map(([region, timezones]) => (
+                <optgroup key={region} label={region}>
+                  {timezones.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label} ({tz.offset})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-secondary">
+              Event times will be displayed in this timezone
+            </p>
+          </div>
+
           <Input
             label="Capacity (Optional)"
             type="number"
@@ -292,6 +404,50 @@ export default function VenueNewEventPage() {
             onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
             placeholder="500"
           />
+
+          {/* Flier Upload */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-primary">Event Flier</label>
+            <input
+              ref={flierInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFlierSelect}
+              className="hidden"
+            />
+
+            {flierPreview ? (
+              <div className="relative w-full max-w-xs">
+                <div className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border">
+                  <Image
+                    src={flierPreview}
+                    alt="Flier preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={removeFlier}
+                  className="absolute -top-2 -right-2 p-1 bg-accent-error rounded-full text-white hover:opacity-80"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => flierInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-lg hover:border-accent-secondary/50 transition-colors text-secondary hover:text-primary"
+              >
+                <Upload className="h-5 w-5" />
+                <span>Upload flier image</span>
+              </button>
+            )}
+            <p className="text-xs text-secondary">
+              JPEG, PNG or WebP, max 10MB. Recommended aspect ratio 3:4
+            </p>
+          </div>
 
           {/* Registration Type */}
           <div className="space-y-4 border-t border-border pt-6">
