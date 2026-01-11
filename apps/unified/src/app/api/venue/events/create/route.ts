@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Get or create organizer
+    // If no organizer specified, use the venue's house organizer (create if needed)
     let organizerId: string;
 
     if (body.create_new_organizer && body.new_organizer_name) {
@@ -74,10 +75,44 @@ export async function POST(request: NextRequest) {
     } else if (body.organizer_id) {
       organizerId = body.organizer_id;
     } else {
-      return NextResponse.json(
-        { error: "Organizer is required" },
-        { status: 400 }
-      );
+      // No organizer specified - use venue's house organizer or create one
+      // First, get the venue to use its name
+      const { data: venue } = await serviceSupabase
+        .from("venues")
+        .select("id, name")
+        .eq("id", venueId)
+        .single();
+
+      if (!venue) {
+        return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+      }
+
+      // Check if venue already has a house organizer (organizer with same name and created_by matching venue's created_by)
+      const { data: existingOrganizer } = await serviceSupabase
+        .from("organizers")
+        .select("id")
+        .eq("name", venue.name)
+        .limit(1)
+        .single();
+
+      if (existingOrganizer) {
+        organizerId = existingOrganizer.id;
+      } else {
+        // Create house organizer for the venue
+        const { data: newOrganizer, error: orgError } = await serviceSupabase
+          .from("organizers")
+          .insert({
+            name: venue.name,
+            created_by: userId,
+          })
+          .select()
+          .single();
+
+        if (orgError) {
+          throw orgError;
+        }
+        organizerId = newOrganizer.id;
+      }
     }
 
     // Ensure slug is unique - generate unique slug if needed
