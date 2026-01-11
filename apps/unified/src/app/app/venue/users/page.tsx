@@ -242,7 +242,7 @@ export default function VenueUsersPage() {
                             <UserIcon className="h-4 w-4 text-secondary" />
                             <div>
                               <div className="font-medium">
-                                {venueUser.user?.email || "Unknown"}
+                                {(venueUser.user as any)?.name || venueUser.user?.email || "Unknown"}
                               </div>
                               {venueUser.user?.email && (
                                 <div className="text-xs text-secondary flex items-center gap-1">

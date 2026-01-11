@@ -61,22 +61,30 @@ export async function GET(request: Request) {
 
     // Get user details from auth.users using service role
     const userIds = (venueUsers || []).map((vu: any) => vu.user_id);
-    const userMap = new Map<string, { id: string; email: string; created_at: string }>();
+    const userMap = new Map<string, { id: string; email: string; name: string | null; created_at: string }>();
 
     if (userIds.length > 0) {
-      // Use admin API to get user emails
-      const { data: authUsers } = await serviceSupabase.auth.admin.listUsers();
-      
-      if (authUsers?.users) {
-        authUsers.users.forEach((authUser) => {
-          if (userIds.includes(authUser.id)) {
-            userMap.set(authUser.id, {
-              id: authUser.id,
-              email: authUser.email || "Unknown",
-              created_at: authUser.created_at,
+      // Fetch each user individually to avoid pagination issues
+      for (const userId of userIds) {
+        try {
+          const { data: authUser } = await serviceSupabase.auth.admin.getUserById(userId);
+          if (authUser?.user) {
+            const user = authUser.user;
+            // Try to get name from user_metadata or raw_user_meta_data
+            const name = user.user_metadata?.name ||
+                         user.user_metadata?.full_name ||
+                         user.raw_user_meta_data?.name ||
+                         null;
+            userMap.set(userId, {
+              id: user.id,
+              email: user.email || "Unknown",
+              name: name,
+              created_at: user.created_at,
             });
           }
-        });
+        } catch (err) {
+          console.warn(`Could not fetch user ${userId}:`, err);
+        }
       }
     }
 
@@ -88,16 +96,23 @@ export async function GET(request: Request) {
       .single();
 
     // Transform the data to match our type
-    const users = (venueUsers || []).map((vu: any) => ({
-      id: vu.id,
-      venue_id: vu.venue_id,
-      user_id: vu.user_id,
-      role: vu.role,
-      permissions: vu.permissions || DEFAULT_VENUE_PERMISSIONS,
-      assigned_by: vu.assigned_by,
-      assigned_at: vu.assigned_at,
-      user: userMap.get(vu.user_id),
-    }));
+    const users = (venueUsers || []).map((vu: any) => {
+      const userData = userMap.get(vu.user_id);
+      return {
+        id: vu.id,
+        venue_id: vu.venue_id,
+        user_id: vu.user_id,
+        role: vu.role,
+        permissions: vu.permissions || DEFAULT_VENUE_PERMISSIONS,
+        assigned_by: vu.assigned_by,
+        assigned_at: vu.assigned_at,
+        // Nested user object (for venue users page)
+        user: userData,
+        // Flattened fields (for admin page backwards compatibility)
+        email: userData?.email,
+        user_name: userData?.name,
+      };
+    });
 
     return NextResponse.json({ 
       users,
