@@ -203,6 +203,18 @@ export async function PATCH(
       updateData.table_booking_mode = body.table_booking_mode;
     }
 
+    // Allow status changes (publish/unpublish)
+    if (body.status !== undefined) {
+      const validStatuses = ["draft", "published"];
+      if (!validStatuses.includes(body.status)) {
+        return NextResponse.json(
+          { error: "Invalid status value" },
+          { status: 400 }
+        );
+      }
+      updateData.status = body.status;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },
