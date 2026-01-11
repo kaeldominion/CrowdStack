@@ -190,20 +190,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log the merge action
-    await serviceSupabase.from("admin_audit_logs").insert({
-      user_id: user.id,
-      action: "dj_merge",
-      entity_type: "dj",
-      entity_id: primaryDjId,
-      details: {
-        primaryDj: primaryDj.name,
-        mergedDjs: mergeDjs.map(d => ({ id: d.id, name: d.name })),
-        stats,
-      },
-    }).catch(() => {
+    // Log the merge action (ignore errors if table doesn't exist)
+    try {
+      await serviceSupabase.from("admin_audit_logs").insert({
+        user_id: user.id,
+        action: "dj_merge",
+        entity_type: "dj",
+        entity_id: primaryDjId,
+        details: {
+          primaryDj: primaryDj.name,
+          mergedDjs: mergeDjs.map(d => ({ id: d.id, name: d.name })),
+          stats,
+        },
+      });
+    } catch {
       // Audit log table might not exist
-    });
+    }
 
     return NextResponse.json({
       success: true,
