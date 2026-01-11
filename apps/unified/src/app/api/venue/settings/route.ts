@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
@@ -443,6 +444,15 @@ export async function PUT(request: NextRequest) {
       .eq("venue_id", venueId)
       .order("tag_type", { ascending: true })
       .order("tag_value", { ascending: true });
+
+    // Revalidate venue public profile page to clear ISR cache
+    if (venue?.slug) {
+      try {
+        revalidatePath(`/v/${venue.slug}`);
+      } catch (e) {
+        console.error("Failed to revalidate venue page:", e);
+      }
+    }
 
     return NextResponse.json({
       venue: {
