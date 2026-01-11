@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { CACHE, getCacheControl } from "@/lib/cache";
 import { createTimer } from "@/lib/perf";
 
-// Note: Response data can be large (gallery + events), so we rely on CDN caching via headers
-// rather than Next.js server caching which has a 2MB limit
+// Force dynamic to ensure fresh data - venue settings need to update immediately
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/venues/by-slug/[slug]
@@ -142,11 +141,12 @@ export async function GET(
       .eq("status", "published");
 
     const duration = timer.end();
-    
+
     const headers: HeadersInit = {
-      'Cache-Control': getCacheControl(CACHE.publicEntity),
+      // No CDN caching - venue data needs to update immediately when settings change
+      'Cache-Control': 'no-store, must-revalidate',
     };
-    
+
     // Add timing header in development
     if (process.env.NODE_ENV === 'development') {
       headers['X-Response-Time'] = `${duration}ms`;

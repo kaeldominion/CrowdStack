@@ -15,9 +15,8 @@ import { MapPreview } from "@/components/venue/MapPreview";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
 import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 
-// ISR: Revalidate venue pages every 5 minutes
-// This provides CDN caching while keeping data reasonably fresh
-export const revalidate = 300;
+// Force dynamic to ensure fresh data when venue settings are updated
+export const dynamic = 'force-dynamic';
 
 interface VenueEvent {
   id: string;
@@ -40,7 +39,7 @@ async function getVenue(slug: string) {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/api/venues/by-slug/${slug}`,
-      { next: { revalidate: 300 } } // Cache for 5 minutes, matches page-level revalidate
+      { cache: 'no-store' } // Always fetch fresh data
     );
 
     if (!response.ok) {
