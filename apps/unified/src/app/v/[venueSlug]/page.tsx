@@ -145,11 +145,11 @@ export default async function VenuePage({
   const shareUrl = `${baseUrl}/v/${params.venueSlug}`;
   const mapsUrl = getGoogleMapsUrl(venue);
   
-  // Get hero image from venue (not event fliers)
-  // Priority: gallery hero image > any gallery image > cover_image_url
+  // Get hero image from venue
+  // Priority: cover_image_url (explicit header) > gallery hero image > first gallery image
   const heroImageFromGallery = gallery.find((g) => g.is_hero)?.storage_path;
   const firstGalleryImage = gallery[0]?.storage_path;
-  const heroImage = getImageUrl(heroImageFromGallery) || getImageUrl(firstGalleryImage) || getImageUrl(venue.cover_image_url);
+  const heroImage = getImageUrl(venue.cover_image_url) || getImageUrl(heroImageFromGallery) || getImageUrl(firstGalleryImage);
 
   // Group tags by type
   const musicTags = tags.filter(t => t.tag_type === "music").map(t => t.tag_value);
