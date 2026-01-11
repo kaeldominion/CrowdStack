@@ -70,10 +70,9 @@ export async function GET(request: Request) {
           const { data: authUser } = await serviceSupabase.auth.admin.getUserById(userId);
           if (authUser?.user) {
             const user = authUser.user;
-            // Try to get name from user_metadata or raw_user_meta_data
+            // Try to get name from user_metadata
             const name = user.user_metadata?.name ||
                          user.user_metadata?.full_name ||
-                         user.raw_user_meta_data?.name ||
                          null;
             userMap.set(userId, {
               id: user.id,
