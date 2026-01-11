@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
-import { deleteFromStorage } from "@crowdstack/shared/storage/upload";
 
 /**
- * DELETE /api/venue/gallery/[imageId]
- * Delete specific gallery image
+ * POST /api/venue/gallery/[imageId]/cover
+ * Set gallery image as venue cover image
  * Query params:
  *   - venueId=xxx (optional, for admin access)
  */
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
-export async function DELETE(
+export async function POST(
   request: NextRequest,
   { params }: { params: { imageId: string } }
 ) {
@@ -41,10 +40,8 @@ export async function DELETE(
     let venueId: string | null = null;
 
     if (venueIdParam && isSuperadmin) {
-      // Admin can specify any venue
       venueId = venueIdParam;
     } else if (isVenueAdmin) {
-      // Venue admins can only manage their own venue
       venueId = await getUserVenueId();
     }
 
@@ -58,10 +55,10 @@ export async function DELETE(
     // Use service role client to bypass RLS
     const serviceClient = createServiceRoleClient();
 
-    // Verify image belongs to venue and get storage path
+    // Get the gallery image
     const { data: image, error: imageError } = await serviceClient
       .from("venue_gallery")
-      .select("storage_path, thumbnail_path")
+      .select("storage_path")
       .eq("id", params.imageId)
       .eq("venue_id", venueId)
       .single();
@@ -73,38 +70,35 @@ export async function DELETE(
       );
     }
 
-    // Delete from storage
-    try {
-      await deleteFromStorage("venue-images", image.storage_path);
-      if (image.thumbnail_path && image.thumbnail_path !== image.storage_path) {
-        await deleteFromStorage("venue-images", image.thumbnail_path);
-      }
-    } catch (storageError) {
-      console.error("Failed to delete from storage:", storageError);
-      // Continue with database deletion even if storage deletion fails
-    }
+    // Construct the public URL for the storage path
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+    const publicUrl = projectRef
+      ? `https://${projectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
+      : image.storage_path;
 
-    // Delete from database using service role client
-    const { error: deleteError } = await serviceClient
-      .from("venue_gallery")
-      .delete()
-      .eq("id", params.imageId)
-      .eq("venue_id", venueId);
+    // Update venue cover_image_url
+    const { error: updateError } = await serviceClient
+      .from("venues")
+      .update({
+        cover_image_url: publicUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", venueId);
 
-    if (deleteError) {
+    if (updateError) {
       return NextResponse.json(
-        { error: deleteError.message || "Failed to delete image" },
+        { error: updateError.message || "Failed to update cover image" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, cover_image_url: publicUrl });
   } catch (error: any) {
-    console.error("Failed to delete gallery image:", error);
+    console.error("Failed to set cover image:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to delete image" },
+      { error: error.message || "Failed to set cover image" },
       { status: 500 }
     );
   }
 }
-

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
 /**
  * POST /api/venue/gallery/[imageId]/hero
  * Set image as hero image
+ * Query params:
+ *   - venueId=xxx (optional, for admin access)
  */
 
 // Force dynamic rendering since this route uses cookies() or createClient()
@@ -24,21 +26,37 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await userHasRoleOrSuperadmin("venue_admin");
-    if (!hasAccess) {
+    const isSuperadmin = await userHasRoleOrSuperadmin("superadmin");
+    const isVenueAdmin = await userHasRoleOrSuperadmin("venue_admin");
+
+    if (!isSuperadmin && !isVenueAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const venueId = await getUserVenueId();
+    // Get venueId from query params (for admin) or from user's linked venue
+    const { searchParams } = new URL(request.url);
+    const venueIdParam = searchParams.get("venueId");
+
+    let venueId: string | null = null;
+
+    if (venueIdParam && isSuperadmin) {
+      venueId = venueIdParam;
+    } else if (isVenueAdmin) {
+      venueId = await getUserVenueId();
+    }
+
     if (!venueId) {
       return NextResponse.json(
-        { error: "No venue found for user" },
+        { error: "No venue found" },
         { status: 404 }
       );
     }
 
+    // Use service role client to bypass RLS
+    const serviceClient = createServiceRoleClient();
+
     // Verify image belongs to venue
-    const { data: image, error: imageError } = await supabase
+    const { data: image, error: imageError } = await serviceClient
       .from("venue_gallery")
       .select("*")
       .eq("id", params.imageId)
@@ -53,7 +71,7 @@ export async function POST(
     }
 
     // Unset all other hero images
-    await supabase
+    await serviceClient
       .from("venue_gallery")
       .update({ is_hero: false })
       .eq("venue_id", venueId)
@@ -61,7 +79,7 @@ export async function POST(
       .neq("id", params.imageId);
 
     // Set this image as hero
-    const { data: updatedImage, error: updateError } = await supabase
+    const { data: updatedImage, error: updateError } = await serviceClient
       .from("venue_gallery")
       .update({ is_hero: true })
       .eq("id", params.imageId)

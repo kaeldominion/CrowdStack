@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { uploadToStorage, deleteFromStorage } from "@crowdstack/shared/storage/upload";
@@ -48,7 +48,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: gallery, error } = await supabase
+    // Use service role client to bypass RLS
+    const serviceClient = createServiceRoleClient();
+
+    const { data: gallery, error } = await serviceClient
       .from("venue_gallery")
       .select("*")
       .eq("venue_id", venueId)
@@ -160,9 +163,12 @@ export async function POST(request: NextRequest) {
     // Generate thumbnail path (same as storage path for now, can be enhanced later)
     const thumbnailPath = storagePath;
 
+    // Use service role client for database operations to bypass RLS
+    const serviceClient = createServiceRoleClient();
+
     // If setting as hero, unset other hero images
     if (isHero) {
-      await supabase
+      await serviceClient
         .from("venue_gallery")
         .update({ is_hero: false })
         .eq("venue_id", venueId)
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get max display_order to append at end
-    const { data: lastImage } = await supabase
+    const { data: lastImage } = await serviceClient
       .from("venue_gallery")
       .select("display_order")
       .eq("venue_id", venueId)
@@ -181,7 +187,7 @@ export async function POST(request: NextRequest) {
     const displayOrder = lastImage?.display_order ? lastImage.display_order + 1 : 0;
 
     // Insert gallery record
-    const { data: galleryImage, error: insertError } = await supabase
+    const { data: galleryImage, error: insertError } = await serviceClient
       .from("venue_gallery")
       .insert({
         venue_id: venueId,
