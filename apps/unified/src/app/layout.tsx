@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   title: "CrowdStack - Run events with data, not guesswork",
   description: "The operating system for modern events & venues. Track attendance, attribution, payouts, and performance.",
   icons: {
-    icon: "/icon.svg",
-    apple: "/apple-icon.svg",
+    icon: "/icon.svg?v=2",
+    apple: "/apple-icon.svg?v=2",
   },
 };
 
