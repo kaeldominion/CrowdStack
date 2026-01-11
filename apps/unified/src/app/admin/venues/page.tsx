@@ -1,90 +1,117 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Building2, Plus, Search, ChevronRight, ExternalLink } from "lucide-react";
+import { Building2, Plus, Search, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
 import { formatVenueLocation } from "@/lib/utils/format-venue-location";
 import { CreateVenueModal } from "@/components/CreateVenueModal";
 import { EditVenueModal } from "@/components/EditVenueModal";
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export default function AdminVenuesPage() {
   const [venues, setVenues] = useState<any[]>([]);
-  const [filteredVenues, setFilteredVenues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingVenue, setEditingVenue] = useState<any | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadVenues();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterVenues();
-  }, [search, venues]);
+    setVenues([]);
+    setPagination(null);
+    setLoading(true);
+    loadVenues(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadVenues = async () => {
+  const loadVenues = async (page: number = 1, searchQuery: string = "") => {
     try {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Admin Venues] Starting to load venues...");
-        console.log("[Admin Venues] Fetching from:", "/api/admin/venues");
-        console.log("[Admin Venues] Current URL:", typeof window !== "undefined" ? window.location.href : "server");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
       }
-      
-      const response = await fetch("/api/admin/venues");
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Admin Venues] Response status:", response.status, response.statusText);
-        console.log("[Admin Venues] Response headers:", Object.fromEntries(response.headers.entries()));
-      }
-      
+
+      const response = await fetch(`/api/admin/venues?${params}`);
       if (!response.ok) {
-        const errorData = await response.json().catch((e) => {
-          console.error("[Admin Venues] Failed to parse error response:", e);
-          return { error: "Unknown error" };
-        });
-        console.error("[Admin Venues] Failed to load venues:", response.status, errorData);
-        
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
         if (response.status === 401) {
           alert("Unauthorized. Please log in again.");
         } else if (response.status === 403) {
           alert("Access denied. You need superadmin role to view venues.");
-        } else if (response.status === 502) {
-          alert("Proxy error. Check if apps/app is running on port 3007.");
-        } else {
-          alert(`Failed to load venues: ${errorData.error || response.statusText}`);
         }
         throw new Error(errorData.error || "Failed to load venues");
       }
-      
+
       const data = await response.json();
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Admin Venues] Received data:", data);
-        console.log("[Admin Venues] Venues count:", data.venues?.length || 0);
+
+      if (page === 1) {
+        setVenues(data.venues || []);
+      } else {
+        setVenues(prev => [...prev, ...(data.venues || [])]);
       }
-      setVenues(data.venues || []);
+      setPagination(data.pagination);
     } catch (error) {
-      console.error("[Admin Venues] Error loading venues:", error);
-      console.error("[Admin Venues] Error stack:", error instanceof Error ? error.stack : "No stack");
-      alert(`Error loading venues: ${error instanceof Error ? error.message : "Unknown error"}`);
+      console.error("Error loading venues:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterVenues = () => {
-    let filtered = [...venues];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (v) =>
-          v.name.toLowerCase().includes(searchLower) ||
-          v.city?.toLowerCase().includes(searchLower) ||
-          v.email?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadVenues(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    setFilteredVenues(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   if (loading) {
     return (
@@ -124,7 +151,8 @@ export default function AdminVenuesPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredVenues.length} of {venues.length} venues
+              Showing {venues.length} of {pagination?.total || 0} venues
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -142,20 +170,20 @@ export default function AdminVenuesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredVenues.length === 0 ? (
+                  {venues.length === 0 && !loading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-secondary">
-                        No venues found
+                        {debouncedSearch ? `No venues found matching "${debouncedSearch}"` : "No venues found"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredVenues.map((venue) => (
-                      <TableRow 
-                        key={venue.id} 
+                    venues.map((venue) => (
+                      <TableRow
+                        key={venue.id}
                         hover
                       >
                         <TableCell className="font-medium">
-                          <Link 
+                          <Link
                             href={`/app/venue/settings?venueId=${venue.id}`}
                             className="hover:text-primary transition-colors"
                           >
@@ -212,11 +240,37 @@ export default function AdminVenuesPage() {
             </div>
           </Card>
 
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more venues...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && venues.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || venues.length} venues loaded
+              </p>
+            )}
+          </div>
+
           <CreateVenueModal
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
-              loadVenues();
+              setVenues([]);
+              setPagination(null);
+              setLoading(true);
+              loadVenues(1, debouncedSearch);
             }}
           />
 
@@ -224,12 +278,18 @@ export default function AdminVenuesPage() {
             isOpen={!!editingVenue}
             onClose={() => setEditingVenue(null)}
             onSuccess={() => {
-              loadVenues();
+              setVenues([]);
+              setPagination(null);
+              setLoading(true);
+              loadVenues(1, debouncedSearch);
               setEditingVenue(null);
             }}
             venue={editingVenue}
             onDelete={() => {
-              loadVenues();
+              setVenues([]);
+              setPagination(null);
+              setLoading(true);
+              loadVenues(1, debouncedSearch);
               setEditingVenue(null);
             }}
           />
@@ -238,4 +298,3 @@ export default function AdminVenuesPage() {
     </div>
   );
 }
-

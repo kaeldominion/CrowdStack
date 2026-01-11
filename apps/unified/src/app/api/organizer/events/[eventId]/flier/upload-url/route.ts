@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserOrganizerId } from "@/lib/data/get-user-entity";
+import { getUserOrganizerId, getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 
 /**
  * GET /api/organizer/events/[eventId]/flier/upload-url
  * Generate a signed URL for direct client-side upload to Supabase Storage
  * This bypasses Vercel's 4.5MB body size limit
+ * Accessible by: event organizer, venue admin (for their venue's events), superadmin
  */
 
 // Force dynamic rendering since this route uses cookies() or createClient()
@@ -28,28 +29,25 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await userHasRoleOrSuperadmin("event_organizer");
-    if (!hasAccess) {
+    // Check for organizer or venue_admin role
+    const hasOrganizerAccess = await userHasRoleOrSuperadmin("event_organizer");
+    const hasVenueAccess = await userHasRoleOrSuperadmin("venue_admin");
+
+    if (!hasOrganizerAccess && !hasVenueAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { userHasRole } = await import("@crowdstack/shared/auth/roles");
     const userIsSuperadmin = await userHasRole("superadmin");
     const organizerId = await getUserOrganizerId();
-    
-    if (!userIsSuperadmin && !organizerId) {
-      return NextResponse.json(
-        { error: "No organizer found for user" },
-        { status: 404 }
-      );
-    }
+    const venueId = await getUserVenueId();
 
     const serviceSupabase = createServiceRoleClient();
 
     // Verify event exists and user has access
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("id, organizer_id")
+      .select("id, organizer_id, venue_id")
       .eq("id", eventId)
       .single();
 
@@ -60,11 +58,17 @@ export async function GET(
       );
     }
 
-    if (!userIsSuperadmin && event.organizer_id !== organizerId) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+    // Check ownership - superadmin bypasses, otherwise check organizer or venue
+    if (!userIsSuperadmin) {
+      const isOrganizer = organizerId && event.organizer_id === organizerId;
+      const isVenueAdmin = venueId && event.venue_id === venueId;
+
+      if (!isOrganizer && !isVenueAdmin) {
+        return NextResponse.json(
+          { error: "Access denied" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get file info from query params

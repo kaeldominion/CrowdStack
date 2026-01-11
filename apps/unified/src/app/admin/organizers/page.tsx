@@ -1,65 +1,116 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Calendar, Plus, Search, ChevronRight } from "lucide-react";
+import { Calendar, Plus, Search, ChevronRight, Loader2 } from "lucide-react";
 import { CreateOrganizerModal } from "@/components/CreateOrganizerModal";
 import { EditOrganizerModal } from "@/components/EditOrganizerModal";
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export default function AdminOrganizersPage() {
   const [organizers, setOrganizers] = useState<any[]>([]);
-  const [filteredOrganizers, setFilteredOrganizers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingOrganizer, setEditingOrganizer] = useState<any | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadOrganizers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterOrganizers();
-  }, [search, organizers]);
+    setOrganizers([]);
+    setPagination(null);
+    setLoading(true);
+    loadOrganizers(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadOrganizers = async () => {
+  const loadOrganizers = async (page: number = 1, searchQuery: string = "") => {
     try {
-      const response = await fetch("/api/admin/organizers");
-      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/organizers?${params}`);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        
         if (response.status === 401) {
           alert("Unauthorized. Please log in again.");
         } else if (response.status === 403) {
           alert("Access denied. You need superadmin role to view organizers.");
-        } else {
-          alert(`Failed to load organizers: ${errorData.error || response.statusText}`);
         }
         throw new Error(errorData.error || "Failed to load organizers");
       }
-      
+
       const data = await response.json();
-      setOrganizers(data.organizers || []);
+
+      if (page === 1) {
+        setOrganizers(data.organizers || []);
+      } else {
+        setOrganizers(prev => [...prev, ...(data.organizers || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading organizers:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterOrganizers = () => {
-    let filtered = [...organizers];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (o) =>
-          o.name?.toLowerCase().includes(searchLower) ||
-          o.email?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadOrganizers(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    setFilteredOrganizers(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   if (loading) {
     return (
@@ -99,7 +150,8 @@ export default function AdminOrganizersPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredOrganizers.length} of {organizers.length} organizers
+              Showing {organizers.length} of {pagination?.total || 0} organizers
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -116,16 +168,16 @@ export default function AdminOrganizersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrganizers.length === 0 ? (
+                  {organizers.length === 0 && !loading ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-secondary">
-                        No organizers found
+                        {debouncedSearch ? `No organizers found matching "${debouncedSearch}"` : "No organizers found"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredOrganizers.map((organizer) => (
-                      <TableRow 
-                        key={organizer.id} 
+                    organizers.map((organizer) => (
+                      <TableRow
+                        key={organizer.id}
                         hover
                         className="cursor-pointer"
                         onClick={() => setEditingOrganizer(organizer)}
@@ -156,11 +208,37 @@ export default function AdminOrganizersPage() {
             </div>
           </Card>
 
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more organizers...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && organizers.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || organizers.length} organizers loaded
+              </p>
+            )}
+          </div>
+
           <CreateOrganizerModal
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
-              loadOrganizers();
+              setOrganizers([]);
+              setPagination(null);
+              setLoading(true);
+              loadOrganizers(1, debouncedSearch);
             }}
           />
 
@@ -168,12 +246,18 @@ export default function AdminOrganizersPage() {
             isOpen={!!editingOrganizer}
             onClose={() => setEditingOrganizer(null)}
             onSuccess={() => {
-              loadOrganizers();
+              setOrganizers([]);
+              setPagination(null);
+              setLoading(true);
+              loadOrganizers(1, debouncedSearch);
               setEditingOrganizer(null);
             }}
             organizer={editingOrganizer}
             onDelete={() => {
-              loadOrganizers();
+              setOrganizers([]);
+              setPagination(null);
+              setLoading(true);
+              loadOrganizers(1, debouncedSearch);
               setEditingOrganizer(null);
             }}
           />
@@ -182,4 +266,3 @@ export default function AdminOrganizersPage() {
     </div>
   );
 }
-

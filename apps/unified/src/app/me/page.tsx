@@ -63,12 +63,12 @@ async function getUserData() {
   const attendeeId = attendee?.id;
 
   // Fetch all other data in parallel (now that we have attendee ID)
-  const [xpResult, registrationsResult, favoritesResult, followingResult] = await Promise.all([
+  const [xpResult, registrationsResult, favoritesResult, followingResult, tableBookingsResult] = await Promise.all([
     // XP data
     serviceSupabase
       .rpc("get_user_xp_summary", { p_user_id: user.id })
       .maybeSingle(),
-    
+
     // Registrations with event and venue data (only if we have attendee ID)
     attendeeId
       ? serviceSupabase
@@ -92,7 +92,7 @@ async function getUserData() {
           .eq("attendee_id", attendeeId)
           .order("registered_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
-    
+
     // Favorite venues
     serviceSupabase
       .from("venue_favorites")
@@ -112,7 +112,7 @@ async function getUserData() {
       `)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
-    
+
     // Followed DJs
     serviceSupabase
       .from("dj_follows")
@@ -130,6 +130,43 @@ async function getUserData() {
       `)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
+
+    // Table bookings (if we have attendee ID)
+    attendeeId
+      ? serviceSupabase
+          .from("table_bookings")
+          .select(`
+            id,
+            status,
+            guest_name,
+            party_size,
+            minimum_spend,
+            deposit_required,
+            deposit_received,
+            slot_start_time,
+            slot_end_time,
+            arrival_deadline,
+            created_at,
+            event:events(
+              id,
+              name,
+              slug,
+              start_time,
+              end_time,
+              timezone,
+              currency,
+              venue:venues(id, name, slug, city, currency)
+            ),
+            table:venue_tables(
+              id,
+              name,
+              zone:table_zones(id, name)
+            )
+          `)
+          .eq("attendee_id", attendeeId)
+          .in("status", ["pending", "confirmed", "completed"])
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const registrations = (registrationsResult.data || []) as unknown as Registration[];
@@ -236,6 +273,62 @@ async function getUserData() {
     })
     .filter(Boolean);
 
+  // Process table bookings - separate into upcoming and past
+  const tableBookings = (tableBookingsResult.data || []).map((booking: any) => {
+    const event = Array.isArray(booking.event) ? booking.event[0] : booking.event;
+    const table = Array.isArray(booking.table) ? booking.table[0] : booking.table;
+    const venue = event?.venue ? (Array.isArray(event.venue) ? event.venue[0] : event.venue) : null;
+    const zone = table?.zone ? (Array.isArray(table.zone) ? table.zone[0] : table.zone) : null;
+
+    return {
+      id: booking.id,
+      status: booking.status,
+      guest_name: booking.guest_name,
+      party_size: booking.party_size,
+      minimum_spend: booking.minimum_spend,
+      deposit_required: booking.deposit_required,
+      deposit_received: booking.deposit_received,
+      slot_start_time: booking.slot_start_time,
+      slot_end_time: booking.slot_end_time,
+      arrival_deadline: booking.arrival_deadline,
+      created_at: booking.created_at,
+      event: event ? {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        timezone: event.timezone,
+        currency: event.currency,
+      } : null,
+      venue: venue ? {
+        id: venue.id,
+        name: venue.name,
+        slug: venue.slug,
+        city: venue.city,
+        currency: venue.currency,
+      } : null,
+      table: table ? {
+        id: table.id,
+        name: table.name,
+        zone_name: zone?.name || null,
+      } : null,
+    };
+  });
+
+  // Separate upcoming and past table bookings
+  const upcomingTableBookings = tableBookings.filter((b: any) => {
+    if (!b.event?.start_time) return false;
+    const eventStart = new Date(b.event.start_time);
+    return eventStart > now && b.status !== "completed";
+  });
+
+  const pastTableBookings = tableBookings.filter((b: any) => {
+    if (!b.event?.start_time) return b.status === "completed";
+    const eventStart = new Date(b.event.start_time);
+    return eventStart <= now || b.status === "completed";
+  });
+
   return {
     profile,
     xpData: xpProgressData,
@@ -245,6 +338,8 @@ async function getUserData() {
     pastEvents: past,
     favoriteVenues,
     followedDJs,
+    upcomingTableBookings,
+    pastTableBookings,
   };
 }
 

@@ -11,13 +11,21 @@ import { cookies } from "next/headers";
 export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = searchParams.get("search") || "";
+
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
     const cookieStore = await cookies();
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     let userId = user?.id;
 
-    // If no user from Supabase client, try reading from localhost cookie
     if (!userId) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
@@ -32,82 +40,98 @@ export async function GET(request: NextRequest) {
             userId = parsed.user.id;
           }
         } catch (e) {
-          // Cookie parse error - continue without userId
+          // Cookie parse error
         }
       }
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized - no user ID found" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check role using service role to bypass RLS
     const serviceSupabase = createServiceRoleClient();
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    
+
     const roles = userRoles?.map((r) => r.role) || [];
-    const isSuperadmin = roles.includes("superadmin");
-
-    if (!isSuperadmin) {
-      return NextResponse.json({ 
-        error: "Forbidden - Superadmin role required",
-        yourRoles: roles 
-      }, { status: 403 });
+    if (!roles.includes("superadmin")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get all DJs
-    const { data: djs, error } = await serviceSupabase
+    // Build query with optional search
+    let query = serviceSupabase
       .from("djs")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*", { count: "exact" });
 
-    if (error) {
-      console.error("Error fetching DJs:", error);
-      return NextResponse.json({ error: "Failed to fetch DJs" }, { status: 500 });
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,handle.ilike.%${search}%,location.ilike.%${search}%`);
     }
 
-    // Get mix counts and follower counts for each DJ
-    const djsWithCounts = await Promise.all(
-      (djs || []).map(async (dj) => {
-        // Get user email using admin API
-        let email: string | null = null;
-        try {
-          const { data: userData } = await serviceSupabase.auth.admin.getUserById(dj.user_id);
-          email = userData?.user?.email || null;
-        } catch (authError) {
-          console.error(`Error fetching email for user ${dj.user_id}:`, authError);
-          // Continue without email
+    const { data: djs, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + safeLimit - 1);
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / safeLimit);
+    const hasMore = safePage < totalPages;
+
+    // Batch fetch counts and emails
+    const djIds = (djs || []).map((d: any) => d.id);
+    const userIds = (djs || []).map((d: any) => d.user_id);
+    const mixCountMap = new Map<string, number>();
+    const followerCountMap = new Map<string, number>();
+    const emailMap = new Map<string, string>();
+
+    if (djIds.length > 0) {
+      const { data: mixes } = await serviceSupabase
+        .from("mixes")
+        .select("dj_id")
+        .in("dj_id", djIds);
+
+      (mixes || []).forEach((m: any) => {
+        mixCountMap.set(m.dj_id, (mixCountMap.get(m.dj_id) || 0) + 1);
+      });
+
+      const { data: follows } = await serviceSupabase
+        .from("dj_follows")
+        .select("dj_id")
+        .in("dj_id", djIds);
+
+      (follows || []).forEach((f: any) => {
+        followerCountMap.set(f.dj_id, (followerCountMap.get(f.dj_id) || 0) + 1);
+      });
+    }
+
+    // Batch fetch emails (limited to avoid too many auth calls)
+    for (const uid of userIds.slice(0, 50)) {
+      try {
+        const { data: userData } = await serviceSupabase.auth.admin.getUserById(uid);
+        if (userData?.user?.email) {
+          emailMap.set(uid, userData.user.email);
         }
+      } catch (e) {
+        // Continue without email
+      }
+    }
 
-        // Get mix count
-        const { count: mixesCount } = await serviceSupabase
-          .from("mixes")
-          .select("*", { count: "exact", head: true })
-          .eq("dj_id", dj.id);
+    const djsWithCounts = (djs || []).map((dj: any) => ({
+      ...dj,
+      email: emailMap.get(dj.user_id) || null,
+      mixes_count: mixCountMap.get(dj.id) || 0,
+      follower_count: followerCountMap.get(dj.id) || 0,
+    }));
 
-        // Get follower count
-        const { count: followerCount } = await serviceSupabase
-          .from("dj_follows")
-          .select("*", { count: "exact", head: true })
-          .eq("dj_id", dj.id);
-
-        return {
-          ...dj,
-          email,
-          mixes_count: mixesCount || 0,
-          follower_count: followerCount || 0,
-        };
-      })
-    );
-
-    return NextResponse.json({ djs: djsWithCounts });
+    return NextResponse.json({
+      djs: djsWithCounts,
+      pagination: { page: safePage, limit: safeLimit, total: totalCount, totalPages, hasMore }
+    });
   } catch (error: any) {
-    console.error("Error fetching DJs:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error.message || "Failed to fetch DJs" },
       { status: 500 }
     );
   }

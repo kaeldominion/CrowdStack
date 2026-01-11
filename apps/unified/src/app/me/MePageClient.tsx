@@ -2,14 +2,16 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { Calendar, Ticket, Heart, UserPlus, Users, X, Radio } from "lucide-react";
-import { Button, Card } from "@crowdstack/ui";
+import Link from "next/link";
+import { Calendar, Ticket, Heart, UserPlus, Users, X, Radio, UtensilsCrossed, Clock, MapPin, CheckCircle, AlertCircle, DollarSign } from "lucide-react";
+import { Button, Card, Badge } from "@crowdstack/ui";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { DJCard } from "@/components/dj/DJCard";
 import { XpProgressBar, type XpProgressData } from "@/components/XpProgressBar";
 import { ActivityLog } from "@/components/ActivityLog";
+import { getCurrencySymbol } from "@/lib/constants/currencies";
 
 interface Registration {
   id: string;
@@ -43,8 +45,43 @@ interface UserProfile {
   created_at: string | null;
 }
 
-type TabId = "events" | "djs" | "venues" | "history" | "activity";
-type MobileEventsTab = "upcoming" | "past" | "djs" | "venues";
+interface TableBooking {
+  id: string;
+  status: "pending" | "confirmed" | "completed";
+  guest_name: string;
+  party_size: number;
+  minimum_spend: number | null;
+  deposit_required: number | null;
+  deposit_received: boolean;
+  slot_start_time: string | null;
+  slot_end_time: string | null;
+  arrival_deadline: string | null;
+  created_at: string;
+  event: {
+    id: string;
+    name: string;
+    slug: string;
+    start_time: string;
+    end_time: string | null;
+    timezone: string | null;
+    currency: string | null;
+  } | null;
+  venue: {
+    id: string;
+    name: string;
+    slug: string;
+    city: string | null;
+    currency: string | null;
+  } | null;
+  table: {
+    id: string;
+    name: string;
+    zone_name: string | null;
+  } | null;
+}
+
+type TabId = "events" | "djs" | "venues" | "history" | "activity" | "tables";
+type MobileEventsTab = "upcoming" | "past" | "djs" | "venues" | "tables";
 
 interface MePageClientProps {
   profile: UserProfile;
@@ -55,6 +92,8 @@ interface MePageClientProps {
   pastEvents: Registration[];
   favoriteVenues: any[];
   followedDJs: any[];
+  upcomingTableBookings: TableBooking[];
+  pastTableBookings: TableBooking[];
 }
 
 export function MePageClient({
@@ -66,6 +105,8 @@ export function MePageClient({
   pastEvents,
   favoriteVenues,
   followedDJs,
+  upcomingTableBookings,
+  pastTableBookings,
 }: MePageClientProps) {
   const [showProfileCta, setShowProfileCta] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("events");
@@ -220,11 +261,17 @@ export function MePageClient({
             >
               DJs
             </button>
-            <button 
+            <button
               onClick={() => setMobileEventsTab("venues")}
               className={`tab-label ${mobileEventsTab === "venues" ? "tab-label-active" : "tab-label-inactive"}`}
             >
               Venues
+            </button>
+            <button
+              onClick={() => setMobileEventsTab("tables")}
+              className={`tab-label ${mobileEventsTab === "tables" ? "tab-label-active" : "tab-label-inactive"}`}
+            >
+              Tables
             </button>
           </nav>
 
@@ -359,6 +406,23 @@ export function MePageClient({
               )}
             </div>
           )}
+
+          {/* Tables Tab */}
+          {mobileEventsTab === "tables" && (
+            <div className="space-y-3">
+              {upcomingTableBookings.length > 0 ? (
+                upcomingTableBookings.map((booking) => (
+                  <TableBookingCard key={booking.id} booking={booking} />
+                ))
+              ) : (
+                <Card className="!p-6 text-center !border-dashed">
+                  <UtensilsCrossed className="h-10 w-10 text-muted mx-auto mb-3" />
+                  <h3 className="font-sans text-base font-bold text-primary mb-1">No table bookings</h3>
+                  <p className="text-sm text-secondary">Your table reservations will appear here.</p>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -462,11 +526,17 @@ export function MePageClient({
                   >
                     History
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab("activity")}
                     className={`tab-label ${activeTab === "activity" ? "tab-label-active" : "tab-label-inactive"}`}
                   >
                     Activity
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("tables")}
+                    className={`tab-label ${activeTab === "tables" ? "tab-label-active" : "tab-label-inactive"}`}
+                  >
+                    Tables
                   </button>
                 </nav>
 
@@ -648,12 +718,252 @@ export function MePageClient({
                     />
                   </section>
                 )}
+
+                {/* TABLES Tab */}
+                {activeTab === "tables" && (
+                  <>
+                    {/* Upcoming Table Bookings */}
+                    <section className="mb-8">
+                      <h2 className="section-header">Upcoming Table Reservations</h2>
+                      {upcomingTableBookings.length > 0 ? (
+                        <div className="space-y-3">
+                          {upcomingTableBookings.map((booking) => (
+                            <TableBookingCard key={booking.id} booking={booking} />
+                          ))}
+                        </div>
+                      ) : (
+                        <Card className="!p-8 text-center !border-dashed">
+                          <UtensilsCrossed className="h-12 w-12 text-muted mx-auto mb-4" />
+                          <h3 className="font-sans text-lg font-bold text-primary mb-2">No table reservations</h3>
+                          <p className="text-sm text-secondary mb-4">Book a table at your favorite event!</p>
+                          <Button href="/browse">Browse Events</Button>
+                        </Card>
+                      )}
+                    </section>
+
+                    {/* Past Table Bookings */}
+                    {pastTableBookings.length > 0 && (
+                      <section>
+                        <h2 className="section-header">Past Table Reservations</h2>
+                        <div className="space-y-3">
+                          {pastTableBookings.map((booking) => (
+                            <TableBookingCard key={booking.id} booking={booking} isPast />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </>
+                )}
               </div>
             </main>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Table Booking Card Component
+function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; isPast?: boolean }) {
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const currency = booking.event?.currency || booking.venue?.currency || "USD";
+  const currencySymbol = getCurrencySymbol(currency);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      const response = await fetch(`/api/booking/${booking.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        // Reload to refresh the data
+        window.location.reload();
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to cancel booking");
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      alert("Failed to cancel booking");
+    } finally {
+      setCancelling(false);
+      setShowCancelModal(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    switch (booking.status) {
+      case "pending":
+        return <Badge color="amber">Pending Confirmation</Badge>;
+      case "confirmed":
+        return <Badge color="green">Confirmed</Badge>;
+      case "completed":
+        return <Badge color="blue">Completed</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      <Card className={`hover:border-accent-primary/30 transition-colors ${isPast ? "opacity-75" : ""}`}>
+        <div className="flex items-start gap-4">
+          {/* Table Icon */}
+          <div className="w-12 h-12 rounded-lg bg-accent-primary/20 border border-accent-primary/30 flex items-center justify-center flex-shrink-0">
+            <UtensilsCrossed className="h-6 w-6 text-accent-primary" />
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h3 className="font-sans font-bold text-primary">
+                {booking.table?.name || "Table"}
+              </h3>
+              {booking.table?.zone_name && (
+                <span className="text-sm text-secondary">({booking.table.zone_name})</span>
+              )}
+              {getStatusBadge()}
+            </div>
+
+            <Link
+              href={`/e/${booking.event?.slug}`}
+              className="text-sm text-accent-primary hover:underline block mb-2"
+            >
+              {booking.event?.name || "Event"}
+            </Link>
+
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-secondary">
+              {booking.event?.start_time && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {formatDate(booking.event.start_time)}
+                </span>
+              )}
+              {booking.slot_start_time ? (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatTime(booking.slot_start_time)}
+                  {booking.slot_end_time && ` - ${formatTime(booking.slot_end_time)}`}
+                </span>
+              ) : booking.event?.start_time && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatTime(booking.event.start_time)}
+                </span>
+              )}
+              {booking.venue && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {booking.venue.name}{booking.venue.city && `, ${booking.venue.city}`}
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" />
+                Party of {booking.party_size}
+              </span>
+            </div>
+
+            {/* Financial Info */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mt-2">
+              {booking.minimum_spend && (
+                <span className="flex items-center gap-1 text-secondary">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Min spend: {currencySymbol}{booking.minimum_spend.toLocaleString()}
+                </span>
+              )}
+              {booking.deposit_required && (
+                <span className={`flex items-center gap-1 ${booking.deposit_received ? "text-green-400" : "text-amber-400"}`}>
+                  {booking.deposit_received ? (
+                    <CheckCircle className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertCircle className="h-3.5 w-3.5" />
+                  )}
+                  Deposit: {currencySymbol}{booking.deposit_required.toLocaleString()}
+                  {booking.deposit_received ? " (Paid)" : " (Pending)"}
+                </span>
+              )}
+            </div>
+
+            {/* Arrival Deadline */}
+            {booking.arrival_deadline && !isPast && (
+              <div className="mt-2 text-sm text-amber-400 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" />
+                Arrive by: {formatTime(booking.arrival_deadline)}
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          {!isPast && booking.status !== "completed" && (
+            <div className="flex flex-col gap-2 flex-shrink-0">
+              <Button size="sm" href={`/booking/${booking.id}`}>
+                View Details
+              </Button>
+              {booking.status === "confirmed" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowCancelModal(true)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm p-4">
+          <Card className="max-w-md w-full">
+            <h3 className="font-sans text-lg font-bold text-primary mb-2">Cancel Table Booking?</h3>
+            <p className="text-sm text-secondary mb-4">
+              Are you sure you want to cancel your table reservation at{" "}
+              <strong>{booking.event?.name}</strong>?
+            </p>
+            <p className="text-sm text-amber-400 mb-4">
+              Note: Deposits are non-refundable for guest cancellations.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => setShowCancelModal(false)}>
+                Keep Booking
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancel}
+                disabled={cancelling}
+              >
+                {cancelling ? "Cancelling..." : "Yes, Cancel"}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+    </>
   );
 }
 

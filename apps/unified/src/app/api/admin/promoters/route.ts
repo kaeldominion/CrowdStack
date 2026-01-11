@@ -6,12 +6,19 @@ import { userHasRole } from "@crowdstack/shared/auth/roles";
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = searchParams.get("search") || "";
+
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,41 +30,61 @@ export async function GET() {
 
     const serviceSupabase = createServiceRoleClient();
 
-    const { data: promoters, error } = await serviceSupabase
+    // Build query with optional search
+    let query = serviceSupabase
       .from("promoters")
-      .select(`
-        *,
-        parent:promoters!parent_promoter_id(name)
-      `)
-      .order("created_at", { ascending: false });
+      .select(`*, parent:promoters!parent_promoter_id(name)`, { count: "exact" });
 
-    if (error) {
-      throw error;
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
     }
 
-    // Get counts for each promoter
-    const promotersWithCounts = await Promise.all(
-      (promoters || []).map(async (promoter: any) => {
-        const { count: eventsCount } = await serviceSupabase
-          .from("event_promoters")
-          .select("*", { count: "exact", head: true })
-          .eq("promoter_id", promoter.id);
+    const { data: promoters, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + safeLimit - 1);
 
-        const { count: referralsCount } = await serviceSupabase
-          .from("registrations")
-          .select("*", { count: "exact", head: true })
-          .eq("referral_promoter_id", promoter.id);
+    if (error) throw error;
 
-        return {
-          ...promoter,
-          parent: promoter.parent,
-          events_count: eventsCount || 0,
-          total_referrals: referralsCount || 0,
-        };
-      })
-    );
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / safeLimit);
+    const hasMore = safePage < totalPages;
 
-    return NextResponse.json({ promoters: promotersWithCounts });
+    // Batch fetch counts
+    const promoterIds = (promoters || []).map((p: any) => p.id);
+    const eventCountMap = new Map<string, number>();
+    const referralCountMap = new Map<string, number>();
+
+    if (promoterIds.length > 0) {
+      const { data: eventPromoters } = await serviceSupabase
+        .from("event_promoters")
+        .select("promoter_id")
+        .in("promoter_id", promoterIds);
+
+      (eventPromoters || []).forEach((ep: any) => {
+        eventCountMap.set(ep.promoter_id, (eventCountMap.get(ep.promoter_id) || 0) + 1);
+      });
+
+      const { data: referrals } = await serviceSupabase
+        .from("registrations")
+        .select("referral_promoter_id")
+        .in("referral_promoter_id", promoterIds);
+
+      (referrals || []).forEach((r: any) => {
+        referralCountMap.set(r.referral_promoter_id, (referralCountMap.get(r.referral_promoter_id) || 0) + 1);
+      });
+    }
+
+    const promotersWithCounts = (promoters || []).map((promoter: any) => ({
+      ...promoter,
+      parent: promoter.parent,
+      events_count: eventCountMap.get(promoter.id) || 0,
+      total_referrals: referralCountMap.get(promoter.id) || 0,
+    }));
+
+    return NextResponse.json({
+      promoters: promotersWithCounts,
+      pagination: { page: safePage, limit: safeLimit, total: totalCount, totalPages, hasMore }
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch promoters" },

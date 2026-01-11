@@ -49,6 +49,12 @@ interface CheckInResult {
   attendee_id?: string;
   registration_id?: string;
   vipStatus?: VipStatus;
+  // Table party fields
+  isTableParty?: boolean;
+  tableName?: string;
+  hostName?: string;
+  isHost?: boolean;
+  checkedInCount?: number;
 }
 
 interface EventInfo {
@@ -282,7 +288,7 @@ export default function DoorScannerPage() {
 
       if (response.ok && data.success) {
         const result: CheckInResult = {
-          id: data.checkin?.id || "",
+          id: data.checkin?.id || data.guest_id || "",
           name: data.attendee_name || "Attendee",
           status: data.duplicate ? "duplicate" : "success",
           message: data.message || "Checked in successfully",
@@ -290,6 +296,12 @@ export default function DoorScannerPage() {
           attendee_id: data.attendee_id,
           registration_id: data.registration_id,
           vipStatus: data.vip_status,
+          // Table party fields
+          isTableParty: data.is_table_party || false,
+          tableName: data.table_name,
+          hostName: data.host_name,
+          isHost: data.is_host,
+          checkedInCount: data.checked_in_count,
         };
         setLastCheckIn(result);
 
@@ -669,8 +681,17 @@ export default function DoorScannerPage() {
                 ? "border-accent-warning/30 bg-accent-warning/5"
                 : "border-accent-error/30 bg-accent-error/5"
             }>
+              {/* Table Party Banner */}
+              {lastCheckIn.isTableParty && (
+                <div className="bg-gradient-to-r from-purple-600 to-blue-500 text-white px-4 py-2 -mx-4 -mt-4 mb-4 rounded-t-lg flex items-center justify-center gap-2">
+                  <Users className="h-5 w-5" />
+                  <span className="font-bold text-lg">TABLE GUEST</span>
+                  <span className="text-white/80">•</span>
+                  <span className="font-medium">{lastCheckIn.tableName}</span>
+                </div>
+              )}
               {/* VIP Banner */}
-              {lastCheckIn.vipStatus?.isVip && (
+              {lastCheckIn.vipStatus?.isVip && !lastCheckIn.isTableParty && (
                 <div className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-4 py-2 -mx-4 -mt-4 mb-4 rounded-t-lg flex items-center justify-center gap-2">
                   <Crown className="h-5 w-5" />
                   <span className="font-bold text-lg">VIP GUEST</span>
@@ -680,10 +701,19 @@ export default function DoorScannerPage() {
               <div className="flex items-center gap-3">
                 {getStatusBadge(lastCheckIn.status)}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate ${lastCheckIn.vipStatus?.isVip ? 'text-xl text-amber-400' : 'text-primary'}`}>
+                  <p className={`font-semibold truncate ${lastCheckIn.vipStatus?.isVip ? 'text-xl text-amber-400' : lastCheckIn.isTableParty ? 'text-xl text-purple-300' : 'text-primary'}`}>
                     {lastCheckIn.name}
+                    {lastCheckIn.isHost && (
+                      <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-purple-500/30 text-purple-200">Host</span>
+                    )}
                   </p>
                   <p className="text-sm text-secondary">{lastCheckIn.message}</p>
+                  {/* Table Party Info */}
+                  {lastCheckIn.isTableParty && lastCheckIn.hostName && !lastCheckIn.isHost && (
+                    <div className="mt-1 text-sm text-purple-300">
+                      Hosted by {lastCheckIn.hostName}
+                    </div>
+                  )}
                   {/* VIP Reasons */}
                   {lastCheckIn.vipStatus?.isVip && lastCheckIn.vipStatus.vipReasons.length > 0 && (
                     <div className="mt-2 space-y-1">
@@ -696,7 +726,7 @@ export default function DoorScannerPage() {
                     </div>
                   )}
                 </div>
-                {!lastCheckIn.vipStatus?.isVip && (
+                {!lastCheckIn.vipStatus?.isVip && !lastCheckIn.isTableParty && (
                   <button
                     onClick={() => setLastCheckIn(null)}
                     className="p-1 text-muted hover:text-primary rounded"

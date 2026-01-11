@@ -6,8 +6,10 @@ import { Card, Container, Section, Button, Input, Badge, useToast } from "@crowd
 import { ArrowLeft, Copy, Check, Mail, Download, Eye, Code } from "lucide-react";
 
 // Hosted logo URLs - using the public folder assets
-const LOGO_URL_DARK = "https://crowdstack.app/logos/crowdstack-wordmark-light-standard-transparent.png";
-const LOGO_URL_LIGHT = "https://crowdstack.app/logos/crowdstack-wordmark-dark-standard-transparent.png";
+// LOGO_URL_DARK = logo for dark backgrounds (white/light text)
+// LOGO_URL_LIGHT = logo for light backgrounds (black/dark text)
+const LOGO_URL_DARK = "https://crowdstack.app/logos/crowdstack-wordmark-dark-standard-transparent.png";
+const LOGO_URL_LIGHT = "https://crowdstack.app/logos/crowdstack-wordmark-light-standard-transparent.png";
 const WEBSITE_URL = "https://crowdstack.app";
 const SLOGAN = "Run events with data, not guesswork.";
 
@@ -34,7 +36,7 @@ export default function EmailSignaturePage() {
     phone: "",
     whatsapp: "",
     instagram: "",
-    theme: "light",
+    theme: "dark", // Default to light email background (most common)
   });
 
   const updateField = (field: keyof SignatureData, value: string) => {
@@ -43,12 +45,13 @@ export default function EmailSignaturePage() {
 
   // Generate the HTML signature
   const generateSignatureHTML = () => {
-    const logoUrl = formData.theme === "dark" ? LOGO_URL_DARK : LOGO_URL_LIGHT;
-    const bgColor = formData.theme === "dark" ? "#0a0a0a" : "#ffffff";
-    const textColor = formData.theme === "dark" ? "#ffffff" : "#000000";
-    const mutedColor = formData.theme === "dark" ? "#94a3b8" : "#64748b";
+    // "dark" theme = signature for LIGHT email backgrounds (dark text)
+    // "light" theme = signature for DARK email backgrounds (light text)
+    const isForLightBg = formData.theme === "dark";
+    const logoUrl = isForLightBg ? LOGO_URL_LIGHT : LOGO_URL_DARK;
+    const textColor = isForLightBg ? "#1a1a1a" : "#ffffff";
+    const mutedColor = isForLightBg ? "#4b5563" : "#9ca3af";
     const accentColor = "#a855f7";
-    const borderColor = formData.theme === "dark" ? "#333333" : "#e2e8f0";
 
     // Format WhatsApp link
     const whatsappLink = formData.whatsapp
@@ -61,79 +64,61 @@ export default function EmailSignaturePage() {
       ? `https://instagram.com/${instagramHandle}`
       : null;
 
-    return `
-<table cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 500px;">
-  <tr>
-    <td style="padding: 20px 0;">
-      <!-- Separator Line -->
-      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="border-top: 2px solid ${accentColor}; padding-bottom: 20px;"></td>
-        </tr>
-      </table>
+    // Build contact links
+    const contactLinks: string[] = [];
+    if (formData.email) {
+      contactLinks.push(`<a href="mailto:${formData.email}" style="color: ${mutedColor}; text-decoration: none;">${formData.email}</a>`);
+    }
+    if (formData.phone) {
+      contactLinks.push(`<a href="tel:${formData.phone.replace(/[^0-9+]/g, '')}" style="color: ${mutedColor}; text-decoration: none;">${formData.phone}</a>`);
+    }
+    if (whatsappLink) {
+      contactLinks.push(`<a href="${whatsappLink}" target="_blank" style="color: #25D366; text-decoration: none;">WhatsApp</a>`);
+    }
+    if (instagramLink) {
+      contactLinks.push(`<a href="${instagramLink}" target="_blank" style="color: #E4405F; text-decoration: none;">@${instagramHandle}</a>`);
+    }
 
-      <!-- Main Content -->
+    return `
+<table cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <tr>
+    <td style="padding: 16px 0;">
+      <!-- Top accent line -->
+      <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #3b82f6, #a855f7); margin-bottom: 16px; border-radius: 2px;"></div>
+
+      <!-- Name and Title -->
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <!-- Logo Column -->
-          <td style="vertical-align: top; padding-right: 20px;">
+          <td>
+            ${formData.name ? `<p style="margin: 0 0 2px 0; font-size: 18px; font-weight: 700; color: ${textColor};">${formData.name}</p>` : ''}
+            ${formData.title ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: ${accentColor}; font-weight: 500;">${formData.title}</p>` : ''}
+          </td>
+        </tr>
+      </table>
+
+      <!-- Contact Info -->
+      ${contactLinks.length > 0 ? `
+      <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+        <tr>
+          <td style="font-size: 13px; line-height: 1.6;">
+            ${contactLinks.join('<span style="color: ' + mutedColor + '; margin: 0 8px;">·</span>')}
+          </td>
+        </tr>
+      </table>
+      ` : ''}
+
+      <!-- Logo and Slogan -->
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="vertical-align: middle; padding-right: 12px;">
             <a href="${WEBSITE_URL}" target="_blank" style="text-decoration: none;">
-              <img src="${logoUrl}" alt="CrowdStack" width="140" style="display: block; border: 0;" />
+              <img src="${logoUrl}" alt="CrowdStack" width="180" height="36" style="display: block; border: 0;" />
             </a>
           </td>
-
-          <!-- Divider -->
-          <td style="width: 1px; background-color: ${borderColor}; vertical-align: top;"></td>
-
-          <!-- Info Column -->
-          <td style="vertical-align: top; padding-left: 20px;">
-            ${formData.name ? `<p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: ${textColor};">${formData.name}</p>` : ''}
-            ${formData.title ? `<p style="margin: 0 0 12px 0; font-size: 13px; color: ${accentColor}; font-weight: 500;">${formData.title}</p>` : ''}
-
-            <table cellpadding="0" cellspacing="0" border="0" style="font-size: 13px;">
-              ${formData.email ? `
-              <tr>
-                <td style="padding: 3px 0;">
-                  <a href="mailto:${formData.email}" style="color: ${mutedColor}; text-decoration: none;">${formData.email}</a>
-                </td>
-              </tr>` : ''}
-              ${formData.phone ? `
-              <tr>
-                <td style="padding: 3px 0;">
-                  <a href="tel:${formData.phone.replace(/[^0-9+]/g, '')}" style="color: ${mutedColor}; text-decoration: none;">${formData.phone}</a>
-                </td>
-              </tr>` : ''}
-              ${whatsappLink ? `
-              <tr>
-                <td style="padding: 3px 0;">
-                  <a href="${whatsappLink}" target="_blank" style="color: #25D366; text-decoration: none;">WhatsApp: ${formData.whatsapp}</a>
-                </td>
-              </tr>` : ''}
-              ${instagramLink ? `
-              <tr>
-                <td style="padding: 3px 0;">
-                  <a href="${instagramLink}" target="_blank" style="color: #E4405F; text-decoration: none;">@${instagramHandle}</a>
-                </td>
-              </tr>` : ''}
-            </table>
-          </td>
         </tr>
-      </table>
-
-      <!-- Slogan -->
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px;">
         <tr>
-          <td>
-            <p style="margin: 0; font-size: 12px; color: ${mutedColor}; font-style: italic;">${SLOGAN}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Website Link -->
-      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 8px;">
-        <tr>
-          <td>
-            <a href="${WEBSITE_URL}" target="_blank" style="font-size: 12px; color: ${accentColor}; text-decoration: none; font-weight: 500;">${WEBSITE_URL.replace('https://', '')}</a>
+          <td style="padding-top: 6px;">
+            <p style="margin: 0; font-size: 11px; color: ${mutedColor}; font-style: italic;">${SLOGAN}</p>
           </td>
         </tr>
       </table>
@@ -271,20 +256,9 @@ export default function EmailSignaturePage() {
             </Card>
 
             <Card className="!p-6">
-              <h2 className="text-lg font-semibold text-primary mb-4">Theme</h2>
+              <h2 className="text-lg font-semibold text-primary mb-4">Email Background</h2>
+              <p className="text-sm text-secondary mb-4">Choose based on your email client's compose background color</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => updateField("theme", "light")}
-                  className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-                    formData.theme === "light"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "border-border hover:border-primary/30"
-                  }`}
-                >
-                  <div className="w-full h-12 bg-white rounded-md mb-2 border border-gray-200"></div>
-                  <p className="text-sm font-medium text-primary">Light</p>
-                  <p className="text-xs text-secondary">For dark email backgrounds</p>
-                </button>
                 <button
                   onClick={() => updateField("theme", "dark")}
                   className={`flex-1 p-4 rounded-lg border-2 transition-all ${
@@ -293,9 +267,25 @@ export default function EmailSignaturePage() {
                       : "border-border hover:border-primary/30"
                   }`}
                 >
-                  <div className="w-full h-12 bg-[#0a0a0a] rounded-md mb-2 border border-gray-700"></div>
-                  <p className="text-sm font-medium text-primary">Dark</p>
-                  <p className="text-xs text-secondary">For light email backgrounds</p>
+                  <div className="w-full h-12 bg-white rounded-md mb-2 border border-gray-200 flex items-center justify-center">
+                    <span className="text-xs text-gray-800 font-medium">Aa</span>
+                  </div>
+                  <p className="text-sm font-medium text-primary">Light Background</p>
+                  <p className="text-xs text-secondary">Gmail, Outlook, etc.</p>
+                </button>
+                <button
+                  onClick={() => updateField("theme", "light")}
+                  className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                    formData.theme === "light"
+                      ? "border-purple-500 bg-purple-500/10"
+                      : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  <div className="w-full h-12 bg-[#1a1a1a] rounded-md mb-2 border border-gray-700 flex items-center justify-center">
+                    <span className="text-xs text-gray-200 font-medium">Aa</span>
+                  </div>
+                  <p className="text-sm font-medium text-primary">Dark Background</p>
+                  <p className="text-xs text-secondary">Dark mode email clients</p>
                 </button>
               </div>
             </Card>

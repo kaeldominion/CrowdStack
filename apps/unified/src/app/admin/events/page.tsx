@@ -1,63 +1,111 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert, Globe, EyeOff } from "lucide-react";
+import { Calendar, Plus, Search, ExternalLink, ChevronRight, ShieldCheck, ShieldX, ShieldAlert, Globe, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { EventStatusBadge, EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
 export default function AdminEventsPage() {
   const router = useRouter();
   const [events, setEvents] = useState<any[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [publishing, setPublishing] = useState<string | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadEvents();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search or filter changes
   useEffect(() => {
-    filterEvents();
-  }, [search, statusFilter, events]);
+    setEvents([]);
+    setPagination(null);
+    setLoading(true);
+    loadEvents(1, debouncedSearch, statusFilter);
+  }, [debouncedSearch, statusFilter]);
 
-  const loadEvents = async () => {
+  const loadEvents = async (page: number = 1, searchQuery: string = "", status: string = "all") => {
     try {
-      const response = await fetch("/api/admin/events");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+      if (status && status !== "all") {
+        params.set("status", status);
+      }
+
+      const response = await fetch(`/api/admin/events?${params}`);
       if (!response.ok) throw new Error("Failed to load events");
       const data = await response.json();
-      setEvents(data.events || []);
+
+      if (page === 1) {
+        setEvents(data.events || []);
+      } else {
+        setEvents(prev => [...prev, ...(data.events || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading events:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterEvents = () => {
-    let filtered = [...events];
-    
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (e) =>
-          e.name.toLowerCase().includes(searchLower) ||
-          e.venue?.name?.toLowerCase().includes(searchLower) ||
-          e.organizer?.name?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadEvents(pagination.page + 1, debouncedSearch, statusFilter);
+  }, [loadingMore, pagination, debouncedSearch, statusFilter]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
 
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((e) => e.status === statusFilter);
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
     }
 
-    setFilteredEvents(filtered);
-  };
-
-  // Using EventStatusBadge component from EventStatusStepper
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   const getApprovalBadge = (approvalStatus: string | null, hasVenue: boolean) => {
     if (!hasVenue) {
@@ -105,7 +153,6 @@ export default function AdminEventsPage() {
         throw new Error(data.error || "Failed to update event status");
       }
 
-      // Update the event in the local state
       setEvents((prev) =>
         prev.map((e) => (e.id === eventId ? { ...e, status: newStatus } : e))
       );
@@ -173,7 +220,8 @@ export default function AdminEventsPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredEvents.length} of {events.length} events
+              Showing {events.length} of {pagination?.total || 0} events
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -194,16 +242,16 @@ export default function AdminEventsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEvents.length === 0 ? (
+                  {events.length === 0 && !loading ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-secondary">
-                        No events found
+                        {debouncedSearch ? `No events found matching "${debouncedSearch}"` : "No events found"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredEvents.map((event) => (
-                      <TableRow 
-                        key={event.id} 
+                    events.map((event) => (
+                      <TableRow
+                        key={event.id}
                         hover
                         className="cursor-pointer"
                         onClick={() => router.push(`/admin/events/${event.id}`)}
@@ -237,7 +285,7 @@ export default function AdminEventsPage() {
                           <EventStatusBadge status={(event.status || "draft") as EventStatus} />
                         </TableCell>
                         <TableCell>
-                          <div 
+                          <div
                             className="flex items-center gap-2"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -274,9 +322,31 @@ export default function AdminEventsPage() {
               </Table>
             </div>
           </Card>
+
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more events...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && events.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || events.length} events loaded
+              </p>
+            )}
+          </div>
         </Container>
       </Section>
     </div>
   );
 }
-

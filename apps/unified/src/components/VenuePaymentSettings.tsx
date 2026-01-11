@@ -66,6 +66,13 @@ export function VenuePaymentSettings() {
       const response = await fetch("/api/venue/settings/payments");
       const data = await response.json();
 
+      console.log("[VenuePaymentSettings] Loaded settings:", {
+        hasSettings: !!data.settings,
+        dokuEnabled: data.settings?.doku_enabled,
+        hasClientId: !!data.settings?.doku_client_id,
+        hasSecretKey: data.settings?.has_secret_key,
+      });
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to load payment settings");
       }
@@ -81,8 +88,11 @@ export function VenuePaymentSettings() {
           ...data.settings,
           doku_secret_key: data.settings.has_secret_key ? "••••••••••••••••" : "",
         });
+      } else {
+        console.log("[VenuePaymentSettings] No settings found, using defaults");
       }
     } catch (err: any) {
+      console.error("[VenuePaymentSettings] Load error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -95,6 +105,13 @@ export function VenuePaymentSettings() {
       setError(null);
       setSuccess(null);
 
+      console.log("[VenuePaymentSettings] Saving settings:", {
+        dokuEnabled: settings.doku_enabled,
+        hasClientId: !!settings.doku_client_id,
+        hasSecretKey: !!settings.doku_secret_key && !settings.doku_secret_key.includes("•"),
+        environment: settings.doku_environment,
+      });
+
       const response = await fetch("/api/venue/settings/payments", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -102,6 +119,14 @@ export function VenuePaymentSettings() {
       });
 
       const data = await response.json();
+
+      console.log("[VenuePaymentSettings] Save response:", {
+        ok: response.ok,
+        status: response.status,
+        hasSettings: !!data.settings,
+        savedDokuEnabled: data.settings?.doku_enabled,
+        error: data.error,
+      });
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to save payment settings");
@@ -123,6 +148,7 @@ export function VenuePaymentSettings() {
 
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
+      console.error("[VenuePaymentSettings] Save error:", err);
       setError(err.message);
     } finally {
       setSaving(false);

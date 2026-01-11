@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
+import {
+  DokuService,
+  formatDokuAmount,
+  generateBookingInvoiceNumber,
+} from "@/lib/services/doku";
 
 export const dynamic = "force-dynamic";
 
@@ -210,6 +215,14 @@ export async function POST(
     // Type assertion to fix Supabase's nested relation type inference
     const table = tableData as unknown as TableWithZone;
 
+    console.log("[Table Book] Table data from venue_tables:", {
+      tableId: table.id,
+      tableName: table.name,
+      deposit_amount: table.deposit_amount,
+      minimum_spend: table.minimum_spend,
+      capacity: table.capacity,
+    });
+
     if (!table.is_active) {
       return NextResponse.json(
         { error: "This table is not available" },
@@ -218,12 +231,22 @@ export async function POST(
     }
 
     // Check event-specific availability
-    const { data: availability } = await serviceSupabase
+    const { data: availability, error: availabilityError } = await serviceSupabase
       .from("event_table_availability")
       .select("is_available, override_minimum_spend, override_deposit")
       .eq("event_id", params.eventId)
       .eq("table_id", body.table_id)
       .single();
+
+    console.log("[Table Book] Availability check:", {
+      eventId: params.eventId,
+      tableId: body.table_id,
+      hasAvailability: !!availability,
+      availabilityError: availabilityError?.code, // PGRST116 means no row found (OK)
+      isAvailable: availability?.is_available,
+      overrideDeposit: availability?.override_deposit,
+      overrideMinSpend: availability?.override_minimum_spend,
+    });
 
     if (availability && availability.is_available === false) {
       return NextResponse.json(
@@ -235,6 +258,15 @@ export async function POST(
     // Calculate effective minimum spend and deposit
     const effectiveMinimumSpend = availability?.override_minimum_spend ?? table.minimum_spend;
     const effectiveDeposit = availability?.override_deposit ?? table.deposit_amount;
+
+    console.log("[Table Book] Deposit calculation:", {
+      tableDeposit: table.deposit_amount,
+      overrideDeposit: availability?.override_deposit,
+      effectiveDeposit,
+      tableMinSpend: table.minimum_spend,
+      overrideMinSpend: availability?.override_minimum_spend,
+      effectiveMinimumSpend,
+    });
 
     // Resolve promoter attribution
     let promoterId: string | null = null;
@@ -297,6 +329,9 @@ export async function POST(
     }
 
     // Create the booking
+    // Set payment_status based on whether deposit is required
+    const initialPaymentStatus = effectiveDeposit && effectiveDeposit > 0 ? "pending" : "not_required";
+
     const { data: booking, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .insert({
@@ -313,6 +348,7 @@ export async function POST(
         status: "pending",
         minimum_spend: effectiveMinimumSpend,
         deposit_required: effectiveDeposit,
+        payment_status: initialPaymentStatus,
       })
       .select()
       .single();
@@ -376,6 +412,114 @@ export async function POST(
       // Don't fail the booking if email fails
     }
 
+    // Build booking URL for payment/status page
+    // Use relative URL for same-site navigation (returned to frontend)
+    // DOKU callbacks below use baseUrl since they need absolute URLs for external redirect
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+    const bookingUrl = `/booking/${booking.id}`;
+
+    // If deposit is required, check if DOKU is enabled and create checkout session
+    let paymentInfo: {
+      payment_url: string;
+      expires_at: string;
+      invoice_number: string;
+      doku_enabled: boolean;
+    } | null = null;
+
+    if (effectiveDeposit && effectiveDeposit > 0) {
+      try {
+        // Check if DOKU is enabled for this venue
+        const { data: paymentSettings } = await serviceSupabase
+          .from("venue_payment_settings")
+          .select("*")
+          .eq("venue_id", event.venue_id)
+          .single();
+
+        if (paymentSettings?.doku_enabled && paymentSettings.doku_client_id && paymentSettings.doku_secret_key) {
+          // Create DOKU checkout session
+          const dokuService = new DokuService({
+            clientId: paymentSettings.doku_client_id,
+            secretKey: paymentSettings.doku_secret_key,
+            environment: paymentSettings.doku_environment as "sandbox" | "production",
+          });
+
+          const invoiceNumber = generateBookingInvoiceNumber(booking.id);
+          const callbackUrl = `${baseUrl}/booking/${booking.id}/payment-complete`;
+          const callbackUrlCancel = `${baseUrl}/booking/${booking.id}/payment-cancelled`;
+          const paymentDueMinutes = (paymentSettings.payment_expiry_hours || 24) * 60;
+
+          const checkoutResult = await dokuService.createCheckout({
+            order: {
+              amount: formatDokuAmount(effectiveDeposit),
+              invoiceNumber,
+              callbackUrl,
+              callbackUrlCancel,
+              lineItems: [
+                {
+                  name: `Table Deposit - ${table.name} at ${event.name}`,
+                  price: formatDokuAmount(effectiveDeposit),
+                  quantity: 1,
+                },
+              ],
+            },
+            customer: {
+              name: body.guest_name,
+              email: body.guest_email,
+              phone: body.guest_whatsapp || undefined,
+            },
+            payment: {
+              paymentDueDate: paymentDueMinutes,
+            },
+          });
+
+          if (checkoutResult.success) {
+            // Calculate expiry timestamp
+            const expiresAt = new Date();
+            expiresAt.setMinutes(expiresAt.getMinutes() + paymentDueMinutes);
+
+            // Create payment transaction record
+            const { data: transaction } = await serviceSupabase
+              .from("payment_transactions")
+              .insert({
+                venue_id: event.venue_id,
+                reference_type: "table_booking",
+                reference_id: booking.id,
+                amount: effectiveDeposit,
+                currency: event.currency || event.venue?.currency || "IDR",
+                doku_invoice_id: invoiceNumber,
+                doku_payment_url: checkoutResult.paymentUrl,
+                status: "pending",
+                expires_at: expiresAt.toISOString(),
+              })
+              .select()
+              .single();
+
+            // Update booking with payment transaction ID
+            if (transaction) {
+              await serviceSupabase
+                .from("table_bookings")
+                .update({
+                  payment_transaction_id: transaction.id,
+                  payment_status: "pending",
+                })
+                .eq("id", booking.id);
+            }
+
+            paymentInfo = {
+              payment_url: checkoutResult.paymentUrl,
+              expires_at: expiresAt.toISOString(),
+              invoice_number: invoiceNumber,
+              doku_enabled: true,
+            };
+          }
+        }
+      } catch (paymentError) {
+        console.error("Failed to create DOKU checkout:", paymentError);
+        // Don't fail the booking if payment session creation fails
+        // User can still pay later from the booking page
+      }
+    }
+
     return NextResponse.json({
       success: true,
       booking: {
@@ -386,14 +530,16 @@ export async function POST(
         minimum_spend: effectiveMinimumSpend,
         deposit_required: effectiveDeposit,
         party_size: partySize,
+        booking_url: bookingUrl,
       },
       event: {
         id: event.id,
         name: event.name,
         slug: event.slug,
       },
+      payment: paymentInfo,
       message: effectiveDeposit
-        ? "Your table booking request has been received. Please arrange your deposit to confirm."
+        ? "Your table booking request has been received. Please pay your deposit to confirm."
         : "Your table booking request has been received. We will contact you shortly to confirm.",
     });
   } catch (error: any) {

@@ -28,12 +28,22 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
+    console.log("[Payment Settings GET] Venue ID:", venueId);
+
     // Get payment settings
     const { data: settings, error } = await serviceSupabase
       .from("venue_payment_settings")
       .select("*")
       .eq("venue_id", venueId)
       .single();
+
+    console.log("[Payment Settings GET] Query result:", {
+      hasData: !!settings,
+      error: error?.message,
+      errorCode: error?.code,
+      dokuEnabled: settings?.doku_enabled,
+      hasClientId: !!settings?.doku_client_id,
+    });
 
     if (error && error.code !== "PGRST116") {
       // PGRST116 = no rows found, which is fine
@@ -109,12 +119,12 @@ export async function PUT(request: NextRequest) {
     }
 
     if (body.doku_client_id !== undefined) {
-      updateData.doku_client_id = body.doku_client_id;
+      updateData.doku_client_id = body.doku_client_id?.trim();
     }
 
     // Only update secret key if a new one is provided (not the masked value)
     if (body.doku_secret_key && !body.doku_secret_key.includes("•")) {
-      updateData.doku_secret_key = body.doku_secret_key;
+      updateData.doku_secret_key = body.doku_secret_key?.trim();
     }
 
     if (body.doku_environment !== undefined) {
@@ -137,6 +147,13 @@ export async function PUT(request: NextRequest) {
       updateData.payment_expiry_hours = body.payment_expiry_hours;
     }
 
+    // Log what we're about to save
+    console.log("[Payment Settings PUT] Venue ID:", venueId);
+    console.log("[Payment Settings PUT] Update data:", {
+      ...updateData,
+      doku_secret_key: updateData.doku_secret_key ? "[REDACTED]" : undefined,
+    });
+
     // Upsert settings
     const { data: settings, error } = await serviceSupabase
       .from("venue_payment_settings")
@@ -144,9 +161,21 @@ export async function PUT(request: NextRequest) {
       .select()
       .single();
 
+    console.log("[Payment Settings PUT] Upsert result:", {
+      success: !error,
+      hasData: !!settings,
+      error: error?.message,
+      savedDokuEnabled: settings?.doku_enabled,
+    });
+
     if (error) {
       console.error("Error updating payment settings:", error);
       return NextResponse.json({ error: "Failed to update payment settings" }, { status: 500 });
+    }
+
+    if (!settings) {
+      console.error("No settings returned from upsert despite no error");
+      return NextResponse.json({ error: "Failed to save settings - no data returned" }, { status: 500 });
     }
 
     // Return masked settings

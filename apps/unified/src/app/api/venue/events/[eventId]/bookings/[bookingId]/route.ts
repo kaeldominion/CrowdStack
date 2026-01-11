@@ -13,6 +13,7 @@ interface UpdateBookingRequest {
   deposit_received?: boolean;
   actual_spend?: number | null;
   staff_notes?: string;
+  cancellation_reason?: string;
 }
 
 interface EventWithVenue {
@@ -147,6 +148,14 @@ export async function PATCH(
       if (body.status === "confirmed") {
         updateData.confirmed_by = userId;
         updateData.confirmed_at = new Date().toISOString();
+      }
+
+      // Track cancellation/no-show details
+      if (body.status === "cancelled" || body.status === "no_show") {
+        updateData.cancelled_by = userId;
+        updateData.cancelled_at = new Date().toISOString();
+        updateData.cancellation_type = body.status === "no_show" ? "no_show" : "venue";
+        updateData.cancellation_reason = body.cancellation_reason || body.staff_notes || null;
       }
     }
 
@@ -283,7 +292,30 @@ export async function PATCH(
             event_name: event.name,
             event_date: eventDate,
             table_name: currentBooking.table?.name || "Table",
-            cancellation_reason: body.staff_notes || "",
+            cancellation_reason: body.cancellation_reason || body.staff_notes || "",
+          },
+          { event_id: eventId, booking_id: bookingId }
+        );
+      } else if (statusChanged && body.status === "no_show") {
+        // Get arrival deadline for the no-show email
+        const arrivalDeadline = currentBooking.arrival_deadline
+          ? new Date(currentBooking.arrival_deadline).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              timeZone: eventTimezone,
+            })
+          : eventTime;
+
+        await sendTemplateEmail(
+          "table_booking_no_show",
+          currentBooking.guest_email,
+          currentBooking.attendee_id,
+          {
+            guest_name: currentBooking.guest_name,
+            event_name: event.name,
+            table_name: currentBooking.table?.name || "Table",
+            arrival_deadline: arrivalDeadline,
+            venue_name: event.venue?.name || "",
           },
           { event_id: eventId, booking_id: bookingId }
         );

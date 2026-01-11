@@ -1,69 +1,116 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Radio, Search, ChevronRight, ExternalLink, MapPin, Plus } from "lucide-react";
+import { Radio, Search, ChevronRight, ExternalLink, MapPin, Plus, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { CreateDJModal } from "@/components/CreateDJModal";
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export default function AdminDJsPage() {
   const [djs, setDJs] = useState<any[]>([]);
-  const [filteredDJs, setFilteredDJs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadDJs();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterDJs();
-  }, [search, djs]);
+    setDJs([]);
+    setPagination(null);
+    setLoading(true);
+    loadDJs(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadDJs = async () => {
+  const loadDJs = async (page: number = 1, searchQuery: string = "") => {
     try {
-      const response = await fetch("/api/admin/djs");
-      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/djs?${params}`);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
-        
         if (response.status === 401) {
           alert("Unauthorized. Please log in again.");
         } else if (response.status === 403) {
           alert("Access denied. You need superadmin role to view DJs.");
-        } else {
-          alert(`Failed to load DJs: ${errorData.error || response.statusText}`);
         }
         throw new Error(errorData.error || "Failed to load DJs");
       }
-      
+
       const data = await response.json();
-      setDJs(data.djs || []);
+
+      if (page === 1) {
+        setDJs(data.djs || []);
+      } else {
+        setDJs(prev => [...prev, ...(data.djs || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading DJs:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterDJs = () => {
-    let filtered = [...djs];
-    
-    if (search.trim()) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (dj) =>
-          dj.name?.toLowerCase().includes(searchLower) ||
-          dj.handle?.toLowerCase().includes(searchLower) ||
-          dj.location?.toLowerCase().includes(searchLower) ||
-          dj.email?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadDJs(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    
-    setFilteredDJs(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   if (loading) {
     return (
@@ -110,128 +157,152 @@ export default function AdminDJsPage() {
 
           <div className="mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredDJs.length} of {djs.length} DJs
+              Showing {djs.length} of {pagination?.total || 0} DJs
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
           {/* DJs Table */}
           <Card className="!p-0 overflow-hidden">
             <div className="overflow-x-auto -mx-4 sm:mx-0">
-              {filteredDJs.length === 0 ? (
+              {djs.length === 0 && !loading ? (
                 <div className="p-12 text-center">
                   <Radio className="h-12 w-12 text-muted mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-primary mb-2">
-                    {search ? "No DJs found" : "No DJs yet"}
+                    {debouncedSearch ? "No DJs found" : "No DJs yet"}
                   </h3>
                   <p className="text-secondary">
-                    {search ? "Try adjusting your search" : "DJ profiles will appear here once created"}
+                    {debouncedSearch ? "Try adjusting your search" : "DJ profiles will appear here once created"}
                   </p>
                 </div>
               ) : (
                 <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>DJ</TableHead>
-                  <TableHead>Handle</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Genres</TableHead>
-                  <TableHead>Mixes</TableHead>
-                  <TableHead>Followers</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDJs.map((dj) => (
-                  <TableRow key={dj.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {dj.profile_image_url ? (
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                            <Image
-                              src={dj.profile_image_url}
-                              alt={dj.name}
-                              fill
-                              className="object-cover"
-                            />
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>DJ</TableHead>
+                      <TableHead>Handle</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Genres</TableHead>
+                      <TableHead>Mixes</TableHead>
+                      <TableHead>Followers</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {djs.map((dj) => (
+                      <TableRow key={dj.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {dj.profile_image_url ? (
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                                <Image
+                                  src={dj.profile_image_url}
+                                  alt={dj.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                {dj.name?.[0]?.toUpperCase() || "D"}
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-medium text-primary">{dj.name}</div>
+                              {dj.email && (
+                                <div className="text-sm text-secondary">{dj.email}</div>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                            {dj.name?.[0]?.toUpperCase() || "D"}
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-sm text-primary font-mono">{dj.handle}</code>
+                        </TableCell>
+                        <TableCell>
+                          {dj.location ? (
+                            <div className="flex items-center gap-1 text-secondary">
+                              <MapPin className="h-3 w-3" />
+                              <span>{dj.location}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {dj.genres && dj.genres.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {dj.genres.slice(0, 2).map((genre: string) => (
+                                <Badge key={genre} variant="secondary" className="text-xs">
+                                  {genre}
+                                </Badge>
+                              ))}
+                              {dj.genres.length > 2 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{dj.genres.length - 2}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-primary">{dj.mixes_count || 0}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-primary">{dj.follower_count || 0}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-secondary text-sm">
+                            {new Date(dj.created_at).toLocaleDateString()}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/djs/${dj.id}`}>
+                              <Button variant="primary" size="sm">
+                                Manage
+                              </Button>
+                            </Link>
+                            <Link href={`/dj/${dj.handle}`} target="_blank">
+                              <Button variant="ghost" size="sm">
+                                View
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </Button>
+                            </Link>
                           </div>
-                        )}
-                        <div>
-                          <div className="font-medium text-primary">{dj.name}</div>
-                          {dj.email && (
-                            <div className="text-sm text-secondary">{dj.email}</div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-sm text-primary font-mono">{dj.handle}</code>
-                    </TableCell>
-                    <TableCell>
-                      {dj.location ? (
-                        <div className="flex items-center gap-1 text-secondary">
-                          <MapPin className="h-3 w-3" />
-                          <span>{dj.location}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {dj.genres && dj.genres.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {dj.genres.slice(0, 2).map((genre: string) => (
-                            <Badge key={genre} variant="secondary" className="text-xs">
-                              {genre}
-                            </Badge>
-                          ))}
-                          {dj.genres.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{dj.genres.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-primary">{dj.mixes_count || 0}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-primary">{dj.follower_count || 0}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-secondary text-sm">
-                        {new Date(dj.created_at).toLocaleDateString()}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Link href={`/admin/djs/${dj.id}`}>
-                          <Button variant="primary" size="sm">
-                            Manage
-                          </Button>
-                        </Link>
-                        <Link href={`/dj/${dj.handle}`} target="_blank">
-                          <Button variant="ghost" size="sm">
-                            View
-                            <ExternalLink className="h-3 w-3 ml-1" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
           </Card>
+
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more DJs...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && djs.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || djs.length} DJs loaded
+              </p>
+            )}
+          </div>
 
           {/* Stats Summary */}
           {djs.length > 0 && (
@@ -239,7 +310,7 @@ export default function AdminDJsPage() {
               <Card className="!p-4">
                 <div className="text-center">
                   <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-secondary mb-1">Total DJs</p>
-                  <p className="text-2xl font-bold text-primary">{djs.length}</p>
+                  <p className="text-2xl font-bold text-primary">{pagination?.total || djs.length}</p>
                 </div>
               </Card>
               <Card className="!p-4">
@@ -273,7 +344,10 @@ export default function AdminDJsPage() {
             isOpen={showCreateModal}
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {
-              loadDJs();
+              setDJs([]);
+              setPagination(null);
+              setLoading(true);
+              loadDJs(1, debouncedSearch);
             }}
           />
         </Container>
@@ -281,4 +355,3 @@ export default function AdminDJsPage() {
     </div>
   );
 }
-

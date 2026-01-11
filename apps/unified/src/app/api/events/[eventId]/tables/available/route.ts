@@ -253,6 +253,16 @@ export async function GET(
         const avail = availabilityMap.get(table.id);
         const zone = zoneMap.get(table.zone_id);
 
+        // Debug logging for deposit calculation
+        console.log("[Tables Available] Processing table:", {
+          tableId: table.id,
+          tableName: table.name,
+          table_deposit_amount: table.deposit_amount,
+          hasAvailOverride: !!avail,
+          override_deposit: avail?.override_deposit,
+          effective_deposit: avail?.override_deposit ?? table.deposit_amount,
+        });
+
         return {
           id: table.id,
           name: table.name,

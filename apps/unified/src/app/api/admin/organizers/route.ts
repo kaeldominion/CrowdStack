@@ -6,17 +6,23 @@ import { cookies } from "next/headers";
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = searchParams.get("search") || "";
+
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
     const cookieStore = await cookies();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     let userId = user?.id;
 
-    // If no user from Supabase client, try reading from localhost cookie
     if (!userId) {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
@@ -31,58 +37,69 @@ export async function GET() {
             userId = parsed.user.id;
           }
         } catch (e) {
-          // Cookie parse error - continue without userId
+          // Cookie parse error
         }
       }
     }
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized - no user ID found" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check role using service role to bypass RLS
     const serviceSupabase = createServiceRoleClient();
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    
+
     const roles = userRoles?.map((r) => r.role) || [];
-    const isSuperadmin = roles.includes("superadmin");
-
-    if (!isSuperadmin) {
-      return NextResponse.json({ 
-        error: "Forbidden - Superadmin role required",
-        yourRoles: roles 
-      }, { status: 403 });
+    if (!roles.includes("superadmin")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get all organizers
-    const { data: organizers, error } = await serviceSupabase
+    // Build query with optional search
+    let query = serviceSupabase
       .from("organizers")
-      .select("*")
-      .order("name", { ascending: true });
+      .select("*", { count: "exact" });
 
-    if (error) {
-      throw error;
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
-    // Get event counts for each organizer
-    const organizersWithCounts = await Promise.all(
-      (organizers || []).map(async (organizer: any) => {
-        const { count } = await serviceSupabase
-          .from("events")
-          .select("*", { count: "exact", head: true })
-          .eq("organizer_id", organizer.id);
+    const { data: organizers, error, count } = await query
+      .order("name", { ascending: true })
+      .range(offset, offset + safeLimit - 1);
 
-        return {
-          ...organizer,
-          events_count: count || 0,
-        };
-      })
-    );
+    if (error) throw error;
 
-    return NextResponse.json({ organizers: organizersWithCounts });
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / safeLimit);
+    const hasMore = safePage < totalPages;
+
+    // Batch fetch event counts
+    const organizerIds = (organizers || []).map((o: any) => o.id);
+    const eventCountMap = new Map<string, number>();
+
+    if (organizerIds.length > 0) {
+      const { data: eventCounts } = await serviceSupabase
+        .from("events")
+        .select("organizer_id")
+        .in("organizer_id", organizerIds);
+
+      (eventCounts || []).forEach((e: any) => {
+        eventCountMap.set(e.organizer_id, (eventCountMap.get(e.organizer_id) || 0) + 1);
+      });
+    }
+
+    const organizersWithCounts = (organizers || []).map((organizer: any) => ({
+      ...organizer,
+      events_count: eventCountMap.get(organizer.id) || 0,
+    }));
+
+    return NextResponse.json({
+      organizers: organizersWithCounts,
+      pagination: { page: safePage, limit: safeLimit, total: totalCount, totalPages, hasMore }
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch organizers" },

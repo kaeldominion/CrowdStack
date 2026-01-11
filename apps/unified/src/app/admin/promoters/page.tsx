@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
-import { Users, Search, ChevronRight, X, UserPlus, AlertCircle, CheckCircle } from "lucide-react";
+import { Users, Search, ChevronRight, X, UserPlus, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
 export default function AdminPromotersPage() {
   const [promoters, setPromoters] = useState<any[]>([]);
-  const [filteredPromoters, setFilteredPromoters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [selectedPromoter, setSelectedPromoter] = useState<any | null>(null);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [convertEmail, setConvertEmail] = useState("");
@@ -23,53 +33,84 @@ export default function AdminPromotersPage() {
   const [createParentId, setCreateParentId] = useState("");
   const [creating, setCreating] = useState(false);
   const [createResult, setCreateResult] = useState<{ success: boolean; message: string; promoter?: any } | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadPromoters();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterPromoters();
-  }, [search, promoters]);
+    setPromoters([]);
+    setPagination(null);
+    setLoading(true);
+    loadPromoters(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadPromoters = async () => {
+  const loadPromoters = async (page: number = 1, searchQuery: string = "") => {
     try {
-      const response = await fetch("/api/admin/promoters");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/promoters?${params}`);
       if (!response.ok) throw new Error("Failed to load promoters");
       const data = await response.json();
-      setPromoters(data.promoters || []);
+
+      if (page === 1) {
+        setPromoters(data.promoters || []);
+      } else {
+        setPromoters(prev => [...prev, ...(data.promoters || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading promoters:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterPromoters = () => {
-    let filtered = [...promoters];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter((p) => {
-        // Match name
-        if (p.name.toLowerCase().includes(searchLower)) return true;
-        
-        // Match email (full or username part)
-        if (p.email) {
-          const emailLower = p.email.toLowerCase();
-          if (emailLower.includes(searchLower)) return true;
-          // Also check username part (before @)
-          const usernamePart = emailLower.split("@")[0];
-          if (usernamePart.includes(searchLower)) return true;
-        }
-        
-        // Match phone
-        if (p.phone?.includes(search)) return true;
-        
-        return false;
-      });
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadPromoters(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    setFilteredPromoters(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   const handleConvertToPromoter = async () => {
     if (convertMethod === "email" && !convertEmail.trim()) {
@@ -108,12 +149,13 @@ export default function AdminPromotersPage() {
         promoter: data.promoter,
       });
 
-      // Reload promoters list
       if (!data.alreadyPromoter) {
-        await loadPromoters();
+        setPromoters([]);
+        setPagination(null);
+        setLoading(true);
+        loadPromoters(1, debouncedSearch);
       }
 
-      // Clear form after successful conversion
       setTimeout(() => {
         setConvertEmail("");
         setConvertAttendeeId("");
@@ -167,10 +209,11 @@ export default function AdminPromotersPage() {
         promoter: data.promoter,
       });
 
-      // Reload promoters list
-      await loadPromoters();
+      setPromoters([]);
+      setPagination(null);
+      setLoading(true);
+      loadPromoters(1, debouncedSearch);
 
-      // Clear form after successful creation
       setTimeout(() => {
         setCreateName("");
         setCreateEmail("");
@@ -251,7 +294,8 @@ export default function AdminPromotersPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredPromoters.length} of {promoters.length} promoters
+              Showing {promoters.length} of {pagination?.total || 0} promoters
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -270,16 +314,16 @@ export default function AdminPromotersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPromoters.length === 0 ? (
+                  {promoters.length === 0 && !loading ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8 text-secondary">
-                        No promoters found
+                        {debouncedSearch ? `No promoters found matching "${debouncedSearch}"` : "No promoters found"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredPromoters.map((promoter) => (
-                      <TableRow 
-                        key={promoter.id} 
+                    promoters.map((promoter) => (
+                      <TableRow
+                        key={promoter.id}
                         hover
                         className="cursor-pointer"
                         onClick={() => setSelectedPromoter(promoter)}
@@ -312,6 +356,29 @@ export default function AdminPromotersPage() {
             </div>
           </Card>
 
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more promoters...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && promoters.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || promoters.length} promoters loaded
+              </p>
+            )}
+          </div>
+
           {/* Create Promoter Modal */}
           <Modal
             isOpen={showCreateModal}
@@ -328,10 +395,9 @@ export default function AdminPromotersPage() {
           >
             <div className="space-y-4">
               <p className="text-sm text-secondary">
-                Create a new promoter profile from scratch. This creates a promoter profile without requiring an existing user or attendee account.
+                Create a new promoter profile from scratch.
               </p>
 
-              {/* Name Field */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
                   Name <span className="text-destructive">*</span>
@@ -344,39 +410,27 @@ export default function AdminPromotersPage() {
                 />
               </div>
 
-              {/* Email Field */}
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-primary mb-2">Email</label>
                 <Input
                   type="email"
                   placeholder="john@example.com"
                   value={createEmail}
                   onChange={(e) => setCreateEmail(e.target.value)}
                 />
-                <p className="text-xs text-secondary mt-1">
-                  Either email or phone is required
-                </p>
+                <p className="text-xs text-secondary mt-1">Either email or phone is required</p>
               </div>
 
-              {/* Phone Field */}
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Phone
-                </label>
+                <label className="block text-sm font-medium text-primary mb-2">Phone</label>
                 <Input
                   type="tel"
                   placeholder="+1234567890"
                   value={createPhone}
                   onChange={(e) => setCreatePhone(e.target.value)}
                 />
-                <p className="text-xs text-secondary mt-1">
-                  Either email or phone is required
-                </p>
               </div>
 
-              {/* Parent Promoter Field (Optional) */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
                   Parent Promoter ID <span className="text-secondary">(optional)</span>
@@ -387,78 +441,18 @@ export default function AdminPromotersPage() {
                   value={createParentId}
                   onChange={(e) => setCreateParentId(e.target.value)}
                 />
-                <p className="text-xs text-secondary mt-1">
-                  Leave empty if this is a top-level promoter
-                </p>
               </div>
 
-              {/* Result Message */}
               {createResult && (
-                <div
-                  className={`p-4 rounded-md flex items-start gap-3 ${
-                    createResult.success
-                      ? "bg-success/10 border border-success/20"
-                      : "bg-warning/10 border border-warning/20"
-                  }`}
-                >
-                  {createResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <p
-                      className={`text-sm ${
-                        createResult.success ? "text-success" : "text-warning"
-                      }`}
-                    >
-                      {createResult.message}
-                    </p>
-                    {createResult.success && createResult.promoter && (
-                      <div className="mt-2 text-xs text-secondary">
-                        <p>
-                          <strong>Name:</strong> {createResult.promoter.name}
-                        </p>
-                        {createResult.promoter.email && (
-                          <p>
-                            <strong>Email:</strong> {createResult.promoter.email}
-                          </p>
-                        )}
-                        {createResult.promoter.phone && (
-                          <p>
-                            <strong>Phone:</strong> {createResult.promoter.phone}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                <div className={`p-4 rounded-md flex items-start gap-3 ${createResult.success ? "bg-success/10 border border-success/20" : "bg-warning/10 border border-warning/20"}`}>
+                  {createResult.success ? <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" /> : <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />}
+                  <p className={`text-sm ${createResult.success ? "text-success" : "text-warning"}`}>{createResult.message}</p>
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCreateResult(null);
-                    setCreateName("");
-                    setCreateEmail("");
-                    setCreatePhone("");
-                    setCreateParentId("");
-                  }}
-                  disabled={creating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreatePromoter}
-                  disabled={
-                    creating ||
-                    !createName.trim() ||
-                    (!createEmail.trim() && !createPhone.trim())
-                  }
-                >
+                <Button variant="ghost" onClick={() => setShowCreateModal(false)} disabled={creating}>Cancel</Button>
+                <Button onClick={handleCreatePromoter} disabled={creating || !createName.trim() || (!createEmail.trim() && !createPhone.trim())}>
                   {creating ? "Creating..." : "Create Promoter"}
                 </Button>
               </div>
@@ -468,150 +462,45 @@ export default function AdminPromotersPage() {
           {/* Convert to Promoter Modal */}
           <Modal
             isOpen={showConvertModal}
-            onClose={() => {
-              setShowConvertModal(false);
-              setConvertResult(null);
-              setConvertEmail("");
-              setConvertAttendeeId("");
-            }}
+            onClose={() => { setShowConvertModal(false); setConvertResult(null); }}
             title="Convert User/Attendee to Promoter"
             size="md"
           >
             <div className="space-y-4">
               <p className="text-sm text-secondary">
-                Convert a user or attendee to a promoter. The system will find the user by email or attendee ID,
-                create a promoter profile with their existing information, and assign the promoter role.
+                Convert a user or attendee to a promoter.
               </p>
 
-              {/* Method Selection */}
               <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  Search by
-                </label>
+                <label className="block text-sm font-medium text-primary mb-2">Search by</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={convertMethod === "email"}
-                      onChange={() => setConvertMethod("email")}
-                      className="text-primary"
-                    />
+                    <input type="radio" checked={convertMethod === "email"} onChange={() => setConvertMethod("email")} className="text-primary" />
                     <span className="text-sm text-primary">Email</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={convertMethod === "attendeeId"}
-                      onChange={() => setConvertMethod("attendeeId")}
-                      className="text-primary"
-                    />
+                    <input type="radio" checked={convertMethod === "attendeeId"} onChange={() => setConvertMethod("attendeeId")} className="text-primary" />
                     <span className="text-sm text-primary">Attendee ID</span>
                   </label>
                 </div>
               </div>
 
-              {/* Input Fields */}
               {convertMethod === "email" ? (
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-2">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="user@example.com"
-                    value={convertEmail}
-                    onChange={(e) => setConvertEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && convertEmail.trim()) {
-                        handleConvertToPromoter();
-                      }
-                    }}
-                  />
-                </div>
+                <Input type="email" placeholder="user@example.com" value={convertEmail} onChange={(e) => setConvertEmail(e.target.value)} />
               ) : (
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-2">
-                    Attendee ID
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="UUID of attendee"
-                    value={convertAttendeeId}
-                    onChange={(e) => setConvertAttendeeId(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && convertAttendeeId.trim()) {
-                        handleConvertToPromoter();
-                      }
-                    }}
-                  />
-                </div>
+                <Input type="text" placeholder="UUID of attendee" value={convertAttendeeId} onChange={(e) => setConvertAttendeeId(e.target.value)} />
               )}
 
-              {/* Result Message */}
               {convertResult && (
-                <div
-                  className={`p-4 rounded-md flex items-start gap-3 ${
-                    convertResult.success
-                      ? "bg-success/10 border border-success/20"
-                      : "bg-warning/10 border border-warning/20"
-                  }`}
-                >
-                  {convertResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
-                  )}
-                  <div className="flex-1">
-                    <p
-                      className={`text-sm ${
-                        convertResult.success ? "text-success" : "text-warning"
-                      }`}
-                    >
-                      {convertResult.message}
-                    </p>
-                    {convertResult.success && convertResult.promoter && (
-                      <div className="mt-2 text-xs text-secondary">
-                        <p>
-                          <strong>Name:</strong> {convertResult.promoter.name}
-                        </p>
-                        {convertResult.promoter.email && (
-                          <p>
-                            <strong>Email:</strong> {convertResult.promoter.email}
-                          </p>
-                        )}
-                        {convertResult.promoter.phone && (
-                          <p>
-                            <strong>Phone:</strong> {convertResult.promoter.phone}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                <div className={`p-4 rounded-md flex items-start gap-3 ${convertResult.success ? "bg-success/10 border border-success/20" : "bg-warning/10 border border-warning/20"}`}>
+                  {convertResult.success ? <CheckCircle className="h-5 w-5 text-success" /> : <AlertCircle className="h-5 w-5 text-warning" />}
+                  <p className={`text-sm ${convertResult.success ? "text-success" : "text-warning"}`}>{convertResult.message}</p>
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowConvertModal(false);
-                    setConvertResult(null);
-                    setConvertEmail("");
-                    setConvertAttendeeId("");
-                  }}
-                  disabled={converting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleConvertToPromoter}
-                  disabled={
-                    converting ||
-                    (convertMethod === "email" && !convertEmail.trim()) ||
-                    (convertMethod === "attendeeId" && !convertAttendeeId.trim())
-                  }
-                >
+                <Button variant="ghost" onClick={() => setShowConvertModal(false)} disabled={converting}>Cancel</Button>
+                <Button onClick={handleConvertToPromoter} disabled={converting || (convertMethod === "email" ? !convertEmail.trim() : !convertAttendeeId.trim())}>
                   {converting ? "Converting..." : "Convert to Promoter"}
                 </Button>
               </div>
@@ -619,23 +508,13 @@ export default function AdminPromotersPage() {
           </Modal>
 
           {/* Promoter Detail Modal */}
-          <Modal
-            isOpen={!!selectedPromoter}
-            onClose={() => setSelectedPromoter(null)}
-            title="Promoter Details"
-            size="md"
-          >
+          <Modal isOpen={!!selectedPromoter} onClose={() => setSelectedPromoter(null)} title="Promoter Details" size="md">
             {selectedPromoter && (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-primary">{selectedPromoter.name}</h3>
-                  {selectedPromoter.parent?.name && (
-                    <p className="text-sm text-secondary">
-                      Parent: {selectedPromoter.parent.name}
-                    </p>
-                  )}
+                  {selectedPromoter.parent?.name && <p className="text-sm text-secondary">Parent: {selectedPromoter.parent.name}</p>}
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs font-medium text-secondary uppercase tracking-wider">Email</p>
@@ -645,9 +524,6 @@ export default function AdminPromotersPage() {
                     <p className="text-xs font-medium text-secondary uppercase tracking-wider">Phone</p>
                     <p className="text-sm text-primary">{selectedPromoter.phone || "—"}</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs font-medium text-secondary uppercase tracking-wider">Events</p>
                     <p className="text-sm text-primary">{selectedPromoter.events_count || 0}</p>
@@ -657,18 +533,8 @@ export default function AdminPromotersPage() {
                     <p className="text-sm text-primary">{selectedPromoter.total_referrals || 0}</p>
                   </div>
                 </div>
-
-                <div>
-                  <p className="text-xs font-medium text-secondary uppercase tracking-wider">Created</p>
-                  <p className="text-sm text-primary">
-                    {new Date(selectedPromoter.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-
                 <div className="flex justify-end pt-4 border-t border-border">
-                  <Button variant="ghost" onClick={() => setSelectedPromoter(null)}>
-                    Close
-                  </Button>
+                  <Button variant="ghost" onClick={() => setSelectedPromoter(null)}>Close</Button>
                 </div>
               </div>
             )}
@@ -678,4 +544,3 @@ export default function AdminPromotersPage() {
     </div>
   );
 }
-

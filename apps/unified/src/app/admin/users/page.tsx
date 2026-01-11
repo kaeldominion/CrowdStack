@@ -1,16 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
-import { User, Search, Edit, Shield, Building2, Calendar, ChevronRight, Phone, Mail, Instagram, MapPin, AlertCircle, CheckCircle } from "lucide-react";
+import { User, Search, Edit, Shield, Building2, Calendar, ChevronRight, Phone, Mail, Instagram, MapPin, AlertCircle, CheckCircle, Loader2, Music, Megaphone } from "lucide-react";
 import { UserAssignmentModal } from "@/components/UserAssignmentModal";
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [assignmentModal, setAssignmentModal] = useState<{
     open: boolean;
     userId: string;
@@ -36,40 +48,81 @@ export default function AdminUsersPage() {
   const [updatingName, setUpdatingName] = useState(false);
   const [nameUpdateResult, setNameUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Debounce search input
   useEffect(() => {
-    loadUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
+  // Reset and load when search changes
   useEffect(() => {
-    filterUsers();
-  }, [search, users]);
+    setUsers([]);
+    setPagination(null);
+    setLoading(true);
+    loadUsers(1, debouncedSearch);
+  }, [debouncedSearch]);
 
-  const loadUsers = async () => {
+  const loadUsers = async (page: number = 1, searchQuery: string = "") => {
     try {
-      const response = await fetch("/api/admin/users");
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+
+      const response = await fetch(`/api/admin/users?${params}`);
       if (!response.ok) throw new Error("Failed to load users");
       const data = await response.json();
-      setUsers(data.users || []);
+
+      if (page === 1) {
+        setUsers(data.users || []);
+      } else {
+        setUsers(prev => [...prev, ...(data.users || [])]);
+      }
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error loading users:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const filterUsers = () => {
-    let filtered = [...users];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (u) =>
-          (u.email && u.email.toLowerCase().includes(searchLower)) ||
-          u.roles?.some((r: string) => r.toLowerCase().includes(searchLower)) ||
-          u.profile?.name?.toLowerCase().includes(searchLower)
-      );
+  const loadMore = useCallback(() => {
+    if (loadingMore || !pagination?.hasMore) return;
+    setLoadingMore(true);
+    loadUsers(pagination.page + 1, debouncedSearch);
+  }, [loadingMore, pagination, debouncedSearch]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
     }
-    setFilteredUsers(filtered);
-  };
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && pagination?.hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination, loadingMore, loadMore]);
 
   const getRoleBadges = (roles: string[]) => {
     return roles.map((role) => (
@@ -111,7 +164,8 @@ export default function AdminUsersPage() {
 
           <div className="mt-4 mb-4">
             <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Showing {filteredUsers.length} of {users.length} users
+              Showing {users.length} of {pagination?.total || 0} users
+              {debouncedSearch && ` matching "${debouncedSearch}"`}
             </p>
           </div>
 
@@ -128,14 +182,14 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.length === 0 ? (
+                  {users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-secondary">
                         No users found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
+                    users.map((user) => (
                       <TableRow 
                         key={user.id} 
                         hover
@@ -177,6 +231,29 @@ export default function AdminUsersPage() {
               </Table>
             </div>
           </Card>
+
+          {/* Infinite Scroll Trigger */}
+          <div
+            ref={loadMoreRef}
+            className="py-8 flex items-center justify-center"
+          >
+            {loadingMore && (
+              <div className="flex items-center gap-2 text-secondary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Loading more users...</span>
+              </div>
+            )}
+            {!loadingMore && pagination?.hasMore && (
+              <Button variant="ghost" onClick={loadMore}>
+                Load More
+              </Button>
+            )}
+            {!pagination?.hasMore && users.length > 0 && (
+              <p className="text-sm text-secondary">
+                All {pagination?.total || users.length} users loaded
+              </p>
+            )}
+          </div>
 
           {/* User Detail Modal */}
           <Modal
@@ -268,10 +345,10 @@ export default function AdminUsersPage() {
                   </div>
                 )}
 
-                {/* Assignments */}
-                {(selectedUser.venues?.length > 0 || selectedUser.organizers?.length > 0) && (
+                {/* Assignments & Profiles */}
+                {(selectedUser.venues?.length > 0 || selectedUser.organizers?.length > 0 || selectedUser.djs?.length > 0 || selectedUser.promoters?.length > 0) && (
                   <div className="border-t border-border pt-4">
-                    <p className="text-sm font-medium text-primary mb-3">Current Assignments</p>
+                    <p className="text-sm font-medium text-primary mb-3">Entity Assignments & Profiles</p>
                     <div className="space-y-2">
                       {selectedUser.venues?.map((venue: any) => (
                         <div key={venue.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
@@ -285,6 +362,22 @@ export default function AdminUsersPage() {
                           <Calendar className="h-4 w-4 text-purple-500" />
                           <span>{org.name}</span>
                           <Badge variant="secondary" className="ml-auto">Organizer</Badge>
+                        </div>
+                      ))}
+                      {selectedUser.djs?.map((dj: any) => (
+                        <div key={dj.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
+                          <Music className="h-4 w-4 text-pink-500" />
+                          <span>{dj.name}</span>
+                          {dj.handle && <span className="text-secondary">@{dj.handle}</span>}
+                          <Badge variant="secondary" className="ml-auto">DJ</Badge>
+                        </div>
+                      ))}
+                      {selectedUser.promoters?.map((promoter: any) => (
+                        <div key={promoter.id} className="flex items-center gap-2 text-sm p-2 bg-white/5 rounded">
+                          <Megaphone className="h-4 w-4 text-orange-500" />
+                          <span>{promoter.name}</span>
+                          {promoter.slug && <span className="text-secondary">@{promoter.slug}</span>}
+                          <Badge variant="secondary" className="ml-auto">Promoter</Badge>
                         </div>
                       ))}
                     </div>
@@ -442,7 +535,11 @@ export default function AdminUsersPage() {
           userEmail={assignmentModal.userEmail}
           type={assignmentModal.type}
           onAssign={() => {
-            loadUsers(); // Refresh users list
+            // Refresh users list
+            setUsers([]);
+            setPagination(null);
+            setLoading(true);
+            loadUsers(1, debouncedSearch);
           }}
         />
       )}
@@ -582,7 +679,9 @@ export default function AdminUsersPage() {
 
                     // Refresh users list after a short delay
                     setTimeout(() => {
-                      loadUsers();
+                      setUsers([]);
+                      setPagination(null);
+                      loadUsers(1, debouncedSearch);
                       // Update selected user if it's the same user
                       if (selectedUser?.id === nameUpdateModal.userId) {
                         setSelectedUser({
@@ -743,7 +842,9 @@ export default function AdminUsersPage() {
 
                     // Refresh users list after a short delay
                     setTimeout(() => {
-                      loadUsers();
+                      setUsers([]);
+                      setPagination(null);
+                      loadUsers(1, debouncedSearch);
                       // Update selected user if it's the same user
                       if (selectedUser?.id === emailUpdateModal.userId) {
                         setSelectedUser({

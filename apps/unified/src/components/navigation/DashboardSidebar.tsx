@@ -28,13 +28,12 @@ import {
   ChevronRight,
   Menu,
   X,
-  UserPlus,
   UserCog,
   Mail,
-  Merge,
   Palette,
   QrCode,
   Layers,
+  UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -82,6 +81,7 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     items: [
       { href: "/app/venue/insights", label: "Insights", icon: TrendingUp },
       { href: "/app/venue/tables", label: "Tables", icon: Layers },
+      { href: "/app/venue/table-bookings", label: "Table Bookings", icon: UtensilsCrossed },
       { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Ticket },
       { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
       { href: "/app/venue/qr-codes", label: "QR Codes", icon: QrCode },
@@ -209,10 +209,8 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
     title: "Users",
     items: [
       { href: "/admin/users", label: "All Users", icon: Users },
-      { href: "/admin/users/assign", label: "User Assignment", icon: UserPlus },
       { href: "/admin/users/impersonate", label: "Login as User", icon: UserCog },
       { href: "/admin/attendees", label: "Attendees", icon: Users },
-      { href: "/admin/attendees/merge", label: "Merge Duplicates", icon: Merge },
     ],
   },
   {
@@ -224,7 +222,6 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
   {
     title: "Tools",
     items: [
-      { href: "/admin/disputes", label: "Disputes", icon: AlertTriangle },
       { href: "/admin/tools/xp-ledger", label: "XP Ledger", icon: Wrench },
       { href: "/admin/tools/brand-assets", label: "Brand Assets", icon: Wrench },
       { href: "/design-playground", label: "Design System", icon: Palette },

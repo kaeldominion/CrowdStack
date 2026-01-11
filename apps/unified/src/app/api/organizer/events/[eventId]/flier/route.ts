@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserOrganizerId } from "@/lib/data/get-user-entity";
+import { getUserOrganizerId, getUserVenueId } from "@/lib/data/get-user-entity";
 import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { uploadToStorage } from "@crowdstack/shared/storage/upload";
 
@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 /**
  * POST /api/organizer/events/[eventId]/flier
  * Upload event flier/poster
+ * Accessible by: event organizer, venue admin (for their venue's events), superadmin
  */
 export async function POST(
   request: NextRequest,
@@ -30,8 +31,11 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await userHasRoleOrSuperadmin("event_organizer");
-    if (!hasAccess) {
+    // Check for organizer or venue_admin role
+    const hasOrganizerAccess = await userHasRoleOrSuperadmin("event_organizer");
+    const hasVenueAccess = await userHasRoleOrSuperadmin("venue_admin");
+
+    if (!hasOrganizerAccess && !hasVenueAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -40,23 +44,14 @@ export async function POST(
     const userIsSuperadmin = await userHasRole("superadmin");
 
     const organizerId = await getUserOrganizerId();
-    
-    // If not superadmin, require organizer account and verify ownership
-    if (!userIsSuperadmin) {
-    if (!organizerId) {
-      return NextResponse.json(
-        { error: "No organizer found for user" },
-        { status: 404 }
-      );
-      }
-    }
+    const venueId = await getUserVenueId();
 
     const serviceSupabase = createServiceRoleClient();
 
     // Verify event exists
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("id, organizer_id, flier_url")
+      .select("id, organizer_id, venue_id, flier_url")
       .eq("id", eventId)
       .single();
 
@@ -75,18 +70,17 @@ export async function POST(
       );
     }
 
-    // Check ownership only if not superadmin
-    if (!userIsSuperadmin && event.organizer_id !== organizerId) {
-      console.error("Organizer ID mismatch:", {
-        eventOrganizerId: event.organizer_id,
-        userOrganizerId: organizerId,
-        eventId,
-        userId: user.id,
-      });
-      return NextResponse.json(
-        { error: "Access denied: Event does not belong to your organizer account" },
-        { status: 403 }
-      );
+    // Check ownership - superadmin bypasses, otherwise check organizer or venue
+    if (!userIsSuperadmin) {
+      const isOrganizer = organizerId && event.organizer_id === organizerId;
+      const isVenueAdmin = venueId && event.venue_id === venueId;
+
+      if (!isOrganizer && !isVenueAdmin) {
+        return NextResponse.json(
+          { error: "Access denied: You don't have permission to edit this event" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if this is a JSON request (for direct URL updates from client-side upload)
@@ -231,6 +225,7 @@ export async function POST(
 /**
  * DELETE /api/organizer/events/[eventId]/flier
  * Remove event flier/poster
+ * Accessible by: event organizer, venue admin (for their venue's events), superadmin
  */
 export async function DELETE(
   request: NextRequest,
@@ -250,8 +245,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await userHasRoleOrSuperadmin("event_organizer");
-    if (!hasAccess) {
+    // Check for organizer or venue_admin role
+    const hasOrganizerAccess = await userHasRoleOrSuperadmin("event_organizer");
+    const hasVenueAccess = await userHasRoleOrSuperadmin("venue_admin");
+
+    if (!hasOrganizerAccess && !hasVenueAccess) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -260,23 +258,14 @@ export async function DELETE(
     const userIsSuperadmin = await userHasRole("superadmin");
 
     const organizerId = await getUserOrganizerId();
-    
-    // If not superadmin, require organizer account and verify ownership
-    if (!userIsSuperadmin) {
-      if (!organizerId) {
-        return NextResponse.json(
-          { error: "No organizer found for user" },
-          { status: 404 }
-        );
-      }
-    }
+    const venueId = await getUserVenueId();
 
     const serviceSupabase = createServiceRoleClient();
 
     // Verify event exists and get flier URL
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("id, organizer_id, flier_url")
+      .select("id, organizer_id, venue_id, flier_url")
       .eq("id", eventId)
       .single();
 
@@ -295,18 +284,17 @@ export async function DELETE(
       );
     }
 
-    // Check ownership only if not superadmin
-    if (!userIsSuperadmin && event.organizer_id !== organizerId) {
-      console.error("Organizer ID mismatch:", {
-        eventOrganizerId: event.organizer_id,
-        userOrganizerId: organizerId,
-        eventId,
-        userId: user.id,
-      });
-      return NextResponse.json(
-        { error: "Access denied: Event does not belong to your organizer account" },
-        { status: 403 }
-      );
+    // Check ownership - superadmin bypasses, otherwise check organizer or venue
+    if (!userIsSuperadmin) {
+      const isOrganizer = organizerId && event.organizer_id === organizerId;
+      const isVenueAdmin = venueId && event.venue_id === venueId;
+
+      if (!isOrganizer && !isVenueAdmin) {
+        return NextResponse.json(
+          { error: "Access denied: You don't have permission to edit this event" },
+          { status: 403 }
+        );
+      }
     }
 
     // Delete flier from storage if exists

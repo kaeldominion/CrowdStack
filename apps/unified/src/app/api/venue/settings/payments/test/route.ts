@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
+import { DokuService } from "@/lib/services/doku";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export async function POST(request: NextRequest) {
     if (!venueId) {
       return NextResponse.json({ error: "No venue found" }, { status: 404 });
     }
+
+    console.log("[Payment Test] Testing DOKU for venue:", venueId);
 
     const body = await request.json();
     const serviceSupabase = createServiceRoleClient();
@@ -50,58 +53,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine DOKU API URL based on environment
-    const baseUrl = environment === "production"
-      ? "https://api.doku.com"
-      : "https://api-sandbox.doku.com";
+    // Create DOKU service and test connection
+    const dokuService = new DokuService({
+      clientId,
+      secretKey,
+      environment: environment as "sandbox" | "production",
+    });
 
-    let testStatus = "success";
-    let testMessage = "Connection successful";
-
-    try {
-      // For demo purposes, we'll do a simple validation
-      // In production, we'd make an actual API call to DOKU to verify credentials
-
-      // Basic validation of credential format
-      if (!clientId.startsWith("BRN-") && !clientId.startsWith("MCH-")) {
-        // For demo, accept any format but warn
-        // In production, DOKU client IDs have specific formats
-      }
-
-      // Simulate API call delay for realistic demo
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // For now, we'll assume success if credentials are present
-      // TODO: Implement actual DOKU API health check
-      // const response = await fetch(`${baseUrl}/merchant/v1/health`, {
-      //   headers: {
-      //     "Client-Id": clientId,
-      //     "Request-Id": crypto.randomUUID(),
-      //     // Add HMAC signature
-      //   },
-      // });
-
-      testStatus = "success";
-      testMessage = `Connected to DOKU ${environment} environment`;
-
-    } catch (apiError: any) {
-      testStatus = "failed";
-      testMessage = apiError.message || "Failed to connect to DOKU";
-    }
+    const testResult = await dokuService.testConnection();
 
     // Update the test status in settings
     await serviceSupabase
       .from("venue_payment_settings")
       .update({
         last_tested_at: new Date().toISOString(),
-        last_test_status: testStatus === "success" ? "success" : testMessage,
+        last_test_status: testResult.success ? "success" : testResult.error,
       })
       .eq("venue_id", venueId);
 
     return NextResponse.json({
-      success: testStatus === "success",
-      status: testStatus,
-      message: testMessage,
+      success: testResult.success,
+      status: testResult.success ? "success" : "failed",
+      message: testResult.success ? testResult.message : testResult.error,
       environment,
       tested_at: new Date().toISOString(),
     });

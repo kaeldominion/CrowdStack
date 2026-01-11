@@ -50,21 +50,6 @@ export default function AdminDashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const dashboards = [
-    {
-      name: "Unified Dashboard",
-      href: "/app",
-      description: "Access all features based on your roles - venue, organizer, promoter",
-      icon: <Calendar className="h-6 w-6" />,
-    },
-    {
-      name: "Door Scanner",
-      href: "/door",
-      description: "Scan QR codes and check-in attendees",
-      icon: <QrCode className="h-6 w-6" />,
-    },
-  ];
-
   const adminManagement = [
     {
       name: "Venues",
@@ -314,28 +299,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
-
-          {/* Quick Access */}
-          <div className="mb-8">
-            <h2 className="section-header">Quick Access</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
-              {dashboards.map((dashboard) => (
-                <Link key={dashboard.href} href={dashboard.href}>
-                  <Card hover className="h-full !p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-primary mb-1">{dashboard.name}</h3>
-                        <p className="text-xs text-secondary">{dashboard.description}</p>
-                      </div>
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-secondary/10 text-accent-secondary flex-shrink-0">
-                        {dashboard.icon}
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
 
           {/* Admin Management */}
           <div className="mb-8">

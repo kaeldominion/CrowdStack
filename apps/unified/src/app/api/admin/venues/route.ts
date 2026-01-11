@@ -6,154 +6,103 @@ import { cookies } from "next/headers";
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
-export async function GET() {
-  if (process.env.NODE_ENV === "development") {
-    console.log("[API Admin Venues] GET request received");
-  }
-  
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = searchParams.get("search") || "";
+
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const offset = (safePage - 1) * safeLimit;
+
     const cookieStore = await cookies();
-    const allCookies = cookieStore.getAll();
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] All cookies:", allCookies.map(c => c.name).join(", "));
-    }
-    
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Supabase getUser result:", {
-        hasUser: !!user,
-        userEmail: user?.email,
-        error: userError?.message,
-      });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
 
     let userId = user?.id;
 
-    // If no user from Supabase client, try reading from localhost cookie
     if (!userId) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[API Admin Venues] No user from Supabase, checking localhost cookie");
-      }
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
       const authCookieName = `sb-${projectRef}-auth-token`;
       const authCookie = cookieStore.get(authCookieName);
-      
-      if (process.env.NODE_ENV === "development") {
-        console.log("[API Admin Venues] Looking for cookie:", authCookieName);
-        console.log("[API Admin Venues] Cookie found:", !!authCookie);
-      }
 
       if (authCookie) {
         try {
           const cookieValue = decodeURIComponent(authCookie.value);
           const parsed = JSON.parse(cookieValue);
-          if (process.env.NODE_ENV === "development") {
-            console.log("[API Admin Venues] Parsed cookie, has user:", !!parsed.user);
-          }
           if (parsed.user?.id) {
             userId = parsed.user.id;
-            if (process.env.NODE_ENV === "development") {
-              console.log("[API Admin Venues] Got userId from cookie:", userId);
-            }
           }
         } catch (e) {
-          console.error("[API Admin Venues] Cookie parse error:", e);
+          // Cookie parse error
         }
       }
     }
 
     if (!userId) {
-      console.error("[API Admin Venues] No userId found, returning 401");
-      return NextResponse.json({ error: "Unauthorized - no user ID found" }, { status: 401 });
-    }
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] User ID:", userId);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check role using service role to bypass RLS
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Checking roles for user:", userId);
-    }
     const serviceSupabase = createServiceRoleClient();
-    const { data: userRoles, error: rolesError } = await serviceSupabase
+    const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId);
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Roles query result:", {
-        roles: userRoles,
-        error: rolesError?.message,
-      });
-    }
-    
+
     const roles = userRoles?.map((r) => r.role) || [];
-    const isSuperadmin = roles.includes("superadmin");
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] User roles:", roles);
-      console.log("[API Admin Venues] Is superadmin:", isSuperadmin);
+    if (!roles.includes("superadmin")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!isSuperadmin) {
-      console.error("[API Admin Venues] User is not superadmin, returning 403");
-      return NextResponse.json({ 
-        error: "Forbidden - Superadmin role required",
-        yourRoles: roles 
-      }, { status: 403 });
-    }
-
-    // Get all venues
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Fetching venues from database...");
-    }
-    const { data: venues, error } = await serviceSupabase
+    // Build query with optional search
+    let query = serviceSupabase
       .from("venues")
-      .select("*")
-      .order("created_at", { ascending: false });
-    
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Venues query result:", {
-        count: venues?.length || 0,
-        error: error?.message,
+      .select("*", { count: "exact" });
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    const { data: venues, error, count } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + safeLimit - 1);
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / safeLimit);
+    const hasMore = safePage < totalPages;
+
+    // Batch fetch event counts
+    const venueIds = (venues || []).map((v: any) => v.id);
+    const eventCountMap = new Map<string, number>();
+
+    if (venueIds.length > 0) {
+      const { data: eventCounts } = await serviceSupabase
+        .from("events")
+        .select("venue_id")
+        .in("venue_id", venueIds);
+
+      (eventCounts || []).forEach((e: any) => {
+        eventCountMap.set(e.venue_id, (eventCountMap.get(e.venue_id) || 0) + 1);
       });
     }
 
-    if (error) {
-      throw error;
-    }
+    const venuesWithCounts = (venues || []).map((venue: any) => ({
+      ...venue,
+      events_count: eventCountMap.get(venue.id) || 0,
+    }));
 
-    // Get event counts for each venue
-    const venuesWithCounts = await Promise.all(
-      (venues || []).map(async (venue: any) => {
-        const { count } = await serviceSupabase
-          .from("events")
-          .select("*", { count: "exact", head: true })
-          .eq("venue_id", venue.id);
-
-        return {
-          ...venue,
-          events_count: count || 0,
-        };
-      })
-    );
-
-    if (process.env.NODE_ENV === "development") {
-      console.log("[API Admin Venues] Returning success response with", venuesWithCounts.length, "venues");
-    }
-    return NextResponse.json({ venues: venuesWithCounts });
+    return NextResponse.json({
+      venues: venuesWithCounts,
+      pagination: { page: safePage, limit: safeLimit, total: totalCount, totalPages, hasMore }
+    });
   } catch (error: any) {
-    console.error("[API Admin Venues] ERROR:", error);
-    console.error("[API Admin Venues] Error stack:", error.stack);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch venues", details: error.toString() },
+      { error: error.message || "Failed to fetch venues" },
       { status: 500 }
     );
   }
