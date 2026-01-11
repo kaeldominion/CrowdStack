@@ -324,9 +324,12 @@ export async function PUT(request: NextRequest) {
       // Get current venue data to compare
       const { data: currentVenue } = await dbClient
         .from("venues")
-        .select("google_maps_url, address, city, state, country")
+        .select("google_maps_url, address, city, state, country, slug")
         .eq("id", venueId)
         .single();
+
+      console.log(`[Venue Settings PUT] Updating venue: ${venueId}, current slug: ${currentVenue?.slug}`);
+      console.log(`[Venue Settings PUT] Incoming fields:`, Object.keys(body.venue));
 
       const updateData: any = {};
       // These must match actual database columns on venues table
@@ -380,6 +383,8 @@ export async function PUT(request: NextRequest) {
 
       updateData.updated_at = new Date().toISOString();
 
+      console.log(`[Venue Settings PUT] Update data to be saved:`, JSON.stringify(updateData, null, 2));
+
       const { data: updatedVenue, error: updateError } = await dbClient
         .from("venues")
         .update(updateData)
@@ -388,11 +393,14 @@ export async function PUT(request: NextRequest) {
         .single();
 
       if (updateError) {
+        console.error(`[Venue Settings PUT] Update failed:`, updateError);
         return NextResponse.json(
           { error: updateError.message || "Failed to update venue" },
           { status: 500 }
         );
       }
+
+      console.log(`[Venue Settings PUT] Update succeeded. New description: ${updatedVenue?.description?.substring(0, 50)}...`);
     }
 
     // Update tags if provided
