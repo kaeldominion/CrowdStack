@@ -294,10 +294,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Use service role client for superadmin operations to bypass RLS
-    // This allows superadmins to update any venue, even if not assigned via venue_users
+    // Use service role client for all venue settings operations to bypass RLS
+    // We've already verified access via role check and getUserVenueId()
     const { createServiceRoleClient } = await import("@crowdstack/shared/supabase/server");
-    const dbClient = isSuperadmin ? createServiceRoleClient() : supabase;
+    const dbClient = createServiceRoleClient();
 
     const body = await request.json();
 
