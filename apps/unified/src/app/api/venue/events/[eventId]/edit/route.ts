@@ -12,6 +12,9 @@ const VENUE_EDITABLE_FIELDS = [
   "capacity",
   "status",
   "show_photo_email_notice",
+  "flier_url",
+  "cover_image_url",
+  "timezone",
 ];
 
 
@@ -132,23 +135,27 @@ export async function PUT(
       reason: reason || null,
     });
 
-    // Notify the organizer about the edit
-    try {
-      const organizerUserIds = await getOrganizerUserIds(event.organizer.id);
-      const changedFields = Object.keys(changes).join(", ");
+    // Notify the organizer about the edit (only if event has an organizer with users)
+    if (event.organizer?.id) {
+      try {
+        const organizerUserIds = await getOrganizerUserIds(event.organizer.id);
+        if (organizerUserIds.length > 0) {
+          const changedFields = Object.keys(changes).join(", ");
 
-      await sendNotifications(
-        organizerUserIds.map((userId) => ({
-          user_id: userId,
-          type: "event_edited_by_venue",
-          title: "Event Updated by Venue",
-          message: `${event.venue.name} made changes to "${event.name}": ${changedFields}${reason ? `. Reason: ${reason}` : ""}`,
-          link: `/app/organizer/events/${eventId}`,
-          metadata: { event_id: eventId, changes, reason },
-        }))
-      );
-    } catch (notifyError) {
-      console.error("Failed to notify organizer of edit:", notifyError);
+          await sendNotifications(
+            organizerUserIds.map((userId) => ({
+              user_id: userId,
+              type: "event_edited_by_venue",
+              title: "Event Updated by Venue",
+              message: `${event.venue?.name || "Venue"} made changes to "${event.name}": ${changedFields}${reason ? `. Reason: ${reason}` : ""}`,
+              link: `/app/organizer/events/${eventId}`,
+              metadata: { event_id: eventId, changes, reason },
+            }))
+          );
+        }
+      } catch (notifyError) {
+        console.error("Failed to notify organizer of edit:", notifyError);
+      }
     }
 
     return NextResponse.json({ event: updatedEvent, changes });

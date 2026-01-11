@@ -263,7 +263,7 @@ export default function VenueNewEventPage() {
           await fetch(`/api/venue/events/${eventId}/edit`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ flier_url: flierUrl }),
+            body: JSON.stringify({ updates: { flier_url: flierUrl } }),
           });
         }
       }
