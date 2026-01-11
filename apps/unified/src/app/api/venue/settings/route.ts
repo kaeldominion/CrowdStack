@@ -341,6 +341,7 @@ export async function PUT(request: NextRequest) {
         "email",
         "website",
         "instagram_url",
+        "instagram_handle",
         "logo_url",
         "cover_image_url",
         "latitude",
@@ -353,6 +354,8 @@ export async function PUT(request: NextRequest) {
         "default_registration_questions",
         "default_commission_rules",
         "default_message_templates",
+        "base_currency",
+        "capacity",
       ];
 
       // Process allowed fields (no automatic address extraction - user must use "Update Address" button)
