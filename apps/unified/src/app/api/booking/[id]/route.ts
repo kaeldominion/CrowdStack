@@ -85,7 +85,12 @@ export async function GET(
     }
 
     // Log the actual status values for debugging
-    console.log(`[Booking API] Booking ${bookingId} - status: ${booking.status}, payment_status: ${booking.payment_status}`);
+    console.log(`[Booking API] Booking ${bookingId} - status: ${booking.status}, payment_status: ${booking.payment_status || 'null'}, deposit_received: ${(booking as any).deposit_received}`);
+    
+    // Also log what we're about to return
+    const responseStatus = booking.status;
+    const responsePaymentStatus = booking.payment_status || "not_required";
+    console.log(`[Booking API] Returning - status: ${responseStatus}, payment_status: ${responsePaymentStatus}`);
 
     // Type assertions for nested data
     const event = booking.event as any;

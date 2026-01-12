@@ -129,6 +129,13 @@ export default function BookingStatusPage() {
         throw new Error(result.error || "Failed to load booking");
       }
 
+      // Debug logging to see what we received
+      console.log('[Booking Page] Received booking data:', {
+        bookingId: result.booking?.id,
+        status: result.booking?.status,
+        payment_status: result.booking?.payment_status,
+      });
+
       setData(result);
     } catch (err: any) {
       setError(err.message);
