@@ -123,9 +123,9 @@ export async function GET(
     const currency = event?.currency || venue?.currency || "IDR";
     const currencySymbol = getCurrencySymbol(currency);
 
-    // For confirmed bookings, fetch/create party data
+    // For confirmed/paid bookings, fetch/create party data
     let partyData = null;
-    if (booking.status === "confirmed") {
+    if (booking.status === "confirmed" || booking.payment_status === "paid") {
       // Get existing party guests
       const { data: partyGuests } = await serviceSupabase
         .from("table_party_guests")
@@ -225,46 +225,55 @@ export async function GET(
       };
     }
 
-    return NextResponse.json({
-      booking: {
-        id: booking.id,
-        status: booking.status,
-        payment_status: booking.payment_status || "not_required",
-        guest_name: booking.guest_name,
-        guest_email: booking.guest_email,
-        party_size: booking.party_size,
-        deposit_required: booking.deposit_required,
-        minimum_spend: booking.minimum_spend,
-        special_requests: booking.special_requests,
-        created_at: booking.created_at,
+    return NextResponse.json(
+      {
+        booking: {
+          id: booking.id,
+          status: booking.status,
+          payment_status: booking.payment_status || "not_required",
+          guest_name: booking.guest_name,
+          guest_email: booking.guest_email,
+          party_size: booking.party_size,
+          deposit_required: booking.deposit_required,
+          minimum_spend: booking.minimum_spend,
+          special_requests: booking.special_requests,
+          created_at: booking.created_at,
+        },
+        event: {
+          id: event?.id,
+          name: event?.name,
+          slug: event?.slug,
+          start_time: event?.start_time,
+          timezone: event?.timezone,
+          cover_image: event?.cover_image_url,
+        },
+        venue: {
+          id: venue?.id,
+          name: venue?.name,
+          address: venue?.address,
+          city: venue?.city,
+        },
+        table: {
+          id: table?.id,
+          name: table?.name,
+          zone_name: table?.zone?.name,
+        },
+        payment: {
+          ...paymentInfo,
+          doku_enabled: dokuEnabled,
+        },
+        party: partyData,
+        currency,
+        currencySymbol,
       },
-      event: {
-        id: event?.id,
-        name: event?.name,
-        slug: event?.slug,
-        start_time: event?.start_time,
-        timezone: event?.timezone,
-        cover_image: event?.cover_image_url,
-      },
-      venue: {
-        id: venue?.id,
-        name: venue?.name,
-        address: venue?.address,
-        city: venue?.city,
-      },
-      table: {
-        id: table?.id,
-        name: table?.name,
-        zone_name: table?.zone?.name,
-      },
-      payment: {
-        ...paymentInfo,
-        doku_enabled: dokuEnabled,
-      },
-      party: partyData,
-      currency,
-      currencySymbol,
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error fetching booking:", error);
     return NextResponse.json(

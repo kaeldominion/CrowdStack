@@ -201,8 +201,16 @@ export async function PATCH(
       updateData.deposit_received = body.deposit_received;
       if (body.deposit_received) {
         updateData.deposit_received_at = new Date().toISOString();
+        // Also set payment_status to "paid" when deposit is marked as received
+        updateData.payment_status = "paid";
       } else {
         updateData.deposit_received_at = null;
+        // Reset payment_status when deposit is unmarked
+        if (currentBooking.deposit_required && currentBooking.deposit_required > 0) {
+          updateData.payment_status = "pending";
+        } else {
+          updateData.payment_status = "not_required";
+        }
       }
     }
 
