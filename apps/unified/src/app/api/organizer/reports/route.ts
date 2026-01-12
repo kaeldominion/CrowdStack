@@ -327,7 +327,7 @@ export async function GET(request: NextRequest) {
             event_id,
             generated_at,
             statement_pdf_path,
-            events!inner(name, slug, start_time, currency)
+            events!inner(id, name, slug, start_time, currency)
           `)
           .in("event_id", eventIds)
           .order("generated_at", { ascending: false });
