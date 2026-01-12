@@ -31,6 +31,7 @@ import {
   X,
   UserCog,
   Mail,
+  MessageSquare,
   Palette,
   QrCode,
   Layers,
@@ -91,6 +92,7 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     title: "ADMIN",
     items: [
       { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
+      { href: "/app/venue/feedback", label: "Venue Pulse", icon: MessageSquare },
       { href: "/app/venue/finance", label: "Finance", icon: DollarSign },
       { href: "/app/venue/settings", label: "Settings", icon: Settings },
     ],
