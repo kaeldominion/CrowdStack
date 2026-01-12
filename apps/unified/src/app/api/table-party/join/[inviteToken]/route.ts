@@ -8,8 +8,14 @@ export const dynamic = "force-dynamic";
 
 interface JoinPartyRequest {
   name?: string;
+  surname?: string;
   email?: string;
   phone?: string;
+  whatsapp?: string;
+  date_of_birth?: string;
+  gender?: string;
+  instagram_handle?: string;
+  tiktok_handle?: string;
 }
 
 interface EventWithVenue {
