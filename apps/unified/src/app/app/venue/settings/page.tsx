@@ -475,13 +475,7 @@ export default function VenueSettingsPage() {
             {venueId ? "Managing venue settings" : "Manage your venue profile and preferences"}
           </p>
           {data?.venue && (
-            <>
-              <p className="mt-1 text-sm font-medium text-primary">{data.venue.name}</p>
-              {/* Debug: Record ID */}
-              <div className="text-xs text-secondary/60 font-mono mt-1">
-                ID: {data.venue.id} | Slug: {data.venue.slug || 'null'}
-              </div>
-            </>
+            <p className="mt-1 text-sm font-medium text-primary">{data.venue.name}</p>
           )}
         </div>
         <div className="flex gap-2">

@@ -332,10 +332,6 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
             <div className="flex-1 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
                 <h1 className="text-3xl font-black text-white">{promoter.name}</h1>
-                {/* Debug: Record ID */}
-                <div className="text-xs text-white/60 font-mono mt-1">
-                  ID: {promoterId} | Slug: {promoter.slug || 'null'}
-                </div>
                 <Badge variant="secondary" className="!bg-accent-primary/20 !text-accent-primary">
                   Promoter
                 </Badge>
