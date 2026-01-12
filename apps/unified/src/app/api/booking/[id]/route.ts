@@ -28,6 +28,18 @@ export async function GET(
 
     const serviceSupabase = createServiceRoleClient();
 
+    // First, do a simple direct query to verify the status field
+    const { data: directBooking, error: directError } = await serviceSupabase
+      .from("table_bookings")
+      .select("id, status, payment_status, deposit_received, updated_at")
+      .eq("id", bookingId)
+      .single();
+    
+    console.log(`[Booking API] Direct query result for ${bookingId}:`, JSON.stringify(directBooking, null, 2));
+    if (directError) {
+      console.error(`[Booking API] Direct query error:`, directError);
+    }
+
     // Get booking with related data
     const { data: booking, error: bookingError } = await serviceSupabase
       .from("table_bookings")
@@ -84,8 +96,15 @@ export async function GET(
       );
     }
 
-    // Log the actual status values for debugging
-    console.log(`[Booking API] Booking ${bookingId} - status: ${booking.status}, payment_status: ${booking.payment_status || 'null'}, deposit_received: ${(booking as any).deposit_received}`);
+    // Log the actual status values for debugging - log the FULL booking object to see everything
+    console.log(`[Booking API] Full booking object from DB query:`, JSON.stringify({
+      id: booking.id,
+      status: booking.status,
+      payment_status: booking.payment_status,
+      deposit_received: (booking as any).deposit_received,
+      updated_at: (booking as any).updated_at,
+    }, null, 2));
+    console.log(`[Booking API] Raw booking.status type:`, typeof booking.status, `value:`, booking.status);
     
     // Also log what we're about to return
     const responseStatus = booking.status;
