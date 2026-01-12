@@ -12,6 +12,7 @@ export interface EventTableAvailability {
   is_available: boolean;
   override_minimum_spend: number | null;
   override_deposit: number | null;
+  override_capacity: number | null;
   notes: string | null;
   updated_by: string | null;
   created_at: string;
@@ -39,11 +40,13 @@ export interface TableWithAvailability {
     is_available: boolean;
     override_minimum_spend: number | null;
     override_deposit: number | null;
+    override_capacity: number | null;
     notes: string | null;
   } | null;
   // Computed effective values for this event
   effective_minimum_spend: number | null;
   effective_deposit: number | null;
+  effective_capacity: number;
 }
 
 /**
@@ -138,6 +141,7 @@ export async function GET(
       // Compute effective values - use override if set, otherwise use table default
       const effectiveMinimumSpend = availability?.override_minimum_spend ?? table.minimum_spend;
       const effectiveDeposit = availability?.override_deposit ?? table.deposit_amount;
+      const effectiveCapacity = availability?.override_capacity ?? table.capacity;
 
       return {
         ...table,
@@ -145,10 +149,12 @@ export async function GET(
           is_available: availability.is_available,
           override_minimum_spend: availability.override_minimum_spend,
           override_deposit: availability.override_deposit,
+          override_capacity: availability.override_capacity,
           notes: availability.notes,
         } : null,
         effective_minimum_spend: effectiveMinimumSpend,
         effective_deposit: effectiveDeposit,
+        effective_capacity: effectiveCapacity,
       };
     });
 
@@ -191,6 +197,7 @@ interface TableAvailabilityUpdate {
   is_available: boolean;
   override_minimum_spend?: number | null;
   override_deposit?: number | null;
+  override_capacity?: number | null;
   notes?: string | null;
 }
 
@@ -275,6 +282,7 @@ export async function PUT(
       is_available: update.is_available,
       override_minimum_spend: update.override_minimum_spend ?? null,
       override_deposit: update.override_deposit ?? null,
+      override_capacity: update.override_capacity ?? null,
       notes: update.notes?.trim() || null,
       updated_by: userId,
       updated_at: new Date().toISOString(),

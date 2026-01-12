@@ -15,7 +15,7 @@ interface BookTableRequest {
   guest_name: string;
   guest_email: string;
   guest_whatsapp: string;
-  party_size: number;
+  party_size?: number; // Optional - will default to table's effective capacity
   special_requests?: string;
 }
 
@@ -84,14 +84,7 @@ export async function POST(
       );
     }
 
-    // Validate party size
-    const partySize = body.party_size || 1;
-    if (partySize < 1 || partySize > 50) {
-      return NextResponse.json(
-        { error: "Party size must be between 1 and 50" },
-        { status: 400 }
-      );
-    }
+    // Party size will be determined by table's effective capacity (see below)
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -230,10 +223,10 @@ export async function POST(
       );
     }
 
-    // Check event-specific availability
+    // Check event-specific availability and overrides
     const { data: availability, error: availabilityError } = await serviceSupabase
       .from("event_table_availability")
-      .select("is_available, override_minimum_spend, override_deposit")
+      .select("is_available, override_minimum_spend, override_deposit, override_capacity")
       .eq("event_id", params.eventId)
       .eq("table_id", body.table_id)
       .single();
@@ -246,6 +239,7 @@ export async function POST(
       isAvailable: availability?.is_available,
       overrideDeposit: availability?.override_deposit,
       overrideMinSpend: availability?.override_minimum_spend,
+      overrideCapacity: availability?.override_capacity,
     });
 
     if (availability && availability.is_available === false) {
@@ -255,17 +249,25 @@ export async function POST(
       );
     }
 
-    // Calculate effective minimum spend and deposit
+    // Calculate effective values (using event overrides if set, otherwise table defaults)
     const effectiveMinimumSpend = availability?.override_minimum_spend ?? table.minimum_spend;
     const effectiveDeposit = availability?.override_deposit ?? table.deposit_amount;
+    const effectiveCapacity = availability?.override_capacity ?? table.capacity;
 
-    console.log("[Table Book] Deposit calculation:", {
+    // Party size is set to the table's effective capacity (guests don't choose)
+    const partySize = effectiveCapacity;
+
+    console.log("[Table Book] Effective values:", {
       tableDeposit: table.deposit_amount,
       overrideDeposit: availability?.override_deposit,
       effectiveDeposit,
       tableMinSpend: table.minimum_spend,
       overrideMinSpend: availability?.override_minimum_spend,
       effectiveMinimumSpend,
+      tableCapacity: table.capacity,
+      overrideCapacity: availability?.override_capacity,
+      effectiveCapacity,
+      partySize,
     });
 
     // Resolve promoter attribution

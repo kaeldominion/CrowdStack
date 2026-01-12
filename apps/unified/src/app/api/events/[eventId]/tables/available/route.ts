@@ -19,6 +19,7 @@ interface TableWithAvailability {
   // Effective values (using overrides if set)
   effective_minimum_spend: number | null;
   effective_deposit: number | null;
+  effective_capacity: number;
   has_confirmed_booking: boolean;
 }
 
@@ -220,7 +221,7 @@ export async function GET(
     // Get event-specific availability overrides
     const { data: availability } = await supabase
       .from("event_table_availability")
-      .select("table_id, is_available, override_minimum_spend, override_deposit, notes")
+      .select("table_id, is_available, override_minimum_spend, override_deposit, override_capacity, notes")
       .eq("event_id", params.eventId);
 
     const availabilityMap = new Map(
@@ -253,15 +254,8 @@ export async function GET(
         const avail = availabilityMap.get(table.id);
         const zone = zoneMap.get(table.zone_id);
 
-        // Debug logging for deposit calculation
-        console.log("[Tables Available] Processing table:", {
-          tableId: table.id,
-          tableName: table.name,
-          table_deposit_amount: table.deposit_amount,
-          hasAvailOverride: !!avail,
-          override_deposit: avail?.override_deposit,
-          effective_deposit: avail?.override_deposit ?? table.deposit_amount,
-        });
+        // Compute effective values using overrides when available
+        const effectiveCapacity = avail?.override_capacity ?? table.capacity;
 
         return {
           id: table.id,
@@ -288,6 +282,7 @@ export async function GET(
             avail?.override_minimum_spend ?? table.minimum_spend,
           effective_deposit:
             avail?.override_deposit ?? table.deposit_amount,
+          effective_capacity: effectiveCapacity,
           has_confirmed_booking: confirmedTableIds.has(table.id),
         };
       });

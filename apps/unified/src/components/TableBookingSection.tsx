@@ -38,6 +38,7 @@ interface TableInfo {
   notes: string | null;
   effective_minimum_spend: number | null;
   effective_deposit: number | null;
+  effective_capacity: number;
   has_confirmed_booking: boolean;
   zone: {
     id: string;
@@ -56,7 +57,6 @@ interface BookingFormData {
   guest_name: string;
   guest_email: string;
   guest_whatsapp: string;
-  party_size: number;
   special_requests: string;
 }
 
@@ -82,7 +82,6 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
     guest_name: "",
     guest_email: "",
     guest_whatsapp: "",
-    party_size: 2,
     special_requests: "",
   });
   const [bookingErrors, setBookingErrors] = useState<Partial<Record<keyof BookingFormData, string>>>({});
@@ -220,7 +219,6 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
       guest_name: userProfile?.name || "",
       guest_email: userProfile?.email || "",
       guest_whatsapp: userProfile?.whatsapp || userProfile?.phone || "",
-      party_size: Math.min(2, table.capacity),
       special_requests: "",
     });
     setBookingErrors({});
@@ -299,7 +297,6 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
           guest_name: userProfile?.name || "",
           guest_email: userProfile?.email || "",
           guest_whatsapp: profileFormData.whatsapp,
-          party_size: Math.min(2, selectedTable.capacity),
           special_requests: "",
         });
         setBookingErrors({});
@@ -339,10 +336,6 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
 
     if (!bookingFormData.guest_whatsapp.trim()) {
       errors.guest_whatsapp = "WhatsApp number is required";
-    }
-
-    if (selectedTable && (bookingFormData.party_size < 1 || bookingFormData.party_size > selectedTable.capacity)) {
-      errors.party_size = `Party size must be between 1 and ${selectedTable.capacity}`;
     }
 
     setBookingErrors(errors);
@@ -493,7 +486,7 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
                         <div className="mt-2 flex items-center gap-4 text-sm text-secondary">
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
-                            Up to {table.capacity}
+                            {table.effective_capacity} guests
                           </span>
                           {table.effective_minimum_spend && (
                             <span className="flex items-center gap-1">
@@ -560,7 +553,7 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
                 <strong className="text-primary">Zone:</strong> {selectedTable.zone.name}
               </p>
               <p className="text-sm text-secondary">
-                <strong className="text-primary">Capacity:</strong> Up to {selectedTable.capacity} guests
+                <strong className="text-primary">Capacity:</strong> {selectedTable.effective_capacity} guests
               </p>
             </div>
           )}
@@ -729,7 +722,7 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
                 <strong className="text-primary">Table:</strong> {selectedTable?.name}
               </p>
               <p className="text-sm text-secondary">
-                <strong className="text-primary">Party Size:</strong> {bookingFormData.party_size}
+                <strong className="text-primary">Max Guests:</strong> {selectedTable?.effective_capacity}
               </p>
               {selectedTable?.effective_minimum_spend && (
                 <p className="text-sm text-secondary">
@@ -824,7 +817,7 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
               <div className="bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg p-4 mb-4">
                 <p className="font-medium text-primary">{selectedTable.name}</p>
                 <p className="text-sm text-secondary">
-                  {selectedTable.zone.name} • Up to {selectedTable.capacity} guests
+                  {selectedTable.zone.name} • {selectedTable.effective_capacity} guests
                 </p>
                 {selectedTable.effective_minimum_spend && (
                   <p className="text-sm text-accent-primary mt-1">
@@ -868,24 +861,15 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
               helperText="We'll contact you on WhatsApp to confirm your booking"
             />
 
-            <Input
-              label="Party Size"
-              type="number"
-              min={1}
-              max={selectedTable?.capacity || 10}
-              value={bookingFormData.party_size || ""}
-              onChange={(e) => {
-                const val = e.target.value;
-                setBookingFormData({ ...bookingFormData, party_size: val === "" ? 0 : parseInt(val) });
-              }}
-              onBlur={(e) => {
-                const val = parseInt(e.target.value);
-                if (!val || val < 1) {
-                  setBookingFormData({ ...bookingFormData, party_size: 1 });
-                }
-              }}
-              error={bookingErrors.party_size}
-            />
+            {/* Table capacity info - shown instead of party size input */}
+            <div className="bg-[var(--bg-glass)] rounded-lg p-3 border border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2 text-secondary">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">
+                  This table accommodates up to <strong className="text-primary">{selectedTable?.effective_capacity} guests</strong>
+                </span>
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-secondary mb-1">
