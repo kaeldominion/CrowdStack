@@ -190,6 +190,12 @@ export async function GET(
         total_events_promoted: totalEventsPromoted || 0,
         total_checkins: totalCheckins,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
   } catch (error: any) {
     console.error("[Promoter Profile API] Error:", error);

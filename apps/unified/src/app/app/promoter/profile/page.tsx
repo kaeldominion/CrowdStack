@@ -37,40 +37,24 @@ export default function PromoterProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const supabase = createBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Use API route instead of direct client query to avoid RLS issues
+      // The API route uses service role client which bypasses RLS
+      const timestamp = new Date().getTime();
+      const response = await fetch(`/api/promoter/profile?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
 
-      // Add cache busting by using a timestamp query parameter
-      // This ensures we always get fresh data
-      // Check both user_id (new way) and created_by (legacy) for compatibility
-      let { data: promoter, error } = await supabase
-        .from("promoters")
-        .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
-        .eq("user_id", user.id)
-        .single();
-
-      // Fallback to created_by if user_id doesn't match
-      if (error && error.code === 'PGRST116') {
-        const { data: promoterByCreator, error: creatorError } = await supabase
-          .from("promoters")
-          .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
-          .eq("created_by", user.id)
-          .single();
-        
-        if (creatorError && creatorError.code !== 'PGRST116') {
-          throw creatorError;
+      if (response.ok) {
+        const data = await response.json();
+        if (data.promoter) {
+          setProfile(data.promoter);
+          return;
         }
-        
-        promoter = promoterByCreator;
-      } else if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (promoter) {
-        setProfile(promoter);
-      } else {
-        // No profile found - try to create one via API
+      } else if (response.status === 404) {
+        // Profile doesn't exist - try to create one via ensure endpoint
         try {
           const ensureResponse = await fetch("/api/promoter/profile/ensure", {
             method: "POST",
@@ -81,12 +65,14 @@ export default function PromoterProfilePage() {
             const ensureData = await ensureResponse.json();
             if (ensureData.promoter) {
               setProfile(ensureData.promoter);
+              return;
             }
           }
         } catch (ensureError) {
           console.error("Error ensuring promoter profile:", ensureError);
-          // Don't throw - we'll show "Profile not found" message
         }
+      } else {
+        console.error("Error loading profile:", response.status, await response.text());
       }
     } catch (error) {
       console.error("Error loading profile:", error);
@@ -199,10 +185,13 @@ export default function PromoterProfilePage() {
     }
 
     try {
-      const supabase = createBrowserClient();
-      const { error } = await supabase
-        .from("promoters")
-        .update({
+      // Use API route to update profile - this will revalidate the public page
+      const response = await fetch("/api/promoter/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name: profile.name,
           email: profile.email || null,
           phone: profile.phone || null,
@@ -211,21 +200,29 @@ export default function PromoterProfilePage() {
           instagram_handle: profile.instagram_handle || null,
           whatsapp_number: profile.whatsapp_number || null,
           is_public: profile.is_public,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", profile.id);
+        }),
+        cache: 'no-store',
+      });
 
-      if (error) {
-        if (error.message.includes("duplicate") || error.message.includes("unique")) {
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.error?.includes("duplicate") || data.error?.includes("unique")) {
           setErrors({ slug: "This URL is already taken. Please choose a different one." });
           setSaving(false);
           return;
         }
-        throw error;
+        throw new Error(data.error || "Failed to save profile");
       }
 
-      // Reload profile to get fresh data from database
-      await loadProfile();
+      const data = await response.json();
+      
+      // Update local state with returned data
+      if (data.promoter) {
+        setProfile(data.promoter);
+      } else {
+        // Fallback: reload profile to get fresh data from database
+        await loadProfile();
+      }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
