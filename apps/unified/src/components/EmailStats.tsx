@@ -303,17 +303,17 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                               {formatDateCompact(email.created_at)}
                             </div>
                             {/* Delivered */}
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center" title="Delivered">
                               {email.delivered_at ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" title="Delivered" />
+                                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" />
                               ) : (
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
                             </div>
                             {/* Opened */}
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center" title={`Opened${(email.open_count ?? 0) > 1 ? ` ${email.open_count}x` : ""}`}>
                               {email.opened_at ? (
-                                <div className="flex items-center gap-1" title={`Opened${(email.open_count ?? 0) > 1 ? ` ${email.open_count}x` : ""}`}>
+                                <div className="flex items-center gap-1">
                                   <Eye className="h-3.5 w-3.5 text-[var(--accent-secondary)]" />
                                   {(email.open_count ?? 0) > 1 && (
                                     <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">{email.open_count}</span>
@@ -324,9 +324,9 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                               )}
                             </div>
                             {/* Clicked - Hidden on mobile */}
-                            <div className="hidden sm:flex items-center justify-center">
+                            <div className="hidden sm:flex items-center justify-center" title={`Clicked${(email.click_count ?? 0) > 1 ? ` ${email.click_count}x` : ""}`}>
                               {email.clicked_at ? (
-                                <div className="flex items-center gap-1" title={`Clicked${(email.click_count ?? 0) > 1 ? ` ${email.click_count}x` : ""}`}>
+                                <div className="flex items-center gap-1">
                                   <MousePointerClick className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
                                   {(email.click_count ?? 0) > 1 && (
                                     <span className="text-[10px] text-[var(--text-muted)]">{email.click_count}</span>
@@ -337,9 +337,9 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                               )}
                             </div>
                             {/* Bounced - Hidden on mobile */}
-                            <div className="hidden sm:flex items-center justify-center">
+                            <div className="hidden sm:flex items-center justify-center" title={`Bounced: ${email.bounce_reason || "Unknown"}`}>
                               {email.bounced_at ? (
-                                <AlertCircle className="h-3.5 w-3.5 text-[var(--accent-error)]" title={`Bounced: ${email.bounce_reason || "Unknown"}`} />
+                                <AlertCircle className="h-3.5 w-3.5 text-[var(--accent-error)]" />
                               ) : (
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
