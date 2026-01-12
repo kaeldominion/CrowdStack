@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine, Mail } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine, Mail, Database } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -96,6 +96,12 @@ export default function AdminDashboardPage() {
   ];
 
   const adminTools = [
+    {
+      name: "Database Diagnostics",
+      href: "/admin/diagnostics",
+      description: "Query database entries by slug to diagnose caching/data issues",
+      icon: <Database className="h-6 w-6" />,
+    },
     {
       name: "Dynamic QR Generator",
       href: "/admin/tools/qr-generator",

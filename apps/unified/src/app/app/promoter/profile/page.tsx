@@ -277,6 +277,12 @@ export default function PromoterProfilePage() {
         <p className="mt-2 text-sm text-secondary">
           Manage your promoter profile information
         </p>
+        {/* Debug: Record ID */}
+        {profile && (
+          <div className="text-xs text-secondary/60 font-mono mt-1">
+            ID: {profile.id} | Slug: {profile.slug || 'null'}
+          </div>
+        )}
       </div>
 
       {/* Public Profile Link */}

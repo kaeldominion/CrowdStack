@@ -352,6 +352,10 @@ export default async function VenuePage({
               <h1 className="page-title">
                           {venue.name}
                         </h1>
+              {/* Debug: Record ID */}
+              <div className="text-xs text-secondary/60 font-mono mt-1">
+                ID: {venue.id} | Slug: {venue.slug || 'null'}
+              </div>
               {formatVenueLocation({
                 city: venue.city,
                 state: venue.state,
