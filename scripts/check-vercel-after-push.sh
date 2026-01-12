@@ -18,8 +18,8 @@ sleep 15
 
 # Get the latest deployment (try multiple times)
 for i in {1..5}; do
-  LATEST_DEPLOYMENT=$(vercel ls $PROJECT_NAME 2>&1 | grep "https://" | head -1 | awk '{print $3}' || echo "")
-  if [ -n "$LATEST_DEPLOYMENT" ]; then
+  LATEST_DEPLOYMENT=$(vercel ls $PROJECT_NAME 2>&1 | grep "https://" | head -1 | sed 's/.*\(https:\/\/[^ ]*\).*/\1/' || echo "")
+  if [ -n "$LATEST_DEPLOYMENT" ] && [ "$LATEST_DEPLOYMENT" != "https://" ]; then
     break
   fi
   echo "   Retrying... ($i/5)"
