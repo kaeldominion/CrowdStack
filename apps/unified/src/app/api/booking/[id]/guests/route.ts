@@ -175,7 +175,19 @@ export async function POST(
     const { data: { user } } = await supabase.auth.getUser();
     const userEmail = user?.email?.toLowerCase();
 
-    // Get booking details
+    // CRITICAL: Use a direct query for status fields to avoid any PostgREST
+    // field collision issues (consistent with main booking route)
+    const { data: directBooking, error: directError } = await serviceSupabase
+      .from("table_bookings")
+      .select("id, status, payment_status")
+      .eq("id", bookingId)
+      .single();
+
+    if (directError || !directBooking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    // Get booking with related data (without status fields to avoid collision)
     const { data: bookingData, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
@@ -184,8 +196,6 @@ export async function POST(
         guest_name,
         guest_email,
         party_size,
-        status,
-        payment_status,
         table:venue_tables(id, name)
       `)
       .eq("id", bookingId)
@@ -195,7 +205,12 @@ export async function POST(
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
-    const booking = bookingData as unknown as BookingWithTable;
+    // Use authoritative status values from direct query
+    const booking = {
+      ...bookingData,
+      status: directBooking.status,
+      payment_status: directBooking.payment_status,
+    } as unknown as BookingWithTable;
 
     // Check if booking is confirmed/paid (hosts can only manage confirmed bookings)
     if (booking.status !== "confirmed" && booking.payment_status !== "paid") {

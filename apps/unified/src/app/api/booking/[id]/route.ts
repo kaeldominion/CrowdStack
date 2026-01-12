@@ -29,10 +29,13 @@ export async function GET(
     const serviceSupabase = createServiceRoleClient();
 
     // CRITICAL: Use a simple direct query for status fields to avoid any PostgREST
-    // field collision issues with nested relations (events also has a status column)
+    // field collision issues with nested relations (events also has a status column).
+    // This is a known PostgREST limitation when both parent and nested tables have
+    // columns with the same name. By fetching these fields separately, we ensure
+    // we get the correct values from table_bookings, not events.
     const { data: directBooking, error: directError } = await serviceSupabase
       .from("table_bookings")
-      .select("id, status, payment_status, deposit_received, updated_at")
+      .select("id, status, payment_status")
       .eq("id", bookingId)
       .single();
 
@@ -50,12 +53,13 @@ export async function GET(
     const authoritativePaymentStatus = directBooking.payment_status;
 
     // Get booking with related data
+    // NOTE: We intentionally do NOT select status/payment_status here to avoid
+    // PostgREST field collision issues with events.status. We use the authoritative
+    // values from the direct query above instead.
     const { data: booking, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
         id,
-        status,
-        payment_status,
         guest_name,
         guest_email,
         guest_whatsapp,
@@ -105,11 +109,11 @@ export async function GET(
       );
     }
 
-    // Log both query results to compare - this helps debug any PostgREST field collision issues
-    console.log(`[Booking API] Comparing status values:`, {
-      directQuery: { status: authoritativeStatus, payment_status: authoritativePaymentStatus },
-      nestedQuery: { status: booking.status, payment_status: booking.payment_status },
-      match: authoritativeStatus === booking.status && authoritativePaymentStatus === booking.payment_status,
+    // Log the authoritative values - these are the source of truth
+    console.log(`[Booking API] Authoritative status values:`, {
+      status: authoritativeStatus,
+      payment_status: authoritativePaymentStatus,
+      bookingId,
     });
 
     // IMPORTANT: Always use the authoritative values from the direct query
