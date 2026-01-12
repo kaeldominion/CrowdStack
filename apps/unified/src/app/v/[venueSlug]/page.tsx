@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { unstable_noStore as noStore } from "next/cache";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { Card, Badge } from "@crowdstack/ui";
 import { 
   MapPin, 
@@ -39,21 +40,154 @@ interface VenueEvent {
 async function getVenue(slug: string) {
   // Opt out of ALL caching - Next.js Data Cache, Full Route Cache, etc.
   noStore();
+  
+  const supabase = createServiceRoleClient();
 
   try {
-    // Add timestamp to bust any edge/CDN caching
-    const cacheBuster = Date.now();
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/api/venues/by-slug/${slug}?_t=${cacheBuster}`,
-      { cache: 'no-store' } // Always fetch fresh data
-    );
+    // Get venue by slug directly from database (like promoter page does)
+    const { data: venue, error: venueError } = await supabase
+      .from("venues")
+      .select("*")
+      .eq("slug", slug)
+      .single();
 
-    if (!response.ok) {
+    if (venueError || !venue) {
       return null;
     }
 
-    const data = await response.json();
-    return data.venue;
+    // Get gallery images (ordered by display_order, hero first)
+    const { data: gallery } = await supabase
+      .from("venue_gallery")
+      .select("*")
+      .eq("venue_id", venue.id)
+      .order("is_hero", { ascending: false })
+      .order("display_order", { ascending: true });
+
+    // Get tags
+    const { data: tags } = await supabase
+      .from("venue_tags")
+      .select("*")
+      .eq("venue_id", venue.id)
+      .order("tag_type", { ascending: true })
+      .order("tag_value", { ascending: true });
+
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+
+    // Get all relevant events for this venue (matching API route logic)
+    const { data: allEvents } = await supabase
+      .from("events")
+      .select(`
+        id,
+        slug,
+        name,
+        description,
+        start_time,
+        end_time,
+        cover_image_url,
+        flier_url,
+        capacity,
+        registration_type,
+        external_ticket_url,
+        organizer:organizers(id, name)
+      `)
+      .eq("venue_id", venue.id)
+      .eq("status", "published")
+      .order("start_time", { ascending: false })
+      .limit(50);
+
+    // Get registration counts for all events (batch query to avoid N+1)
+    const eventIds = allEvents?.map((e) => e.id) || [];
+    let registrationCounts: Record<string, number> = {};
+
+    if (eventIds.length > 0) {
+      const { data: registrations } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .in("event_id", eventIds);
+
+      registrationCounts = (registrations || []).reduce(
+        (acc, reg) => {
+          acc[reg.event_id] = (acc[reg.event_id] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
+    }
+
+    // Categorize events (matching API route logic)
+    const liveEvents: VenueEvent[] = [];
+    const upcomingEvents: VenueEvent[] = [];
+    const pastEvents: VenueEvent[] = [];
+
+    (allEvents || []).forEach((event: any) => {
+      const eventWithCount = {
+        ...event,
+        registration_count: registrationCounts[event.id] || 0,
+      };
+      
+      const startTime = new Date(event.start_time);
+      const endTime = event.end_time ? new Date(event.end_time) : null;
+      
+      // Event is live if started but not ended (or no end time and started within last 8 hours)
+      const isLive = startTime <= now && (
+        (endTime && endTime >= now) || 
+        (!endTime && now.getTime() - startTime.getTime() < 8 * 60 * 60 * 1000)
+      );
+      
+      const eventData: VenueEvent = {
+        id: event.id,
+        slug: event.slug,
+        name: event.name,
+        description: event.description,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        cover_image_url: event.cover_image_url,
+        flier_url: event.flier_url,
+        capacity: event.capacity,
+        registration_count: registrationCounts[event.id] || 0,
+        organizer: event.organizer,
+        requires_approval: false,
+        registration_type: event.registration_type || "guestlist",
+      };
+
+      if (isLive) {
+        liveEvents.push(eventData);
+      } else if (startTime > now) {
+        upcomingEvents.push(eventData);
+      } else {
+        pastEvents.push(eventData);
+      }
+    });
+
+    // Sort upcoming by start time ascending, past by start time descending
+    upcomingEvents.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    pastEvents.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+
+    // Get follower count
+    const { count: favoriteCount } = await supabase
+      .from("venue_favorites")
+      .select("*", { count: "exact", head: true })
+      .eq("venue_id", venue.id);
+
+    // Get total published event count
+    const { count: totalEventCount } = await supabase
+      .from("events")
+      .select("*", { count: "exact", head: true })
+      .eq("venue_id", venue.id)
+      .eq("status", "published");
+
+    return {
+      ...venue,
+      gallery: gallery || [],
+      tags: tags || [],
+      live_events: liveEvents,
+      upcoming_events: upcomingEvents,
+      past_events: pastEvents.slice(0, 50),
+      follower_count: favoriteCount || 0,
+      total_event_count: totalEventCount || 0,
+    };
   } catch (error) {
     console.error("Failed to fetch venue:", error);
     return null;
