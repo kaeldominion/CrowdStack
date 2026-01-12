@@ -111,13 +111,13 @@ export function AttendeesDashboardList({
       {/* Table Header */}
       <div className={`grid gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] ${
         role === "promoter"
-          ? "grid-cols-[1fr_1fr_60px_60px_60px_80px]"
+          ? "grid-cols-[3fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
           : role === "admin"
           ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
           : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
       }`}>
         <div>Name</div>
-        <div>Contact</div>
+        <div className="hidden sm:block">Contact</div>
         {role === "promoter" ? (
           <>
             <div className="text-center">Refs</div>
@@ -174,7 +174,7 @@ export function AttendeesDashboardList({
                   key={attendee.id}
                   className={`grid gap-2 items-center px-3 hover:bg-white/5 transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
                     role === "promoter"
-                      ? "grid-cols-[1fr_1fr_60px_60px_60px_80px]"
+                      ? "grid-cols-[3fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
                       : role === "admin"
                       ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
                       : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
@@ -202,7 +202,7 @@ export function AttendeesDashboardList({
                   </div>
 
                   {/* Contact */}
-                  <div className="text-xs text-[var(--text-secondary)] truncate">
+                  <div className="text-xs text-[var(--text-secondary)] truncate hidden sm:block">
                     {attendee.email || attendee.phone || "-"}
                   </div>
 
