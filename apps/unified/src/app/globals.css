@@ -44,10 +44,8 @@ body {
 }
 
 /* Monospace text - clean, technical look */
-.font-mono,
 code,
 pre {
-  font-family: var(--font-mono), "JetBrains Mono", "Courier New", monospace;
   font-feature-settings: "liga" 0, "calt" 0;
   -webkit-font-feature-settings: "liga" 0, "calt" 0;
   letter-spacing: -0.01em;
