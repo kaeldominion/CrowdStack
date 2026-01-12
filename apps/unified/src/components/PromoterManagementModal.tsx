@@ -48,6 +48,9 @@ interface EventPromoter {
   fixed_fee?: number | null;
   minimum_guests?: number | null;
   below_minimum_percent?: number | null;
+  table_commission_type?: "percentage" | "flat_fee" | null;
+  table_commission_rate?: number | null;
+  table_commission_flat_fee?: number | null;
   promoter: Promoter | null;
   registrations: number;
 }
@@ -103,6 +106,11 @@ export function PromoterManagementModal({
   const [fixedFee, setFixedFee] = useState<string>("");
   const [minimumGuests, setMinimumGuests] = useState<string>("");
   const [belowMinimumPercent, setBelowMinimumPercent] = useState<string>("50");
+
+  // Table Commission
+  const [tableCommissionType, setTableCommissionType] = useState<"percentage" | "flat_fee" | "">("");
+  const [tableCommissionRate, setTableCommissionRate] = useState<string>("");
+  const [tableCommissionFlatFee, setTableCommissionFlatFee] = useState<string>("");
 
   // Legacy single bonus (for simple cases)
   const [bonusThreshold, setBonusThreshold] = useState<string>("");
@@ -233,6 +241,9 @@ export function PromoterManagementModal({
     setUseTieredBonuses(false);
     setBonusTiers([]);
     setSelectedTemplateId("");
+    setTableCommissionType("");
+    setTableCommissionRate("");
+    setTableCommissionFlatFee("");
   };
 
   const applyTemplate = (templateId: string) => {
@@ -249,6 +260,11 @@ export function PromoterManagementModal({
     setBelowMinimumPercent(template.below_minimum_percent?.toString() || "50");
     setBonusThreshold(template.bonus_threshold?.toString() || "");
     setBonusAmount(template.bonus_amount?.toString() || "");
+    
+    // Apply table commission fields
+    setTableCommissionType((template as any).table_commission_type || "");
+    setTableCommissionRate((template as any).table_commission_rate?.toString() || "");
+    setTableCommissionFlatFee((template as any).table_commission_flat_fee?.toString() || "");
     
     // Handle bonus tiers
     if (template.bonus_tiers && template.bonus_tiers.length > 0) {
@@ -306,6 +322,10 @@ export function PromoterManagementModal({
         fixed_fee: fixedFee ? parseFloat(fixedFee) : null,
         minimum_guests: minimumGuests ? parseInt(minimumGuests) : null,
         below_minimum_percent: minimumGuests ? parseFloat(belowMinimumPercent) : null,
+        // Table commission
+        table_commission_type: tableCommissionType || null,
+        table_commission_rate: tableCommissionType === "percentage" && tableCommissionRate ? parseFloat(tableCommissionRate) : null,
+        table_commission_flat_fee: tableCommissionType === "flat_fee" && tableCommissionFlatFee ? parseFloat(tableCommissionFlatFee) : null,
       };
 
       // Bonus handling
@@ -460,6 +480,21 @@ export function PromoterManagementModal({
       parts.push(
         <Badge key="bonus" variant="success" className="mr-1 mb-1">
           Bonus: {formatCurrency(ep.bonus_amount, curr)} @ {ep.bonus_threshold} guests
+        </Badge>
+      );
+    }
+
+    // Table commission
+    if (ep.table_commission_type === "percentage" && ep.table_commission_rate) {
+      parts.push(
+        <Badge key="table_pct" variant="warning" className="mr-1 mb-1">
+          Table: {ep.table_commission_rate}% of spend
+        </Badge>
+      );
+    } else if (ep.table_commission_type === "flat_fee" && ep.table_commission_flat_fee) {
+      parts.push(
+        <Badge key="table_flat" variant="warning" className="mr-1 mb-1">
+          Table: {formatCurrency(ep.table_commission_flat_fee, curr)}/table
         </Badge>
       );
     }
@@ -793,6 +828,68 @@ export function PromoterManagementModal({
                 <p className="text-xs text-secondary mt-2">
                   Example: 3M fee, min 15 guests, 50% if not met = 1.5M if they bring {"<"}15
                 </p>
+              </div>
+
+              {/* Table Commission Section */}
+              <div className="border-t border-border-subtle pt-4">
+                <h5 className="text-sm font-medium text-primary mb-3 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" /> Table Booking Commission
+                </h5>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-secondary mb-2">
+                    Commission Type
+                  </label>
+                  <Select
+                    value={tableCommissionType}
+                    onChange={(e) => {
+                      setTableCommissionType(e.target.value as "percentage" | "flat_fee" | "");
+                      if (e.target.value !== "percentage") setTableCommissionRate("");
+                      if (e.target.value !== "flat_fee") setTableCommissionFlatFee("");
+                    }}
+                    options={[
+                      { value: "", label: "No table commission" },
+                      { value: "percentage", label: "Percentage of table spend" },
+                      { value: "flat_fee", label: "Flat fee per table" },
+                    ]}
+                  />
+                </div>
+                {tableCommissionType === "percentage" && (
+                  <div>
+                    <label className="block text-xs font-medium text-secondary mb-1">
+                      Commission Rate (%)
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={tableCommissionRate}
+                      onChange={(e) => setTableCommissionRate(e.target.value)}
+                      placeholder="10"
+                    />
+                    <p className="text-xs text-secondary mt-2">
+                      Percentage commission on total table spend. Defaults to minimum spend if no closeout info entered.
+                    </p>
+                  </div>
+                )}
+                {tableCommissionType === "flat_fee" && (
+                  <div>
+                    <label className="block text-xs font-medium text-secondary mb-1">
+                      Flat Fee Per Table
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="100000"
+                      value={tableCommissionFlatFee}
+                      onChange={(e) => setTableCommissionFlatFee(e.target.value)}
+                      placeholder="500000"
+                    />
+                    <p className="text-xs text-secondary mt-2">
+                      Fixed amount per table booked by this promoter.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Bonus Section */}

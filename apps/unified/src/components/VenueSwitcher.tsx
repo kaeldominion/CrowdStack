@@ -66,8 +66,15 @@ export function VenueSwitcher({ className }: VenueSwitcherProps) {
 
       setSelectedVenueId(venueId);
       
-      // If we're on a venue-specific page, refresh to show new venue's data
+      // If we're on a venue-specific page, update URL with venueId query param and refresh
       if (pathname?.startsWith("/app/venue")) {
+        // Update URL to include venueId query param for pages that support it
+        const url = new URL(window.location.href);
+        url.searchParams.set("venueId", venueId);
+        router.push(url.pathname + url.search);
+        router.refresh();
+      } else {
+        // For other pages, just refresh
         router.refresh();
       }
 

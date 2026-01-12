@@ -21,6 +21,7 @@ interface RegistrationSuccessProps {
   flierUrl?: string | null;
   venueAddress?: string | null;
   showPhotoEmailNotice?: boolean;
+  tablePartyGuestId?: string | null;
 }
 
 export function RegistrationSuccess({
@@ -34,6 +35,7 @@ export function RegistrationSuccess({
   flierUrl,
   venueAddress,
   showPhotoEmailNotice = false,
+  tablePartyGuestId = null,
 }: RegistrationSuccessProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
 

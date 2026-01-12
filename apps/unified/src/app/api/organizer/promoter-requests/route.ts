@@ -5,10 +5,17 @@ import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { getUserRolesById } from "@crowdstack/shared/auth/roles";
 
 // GET - Fetch promoter requests for organizer's events
+// DISABLED: Promoter request feature has been removed
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
 export async function GET() {
+  return NextResponse.json(
+    { error: "Promoter request feature has been disabled", requests: [], counts: { pending: 0, approved: 0, declined: 0, total: 0 } },
+    { status: 410 }
+  );
+  
+  /* DISABLED CODE - Feature removed
   try {
     const userId = await getUserId();
     if (!userId) {
@@ -134,10 +141,18 @@ export async function GET() {
     console.error("[Organizer Promoter Requests] Error:", error);
     return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+  */
 }
 
 // PATCH - Respond to a promoter request (approve/decline)
+// DISABLED: Promoter request feature has been removed
 export async function PATCH(request: NextRequest) {
+  return NextResponse.json(
+    { error: "Promoter request feature has been disabled" },
+    { status: 410 }
+  );
+  
+  /* DISABLED CODE - Feature removed
   try {
     const userId = await getUserId();
     if (!userId) {
@@ -268,6 +283,7 @@ export async function PATCH(request: NextRequest) {
     console.error("[Organizer Promoter Requests] Error:", error);
     return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+  */
 }
 
 

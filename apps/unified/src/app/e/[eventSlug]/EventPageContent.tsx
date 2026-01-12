@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { ShareButton } from "@/components/ShareButton";
-import { PromoterRequestButton } from "@/components/PromoterRequestButton";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { CalendarButtons } from "@/components/CalendarButtons";
 import { PhotoGalleryPreview } from "@/components/PhotoGalleryPreview";
@@ -441,8 +440,6 @@ export function EventPageContent({
             refCode={searchParams?.get("ref")}
           />
 
-          {/* Promoter Request */}
-          <PromoterRequestButton eventId={event.id} eventSlug={params.eventSlug} />
         </div>
       </div>
     );
@@ -844,8 +841,6 @@ export function EventPageContent({
                 )}
               </div>
               
-              {/* Promoter Request */}
-              <PromoterRequestButton eventId={event.id} eventSlug={params.eventSlug} />
             </div>
           </div>
         </div>

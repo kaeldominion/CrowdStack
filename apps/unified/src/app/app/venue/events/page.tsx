@@ -29,6 +29,7 @@ import {
   UserCheck,
   X,
   Building2,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -200,14 +201,22 @@ export default function VenueEventsPage() {
             Manage and track all events hosted at your venue
           </p>
         </div>
-        {pendingCount > 0 && (
-          <Link href="/app/venue/events/pending">
+        <div className="flex items-center gap-2">
+          <Link href="/app/venue/events/new">
             <Button variant="primary">
-              <ShieldAlert className="h-4 w-4 mr-2" />
-              {pendingCount} Pending Approval{pendingCount > 1 ? "s" : ""}
+              <Plus className="h-4 w-4 mr-2" />
+              New Event
             </Button>
           </Link>
-        )}
+          {pendingCount > 0 && (
+            <Link href="/app/venue/events/pending">
+              <Button variant="primary">
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                {pendingCount} Pending Approval{pendingCount > 1 ? "s" : ""}
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}

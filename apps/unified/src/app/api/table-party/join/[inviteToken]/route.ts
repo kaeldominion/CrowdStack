@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
-import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
+import { generateQRPassToken } from "@crowdstack/shared/qr/generate";
+import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 
 export const dynamic = "force-dynamic";
 
@@ -203,13 +204,25 @@ export async function GET(
 
 /**
  * POST /api/table-party/join/[inviteToken]
- * Accept a party invitation and create basic account
+ * Accept a party invitation - REQUIRES AUTHENTICATION
+ * Creates event registration and links to table party guest
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: { inviteToken: string } }
 ) {
   try {
+    // REQUIRE AUTHENTICATION
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user || !user.email) {
+      return NextResponse.json(
+        { error: "Authentication required. Please sign in to join the party." },
+        { status: 401 }
+      );
+    }
+
     const { inviteToken } = params;
     const body: JoinPartyRequest = await request.json().catch(() => ({}));
     const serviceSupabase = createServiceRoleClient();
@@ -228,6 +241,14 @@ export async function POST(
       );
     }
 
+    // VERIFY EMAIL MATCHES INVITATION
+    if (user.email.toLowerCase() !== guest.guest_email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "This invitation was sent to a different email address. Please use the email that received the invitation." },
+        { status: 403 }
+      );
+    }
+
     // Check if invite is still valid
     if (guest.status === "removed") {
       return NextResponse.json(
@@ -243,13 +264,44 @@ export async function POST(
       );
     }
 
-    // If already joined, return success with existing QR token
-    if (guest.status === "joined" && guest.qr_token) {
+    // Get booking to check event_id (needed for registration lookup)
+    const { data: bookingForEvent, error: bookingForEventError } = await serviceSupabase
+      .from("table_bookings")
+      .select("event_id")
+      .eq("id", guest.booking_id)
+      .single();
+
+    if (bookingForEventError || !bookingForEvent) {
+      return NextResponse.json(
+        { error: "Booking not found" },
+        { status: 404 }
+      );
+    }
+
+    // If already joined, return success
+    if (guest.status === "joined" && guest.attendee_id) {
+      // Get registration to return QR token
+      const { data: registration } = await serviceSupabase
+        .from("registrations")
+        .select("id, event_id, attendee_id")
+        .eq("attendee_id", guest.attendee_id)
+        .eq("event_id", bookingForEvent.event_id)
+        .single();
+
+      let qrToken = null;
+      if (registration) {
+        qrToken = generateQRPassToken(
+          registration.id,
+          registration.event_id,
+          registration.attendee_id
+        );
+      }
+
       return NextResponse.json({
         success: true,
         already_joined: true,
         guest_id: guest.id,
-        qr_token: guest.qr_token,
+        qr_token: qrToken,
         message: "You've already joined this party",
       });
     }
@@ -261,29 +313,13 @@ export async function POST(
       .eq("booking_id", guest.booking_id)
       .in("status", ["joined"]);
 
-    // Get booking to check party_size
-    const { data: bookingCheck } = await serviceSupabase
-      .from("table_bookings")
-      .select("party_size")
-      .eq("id", guest.booking_id)
-      .single();
-
-    const currentJoined = partyGuests?.length || 0;
-    const maxPartySize = bookingCheck?.party_size || 1;
-
-    if (currentJoined >= maxPartySize) {
-      return NextResponse.json(
-        { error: "This party is full. Contact the host to request additional spots." },
-        { status: 400 }
-      );
-    }
-
-    // Get the booking with event details (for QR token generation)
+    // Get booking to check party_size and get event details
     const { data: bookingData, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
         id,
         event_id,
+        party_size,
         guest_name,
         table:venue_tables(id, name),
         event:events(
@@ -304,65 +340,136 @@ export async function POST(
       );
     }
 
+    const currentJoined = partyGuests?.length || 0;
+    const maxPartySize = bookingData.party_size || 1;
+
+    if (currentJoined >= maxPartySize) {
+      return NextResponse.json(
+        { error: "This party is full. Contact the host to request additional spots." },
+        { status: 400 }
+      );
+    }
+
     const booking = bookingData as unknown as BookingWithTable;
     const event = booking.event as EventWithVenue;
 
-    // Update guest name/phone if provided
-    const updateName = body.name || guest.guest_name;
-    const updatePhone = body.phone || guest.guest_phone;
+    // Get or create attendee (same logic as event registration)
+    let attendee;
+    const { data: existingAttendee } = await serviceSupabase
+      .from("attendees")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
 
-    // Check/create attendee record for the guest email
-    let attendeeId = guest.attendee_id;
+    const attendeeData: any = {
+      name: body.name || guest.guest_name,
+      email: user.email.toLowerCase(),
+      user_id: user.id,
+    };
 
-    if (!attendeeId) {
-      // Check if attendee exists with this email
-      const { data: existingAttendee } = await serviceSupabase
+    if (body.surname) attendeeData.surname = body.surname;
+    if (body.phone || body.whatsapp) {
+      attendeeData.phone = body.whatsapp || body.phone || guest.guest_phone;
+      if (body.whatsapp) attendeeData.whatsapp = body.whatsapp;
+    }
+    if (body.date_of_birth) attendeeData.date_of_birth = body.date_of_birth;
+    if (body.gender) attendeeData.gender = body.gender;
+    if (body.instagram_handle) attendeeData.instagram_handle = body.instagram_handle.replace("@", "");
+    if (body.tiktok_handle) attendeeData.tiktok_handle = body.tiktok_handle.replace("@", "");
+
+    if (existingAttendee) {
+      // Update existing attendee
+      const updateData = { ...attendeeData };
+      if (!body.phone && !body.whatsapp && existingAttendee.phone) {
+        updateData.phone = existingAttendee.phone;
+      }
+      if (!body.whatsapp && existingAttendee.whatsapp) {
+        updateData.whatsapp = existingAttendee.whatsapp;
+      }
+
+      const { data: updated, error: updateError } = await serviceSupabase
         .from("attendees")
-        .select("id")
-        .eq("email", guest.guest_email.toLowerCase())
+        .update(updateData)
+        .eq("id", existingAttendee.id)
+        .select()
         .single();
 
-      if (existingAttendee) {
-        attendeeId = existingAttendee.id;
-      } else {
-        // Create new attendee record (basic account)
-        const { data: newAttendee, error: createError } = await serviceSupabase
-          .from("attendees")
-          .insert({
-            email: guest.guest_email.toLowerCase(),
-            name: updateName,
-            phone: updatePhone,
-            source: "table_party_invite",
-          })
-          .select("id")
-          .single();
-
-        if (createError) {
-          console.error("Error creating attendee:", createError);
-          // Continue without attendee link - not critical
-        } else if (newAttendee) {
-          attendeeId = newAttendee.id;
-        }
+      if (updateError) {
+        throw new Error(`Failed to update attendee: ${updateError.message}`);
       }
+      attendee = updated;
+    } else {
+      // Create new attendee
+      if (body.whatsapp) {
+        attendeeData.phone = body.whatsapp;
+        attendeeData.whatsapp = body.whatsapp;
+      }
+      attendeeData.source = "table_party_invite";
+
+      const { data: created, error: createError } = await serviceSupabase
+        .from("attendees")
+        .insert(attendeeData)
+        .select()
+        .single();
+
+      if (createError) {
+        throw new Error(`Failed to create attendee: ${createError.message}`);
+      }
+      attendee = created;
     }
 
-    // Generate QR token
-    const qrToken = generateTablePartyToken(
-      guest.id,
-      guest.booking_id,
-      booking.event_id
+    // Create or get event registration
+    let registration;
+    const { data: existingRegistration } = await serviceSupabase
+      .from("registrations")
+      .select("*")
+      .eq("attendee_id", attendee.id)
+      .eq("event_id", event.id)
+      .single();
+
+    if (existingRegistration) {
+      registration = existingRegistration;
+    } else {
+      // Create new registration
+      const { data: newRegistration, error: regError } = await serviceSupabase
+        .from("registrations")
+        .insert({
+          attendee_id: attendee.id,
+          event_id: event.id,
+        })
+        .select()
+        .single();
+
+      if (regError) {
+        throw new Error(`Failed to create registration: ${regError.message}`);
+      }
+      registration = newRegistration;
+
+      // Emit registration event
+      await emitOutboxEvent("registration.created", {
+        registration_id: registration.id,
+        attendee_id: attendee.id,
+        event_id: event.id,
+      });
+    }
+
+    // Generate QR token from registration (not table party token)
+    const qrToken = generateQRPassToken(
+      registration.id,
+      event.id,
+      attendee.id
     );
 
-    // Update guest to joined status with QR token
+    // Update guest to joined status and link to attendee
     const { data: updatedGuest, error: updateError } = await serviceSupabase
       .from("table_party_guests")
       .update({
         status: "joined",
         joined_at: new Date().toISOString(),
-        qr_token: qrToken,
-        guest_name: updateName,
-        guest_phone: updatePhone,
-        attendee_id: attendeeId,
+        qr_token: qrToken, // Store QR token for backward compatibility
+        guest_name: attendee.name,
+        guest_phone: attendee.phone || attendee.whatsapp,
+        attendee_id: attendee.id,
         updated_at: new Date().toISOString(),
       })
       .eq("id", guest.id)
@@ -380,7 +487,7 @@ export async function POST(
     // Send confirmation email with QR code link
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
-      const qrUrl = `${baseUrl}/table-pass/${guest.id}`;
+      const qrUrl = `${baseUrl}/e/${event.slug}/pass?token=${qrToken}`;
 
       const eventTimezone = event.timezone || "UTC";
       const eventStartTime = event.start_time ? new Date(event.start_time) : null;
@@ -436,7 +543,8 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      guest_id: guest.id,
+      guest_id: updatedGuest.id,
+      registration_id: registration.id,
       qr_token: qrToken,
       message: "Successfully joined the party! Check your email for your QR pass.",
     });

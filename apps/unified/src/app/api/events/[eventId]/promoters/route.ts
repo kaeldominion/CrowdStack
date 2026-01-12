@@ -78,6 +78,9 @@ export async function GET(
         fixed_fee,
         minimum_guests,
         below_minimum_percent,
+        table_commission_type,
+        table_commission_rate,
+        table_commission_flat_fee,
         created_at,
         promoter:promoters(id, name, email, phone)
       `)
@@ -161,6 +164,10 @@ export async function POST(
       fixed_fee,
       minimum_guests,
       below_minimum_percent,
+      // Table commission fields
+      table_commission_type,
+      table_commission_rate,
+      table_commission_flat_fee,
     } = body;
 
     if (!promoter_id && !user_id) {
@@ -355,6 +362,9 @@ export async function POST(
             bonus_threshold: template.bonus_threshold,
             bonus_amount: template.bonus_amount,
             bonus_tiers: template.bonus_tiers,
+            table_commission_type: (template as any).table_commission_type,
+            table_commission_rate: (template as any).table_commission_rate,
+            table_commission_flat_fee: (template as any).table_commission_flat_fee,
           };
         }
       }
@@ -400,6 +410,9 @@ export async function POST(
     const finalBonusThreshold = bonus_threshold !== undefined ? bonus_threshold : templateValues.bonus_threshold;
     const finalBonusAmount = bonus_amount !== undefined ? bonus_amount : templateValues.bonus_amount;
     const finalBonusTiers = bonus_tiers !== undefined ? bonus_tiers : templateValues.bonus_tiers;
+    const finalTableCommissionType = table_commission_type !== undefined ? table_commission_type : templateValues.table_commission_type;
+    const finalTableCommissionRate = table_commission_rate !== undefined ? table_commission_rate : templateValues.table_commission_rate;
+    const finalTableCommissionFlatFee = table_commission_flat_fee !== undefined ? table_commission_flat_fee : templateValues.table_commission_flat_fee;
 
     // Determine commission_type based on what fields are provided
     // If any enhanced fields are provided, use "enhanced", otherwise use legacy "flat_per_head"
@@ -433,6 +446,10 @@ export async function POST(
         fixed_fee: finalFixedFee !== undefined && finalFixedFee !== null && finalFixedFee !== "" ? parseFloat(finalFixedFee) : null,
         minimum_guests: finalMinimumGuests !== undefined && finalMinimumGuests !== null && finalMinimumGuests !== "" ? parseInt(finalMinimumGuests) : null,
         below_minimum_percent: finalBelowMinimumPercent !== undefined && finalBelowMinimumPercent !== null && finalBelowMinimumPercent !== "" ? parseFloat(finalBelowMinimumPercent) : null,
+        // Table commission fields
+        table_commission_type: finalTableCommissionType || null,
+        table_commission_rate: finalTableCommissionRate !== undefined && finalTableCommissionRate !== null && finalTableCommissionRate !== "" ? parseFloat(finalTableCommissionRate) : null,
+        table_commission_flat_fee: finalTableCommissionFlatFee !== undefined && finalTableCommissionFlatFee !== null && finalTableCommissionFlatFee !== "" ? parseFloat(finalTableCommissionFlatFee) : null,
       })
       .select(`
         id,
@@ -448,6 +465,9 @@ export async function POST(
         fixed_fee,
         minimum_guests,
         below_minimum_percent,
+        table_commission_type,
+        table_commission_rate,
+        table_commission_flat_fee,
         created_at,
         promoter:promoters(id, name, email, phone, created_by)
       `)

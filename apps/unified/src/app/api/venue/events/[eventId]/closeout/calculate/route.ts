@@ -17,7 +17,9 @@ interface BookingForCommission {
 interface EventPromoterConfig {
   promoter_id: string;
   commission_rate: number | null;
+  table_commission_type: "percentage" | "flat_fee" | null;
   table_commission_rate: number | null;
+  table_commission_flat_fee: number | null;
 }
 
 /**
@@ -97,13 +99,19 @@ export async function POST(
     if (promoterIds.length > 0) {
       const { data: eventPromoters } = await serviceSupabase
         .from("event_promoters")
-        .select("promoter_id, commission_rate, table_commission_rate")
+        .select("promoter_id, commission_rate, table_commission_type, table_commission_rate, table_commission_flat_fee")
         .eq("event_id", eventId)
         .in("promoter_id", promoterIds);
 
       if (eventPromoters) {
         for (const ep of eventPromoters) {
-          promoterConfigs.set(ep.promoter_id, ep);
+          promoterConfigs.set(ep.promoter_id, {
+            promoter_id: ep.promoter_id,
+            commission_rate: ep.commission_rate,
+            table_commission_type: ep.table_commission_type,
+            table_commission_rate: ep.table_commission_rate,
+            table_commission_flat_fee: ep.table_commission_flat_fee,
+          });
         }
       }
 
@@ -119,7 +127,9 @@ export async function POST(
             promoterConfigs.set(p.id, {
               promoter_id: p.id,
               commission_rate: p.commission_rate,
+              table_commission_type: null,
               table_commission_rate: null,
+              table_commission_flat_fee: null,
             });
           }
         }
@@ -158,10 +168,21 @@ export async function POST(
 
       if (booking.promoter_id) {
         const config = promoterConfigs.get(booking.promoter_id);
-        // Use table_commission_rate if available, otherwise use general commission_rate
-        promoterCommissionRate = config?.table_commission_rate ?? config?.commission_rate ?? null;
-
-        if (promoterCommissionRate !== null && spendAmount > 0) {
+        
+        if (config?.table_commission_type === "flat_fee" && config?.table_commission_flat_fee) {
+          // Flat fee per table
+          promoterCommissionAmount = Math.round(config.table_commission_flat_fee * 100) / 100;
+        } else if (config?.table_commission_type === "percentage" && config?.table_commission_rate && spendAmount > 0) {
+          // Percentage commission on table spend
+          promoterCommissionRate = config.table_commission_rate;
+          promoterCommissionAmount = Math.round((spendAmount * promoterCommissionRate) / 100 * 100) / 100;
+        } else if (config?.table_commission_rate && spendAmount > 0) {
+          // Legacy: percentage commission (backward compatibility)
+          promoterCommissionRate = config.table_commission_rate;
+          promoterCommissionAmount = Math.round((spendAmount * promoterCommissionRate) / 100 * 100) / 100;
+        } else if (config?.commission_rate && spendAmount > 0) {
+          // Fallback to general commission_rate if no table-specific rate
+          promoterCommissionRate = config.commission_rate;
           promoterCommissionAmount = Math.round((spendAmount * promoterCommissionRate) / 100 * 100) / 100;
         }
       }

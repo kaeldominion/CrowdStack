@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,13 +37,24 @@ interface BookingWithTable {
 
 /**
  * GET /api/table-party/pass/[guestId]
- * Get QR pass data for a party guest (public - for displaying QR pass)
+ * Get QR pass data for a party guest - REQUIRES AUTHENTICATION
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: { guestId: string } }
 ) {
   try {
+    // REQUIRE AUTHENTICATION
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const { guestId } = params;
     const serviceSupabase = createServiceRoleClient();
 
@@ -70,8 +81,30 @@ export async function GET(
       has_qr_token: !!guest.qr_token,
     });
 
-    // Check if guest has joined (has QR token)
-    if (guest.status !== "joined" || !guest.qr_token) {
+    // VERIFY USER OWNS THIS GUEST RECORD
+    if (!guest.attendee_id) {
+      return NextResponse.json(
+        { error: "Guest not linked to an account. Please accept your invitation first." },
+        { status: 400 }
+      );
+    }
+
+    // Get attendee to verify user ownership
+    const { data: attendee } = await serviceSupabase
+      .from("attendees")
+      .select("user_id")
+      .eq("id", guest.attendee_id)
+      .single();
+
+    if (!attendee || attendee.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "Unauthorized - this pass belongs to a different account" },
+        { status: 403 }
+      );
+    }
+
+    // Check if guest has joined
+    if (guest.status !== "joined") {
       return NextResponse.json(
         { error: "Please accept your invitation first to get your pass" },
         { status: 400 }
@@ -86,15 +119,44 @@ export async function GET(
       );
     }
 
-    // CRITICAL: Get authoritative status separately to avoid PostgREST field collision
-    // (events table also has a "status" column that can interfere with nested selects)
-    const { data: statusData } = await serviceSupabase
+    // Get booking event_id first (needed for registration lookup)
+    const { data: bookingForEvent, error: bookingForEventError } = await serviceSupabase
       .from("table_bookings")
-      .select("status")
+      .select("event_id, status")
       .eq("id", guest.booking_id)
       .single();
 
-    const authoritativeStatus = statusData?.status;
+    if (bookingForEventError || !bookingForEvent) {
+      return NextResponse.json(
+        { error: "Booking not found" },
+        { status: 404 }
+      );
+    }
+
+    const authoritativeStatus = bookingForEvent.status;
+
+    // Get registration to generate proper QR token
+    const { data: registration } = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id, attendee_id")
+      .eq("attendee_id", guest.attendee_id)
+      .eq("event_id", bookingForEvent.event_id)
+      .single();
+
+    if (!registration) {
+      return NextResponse.json(
+        { error: "Registration not found. Please contact support." },
+        { status: 404 }
+      );
+    }
+
+    // Generate QR token from registration (not stored table party token)
+    const { generateQRPassToken } = await import("@crowdstack/shared/qr/generate");
+    const qrToken = generateQRPassToken(
+      registration.id,
+      registration.event_id,
+      registration.attendee_id
+    );
 
     // Get the booking with event and table details (excluding status to avoid collision)
     const { data: bookingData, error: bookingError } = await serviceSupabase
@@ -171,7 +233,7 @@ export async function GET(
 
     return NextResponse.json({
       pass: {
-        qr_token: guest.qr_token,
+        qr_token: qrToken, // Use registration-based QR token
         guest_name: guest.guest_name,
         guest_email: guest.guest_email,
         is_host: guest.is_host,

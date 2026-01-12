@@ -338,15 +338,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [pendingUploadResolver, setPendingUploadResolver] = useState<((value: boolean) => void) | null>(null);
   const [showRepublishPrompt, setShowRepublishPrompt] = useState(false);
   const [organizers, setOrganizers] = useState<any[]>([]);
-  const [promoterRequests, setPromoterRequests] = useState<Array<{
-    id: string;
-    promoter_id: string;
-    promoter: { id: string; name: string; email: string | null; phone?: string | null };
-    message: string | null;
-    status: string;
-    created_at: string;
-  }>>([]);
-  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [eventTags, setEventTags] = useState<Array<{ id: string; tag_type: string; tag_value: string }>>([]);
   const [savingTags, setSavingTags] = useState(false);
   
@@ -509,10 +500,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
     if (config.role === "admin") {
       loadOrganizers();
-    }
-    // Load promoter requests for organizers and venues
-    if (config.canManagePromoters) {
-      loadPromoterRequests();
     }
     
     // Refresh stats every 30 seconds if viewing stats
@@ -1156,34 +1143,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  const handlePromoterRequest = async (requestId: string, action: "approve" | "decline") => {
-    try {
-      setProcessingRequest(requestId);
-      const response = await fetch(`/api/events/${eventId}/promoter-requests`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, action }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Remove the request from the list
-        setPromoterRequests((prev) => prev.filter((r) => r.id !== requestId));
-        // If approved, reload event data to get updated promoters list
-        if (action === "approve") {
-          await loadEventData(false);
-        }
-      } else {
-        alert(data.error || `Failed to ${action} request`);
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
-      alert(`Failed to ${action} request`);
-    } finally {
-      setProcessingRequest(null);
-    }
-  };
 
   const handleRemovePromoter = async (eventPromoterId: string) => {
     if (!confirm("Are you sure you want to remove this promoter from the event?")) {
@@ -2270,88 +2229,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
           {config.canViewPromoters && (
             <TabsContent value="promoters" className="space-y-4">
-              {/* Pending Promoter Requests - DISABLED: Promoter request feature is currently disabled */}
-              {/* Debug: Show request count */}
-              {false && effectivePermissions.canManagePromoters && (
-                <div className="text-xs text-secondary mb-2">
-                  Total requests loaded: {promoterRequests.length} | Pending: {promoterRequests.filter(r => r.status === "pending").length}
-                </div>
-              )}
-              
-              {false && config.canManagePromoters && promoterRequests.filter(r => r.status === "pending").length > 0 && (
-                <Card className="border-warning/30 bg-warning/5 p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <AlertCircle className="h-4 w-4 text-warning" />
-                    <h2 className="text-base font-semibold text-primary">
-                      Pending Requests ({promoterRequests.filter(r => r.status === "pending").length})
-                    </h2>
-                  </div>
-                  <div className="space-y-2">
-                    {promoterRequests
-                      .filter((r) => r.status === "pending")
-                      .map((request) => (
-                        <div
-                          key={request.id}
-                          className="flex items-center gap-3 p-2 bg-void rounded-lg border border-border"
-                        >
-                          {/* Promoter Info - Compact */}
-                          <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-1 sm:gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-primary">
-                                {request.promoter?.name || "Unknown"}
-                              </span>
-                              <span className="text-secondary text-xs ml-2">
-                                {new Date(request.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <div className="text-secondary truncate">
-                              {request.promoter?.email && (
-                                <a href={`mailto:${request.promoter.email}`} className="hover:text-primary">
-                                  {request.promoter.email}
-                                </a>
-                              )}
-                            </div>
-                            <div className="text-secondary">
-                              {request.promoter?.phone && (
-                                <a href={`tel:${request.promoter.phone}`} className="hover:text-primary">
-                                  {request.promoter.phone}
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                          {request.message && (
-                            <div className="hidden lg:block text-xs text-secondary italic max-w-[200px] truncate" title={request.message}>
-                              &quot;{request.message}&quot;
-                            </div>
-                          )}
-                          {/* Actions */}
-                          <div className="flex gap-1 shrink-0">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handlePromoterRequest(request.id, "approve")}
-                              loading={processingRequest === request.id}
-                              disabled={processingRequest !== null}
-                              className="px-2 py-1 text-xs"
-                            >
-                              <Check className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handlePromoterRequest(request.id, "decline")}
-                              loading={processingRequest === request.id}
-                              disabled={processingRequest !== null}
-                              className="px-2 py-1 text-xs"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </Card>
-              )}
 
               {/* Assigned Promoters */}
               <Card>

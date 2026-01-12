@@ -385,6 +385,8 @@ ON CONFLICT (slug) DO UPDATE SET
 -- ============================================
 -- Allow guests to update their own bookings (for cancellation)
 
+DROP POLICY IF EXISTS "Guests can cancel own bookings" ON public.table_bookings;
+
 CREATE POLICY "Guests can cancel own bookings"
   ON public.table_bookings FOR UPDATE
   USING (

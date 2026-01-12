@@ -3,417 +3,354 @@
 /**
  * JOIN TABLE PARTY PAGE
  *
- * Public page for guests to accept a table party invitation.
- * Creates basic account and generates QR pass.
+ * Requires authentication and profile completion (same flow as event registration).
+ * After authentication, links the attendee to the table party guest and creates event registration.
  */
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Check, X, Calendar, MapPin, Users, Loader2, PartyPopper } from "lucide-react";
-import Link from "next/link";
-import { Logo, Button, Card, Input } from "@crowdstack/ui";
-
-interface PartyData {
-  guest: {
-    id: string;
-    name: string;
-    email: string;
-    status: string;
-    is_host: boolean;
-    has_joined: boolean;
-    checked_in: boolean;
-  };
-  booking: {
-    id: string;
-    host_name: string;
-    party_size: number;
-    joined_count: number;
-    spots_remaining: number;
-    is_full: boolean;
-    table_name: string;
-    zone_name: string;
-  };
-  event: {
-    id: string;
-    name: string;
-    slug: string;
-    date: string;
-    time: string;
-    start_time: string;
-    cover_image: string | null;
-    is_past: boolean;
-  };
-  venue: {
-    name: string;
-    address: string;
-    city: string;
-  };
-}
+import { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { createBrowserClient } from "@crowdstack/shared/supabase/client";
+import { LoadingSpinner } from "@crowdstack/ui";
+import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
+import { RegistrationSuccess } from "@/components/RegistrationSuccess";
 
 export default function JoinTablePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const inviteToken = params.inviteToken as string;
+  const magicLinkError = searchParams.get("magic_link_error");
 
-  const [partyData, setPartyData] = useState<PartyData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [joining, setJoining] = useState(false);
-  const [joined, setJoined] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showSignup, setShowSignup] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [guestId, setGuestId] = useState<string | null>(null);
+  const [qrToken, setQrToken] = useState<string>("");
+  const [error, setError] = useState("");
+  const [existingProfile, setExistingProfile] = useState<{
+    name?: string | null;
+    surname?: string | null;
+    date_of_birth?: string | null;
+    gender?: "male" | "female" | null;
+    whatsapp?: string | null;
+    instagram_handle?: string | null;
+  } | null>(null);
+  const [partyData, setPartyData] = useState<{
+    guest_email: string;
+    event: {
+      id: string;
+      name: string;
+      slug: string;
+      start_time?: string | null;
+      end_time?: string | null;
+      flier_url?: string | null;
+      show_photo_email_notice?: boolean;
+      venue?: { name: string; slug?: string; address?: string } | null;
+    };
+  } | null>(null);
 
-  // Form state for optional name/phone update
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-
+  // Fetch party data and check auth in parallel on mount
   useEffect(() => {
-    loadPartyData();
+    const initializePage = async () => {
+      try {
+        const supabase = createBrowserClient();
+        
+        // Fetch party data and check auth in parallel
+        const [partyResponse, authResult] = await Promise.all([
+          fetch(`/api/table-party/join/${inviteToken}`).catch(() => null),
+          supabase.auth.getUser().catch(() => ({ data: { user: null }, error: null })),
+        ]);
+
+        // Process party data
+        if (partyResponse?.ok) {
+          const data = await partyResponse.json();
+          setPartyData({
+            guest_email: data.guest.email,
+            event: {
+              id: data.event.id,
+              name: data.event.name,
+              slug: data.event.slug,
+              start_time: data.event.start_time,
+              venue: {
+                name: data.venue.name,
+                address: data.venue.address,
+              },
+            },
+          });
+        } else if (partyResponse) {
+          const errorData = await partyResponse.json();
+          setError(errorData.error || "Failed to load invitation");
+          setLoading(false);
+          return;
+        }
+
+        const user = authResult.data?.user;
+
+        if (user && user.email) {
+          setAuthenticated(true);
+          setUserEmail(user.email);
+
+          // Check if user's email matches the invited email
+          if (partyData && user.email.toLowerCase() !== partyData.guest_email.toLowerCase()) {
+            setError("This invitation was sent to a different email address. Please use the email that received the invitation.");
+            setLoading(false);
+            return;
+          }
+
+          // Check if attendee profile exists
+          const { data: attendee } = await supabase
+            .from("attendees")
+            .select("id, name, surname, date_of_birth, gender, whatsapp, instagram_handle, user_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (attendee) {
+            // Profile exists - check if already joined
+            setExistingProfile({
+              name: attendee.name,
+              surname: attendee.surname,
+              date_of_birth: attendee.date_of_birth,
+              gender: attendee.gender as "male" | "female" | null,
+              whatsapp: attendee.whatsapp,
+              instagram_handle: attendee.instagram_handle,
+            });
+
+            // Check if already joined this party
+            const joinCheck = await fetch(`/api/table-party/join/${inviteToken}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({}),
+            });
+
+            if (joinCheck.ok) {
+              const joinData = await joinCheck.json();
+              setSuccess(true);
+              setGuestId(joinData.guest_id);
+              setQrToken(joinData.qr_token || "");
+            }
+          } else {
+            // No profile - show signup form
+            setShowSignup(true);
+          }
+        } else {
+          // Not authenticated - will show login prompt
+          setAuthenticated(false);
+        }
+      } catch (err: any) {
+        console.error("Error initializing page:", err);
+        setError(err.message || "Failed to load invitation");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (inviteToken) {
+      initializePage();
+    }
   }, [inviteToken]);
 
-  const loadPartyData = async () => {
+  const handleMagicLink = async (email: string) => {
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Verify email matches invitation
+    if (partyData && email.toLowerCase() !== partyData.guest_email.toLowerCase()) {
+      setError("This invitation was sent to a different email address. Please use the email that received the invitation.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     try {
-      setLoading(true);
-      setError(null);
+      const supabase = createBrowserClient();
+      const redirectUrl = new URL(window.location.origin);
+      redirectUrl.pathname = `/join-table/${inviteToken}`;
 
-      const response = await fetch(`/api/table-party/join/${inviteToken}`);
-      const data = await response.json();
+      const { error: magicError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: redirectUrl.toString(),
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to load invitation");
+      if (magicError) {
+        throw magicError;
       }
 
-      setPartyData(data);
-      setName(data.guest.name || "");
-
-      // If already joined, set joined state
-      if (data.guest.has_joined) {
-        setJoined(true);
-        setGuestId(data.guest.id);
-      }
+      setError("");
+      alert("Check your email for the magic link! Click it in the same browser to continue.");
     } catch (err: any) {
-      console.error("Error loading party:", err);
-      setError(err.message || "Failed to load invitation");
+      setError(err.message || "Failed to send magic link");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoin = async () => {
-    try {
-      setJoining(true);
-      setError(null);
+  const handleSignupSubmit = async (signupData: SignupData) => {
+    setLoading(true);
+    setError("");
 
-      const response = await fetch(`/api/table-party/join/${inviteToken}`, {
+    try {
+      const url = `/api/table-party/join/${inviteToken}`;
+
+      const requestBody: any = {
+        ...signupData,
+      };
+
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name || undefined,
-          phone: phone || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to join party");
+        throw new Error(result.error || "Failed to join party");
       }
 
-      setJoined(true);
-      setGuestId(data.guest_id);
+      setSuccess(true);
+      setGuestId(result.guest_id);
+      setQrToken(result.qr_token || "");
+      setShowSignup(false);
     } catch (err: any) {
       console.error("Error joining party:", err);
       setError(err.message || "Failed to join party");
     } finally {
-      setJoining(false);
+      setLoading(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-accent-primary" />
-          <p className="text-secondary">Loading invitation...</p>
+        <div className="text-center">
+          <LoadingSpinner className="mx-auto h-8 w-8" />
+          <p className="mt-4 text-secondary">Loading invitation...</p>
         </div>
       </div>
     );
   }
 
-  if (error || !partyData) {
+  if (error && !partyData) {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <Card className="max-w-sm w-full !p-8 text-center">
-          <div className="h-16 w-16 rounded-full bg-accent-error/20 flex items-center justify-center mx-auto mb-4">
-            <X className="h-8 w-8 text-accent-error" />
+        <div className="text-center max-w-md">
+          <div className="mx-auto w-16 h-16 bg-raised rounded-full flex items-center justify-center mb-4 border border-border-subtle">
+            <span className="text-accent-error text-2xl">✕</span>
           </div>
-          <h2 className="font-sans text-xl font-bold text-primary mb-2">
-            Invalid Invitation
-          </h2>
-          <p className="text-sm text-secondary mb-6">
-            {error || "This invitation link is invalid or has expired."}
-          </p>
-          <Button href="/" variant="secondary" className="w-full">
+          <h1 className="text-xl font-bold text-primary mb-2">Invalid Invitation</h1>
+          <p className="text-secondary mb-6">{error}</p>
+          <button
+            onClick={() => router.push("/")}
+            className="px-4 py-2 bg-active text-primary rounded-xl border border-border-subtle hover:border-border-strong transition-colors"
+          >
             Go Home
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show success state after joining
-  if (joined && guestId) {
-    return (
-      <div className="min-h-screen bg-void flex flex-col items-center justify-center px-4 py-12">
-        {/* Logo Badge */}
-        <div className="mb-6">
-          <div className="w-20 h-20 rounded-2xl bg-accent-success/20 border-2 border-accent-success/50 flex items-center justify-center">
-            <PartyPopper className="h-10 w-10 text-accent-success" />
-          </div>
+          </button>
         </div>
-
-        <h1 className="font-sans text-2xl font-bold text-primary mb-2">
-          You're In!
-        </h1>
-        <p className="text-secondary text-center mb-8 max-w-sm">
-          You've joined {partyData.booking.host_name}'s table at{" "}
-          <span className="text-primary font-medium">{partyData.event.name}</span>.
-          Check your email for your QR pass.
-        </p>
-
-        <Card className="max-w-sm w-full !p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted" />
-              <div>
-                <p className="text-primary font-medium">{partyData.event.date}</p>
-                <p className="text-sm text-secondary">{partyData.event.time}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <MapPin className="h-5 w-5 text-muted" />
-              <div>
-                <p className="text-primary font-medium">{partyData.venue.name}</p>
-                {partyData.venue.address && (
-                  <p className="text-sm text-secondary">{partyData.venue.address}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-muted" />
-              <div>
-                <p className="text-primary font-medium">
-                  {partyData.booking.table_name}
-                </p>
-                <p className="text-sm text-secondary">
-                  {partyData.booking.zone_name} • Hosted by {partyData.booking.host_name}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Button
-          onClick={() => router.push(`/table-pass/${guestId}`)}
-          className="mt-6 w-full max-w-sm"
-        >
-          View Your Pass
-        </Button>
-
-        <Link
-          href={`/e/${partyData.event.slug}`}
-          className="mt-4 text-sm text-accent-primary hover:underline"
-        >
-          View event details
-        </Link>
       </div>
     );
   }
 
-  // Show past event warning
-  if (partyData.event.is_past) {
+  if (success && guestId && partyData) {
+    return (
+      <RegistrationSuccess
+        eventName={partyData.event.name}
+        eventSlug={partyData.event.slug}
+        venueName={partyData.event.venue?.name || null}
+        venueSlug={partyData.event.venue?.slug || null}
+        startTime={partyData.event.start_time || null}
+        endTime={partyData.event.end_time || null}
+        qrToken={qrToken}
+        flierUrl={partyData.event.flier_url || null}
+        venueAddress={partyData.event.venue?.address || null}
+        showPhotoEmailNotice={partyData.event.show_photo_email_notice || false}
+        tablePartyGuestId={guestId}
+      />
+    );
+  }
+
+  if (showSignup && partyData) {
+    return (
+      <TypeformSignup
+        onSubmit={handleSignupSubmit}
+        isLoading={loading}
+        redirectUrl={`/join-table/${inviteToken}`}
+        onEmailVerified={() => {}}
+        eventSlug={partyData.event.slug}
+        existingProfile={existingProfile}
+        registrationCount={0}
+        eventName={partyData.event.name}
+        eventDetails={{
+          name: partyData.event.name,
+          venue: partyData.event.venue,
+          start_time: partyData.event.start_time,
+          end_time: partyData.event.end_time,
+          flier_url: partyData.event.flier_url,
+          show_photo_email_notice: partyData.event.show_photo_email_notice,
+        }}
+      />
+    );
+  }
+
+  // Show login prompt
+  if (!authenticated && partyData) {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <Card className="max-w-sm w-full !p-8 text-center">
-          <div className="h-16 w-16 rounded-full bg-accent-warning/20 flex items-center justify-center mx-auto mb-4">
-            <Calendar className="h-8 w-8 text-accent-warning" />
-          </div>
-          <h2 className="font-sans text-xl font-bold text-primary mb-2">
-            Event Has Passed
-          </h2>
-          <p className="text-sm text-secondary mb-6">
-            This event took place on {partyData.event.date}.
-            This invitation is no longer valid.
+        <div className="max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-primary mb-2">Join the Party</h1>
+          <p className="text-secondary mb-6">
+            You've been invited to join a table at <strong>{partyData.event.name}</strong>.
+            Please sign in or create an account to continue.
           </p>
-          <Button href="/" variant="secondary" className="w-full">
-            Go Home
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
-  // Show party full warning
-  if (partyData.booking.is_full) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
-        <Card className="max-w-sm w-full !p-8 text-center">
-          <div className="h-16 w-16 rounded-full bg-accent-warning/20 flex items-center justify-center mx-auto mb-4">
-            <Users className="h-8 w-8 text-accent-warning" />
-          </div>
-          <h2 className="font-sans text-xl font-bold text-primary mb-2">
-            Party is Full
-          </h2>
-          <p className="text-sm text-secondary mb-4">
-            {partyData.booking.host_name}'s table at {partyData.event.name} has reached its capacity of {partyData.booking.party_size} guests.
-          </p>
-          <p className="text-sm text-secondary mb-6">
-            Contact {partyData.booking.host_name} to request additional spots.
-          </p>
-          <Button href={`/e/${partyData.event.slug}`} variant="secondary" className="w-full">
-            View Event
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show invitation screen
-  return (
-    <div className="min-h-screen bg-void">
-      {/* Event Cover */}
-      {partyData.event.cover_image && (
-        <div className="relative h-48 overflow-hidden">
-          <img
-            src={partyData.event.cover_image}
-            alt={partyData.event.name}
-            className="w-full h-full object-cover opacity-50"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/80 to-void" />
-        </div>
-      )}
-
-      <div className="max-w-md mx-auto px-4 py-8 -mt-20 relative z-10">
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <Logo variant="tricolor" size="lg" iconOnly />
-        </div>
-
-        {/* Invitation Card */}
-        <Card className="!p-6 mb-6">
-          <div className="text-center mb-6">
-            <p className="text-sm text-accent-secondary font-medium mb-1">
-              You're invited to
-            </p>
-            <h1 className="font-sans text-2xl font-bold text-primary">
-              {partyData.booking.host_name}'s Table
-            </h1>
-            <p className="text-muted mt-1">
-              at {partyData.event.name}
-            </p>
-          </div>
-
-          <div className="space-y-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-accent-primary" />
-              </div>
-              <div>
-                <p className="text-primary font-medium">{partyData.event.date}</p>
-                <p className="text-sm text-secondary">{partyData.event.time}</p>
-              </div>
+          {magicLinkError && (
+            <div className="mb-4 p-3 rounded-lg bg-accent-error/10 border border-accent-error/30 text-accent-error text-sm">
+              {magicLinkError === "expired" ? "Magic link expired. Please request a new one." : "Error with magic link. Please try again."}
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center">
-                <MapPin className="h-5 w-5 text-accent-primary" />
-              </div>
-              <div>
-                <p className="text-primary font-medium">{partyData.venue.name}</p>
-                {partyData.venue.address && (
-                  <p className="text-sm text-secondary">{partyData.venue.address}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-accent-primary/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-accent-primary" />
-              </div>
-              <div>
-                <p className="text-primary font-medium">
-                  {partyData.booking.table_name}
-                </p>
-                <p className="text-sm text-secondary">
-                  {partyData.booking.zone_name} • {partyData.booking.spots_remaining} spot{partyData.booking.spots_remaining !== 1 ? 's' : ''} left
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Optional form fields */}
-          <div className="border-t border-border-subtle pt-6 space-y-4">
-            <p className="text-sm text-secondary mb-4">
-              Confirm your details to join the party:
-            </p>
-
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1">
-                Your Name
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-primary mb-1">
-                Phone (optional)
-              </label>
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Your phone number"
-              />
-            </div>
-
-            <p className="text-xs text-muted">
-              Invited as: {partyData.guest.email}
-            </p>
-          </div>
+          )}
 
           {error && (
-            <div className="mt-4 p-3 rounded-lg bg-accent-error/10 border border-accent-error/30 text-accent-error text-sm">
+            <div className="mb-4 p-3 rounded-lg bg-accent-error/10 border border-accent-error/30 text-accent-error text-sm">
               {error}
             </div>
           )}
 
-          <Button
-            onClick={handleJoin}
-            disabled={joining}
-            className="w-full mt-6"
-          >
-            {joining ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Joining...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4 mr-2" />
-                Accept Invitation
-              </>
-            )}
-          </Button>
-        </Card>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-primary mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={userEmail || ""}
+                onChange={(e) => setUserEmail(e.target.value)}
+                placeholder={partyData.guest_email}
+                className="w-full px-4 py-2 bg-raised border border-border-subtle rounded-xl text-primary placeholder-secondary focus:outline-none focus:border-accent-primary"
+                disabled={loading}
+              />
+              <p className="mt-2 text-xs text-secondary">
+                Use the email address that received the invitation: <strong>{partyData.guest_email}</strong>
+              </p>
+            </div>
 
-        <p className="text-center text-xs text-muted">
-          By joining, you agree to receive event updates via email.
-        </p>
+            <button
+              onClick={() => userEmail && handleMagicLink(userEmail)}
+              disabled={loading || !userEmail}
+              className="w-full px-4 py-3 bg-accent-primary text-white rounded-xl font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Sending..." : "Send Magic Link"}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

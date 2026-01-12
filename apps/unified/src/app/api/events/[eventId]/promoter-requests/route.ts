@@ -5,6 +5,7 @@ import { getUserRolesById } from "@crowdstack/shared/auth/roles";
 import { trackPromoterApproved } from "@/lib/analytics/server";
 
 // GET - Fetch promoter requests for an event
+// DISABLED: Promoter request feature has been removed
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
+  return NextResponse.json(
+    { error: "Promoter request feature has been disabled", requests: [] },
+    { status: 410 }
+  );
+  
+  /* DISABLED CODE - Feature removed
   try {
     const userId = await getUserId();
     if (!userId) {
@@ -96,13 +103,21 @@ export async function GET(
     console.error("Promoter requests API error:", error);
     return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+  */
 }
 
 // PATCH - Approve or decline a promoter request
+// DISABLED: Promoter request feature has been removed
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { eventId: string } }
 ) {
+  return NextResponse.json(
+    { error: "Promoter request feature has been disabled" },
+    { status: 410 }
+  );
+  
+  /* DISABLED CODE - Feature removed
   try {
     const userId = await getUserId();
     if (!userId) {
@@ -241,4 +256,5 @@ export async function PATCH(
     console.error("Promoter requests PATCH error:", error);
     return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+  */
 }

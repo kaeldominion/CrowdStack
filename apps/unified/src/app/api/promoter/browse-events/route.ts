@@ -4,10 +4,17 @@ import { getUserId } from "@/lib/auth/check-role";
 import { getUserPromoterId } from "@/lib/data/get-user-entity";
 
 // GET - Browse all upcoming events for promoters to request
+// DISABLED: Promoter request feature has been removed
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
+  return NextResponse.json(
+    { error: "Promoter request feature has been disabled" },
+    { status: 410 }
+  );
+  
+  /* DISABLED CODE - Feature removed
   try {
     const userId = await getUserId();
     if (!userId) {
@@ -85,6 +92,7 @@ export async function GET(request: NextRequest) {
     console.error("[Browse Events] Error:", error);
     return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
+  */
 }
 
 

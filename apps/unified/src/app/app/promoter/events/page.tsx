@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Card, Button, Badge, Tabs, TabsList, TabsTrigger, TabsContent, LoadingSpinner, Input } from "@crowdstack/ui";
-import { Calendar, Search, MapPin, Clock, Send, Check, X, Loader2, Radio, Copy, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Card, Button, LoadingSpinner } from "@crowdstack/ui";
+import { Calendar, MapPin, Clock, Check, Copy, ExternalLink, Radio } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -24,39 +24,9 @@ interface MyEvent {
   isPast: boolean;
 }
 
-interface BrowseEvent {
-  id: string;
-  name: string;
-  slug: string;
-  flier_url: string | null;
-  cover_image_url: string | null;
-  start_time: string;
-  end_time: string | null;
-  venue: { id: string; name: string; city: string | null } | null;
-  organizer: { id: string; name: string } | null;
-  promoter_status: "available" | "assigned" | "pending" | "declined";
-}
-
-interface PromoterRequest {
-  id: string;
-  message: string | null;
-  status: string;
-  response_message: string | null;
-  created_at: string;
-  event: {
-    id: string;
-    name: string;
-    slug: string;
-    flier_url: string | null;
-    start_time: string;
-    venue: { id: string; name: string } | null;
-  };
-}
 
 export default function PromoterEventsPage() {
-  const [activeTab, setActiveTab] = useState("my-events");
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   
   // My Events state
   const [myEvents, setMyEvents] = useState<{
@@ -65,20 +35,8 @@ export default function PromoterEventsPage() {
     pastEvents: MyEvent[];
   }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   
-  // Browse Events state
-  const [browseEvents, setBrowseEvents] = useState<BrowseEvent[]>([]);
-  const [browseLoading, setBrowseLoading] = useState(false);
-  
-  // Requests state
-  const [requests, setRequests] = useState<PromoterRequest[]>([]);
-  
   // UI state
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
-  const [requestingEventId, setRequestingEventId] = useState<string | null>(null);
-  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<BrowseEvent | null>(null);
-  const [requestMessage, setRequestMessage] = useState("");
 
   // Load my events
   const loadMyEvents = async () => {
@@ -97,52 +55,15 @@ export default function PromoterEventsPage() {
     }
   };
 
-  // Load browse events
-  const loadBrowseEvents = useCallback(async () => {
-    setBrowseLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      
-      const response = await fetch(`/api/promoter/browse-events?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setBrowseEvents(data.events || []);
-      }
-    } catch (error) {
-      console.error("Failed to load browse events:", error);
-    } finally {
-      setBrowseLoading(false);
-    }
-  }, [search]);
-
-  // Load requests
-  const loadRequests = async () => {
-    try {
-      const response = await fetch("/api/promoter/requests");
-      if (response.ok) {
-        const data = await response.json();
-        setRequests(data.requests || []);
-      }
-    } catch (error) {
-      console.error("Failed to load requests:", error);
-    }
-  };
 
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
-      await Promise.all([loadMyEvents(), loadRequests()]);
+      await loadMyEvents();
       setLoading(false);
     };
     loadInitialData();
   }, []);
-
-  useEffect(() => {
-    if (activeTab === "find-events") {
-      loadBrowseEvents();
-    }
-  }, [activeTab, loadBrowseEvents]);
 
   const copyLink = (eventId: string, link: string) => {
     navigator.clipboard.writeText(link);
@@ -150,67 +71,6 @@ export default function PromoterEventsPage() {
     setTimeout(() => setCopiedEventId(null), 2000);
   };
 
-  const handleRequestClick = (event: BrowseEvent) => {
-    setSelectedEvent(event);
-    setRequestMessage("");
-    setShowRequestModal(true);
-  };
-
-  const submitRequest = async () => {
-    if (!selectedEvent) return;
-    
-    setRequestingEventId(selectedEvent.id);
-    try {
-      const response = await fetch("/api/promoter/requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_id: selectedEvent.id,
-          message: requestMessage.trim() || null,
-        }),
-      });
-
-      if (response.ok) {
-        setBrowseEvents(prev => prev.map(e => 
-          e.id === selectedEvent.id 
-            ? { ...e, promoter_status: "pending" as const }
-            : e
-        ));
-        await loadRequests();
-        setShowRequestModal(false);
-      } else {
-        const data = await response.json();
-        alert(data.error || "Failed to submit request");
-      }
-    } catch (error) {
-      console.error("Failed to submit request:", error);
-      alert("Failed to submit request");
-    } finally {
-      setRequestingEventId(null);
-    }
-  };
-
-  const withdrawRequest = async (requestId: string) => {
-    setWithdrawingId(requestId);
-    try {
-      const response = await fetch("/api/promoter/requests", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ request_id: requestId, action: "withdraw" }),
-      });
-
-      if (response.ok) {
-        await Promise.all([loadBrowseEvents(), loadRequests()]);
-      } else {
-        const data = await response.json();
-        alert(data.error || "Failed to withdraw request");
-      }
-    } catch (error) {
-      console.error("Failed to withdraw:", error);
-    } finally {
-      setWithdrawingId(null);
-    }
-  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -229,7 +89,6 @@ export default function PromoterEventsPage() {
     });
   };
 
-  const pendingRequests = requests.filter(r => r.status === "pending");
   const totalMyEvents = myEvents.liveEvents.length + myEvents.upcomingEvents.length + myEvents.pastEvents.length;
 
   if (loading) {
@@ -250,44 +109,16 @@ export default function PromoterEventsPage() {
         </p>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-glass border border-border-subtle">
-          <TabsTrigger value="my-events" className="data-[state=active]:bg-active">
-            My Events
-            {totalMyEvents > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-active text-primary text-xs">
-                {totalMyEvents}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="find-events" className="data-[state=active]:bg-active">
-            Find Events
-          </TabsTrigger>
-          <TabsTrigger value="requests" className="data-[state=active]:bg-active">
-            Requests
-            {pendingRequests.length > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-accent-warning/20 text-accent-warning text-xs">
-                {pendingRequests.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* MY EVENTS TAB */}
-        <TabsContent value="my-events" className="mt-4 space-y-4">
+      {/* Events List */}
+      <div className="space-y-4">
           {totalMyEvents === 0 ? (
             <Card>
               <div className="p-8 text-center">
                 <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-primary mb-2">No events yet</h3>
                 <p className="text-secondary mb-4">
-                  Start by finding events to promote
+                  You'll see events here once you're assigned as a promoter
                 </p>
-                <Button onClick={() => setActiveTab("find-events")}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Find Events
-                </Button>
               </div>
             </Card>
           ) : (
@@ -467,338 +298,7 @@ export default function PromoterEventsPage() {
               )}
             </>
           )}
-        </TabsContent>
-
-        {/* FIND EVENTS TAB */}
-        <TabsContent value="find-events" className="mt-6 space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-            <Input
-              type="text"
-              placeholder="Search events by name or venue..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Events Grid */}
-          {browseLoading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="md" />
-            </div>
-          ) : browseEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
-              <p className="text-secondary">No upcoming events found</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {browseEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-glass border border-border-subtle rounded-xl overflow-hidden hover:border-accent-primary/30 transition-all group"
-                >
-                  {/* Clickable Event Image */}
-                  <Link href={`/e/${event.slug}`} target="_blank" className="block">
-                    <div className="relative aspect-[4/3] bg-void group-hover:opacity-90 transition-opacity">
-                      {event.flier_url || event.cover_image_url ? (
-                        <Image
-                          src={event.flier_url || event.cover_image_url || ""}
-                          alt={event.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Calendar className="h-12 w-12 text-muted" />
-                        </div>
-                      )}
-                      
-                      {/* Status Badge */}
-                      {event.promoter_status !== "available" && (
-                        <div className="absolute top-3 right-3">
-                          <Badge
-                            variant={
-                              event.promoter_status === "assigned"
-                                ? "success"
-                                : event.promoter_status === "pending"
-                                ? "warning"
-                                : "danger"
-                            }
-                          >
-                            {event.promoter_status === "assigned" && (
-                              <>
-                                <Check className="h-3 w-3 mr-1" />
-                                Promoting
-                              </>
-                            )}
-                            {event.promoter_status === "pending" && (
-                              <>
-                                <Clock className="h-3 w-3 mr-1" />
-                                Pending
-                              </>
-                            )}
-                            {event.promoter_status === "declined" && "Declined"}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-
-                  {/* Event Details */}
-                  <div className="p-4 space-y-3">
-                    <h3 className="font-semibold text-primary text-lg line-clamp-1">
-                      {event.name}
-                    </h3>
-
-                    <div className="space-y-1.5 text-sm text-secondary">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 flex-shrink-0" />
-                        <span>{formatDate(event.start_time)}</span>
-                      </div>
-                      {event.venue && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 flex-shrink-0" />
-                          <span className="line-clamp-1">
-                            {event.venue.name}
-                            {event.venue.city && `, ${event.venue.city}`}
-                          </span>
-                        </div>
-                      )}
-                      {event.organizer && (
-                        <div className="flex items-center gap-2 text-xs text-muted">
-                          by {event.organizer.name}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Button */}
-                    <div className="pt-2">
-                      {event.promoter_status === "available" && (
-                        <Button
-                          onClick={() => handleRequestClick(event)}
-                          disabled={requestingEventId === event.id}
-                          className="w-full"
-                        >
-                          {requestingEventId === event.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Send className="h-4 w-4 mr-2" />
-                          )}
-                          Request to Promote
-                        </Button>
-                      )}
-                      {event.promoter_status === "assigned" && (
-                        <Link href={`/app/promoter/events/${event.id}`}>
-                          <Button variant="secondary" className="w-full">
-                            Manage Promotion
-                          </Button>
-                        </Link>
-                      )}
-                      {event.promoter_status === "pending" && (
-                        <div className="text-center text-sm text-accent-warning py-2">
-                          <Clock className="h-4 w-4 inline mr-1" />
-                          Awaiting Response
-                        </div>
-                      )}
-                      {event.promoter_status === "declined" && (
-                        <div className="text-center text-sm text-accent-error py-2">
-                          Request Declined
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* REQUESTS TAB */}
-        <TabsContent value="requests" className="mt-6 space-y-6">
-          {requests.length === 0 ? (
-            <Card className="bg-glass border-border-subtle">
-              <div className="p-8 text-center">
-                <Send className="h-12 w-12 text-muted mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-primary mb-2">No requests yet</h3>
-                <p className="text-secondary mb-4">
-                  Find events and submit requests to promote them
-                </p>
-                <Button onClick={() => setActiveTab("find-events")}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Find Events
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {requests.map((request) => (
-                <Card key={request.id} className="bg-glass border-border-subtle">
-                  <div className="p-4">
-                    <div className="flex items-start gap-4">
-                      {request.event?.flier_url && (
-                        <Image
-                          src={request.event.flier_url}
-                          alt=""
-                          width={60}
-                          height={60}
-                          className="rounded object-cover flex-shrink-0"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-semibold text-primary">{request.event?.name}</h4>
-                            {request.event?.venue && (
-                              <p className="text-sm text-secondary mt-0.5">{request.event.venue.name}</p>
-                            )}
-                            <p className="text-xs text-muted mt-1">
-                              {formatShortDate(request.event?.start_time || "")}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={
-                              request.status === "pending"
-                                ? "warning"
-                                : request.status === "approved"
-                                ? "success"
-                                : "danger"
-                            }
-                            className={
-                              request.status === "pending"
-                                ? "bg-accent-warning/20 text-accent-warning"
-                                : request.status === "approved"
-                                ? "bg-accent-success/20 text-accent-success"
-                                : "bg-accent-error/20 text-accent-error"
-                            }
-                          >
-                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                          </Badge>
-                        </div>
-                        
-                        {request.message && (
-                          <p className="text-sm text-primary mt-2 line-clamp-2">
-                            &ldquo;{request.message}&rdquo;
-                          </p>
-                        )}
-                        
-                        {request.response_message && (
-                          <div className="mt-2 p-2 bg-glass rounded text-sm text-secondary">
-                            <span className="text-xs text-muted">Response: </span>
-                            {request.response_message}
-                          </div>
-                        )}
-                        
-                        <p className="text-xs text-muted mt-2">
-                          Requested {new Date(request.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {request.status === "pending" && (
-                      <div className="mt-4 pt-4 border-t border-border-subtle flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => withdrawRequest(request.id)}
-                          disabled={withdrawingId === request.id}
-                          className="text-secondary hover:text-accent-error"
-                        >
-                          {withdrawingId === request.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                          ) : (
-                            <X className="h-4 w-4 mr-1" />
-                          )}
-                          Withdraw Request
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {request.status === "approved" && (
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <Link href={`/app/promoter/events/${request.event?.id}`}>
-                          <Button size="sm" className="w-full">
-                            View Event
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Request Modal */}
-      {showRequestModal && selectedEvent && (
-        <div className="fixed inset-0 bg-void/60 backdrop-blur-glass flex items-center justify-center z-50 p-4">
-          <div className="bg-raised border border-border-strong rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-xl font-semibold text-primary">
-              Request to Promote
-            </h3>
-            
-            <div className="flex items-center gap-3 bg-glass rounded-lg p-3">
-              {selectedEvent.flier_url && (
-                <Image
-                  src={selectedEvent.flier_url}
-                  alt=""
-                  width={60}
-                  height={60}
-                  className="rounded object-cover"
-                />
-              )}
-              <div>
-                <p className="text-primary font-medium">{selectedEvent.name}</p>
-                <p className="text-secondary text-sm">
-                  {formatDate(selectedEvent.start_time)}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm text-secondary mb-2">
-                Message to organizer (optional)
-              </label>
-              <textarea
-                value={requestMessage}
-                onChange={(e) => setRequestMessage(e.target.value)}
-                placeholder="Introduce yourself, share your experience, or explain why you'd be a great promoter for this event..."
-                className="w-full h-32 bg-raised border border-border-subtle rounded-lg p-3 text-primary placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--accent-primary)]"
-              />
-            </div>
-
-            <p className="text-xs text-muted">
-              The event organizer will review your request and may contact you to discuss terms.
-            </p>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="secondary"
-                onClick={() => setShowRequestModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={submitRequest}
-                disabled={requestingEventId === selectedEvent.id}
-                className="flex-1"
-              >
-                {requestingEventId === selectedEvent.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Send className="h-4 w-4 mr-2" />
-                )}
-                Send Request
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

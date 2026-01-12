@@ -179,17 +179,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get venueId from query param (for admin) or from user's venue (for venue admin)
+    // Get venueId from query param or from user's selected venue
     const { searchParams } = new URL(request.url);
     const venueIdParam = searchParams.get("venueId");
     
+    // Get user's accessible venues to verify access
+    const { getUserVenueIds } = await import("@/lib/data/get-user-entity");
+    const userVenueIds = await getUserVenueIds();
+    
     let venueId: string | null = null;
     
-    if (venueIdParam && isSuperadmin) {
-      // Superadmin can access any venue via query param
-      venueId = venueIdParam;
-    } else if (isVenueAdmin) {
-      // Venue admin gets their own venue
+    if (venueIdParam) {
+      // Verify user has access to the requested venue
+      if (isSuperadmin || userVenueIds.includes(venueIdParam)) {
+        venueId = venueIdParam;
+      } else {
+        // User doesn't have access to requested venue, fall back to selected venue
+        console.warn(`[Venue Settings GET] User doesn't have access to venue ${venueIdParam}, falling back to selected venue`);
+        venueId = await getUserVenueId();
+      }
+    } else {
+      // No venueId in query param, use selected venue from cookie
       venueId = await getUserVenueId();
     }
     
@@ -288,17 +298,27 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get venueId from query param (for admin) or from user's venue (for venue admin)
+    // Get venueId from query param or from user's selected venue
     const { searchParams } = new URL(request.url);
     const venueIdParam = searchParams.get("venueId");
     
+    // Get user's accessible venues to verify access
+    const { getUserVenueIds } = await import("@/lib/data/get-user-entity");
+    const userVenueIds = await getUserVenueIds();
+    
     let venueId: string | null = null;
     
-    if (venueIdParam && isSuperadmin) {
-      // Superadmin can access any venue via query param
-      venueId = venueIdParam;
-    } else if (isVenueAdmin) {
-      // Venue admin gets their own venue
+    if (venueIdParam) {
+      // Verify user has access to the requested venue
+      if (isSuperadmin || userVenueIds.includes(venueIdParam)) {
+        venueId = venueIdParam;
+      } else {
+        // User doesn't have access to requested venue, fall back to selected venue
+        console.warn(`[Venue Settings PUT] User doesn't have access to venue ${venueIdParam}, falling back to selected venue`);
+        venueId = await getUserVenueId();
+      }
+    } else {
+      // No venueId in query param, use selected venue from cookie
       venueId = await getUserVenueId();
     }
     

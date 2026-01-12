@@ -119,7 +119,6 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
-  const [pendingPromoterRequests, setPendingPromoterRequests] = useState(0);
   const [djStats, setDJStats] = useState({
     mixesCount: 0,
     totalPlays: 0,
@@ -229,15 +228,6 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             });
           })
           .catch((e) => console.error("Failed to load organizer events:", e))
-      );
-      // Fetch pending promoter requests count
-      promises.push(
-        fetch("/api/organizer/promoter-requests")
-          .then((r) => r.json())
-          .then((data) => {
-            setPendingPromoterRequests(data.counts?.pending || 0);
-          })
-          .catch((e) => console.error("Failed to load promoter requests:", e))
       );
     }
 
@@ -756,27 +746,6 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             Event Management
           </h2>
 
-          {/* Pending Promoter Requests Alert - DISABLED: Promoter request feature is currently disabled */}
-          {false && pendingPromoterRequests > 0 && (
-            <Link href="/app/organizer/promoter-requests">
-              <div className="flex items-center justify-between p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/15 transition-colors cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">
-                      {pendingPromoterRequests} Pending Promoter Request{pendingPromoterRequests > 1 ? "s" : ""}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      Promoters want to promote your events
-                    </p>
-                  </div>
-                </div>
-                <ArrowUpRight className="h-5 w-5 text-yellow-400" />
-              </div>
-            </Link>
-          )}
 
           <div className="grid grid-cols-4 gap-2">
             <BentoCard className="[&>div]:!p-2">

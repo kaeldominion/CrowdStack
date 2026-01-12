@@ -100,12 +100,32 @@ export async function POST(
       throw payoutRunError;
     }
 
+    // Get table booking commissions for this event
+    const { data: tableCommissions } = await serviceSupabase
+      .from("table_booking_commissions")
+      .select("promoter_id, promoter_commission_amount")
+      .eq("event_id", params.eventId)
+      .not("promoter_id", "is", null);
+
+    // Aggregate table commissions by promoter
+    const tableCommissionsByPromoter: Record<string, { amount: number; count: number }> = {};
+    tableCommissions?.forEach((tc: any) => {
+      if (tc.promoter_id) {
+        if (!tableCommissionsByPromoter[tc.promoter_id]) {
+          tableCommissionsByPromoter[tc.promoter_id] = { amount: 0, count: 0 };
+        }
+        tableCommissionsByPromoter[tc.promoter_id].amount += parseFloat(tc.promoter_commission_amount || "0");
+        tableCommissionsByPromoter[tc.promoter_id].count += 1;
+      }
+    });
+
     // Calculate and create payout lines
     const payoutLines = [];
     for (const ep of eventPromoters) {
       const checkinsCount = promoterCheckins[ep.promoter_id] || 0;
       let commissionAmount = 0;
 
+      // Calculate check-in based commission
       if (ep.commission_type === "flat_per_head") {
         const perHead = ep.commission_config.flat_per_head || 0;
         commissionAmount = checkinsCount * perHead;
@@ -118,13 +138,21 @@ export async function POST(
         }
       }
 
+      // Add table booking commission
+      const tableCommission = tableCommissionsByPromoter[ep.promoter_id];
+      const tableCommissionAmount = tableCommission?.amount || 0;
+      const tablesCount = tableCommission?.count || 0;
+      const totalCommissionAmount = commissionAmount + tableCommissionAmount;
+
       const { data: payoutLine } = await serviceSupabase
         .from("payout_lines")
         .insert({
           payout_run_id: payoutRun.id,
           promoter_id: ep.promoter_id,
           checkins_count: checkinsCount,
-          commission_amount: commissionAmount,
+          commission_amount: totalCommissionAmount,
+          table_commission_amount: tableCommissionAmount,
+          tables_count: tablesCount,
         })
         .select()
         .single();

@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [passwordSent, setPasswordSent] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   useEffect(() => {
     loadUser();
@@ -55,8 +56,14 @@ export default function SettingsPage() {
   };
 
   const handlePasswordReset = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      setResetError("No email address found. Please contact support.");
+      return;
+    }
+    
     setSendingReset(true);
+    setResetError(null);
+    setPasswordSent(false);
 
     try {
       const supabase = createBrowserClient();
@@ -66,8 +73,9 @@ export default function SettingsPage() {
 
       if (error) throw error;
       setPasswordSent(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending reset:", error);
+      setResetError(error?.message || "Failed to send password reset email. Please try again.");
     } finally {
       setSendingReset(false);
     }
@@ -112,31 +120,50 @@ export default function SettingsPage() {
 
             <div className="p-6 space-y-4">
               {/* Password */}
-              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Key className="h-5 w-5 text-muted" />
-                  <div>
-                    <p className="text-primary font-medium">Password</p>
-                    <p className="text-sm text-muted">
-                      {user?.app_metadata?.provider === "email" 
-                        ? "Set via email login" 
-                        : "Logged in via magic link"}
-                    </p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Key className="h-5 w-5 text-muted" />
+                    <div>
+                      <p className="text-primary font-medium">Password</p>
+                      <p className="text-sm text-muted">
+                        {user?.app_metadata?.provider === "email" 
+                          ? "Set via email login" 
+                          : "Logged in via magic link"}
+                      </p>
+                    </div>
                   </div>
+                  {!passwordSent ? (
+                    <button
+                      onClick={handlePasswordReset}
+                      disabled={sendingReset || !user?.email}
+                      className="px-4 py-2 text-sm font-medium text-accent-secondary hover:text-accent-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sendingReset ? "Sending..." : "Reset Password"}
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-2 text-sm text-accent-success">
+                      <Check className="h-4 w-4" />
+                      Email sent!
+                    </span>
+                  )}
                 </div>
-                {!passwordSent ? (
-                  <button
-                    onClick={handlePasswordReset}
-                    disabled={sendingReset}
-                    className="px-4 py-2 text-sm font-medium text-accent-secondary hover:text-accent-secondary/80 transition-colors disabled:opacity-50"
-                  >
-                    {sendingReset ? "Sending..." : "Reset Password"}
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-2 text-sm text-accent-success">
-                    <Check className="h-4 w-4" />
-                    Email sent!
-                  </span>
+                {resetError && (
+                  <div className="flex items-start gap-2 p-3 bg-accent-error/10 border border-accent-error/20 rounded-lg">
+                    <AlertCircle className="h-4 w-4 text-accent-error mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-accent-error">{resetError}</p>
+                  </div>
+                )}
+                {passwordSent && (
+                  <div className="flex items-start gap-2 p-3 bg-accent-success/10 border border-accent-success/20 rounded-lg">
+                    <Check className="h-4 w-4 text-accent-success mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-accent-success">
+                      <p className="font-medium">Password reset email sent!</p>
+                      <p className="mt-1 text-accent-success/80">
+                        Check your email ({user?.email}) for instructions to reset your password.
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
 
