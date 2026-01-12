@@ -261,7 +261,12 @@ export default function BookingStatusPage() {
     waived: { color: "purple", label: "Waived", icon: Check },
   };
 
-  const currentStatus = statusConfig[booking.status] || statusConfig.pending;
+  // If payment is paid, show as confirmed (even if status is still pending)
+  // This handles cases where venue marks deposit as received but status hasn't been updated yet
+  const effectiveStatus = booking.payment_status === "paid" && booking.status === "pending" 
+    ? "confirmed" 
+    : booking.status;
+  const currentStatus = statusConfig[effectiveStatus] || statusConfig.pending;
   const currentPaymentStatus = paymentStatusConfig[booking.payment_status] || paymentStatusConfig.pending;
   const PaymentIcon = currentPaymentStatus.icon;
 
