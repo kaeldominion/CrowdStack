@@ -108,10 +108,10 @@ export function AttendeesDashboardList({
 
   return (
     <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
-      {/* Table Header */}
+      {/* Table Header - Responsive */}
       <div className={`grid gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] ${
         role === "promoter"
-          ? "grid-cols-[3fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
+          ? "grid-cols-[2fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
           : role === "admin"
           ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
           : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
@@ -121,7 +121,7 @@ export function AttendeesDashboardList({
         {role === "promoter" ? (
           <>
             <div className="text-center">Refs</div>
-            <div className="text-center">Soon</div>
+            <div className="text-center hidden sm:block">Soon</div>
             <div className="text-center">Ins</div>
           </>
         ) : role === "admin" ? (
@@ -140,7 +140,7 @@ export function AttendeesDashboardList({
             <div>Status</div>
           </>
         )}
-        <div>Last</div>
+        <div className="hidden sm:block">Last</div>
         {role !== "promoter" && <div className="text-center">{role !== "admin" ? "Set" : ""}</div>}
       </div>
 
@@ -174,7 +174,7 @@ export function AttendeesDashboardList({
                   key={attendee.id}
                   className={`grid gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
                     role === "promoter"
-                      ? "grid-cols-[3fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
+                      ? "grid-cols-[2fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
                       : role === "admin"
                       ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
                       : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
@@ -189,7 +189,7 @@ export function AttendeesDashboardList({
                   }}
                   onClick={() => onSelectAttendee?.(attendee)}
                 >
-                  {/* Name */}
+                  {/* Name - Mobile: More space, Desktop: Normal */}
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-xs font-medium text-[var(--text-primary)] truncate">
                       {displayName}
@@ -197,6 +197,12 @@ export function AttendeesDashboardList({
                     {attendee.instagram_handle && (
                       <span className="text-[10px] text-pink-500 truncate hidden sm:inline">
                         @{attendee.instagram_handle}
+                      </span>
+                    )}
+                    {/* Show contact on mobile below name if no instagram */}
+                    {!attendee.instagram_handle && (
+                      <span className="text-[10px] text-[var(--text-muted)] truncate sm:hidden">
+                        {attendee.email || attendee.phone || ""}
                       </span>
                     )}
                   </div>
@@ -216,8 +222,8 @@ export function AttendeesDashboardList({
                           </span>
                         )}
                       </div>
-                      {/* Upcoming */}
-                      <div className="text-center">
+                      {/* Upcoming - Hidden on mobile */}
+                      <div className="text-center hidden sm:block">
                         {(attendee.upcoming_signups || 0) > 0 && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
                             {attendee.upcoming_signups}
@@ -296,8 +302,8 @@ export function AttendeesDashboardList({
                     </>
                   )}
 
-                  {/* Last Event */}
-                  <div className="text-[10px] text-[var(--text-muted)]">
+                  {/* Last Event - Hidden on mobile */}
+                  <div className="hidden sm:block text-[10px] text-[var(--text-muted)]">
                     {formatDate(attendee.last_event_at || attendee.created_at)}
                   </div>
 

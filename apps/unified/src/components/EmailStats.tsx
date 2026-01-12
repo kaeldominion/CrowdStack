@@ -238,15 +238,15 @@ export function EmailStats({ eventId }: EmailStatsProps) {
               </div>
 
               <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
-                {/* Table Header */}
-                <div className="grid grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px] gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+                {/* Table Header - Responsive */}
+                <div className="grid gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] grid-cols-[2fr_1fr_40px_40px_40px_40px_24px] sm:grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px]">
                   <div>Recipient</div>
-                  <div>Subject</div>
-                  <div className="text-center">Sent</div>
+                  <div className="hidden sm:block">Subject</div>
+                  <div className="text-center hidden sm:block">Sent</div>
                   <div className="text-center">Delivered</div>
                   <div className="text-center">Opened</div>
-                  <div className="text-center">Clicked</div>
-                  <div className="text-center">Bounced</div>
+                  <div className="text-center hidden sm:block">Clicked</div>
+                  <div className="text-center hidden sm:block">Bounced</div>
                   <div></div>
                 </div>
 
@@ -273,7 +273,7 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                         return (
                           <div
                             key={email.id}
-                            className="grid grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px] gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer"
+                            className="grid gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer grid-cols-[2fr_1fr_40px_40px_40px_40px_24px] sm:grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px]"
                             style={{
                               position: "absolute",
                               top: 0,
@@ -284,22 +284,28 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                             }}
                             onClick={() => handleEmailClick(email.id)}
                           >
-                            {/* Recipient */}
-                            <div className="text-xs text-[var(--text-primary)] truncate">
-                              {email.recipient_email}
+                            {/* Recipient - Mobile: Full width, Desktop: 2fr */}
+                            <div className="min-w-0">
+                              <div className="text-xs text-[var(--text-primary)] truncate">
+                                {email.recipient_email}
+                              </div>
+                              {/* Show subject on mobile below recipient */}
+                              <div className="text-[10px] text-[var(--text-secondary)] truncate sm:hidden mt-0.5">
+                                {email.subject}
+                              </div>
                             </div>
-                            {/* Subject */}
-                            <div className="text-xs text-[var(--text-secondary)] truncate">
+                            {/* Subject - Hidden on mobile, shown on desktop */}
+                            <div className="hidden sm:block text-xs text-[var(--text-secondary)] truncate">
                               {email.subject}
                             </div>
-                            {/* Sent Date */}
-                            <div className="text-[10px] text-[var(--text-muted)] text-center">
+                            {/* Sent Date - Hidden on mobile */}
+                            <div className="hidden sm:block text-[10px] text-[var(--text-muted)] text-center">
                               {formatDateCompact(email.created_at)}
                             </div>
                             {/* Delivered */}
                             <div className="flex items-center justify-center">
                               {email.delivered_at ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" />
+                                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" title="Delivered" />
                               ) : (
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
@@ -307,20 +313,20 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                             {/* Opened */}
                             <div className="flex items-center justify-center">
                               {email.opened_at ? (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1" title={`Opened${(email.open_count ?? 0) > 1 ? ` ${email.open_count}x` : ""}`}>
                                   <Eye className="h-3.5 w-3.5 text-[var(--accent-secondary)]" />
                                   {(email.open_count ?? 0) > 1 && (
-                                    <span className="text-[10px] text-[var(--text-muted)]">{email.open_count}</span>
+                                    <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">{email.open_count}</span>
                                   )}
                                 </div>
                               ) : (
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
                             </div>
-                            {/* Clicked */}
-                            <div className="flex items-center justify-center">
+                            {/* Clicked - Hidden on mobile */}
+                            <div className="hidden sm:flex items-center justify-center">
                               {email.clicked_at ? (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1" title={`Clicked${(email.click_count ?? 0) > 1 ? ` ${email.click_count}x` : ""}`}>
                                   <MousePointerClick className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
                                   {(email.click_count ?? 0) > 1 && (
                                     <span className="text-[10px] text-[var(--text-muted)]">{email.click_count}</span>
@@ -330,10 +336,10 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
                             </div>
-                            {/* Bounced */}
-                            <div className="flex items-center justify-center">
+                            {/* Bounced - Hidden on mobile */}
+                            <div className="hidden sm:flex items-center justify-center">
                               {email.bounced_at ? (
-                                <AlertCircle className="h-3.5 w-3.5 text-[var(--accent-error)]" />
+                                <AlertCircle className="h-3.5 w-3.5 text-[var(--accent-error)]" title={`Bounced: ${email.bounce_reason || "Unknown"}`} />
                               ) : (
                                 <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
