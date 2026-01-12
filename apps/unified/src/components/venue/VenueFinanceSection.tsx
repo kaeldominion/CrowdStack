@@ -61,8 +61,9 @@ export function VenueFinanceSection() {
   };
 
   return (
-    <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "payments" | "templates")}>
+    <>
+      <div className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "payments" | "templates")}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="payments">Payment Setup</TabsTrigger>
             <TabsTrigger value="templates">Payout Templates</TabsTrigger>
@@ -223,7 +224,7 @@ export function VenueFinanceSection() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
