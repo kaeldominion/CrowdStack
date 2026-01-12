@@ -28,17 +28,26 @@ export async function GET(
 
     const serviceSupabase = createServiceRoleClient();
 
-    // First, do a simple direct query to verify the status field
+    // CRITICAL: Use a simple direct query for status fields to avoid any PostgREST
+    // field collision issues with nested relations (events also has a status column)
     const { data: directBooking, error: directError } = await serviceSupabase
       .from("table_bookings")
       .select("id, status, payment_status, deposit_received, updated_at")
       .eq("id", bookingId)
       .single();
-    
+
     console.log(`[Booking API] Direct query result for ${bookingId}:`, JSON.stringify(directBooking, null, 2));
     if (directError) {
       console.error(`[Booking API] Direct query error:`, directError);
+      return NextResponse.json(
+        { error: "Booking not found" },
+        { status: 404 }
+      );
     }
+
+    // Store the authoritative status values from direct query
+    const authoritativeStatus = directBooking.status;
+    const authoritativePaymentStatus = directBooking.payment_status;
 
     // Get booking with related data
     const { data: booking, error: bookingError } = await serviceSupabase
@@ -96,20 +105,16 @@ export async function GET(
       );
     }
 
-    // Log the actual status values for debugging - log the FULL booking object to see everything
-    console.log(`[Booking API] Full booking object from DB query:`, JSON.stringify({
-      id: booking.id,
-      status: booking.status,
-      payment_status: booking.payment_status,
-      deposit_received: (booking as any).deposit_received,
-      updated_at: (booking as any).updated_at,
-    }, null, 2));
-    console.log(`[Booking API] Raw booking.status type:`, typeof booking.status, `value:`, booking.status);
-    
-    // Also log what we're about to return
-    const responseStatus = booking.status;
-    const responsePaymentStatus = booking.payment_status || "not_required";
-    console.log(`[Booking API] Returning - status: ${responseStatus}, payment_status: ${responsePaymentStatus}`);
+    // Log both query results to compare - this helps debug any PostgREST field collision issues
+    console.log(`[Booking API] Comparing status values:`, {
+      directQuery: { status: authoritativeStatus, payment_status: authoritativePaymentStatus },
+      nestedQuery: { status: booking.status, payment_status: booking.payment_status },
+      match: authoritativeStatus === booking.status && authoritativePaymentStatus === booking.payment_status,
+    });
+
+    // IMPORTANT: Always use the authoritative values from the direct query
+    // The nested query with events() relation can sometimes have field collision issues
+    console.log(`[Booking API] Returning AUTHORITATIVE status: ${authoritativeStatus}, payment_status: ${authoritativePaymentStatus}`);
 
     // Type assertions for nested data
     const event = booking.event as any;
@@ -152,8 +157,9 @@ export async function GET(
     const currencySymbol = getCurrencySymbol(currency);
 
     // For confirmed/paid bookings, fetch/create party data
+    // Use authoritative status values from direct query
     let partyData = null;
-    if (booking.status === "confirmed" || booking.payment_status === "paid") {
+    if (authoritativeStatus === "confirmed" || authoritativePaymentStatus === "paid") {
       // Get existing party guests
       const { data: partyGuests } = await serviceSupabase
         .from("table_party_guests")
@@ -257,8 +263,9 @@ export async function GET(
       {
         booking: {
           id: booking.id,
-          status: booking.status,
-          payment_status: booking.payment_status || "not_required",
+          // CRITICAL: Use authoritative status from direct query to avoid PostgREST field collision
+          status: authoritativeStatus,
+          payment_status: authoritativePaymentStatus || "not_required",
           guest_name: booking.guest_name,
           guest_email: booking.guest_email,
           party_size: booking.party_size,
@@ -296,9 +303,17 @@ export async function GET(
       },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          // Aggressive cache prevention for all layers (browser, CDN, proxy)
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
           'Pragma': 'no-cache',
           'Expires': '0',
+          // Prevent CDN/edge caching (Vercel, Cloudflare, etc.)
+          'Surrogate-Control': 'no-store',
+          'CDN-Cache-Control': 'no-store',
+          // Vary on everything to prevent any response caching
+          'Vary': '*',
+          // Add timestamp to prove fresh response
+          'X-Response-Time': new Date().toISOString(),
         },
       }
     );
