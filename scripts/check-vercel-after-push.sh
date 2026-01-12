@@ -12,11 +12,23 @@ CHECK_INTERVAL=10  # Check every 10 seconds
 echo "🔍 Checking Vercel build status for $PROJECT_NAME..."
 echo ""
 
-# Get the latest deployment
-LATEST_DEPLOYMENT=$(vercel ls $PROJECT_NAME 2>&1 | awk 'NR==4 {print $3}')
+# Wait a bit for deployment to appear
+echo "⏳ Waiting for deployment to appear..."
+sleep 15
+
+# Get the latest deployment (try multiple times)
+for i in {1..5}; do
+  LATEST_DEPLOYMENT=$(vercel ls $PROJECT_NAME 2>&1 | awk 'NR==4 {print $3}' | grep -E "^https://" || echo "")
+  if [ -n "$LATEST_DEPLOYMENT" ]; then
+    break
+  fi
+  echo "   Retrying... ($i/5)"
+  sleep 5
+done
 
 if [ -z "$LATEST_DEPLOYMENT" ]; then
-  echo "❌ Could not find latest deployment"
+  echo "❌ Could not find latest deployment after multiple attempts"
+  echo "💡 Try running manually: vercel ls $PROJECT_NAME"
   exit 1
 fi
 
