@@ -338,8 +338,9 @@ export default function AdminEmailsPage() {
 
       {/* Emails Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <InlineSpinner size="lg" text="Loading emails..." />
+        <div className="flex flex-col items-center justify-center py-12">
+          <InlineSpinner size="lg" />
+          <p className="mt-4 text-sm text-[var(--text-secondary)]">Loading emails...</p>
         </div>
       ) : emails.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-secondary)]">
