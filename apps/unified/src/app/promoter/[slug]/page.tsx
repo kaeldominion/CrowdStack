@@ -6,6 +6,8 @@ import { PromoterProfileClient } from "./PromoterProfileClient";
 
 // Force dynamic to ensure fresh data when promoter profiles are updated
 export const dynamic = 'force-dynamic';
+// Disable all caching - this is critical for profile pages
+export const revalidate = 0;
 
 interface Props {
   params: { slug: string };
@@ -198,11 +200,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PromoterProfilePage({ params }: Props) {
+  // Add timestamp to force cache invalidation - this ensures each request is unique
+  const timestamp = Date.now();
   const data = await getPromoter(params.slug);
 
   if (!data || !data.promoter) {
     notFound();
   }
 
-  return <PromoterProfileClient slug={params.slug} promoterId={data.promoter.id} initialData={data} />;
+  // Pass timestamp to client to ensure fresh data
+  return <PromoterProfileClient slug={params.slug} promoterId={data.promoter.id} initialData={data} cacheBuster={timestamp} />;
 }

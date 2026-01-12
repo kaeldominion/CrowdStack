@@ -77,9 +77,10 @@ interface PromoterProfileClientProps {
     past_events: PastEvent[];
     stats: Stats;
   };
+  cacheBuster?: number;
 }
 
-export function PromoterProfileClient({ slug, promoterId, initialData }: PromoterProfileClientProps) {
+export function PromoterProfileClient({ slug, promoterId, initialData, cacheBuster }: PromoterProfileClientProps) {
   const [promoter, setPromoter] = useState<Promoter | null>(initialData?.promoter || null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>(initialData?.upcoming_events || []);
   const [pastEvents, setPastEvents] = useState<PastEvent[]>(initialData?.past_events || []);
@@ -92,15 +93,9 @@ export function PromoterProfileClient({ slug, promoterId, initialData }: Promote
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // If we have initial data from server, skip the API fetch
-    if (initialData) {
-      setLoading(false);
-      return;
-    }
-
-    const loadProfile = async () => {
+    // Always check ownership (even with initialData)
+    const checkOwnership = async () => {
       try {
-        // Check if current user owns this profile
         const supabase = createBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -115,13 +110,34 @@ export function PromoterProfileClient({ slug, promoterId, initialData }: Promote
             setIsOwner(true);
           }
         }
+      } catch (error) {
+        console.error("Failed to check ownership:", error);
+      }
+    };
 
-        // Load profile data with cache-busting (fallback if no initial data)
-        const timestamp = new Date().getTime();
-        const response = await fetch(`/api/promoters/by-slug/${slug}?t=${timestamp}`, {
+    // If we have initial data from server, use it immediately
+    if (initialData) {
+      setPromoter(initialData.promoter);
+      setUpcomingEvents(initialData.upcoming_events);
+      setPastEvents(initialData.past_events);
+      setStats(initialData.stats);
+      setLoading(false);
+      checkOwnership();
+      return;
+    }
+
+    // Fallback: Load from API if no initial data (shouldn't happen with our fix)
+    const loadProfile = async () => {
+      try {
+        await checkOwnership();
+
+        // Load profile data with aggressive cache-busting
+        const timestamp = cacheBuster || new Date().getTime();
+        const response = await fetch(`/api/promoters/by-slug/${slug}?t=${timestamp}&_cb=${timestamp}`, {
           cache: 'no-store',
           headers: {
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
           },
         });
         if (response.ok) {
@@ -139,7 +155,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData }: Promote
     };
 
     loadProfile();
-  }, [slug, promoterId, initialData]);
+  }, [slug, promoterId, initialData, cacheBuster]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
