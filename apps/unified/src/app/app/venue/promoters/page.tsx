@@ -61,7 +61,14 @@ export default function VenuePromotersPage() {
   const loadPromoters = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/venue/promoters");
+      // Add cache busting timestamp to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`/api/venue/promoters?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (!response.ok) throw new Error("Failed to load promoters");
       const data = await response.json();
       setPromoters(data.promoters || []);

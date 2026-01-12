@@ -234,18 +234,32 @@ export async function GET(request: NextRequest) {
       .order("tag_type", { ascending: true })
       .order("tag_value", { ascending: true });
 
-    return NextResponse.json({
-      venue: {
-        ...venue,
-        gallery: gallery || [],
-        tags: tags || [],
+    return NextResponse.json(
+      {
+        venue: {
+          ...venue,
+          gallery: gallery || [],
+          tags: tags || [],
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Failed to fetch venue settings:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch venue settings" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }
@@ -462,18 +476,32 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      venue: {
-        ...venue,
-        gallery: gallery || [],
-        tags: tags || [],
+    return NextResponse.json(
+      {
+        venue: {
+          ...venue,
+          gallery: gallery || [],
+          tags: tags || [],
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Failed to update venue settings:", error);
     return NextResponse.json(
       { error: error.message || "Failed to update venue settings" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }

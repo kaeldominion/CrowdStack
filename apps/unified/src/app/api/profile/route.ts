@@ -54,16 +54,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Return profile data (or null if attendee doesn't exist yet)
-    return NextResponse.json({ 
-      attendee: attendee || null,
-      email: user.email,
-      registrationCount,
-    });
+    return NextResponse.json(
+      { 
+        attendee: attendee || null,
+        email: user.email,
+        registrationCount,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error fetching profile:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch profile" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }
@@ -198,7 +212,16 @@ export async function PATCH(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ attendee: updated });
+      return NextResponse.json(
+        { attendee: updated },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
+      );
     } else {
       // Create new attendee record
       // Phone and whatsapp are optional now
@@ -239,13 +262,27 @@ export async function PATCH(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ attendee: created });
+      return NextResponse.json(
+        { attendee: created },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        }
+      );
     }
   } catch (error: any) {
     console.error("Error updating profile:", error);
     return NextResponse.json(
       { error: error.message || "Failed to update profile" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }

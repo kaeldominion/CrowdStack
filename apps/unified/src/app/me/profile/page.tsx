@@ -59,8 +59,14 @@ export default function ProfilePage() {
 
       setUser(authUser);
 
-      // Try to get attendee profile
-      const profileResponse = await fetch("/api/profile");
+      // Try to get attendee profile with cache busting
+      const timestamp = Date.now();
+      const profileResponse = await fetch(`/api/profile?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         const attendee = profileData.attendee;

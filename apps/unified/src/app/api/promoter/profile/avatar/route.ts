@@ -91,7 +91,16 @@ export async function POST(request: NextRequest) {
       .update({ profile_image_url: avatarUrl })
       .eq("id", promoter.id);
 
-    return NextResponse.json({ avatar_url: avatarUrl });
+    return NextResponse.json(
+      { avatar_url: avatarUrl },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error uploading promoter avatar:", error);
     return NextResponse.json(
@@ -146,7 +155,16 @@ export async function DELETE(request: NextRequest) {
       .update({ profile_image_url: null })
       .eq("id", promoter.id);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error deleting promoter avatar:", error);
     return NextResponse.json(

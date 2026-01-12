@@ -166,12 +166,26 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ promoters: promotersWithStats });
+    return NextResponse.json(
+      { promoters: promotersWithStats },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error fetching organizer promoters:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch promoters" },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }

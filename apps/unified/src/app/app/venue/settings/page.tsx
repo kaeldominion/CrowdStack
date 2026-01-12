@@ -54,8 +54,19 @@ export default function VenueSettingsPage() {
 
   const loadSettings = async () => {
     try {
-      const url = venueId ? `/api/venue/settings?venueId=${venueId}` : "/api/venue/settings";
-      const response = await fetch(url);
+      // Add cache busting timestamp to ensure fresh data
+      const timestamp = Date.now();
+      const url = venueId 
+        ? `/api/venue/settings?venueId=${venueId}&_t=${timestamp}` 
+        : `/api/venue/settings?_t=${timestamp}`;
+      
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+      
       if (!response.ok) throw new Error("Failed to load settings");
       const result = await response.json();
       // Handle nested structure from API

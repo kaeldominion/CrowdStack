@@ -41,11 +41,17 @@ export default function PromoterProfilePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: promoter } = await supabase
+      // Add cache busting by using a timestamp query parameter
+      // This ensures we always get fresh data
+      const { data: promoter, error } = await supabase
         .from("promoters")
         .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
         .eq("created_by", user.id)
         .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
       if (promoter) {
         setProfile(promoter);
@@ -100,10 +106,8 @@ export default function PromoterProfilePage() {
         throw new Error(data.error || "Failed to upload avatar");
       }
 
-      // Update local state with new avatar URL
-      if (profile) {
-        setProfile({ ...profile, profile_image_url: data.avatar_url });
-      }
+      // Reload profile to get fresh data from database
+      await loadProfile();
 
       // Reset file input
       if (fileInputRef.current) {
@@ -132,10 +136,8 @@ export default function PromoterProfilePage() {
         throw new Error(data.error || "Failed to delete avatar");
       }
 
-      // Update local state
-      if (profile) {
-        setProfile({ ...profile, profile_image_url: null });
-      }
+      // Reload profile to get fresh data from database
+      await loadProfile();
     } catch (err: any) {
       setErrors({ avatar: err.message || "Failed to delete avatar" });
     } finally {
@@ -190,6 +192,9 @@ export default function PromoterProfilePage() {
         throw error;
       }
 
+      // Reload profile to get fresh data from database
+      await loadProfile();
+      
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error: any) {
