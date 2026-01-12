@@ -410,6 +410,7 @@ pre {
 button,
 a {
   transition: all var(--duration-fast) var(--ease-default);
+  font-family: inherit;
 }
 
 /* Smooth transitions for interactive elements */

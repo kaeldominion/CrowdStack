@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 type Theme = "dark" | "light";
 
@@ -17,21 +18,35 @@ const THEME_STORAGE_KEY = "crowdstack-theme";
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   // Initialize theme from localStorage or default to dark
+  // Force dark mode on landing page (logged out)
   useEffect(() => {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    const initialTheme = stored === "light" || stored === "dark" ? stored : "dark";
-    setThemeState(initialTheme);
+    const isLandingPage = pathname === '/' || pathname === '';
+    
+    if (isLandingPage) {
+      // Force dark mode on landing page, ignore localStorage
+      setThemeState("dark");
+    } else {
+      const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
+      const initialTheme = stored === "light" || stored === "dark" ? stored : "dark";
+      setThemeState(initialTheme);
+    }
     setMounted(true);
-  }, []);
+  }, [pathname]);
 
   // Apply theme to document
   useEffect(() => {
     if (!mounted) return;
     
+    const isLandingPage = pathname === '/' || pathname === '';
+    
+    // Force dark mode on landing page
+    const effectiveTheme = isLandingPage ? "dark" : theme;
+    
     const root = document.documentElement;
-    if (theme === "light") {
+    if (effectiveTheme === "light") {
       root.setAttribute("data-theme", "light");
       root.classList.remove("dark");
     } else {
@@ -39,9 +54,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.add("dark");
     }
     
-    // Store in localStorage
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme, mounted]);
+    // Store in localStorage (but don't store landing page override)
+    if (!isLandingPage) {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }
+  }, [theme, mounted, pathname]);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);

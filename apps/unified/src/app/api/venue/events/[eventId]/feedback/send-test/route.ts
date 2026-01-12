@@ -6,7 +6,7 @@ import { sendFeedbackRequest } from "@crowdstack/shared/email/feedback-request";
 
 /**
  * POST /api/venue/events/[eventId]/feedback/send-test
- * Manually send a feedback request email to a specific attendee (for testing)
+ * Manually send a feedback request email to a specific attendee
  * Venue admins only
  */
 export const dynamic = "force-dynamic";
@@ -150,7 +150,7 @@ export async function POST(
       },
     });
   } catch (error: any) {
-    console.error("[Send Test Feedback] Error:", error);
+    console.error("[Send Manual Feedback Request] Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Badge, Button, LoadingSpinner, useToast, Select } from "@crowdstack/ui";
-import { Star, TrendingUp, AlertCircle, MessageSquare, Send, TestTube } from "lucide-react";
+import { Star, TrendingUp, AlertCircle, MessageSquare, Send, CheckCircle2, XCircle } from "lucide-react";
 
 interface FeedbackItem {
   id: string;
@@ -13,6 +13,8 @@ interface FeedbackItem {
   free_text?: string | null;
   submitted_at: string;
   attendee_name?: string | null;
+  resolved_at?: string | null;
+  internal_notes?: string | null;
 }
 
 interface EventFeedbackStats {
@@ -96,21 +98,17 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
   const loadTestAttendees = async () => {
     setLoadingAttendees(true);
     try {
-      const response = await fetch(`/api/events/${eventId}/attendees?status=checked_in`);
+      const response = await fetch(`/api/venue/events/${eventId}/feedback/test-attendees`);
       if (!response.ok) {
         throw new Error("Failed to load attendees");
       }
       const data = await response.json();
-      // Filter to only attendees with email and user_id (required for feedback)
-      const eligibleAttendees = (data.attendees || []).filter(
-        (a: any) => a.email && a.checked_in
-      );
-      setTestAttendees(eligibleAttendees);
+      setTestAttendees(data.attendees || []);
     } catch (error) {
       console.error("Error loading attendees:", error);
       toast({
         title: "Error",
-        description: "Failed to load attendees for testing.",
+        description: "Failed to load attendees.",
         variant: "error",
       });
     } finally {
@@ -142,21 +140,21 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to send test feedback request");
+        throw new Error(data.error || "Failed to send feedback request");
       }
 
       const data = await response.json();
       toast({
-        title: "Success!",
-        description: `Feedback request sent to ${data.attendee.email}. Email logged in email_send_logs.`,
+        title: "Feedback Request Sent",
+        description: `Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`,
         variant: "success",
       });
       setSelectedRegistrationId("");
     } catch (error: any) {
-      console.error("Error sending test feedback:", error);
+      console.error("Error sending feedback request:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send test feedback request",
+        description: error.message || "Failed to send feedback request",
         variant: "error",
       });
     } finally {
@@ -199,17 +197,17 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
 
   return (
     <div className="space-y-6">
-      {/* Test Section */}
+      {/* Manual Feedback Request Section */}
       <Card>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <TestTube className="h-5 w-5" />
-                Test Feedback Request
+                <Send className="h-5 w-5" />
+                Send Feedback Request
               </h3>
               <p className="text-sm text-secondary mt-1">
-                Manually send a feedback request email to test the system. Emails are automatically logged to email_send_logs.
+                Manually send a feedback request email to a checked-in attendee. Emails are automatically logged to email_send_logs.
               </p>
             </div>
             <Button
@@ -222,7 +220,7 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
                 }
               }}
             >
-              {showTestSection ? "Hide" : "Show Test"}
+              {showTestSection ? "Hide" : "Send Request"}
             </Button>
           </div>
 
@@ -267,11 +265,11 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
                     variant="primary"
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Send Test Feedback Request
+                    Send Feedback Request
                   </Button>
                   <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                     <p className="text-xs text-blue-300">
-                      <strong>Note:</strong> The email will be sent immediately and logged to the email management system (email_send_logs table). 
+                      <strong>Note:</strong> The feedback request email will be sent immediately and logged to the email management system (email_send_logs table). 
                       You can view email stats in the Email Stats tab.
                     </p>
                   </div>
@@ -392,82 +390,253 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
           <h3 className="text-lg font-semibold mb-4">Individual Feedback</h3>
           <div className="space-y-4">
             {feedback.feedback_items.map((item) => (
-              <div
+              <FeedbackItemCard
                 key={item.id}
-                className="border border-border-subtle rounded-lg p-4 hover:bg-secondary/5 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-4 w-4 ${
-                              star <= item.rating
-                                ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <Badge
-                        variant={item.feedback_type === "positive" ? "success" : "warning"}
-                      >
-                        {item.feedback_type === "positive" ? "Positive" : "Negative"}
-                      </Badge>
-                      {item.attendee_name && (
-                        <span className="text-sm text-secondary">
-                          from {item.attendee_name}
-                        </span>
-                      )}
-                      <span className="text-xs text-secondary">
-                        {new Date(item.submitted_at).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {item.comment && (
-                      <p className="text-sm text-primary mb-2">{item.comment}</p>
-                    )}
-
-                    {item.categories.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {item.categories.map((cat) => (
-                          <Badge key={cat} variant="outline" size="sm">
-                            {cat.replace(/_/g, " ")}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {item.free_text && (
-                      <div>
-                        {expandedItems.has(item.id) ? (
-                          <p className="text-sm text-primary">{item.free_text}</p>
-                        ) : (
-                          <p className="text-sm text-primary line-clamp-2">
-                            {item.free_text}
-                          </p>
-                        )}
-                        {item.free_text.length > 100 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleExpand(item.id)}
-                            className="mt-1"
-                          >
-                            {expandedItems.has(item.id) ? "Show less" : "Show more"}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+                item={item}
+                eventId={eventId}
+                onUpdate={() => {
+                  // Reload feedback
+                  const loadFeedback = async () => {
+                    try {
+                      const response = await fetch(`/api/venue/events/${eventId}/feedback`);
+                      if (!response.ok) {
+                        throw new Error("Failed to load feedback");
+                      }
+                      const data = await response.json();
+                      setFeedback(data.feedback);
+                    } catch (error) {
+                      console.error("Error loading feedback:", error);
+                    }
+                  };
+                  loadFeedback();
+                }}
+              />
             ))}
           </div>
         </div>
       </Card>
+    </div>
+  );
+}
+
+function FeedbackItemCard({ 
+  item, 
+  eventId,
+  onUpdate 
+}: { 
+  item: FeedbackItem; 
+  eventId: string;
+  onUpdate: () => void;
+}) {
+  const [showNotes, setShowNotes] = useState(false);
+  const [notes, setNotes] = useState(item.internal_notes || "");
+  const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const { toast } = useToast();
+
+  const handleMarkResolved = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/venue/feedback/${item.id}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolved: !item.resolved_at }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update feedback");
+      }
+
+      toast({
+        title: "Success",
+        description: item.resolved_at 
+          ? "Feedback marked as unresolved" 
+          : "Feedback marked as resolved",
+        variant: "success",
+      });
+
+      onUpdate();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update feedback",
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/venue/feedback/${item.id}/notes`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save notes");
+      }
+
+      toast({
+        title: "Success",
+        description: "Internal notes saved",
+        variant: "success",
+      });
+
+      setShowNotes(false);
+      onUpdate();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save notes",
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-border-subtle rounded-lg p-4 hover:bg-secondary/5 transition-colors">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-4 w-4 ${
+                    star <= item.rating
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-gray-300"
+                  }`}
+                />
+              ))}
+            </div>
+            <Badge
+              variant={item.feedback_type === "positive" ? "success" : "warning"}
+            >
+              {item.feedback_type === "positive" ? "Positive" : "Negative"}
+            </Badge>
+            {item.resolved_at ? (
+              <Badge variant="success" className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Resolved
+              </Badge>
+            ) : (
+              <Badge variant="warning" className="flex items-center gap-1">
+                <XCircle className="h-3 w-3" />
+                Unresolved
+              </Badge>
+            )}
+            {item.attendee_name && (
+              <span className="text-sm text-secondary">
+                from {item.attendee_name}
+              </span>
+            )}
+            <span className="text-xs text-secondary">
+              {new Date(item.submitted_at).toLocaleDateString()}
+            </span>
+          </div>
+
+          {item.comment && (
+            <p className="text-sm text-primary mb-2">{item.comment}</p>
+          )}
+
+          {item.categories.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {item.categories.map((cat) => (
+                <Badge key={cat} variant="outline" size="sm">
+                  {cat.replace(/_/g, " ")}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {item.free_text && (
+            <div>
+              {expanded ? (
+                <p className="text-sm text-primary">{item.free_text}</p>
+              ) : (
+                <p className="text-sm text-primary line-clamp-2">
+                  {item.free_text}
+                </p>
+              )}
+              {item.free_text.length > 100 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpanded(!expanded)}
+                  className="mt-1"
+                >
+                  {expanded ? "Show less" : "Show more"}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {item.internal_notes && !showNotes && (
+            <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
+              <strong>Internal Notes:</strong> {item.internal_notes}
+            </div>
+          )}
+
+          {showNotes && (
+            <div className="mt-2 space-y-2">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add internal notes (not visible to attendees)..."
+                className="w-full p-2 border border-border-subtle rounded text-sm"
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleSaveNotes}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  Save Notes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowNotes(false);
+                    setNotes(item.internal_notes || "");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 ml-4">
+          <Button
+            size="sm"
+            variant={item.resolved_at ? "secondary" : "primary"}
+            onClick={handleMarkResolved}
+            disabled={saving}
+            loading={saving}
+          >
+            {item.resolved_at ? "Mark Unresolved" : "Mark Resolved"}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setShowNotes(!showNotes)}
+          >
+            {showNotes ? "Cancel" : item.internal_notes ? "Edit Notes" : "Add Notes"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Music,
   Briefcase,
+  MessageSquare,
 } from "lucide-react";
 
 export interface NavItem {
@@ -76,6 +77,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Guest Flags",
     href: "/app/venue/guests/flags",
     icon: Ticket,
+    roles: ["venue_admin"],
+  },
+  {
+    label: "Venue Pulse",
+    href: "/app/venue/feedback",
+    icon: MessageSquare,
     roles: ["venue_admin"],
   },
   {

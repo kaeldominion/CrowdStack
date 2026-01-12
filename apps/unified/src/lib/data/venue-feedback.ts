@@ -11,6 +11,11 @@ export interface FeedbackItem {
   free_text?: string | null;
   submitted_at: string;
   attendee_name?: string | null;
+  event_id?: string;
+  event_name?: string;
+  event_date?: string;
+  resolved_at?: string | null;
+  internal_notes?: string | null;
 }
 
 export interface EventFeedbackStats {
@@ -84,6 +89,8 @@ export async function getEventFeedback(
       categories,
       free_text,
       submitted_at,
+      resolved_at,
+      internal_notes,
       attendee_id,
       attendees!inner(id, name)
     `)
@@ -169,6 +176,8 @@ export async function getEventFeedback(
       free_text: f.free_text,
       submitted_at: f.submitted_at,
       attendee_name: attendee?.name || null,
+      resolved_at: f.resolved_at || null,
+      internal_notes: f.internal_notes || null,
     };
   });
 
@@ -228,10 +237,12 @@ export async function getVenueFeedbackStats(): Promise<VenueFeedbackStats | null
       categories,
       free_text,
       submitted_at,
+      resolved_at,
+      internal_notes,
       attendee_id,
       event_id,
       attendees!inner(id, name),
-      events!inner(id, name)
+      events!inner(id, name, start_time)
     `)
     .in("event_id", eventIds)
     .order("submitted_at", { ascending: false })
@@ -303,6 +314,10 @@ export async function getVenueFeedbackStats(): Promise<VenueFeedbackStats | null
     const attendee = Array.isArray(f.attendees)
       ? f.attendees[0]
       : f.attendees;
+    
+    const event = Array.isArray(f.events)
+      ? f.events[0]
+      : f.events;
 
     return {
       id: f.id,
@@ -313,6 +328,11 @@ export async function getVenueFeedbackStats(): Promise<VenueFeedbackStats | null
       free_text: f.free_text,
       submitted_at: f.submitted_at,
       attendee_name: attendee?.name || null,
+      event_id: f.event_id,
+      event_name: event?.name || null,
+      event_date: event?.start_time || null,
+      resolved_at: f.resolved_at || null,
+      internal_notes: f.internal_notes || null,
     };
   });
 
