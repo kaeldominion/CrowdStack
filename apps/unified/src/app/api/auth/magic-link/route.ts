@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { logEmail } from "@crowdstack/shared/email/log-email";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
 /**
  * Server-side API route to request magic link
@@ -71,6 +73,15 @@ export async function POST(request: NextRequest) {
     const cookiesBefore = request.cookies.getAll();
     console.log("[Magic Link API] Cookies before request:", cookiesBefore.map(c => c.name));
 
+    // Get recipient user ID if available (for logging)
+    const serviceSupabase = createServiceRoleClient();
+    const { data: user } = await serviceSupabase
+      .from("attendees")
+      .select("id")
+      .eq("email", email)
+      .single();
+    const recipientUserId = user?.id || null;
+
     // Request magic link (this will store PKCE code verifier in cookies)
     const { error: magicError } = await supabase.auth.signInWithOtp({
       email,
@@ -83,6 +94,21 @@ export async function POST(request: NextRequest) {
       console.error("[Magic Link API] Error:", magicError);
       console.error("[Magic Link API] Error code:", magicError.status);
       console.error("[Magic Link API] Error message:", magicError.message);
+      
+      // Log failed email attempt
+      await logEmail({
+        recipient: email,
+        recipientUserId,
+        subject: "Magic Link - Sign In",
+        emailType: "magic_link",
+        status: "failed",
+        errorMessage: magicError.message,
+        metadata: {
+          redirect_to: redirectTo,
+          sent_via: "supabase_auth",
+          source: "login_magic_link",
+        },
+      });
       
       const errorMsg = magicError.message.toLowerCase();
       
@@ -101,6 +127,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Log successful magic link email
+    // Note: Supabase Auth sends the email, so we don't have a Postmark message ID
+    await logEmail({
+      recipient: email,
+      recipientUserId,
+      subject: "Magic Link - Sign In",
+      emailType: "magic_link",
+      status: "sent",
+      sentAt: new Date().toISOString(),
+      metadata: {
+        redirect_to: redirectTo,
+        sent_via: "supabase_auth",
+        source: "login_magic_link",
+      },
+    });
 
     // Log cookies after request
     const cookiesAfter = response.cookies.getAll();

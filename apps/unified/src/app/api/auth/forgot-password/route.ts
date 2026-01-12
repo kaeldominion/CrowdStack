@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { logEmail } from "@crowdstack/shared/email/log-email";
 
 /**
  * POST /api/auth/forgot-password
@@ -38,6 +39,14 @@ export async function POST(request: NextRequest) {
       console.log("[Forgot Password] Final redirect URL:", redirectTo);
     }
     
+    // Get recipient user ID if available (for logging)
+    const { data: user } = await supabase
+      .from("attendees")
+      .select("id")
+      .eq("email", email)
+      .single();
+    const recipientUserId = user?.id || null;
+
     // Send password reset email
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,
@@ -49,6 +58,22 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("[Forgot Password] Error:", error.message, error.status);
+      
+      // Log failed password reset attempt
+      await logEmail({
+        recipient: email,
+        recipientUserId,
+        subject: "Password Reset - CrowdStack",
+        emailType: "system",
+        templateSlug: "password_reset",
+        status: "failed",
+        errorMessage: error.message,
+        metadata: {
+          redirect_to: redirectTo,
+          sent_via: "supabase_auth",
+          source: "forgot_password",
+        },
+      });
       
       // Rate limit errors should be shown to the user (doesn't reveal email existence)
       if (error.message?.toLowerCase().includes("rate limit") || error.status === 429) {
@@ -68,6 +93,23 @@ export async function POST(request: NextRequest) {
     if (process.env.NODE_ENV === "development") {
       console.log("[Forgot Password] Email sent successfully (according to Supabase)");
     }
+
+    // Log successful password reset email
+    // Note: Supabase Auth sends the email, so we don't have a Postmark message ID
+    await logEmail({
+      recipient: email,
+      recipientUserId,
+      subject: "Password Reset - CrowdStack",
+      emailType: "system",
+      templateSlug: "password_reset",
+      status: "sent",
+      sentAt: new Date().toISOString(),
+      metadata: {
+        redirect_to: redirectTo,
+        sent_via: "supabase_auth",
+        source: "forgot_password",
+      },
+    });
 
     return NextResponse.json({
       success: true,
