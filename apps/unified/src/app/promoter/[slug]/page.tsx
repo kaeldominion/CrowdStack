@@ -1,16 +1,20 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { unstable_noStore as noStore } from "next/cache";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { PromoterProfileClient } from "./PromoterProfileClient";
 
-// ISR: Revalidate every 60 seconds
-export const revalidate = 60;
+// Force dynamic to ensure fresh data when promoter profiles are updated
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: { slug: string };
 }
 
 async function getPromoter(slug: string) {
+  // Opt out of ALL caching - Next.js Data Cache, Full Route Cache, etc.
+  noStore();
+  
   const supabase = createServiceRoleClient();
 
   // Get promoter by slug

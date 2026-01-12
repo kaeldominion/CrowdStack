@@ -104,8 +104,14 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
           }
         }
 
-        // Load profile data
-        const response = await fetch(`/api/promoters/by-slug/${slug}`);
+        // Load profile data with cache-busting
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/promoters/by-slug/${slug}?t=${timestamp}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
         if (response.ok) {
           const data = await response.json();
           setPromoter(data.promoter);
