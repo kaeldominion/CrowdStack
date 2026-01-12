@@ -94,8 +94,8 @@ export default function AdminDashboardPage() {
       icon: <Users className="h-6 w-6" />,
     },
     {
-      name: "Email Logs",
-      href: "/admin/emails",
+      name: "Email Templates",
+      href: "/admin/communications",
       description: "Complete log of all emails sent by the platform",
       icon: <Mailbox className="h-6 w-6" />,
     },

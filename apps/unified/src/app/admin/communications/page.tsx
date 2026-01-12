@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, LoadingSpinner, Badge, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input } from "@crowdstack/ui";
-import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download } from "lucide-react";
+import { Button, Card, LoadingSpinner, Badge, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input, InlineSpinner } from "@crowdstack/ui";
+import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download, Search, ExternalLink, Eye, MousePointerClick, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface EmailTemplate {
@@ -95,7 +95,7 @@ export default function AdminCommunicationsPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"templates" | "stats">("templates");
+  const [activeTab, setActiveTab] = useState<"templates" | "stats" | "logs">("templates");
   
   // Stats state
   const [stats, setStats] = useState<EmailStats | null>(null);
@@ -108,6 +108,74 @@ export default function AdminCommunicationsPage() {
     end: new Date().toISOString().split("T")[0],
   });
 
+  // Email Logs state (from /admin/emails implementation)
+  interface EmailLogEntry {
+    id: string;
+    template_id: string | null;
+    template_slug: string;
+    recipient: string;
+    recipient_user_id: string | null;
+    subject: string;
+    email_type: string;
+    status: string;
+    sent_at: string | null;
+    opened_at: string | null;
+    clicked_at: string | null;
+    bounced_at: string | null;
+    bounce_reason: string | null;
+    open_count: number;
+    click_count: number;
+    last_opened_at: string | null;
+    last_clicked_at: string | null;
+    error_message: string | null;
+    metadata: Record<string, any>;
+    created_at: string;
+    email_templates?: {
+      id: string;
+      slug: string;
+      category: string;
+    } | null;
+  }
+
+  interface EmailLogsStats {
+    total: number;
+    totalSent: number;
+    totalFailed: number;
+    totalBounced: number;
+    totalPending: number;
+    totalOpened: number;
+    totalClicked: number;
+    openRate: number;
+    clickRate: number;
+    bounceRate: number;
+    todayCount: number;
+    byType: Record<string, number>;
+  }
+
+  interface Pagination {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  }
+
+  const [emailLogs, setEmailLogs] = useState<EmailLogEntry[]>([]);
+  const [loadingEmailLogs, setLoadingEmailLogs] = useState(false);
+  const [loadingMoreEmailLogs, setLoadingMoreEmailLogs] = useState(false);
+  const [emailLogsSearch, setEmailLogsSearch] = useState("");
+  const [debouncedEmailLogsSearch, setDebouncedEmailLogsSearch] = useState("");
+  const [emailLogsStatusFilter, setEmailLogsStatusFilter] = useState("");
+  const [emailLogsTypeFilter, setEmailLogsTypeFilter] = useState("");
+  const [emailLogsTemplateFilter, setEmailLogsTemplateFilter] = useState("");
+  const [emailLogsStartDate, setEmailLogsStartDate] = useState("");
+  const [emailLogsEndDate, setEmailLogsEndDate] = useState("");
+  const [emailLogsPagination, setEmailLogsPagination] = useState<Pagination | null>(null);
+  const [emailLogsStats, setEmailLogsStats] = useState<EmailLogsStats | null>(null);
+  const [showEmailLogsFilters, setShowEmailLogsFilters] = useState(false);
+  const emailLogsObserverRef = useRef<IntersectionObserver | null>(null);
+  const emailLogsLoadMoreRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     loadTemplates();
   }, []);
@@ -117,6 +185,141 @@ export default function AdminCommunicationsPage() {
       loadStats();
     }
   }, [activeTab, groupBy, templateFilter, dateRange]);
+
+  // Debounce email logs search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEmailLogsSearch(emailLogsSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [emailLogsSearch]);
+
+  // Reset and load email logs when filters change
+  useEffect(() => {
+    if (activeTab === "logs") {
+      setEmailLogs([]);
+      setEmailLogsPagination(null);
+      setLoadingEmailLogs(true);
+      loadEmailLogs(1);
+    }
+  }, [activeTab, debouncedEmailLogsSearch, emailLogsStatusFilter, emailLogsTypeFilter, emailLogsTemplateFilter, emailLogsStartDate, emailLogsEndDate]);
+
+  const loadEmailLogs = async (page: number = 1) => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: "50",
+      });
+      if (debouncedEmailLogsSearch) {
+        params.set("search", debouncedEmailLogsSearch);
+      }
+      if (emailLogsStatusFilter) {
+        params.set("status", emailLogsStatusFilter);
+      }
+      if (emailLogsTypeFilter) {
+        params.set("emailType", emailLogsTypeFilter);
+      }
+      if (emailLogsTemplateFilter) {
+        params.set("templateSlug", emailLogsTemplateFilter);
+      }
+      if (emailLogsStartDate) {
+        params.set("startDate", emailLogsStartDate);
+      }
+      if (emailLogsEndDate) {
+        params.set("endDate", emailLogsEndDate);
+      }
+
+      const response = await fetch(`/api/admin/emails?${params}`);
+      if (!response.ok) throw new Error("Failed to load emails");
+      const data = await response.json();
+
+      if (page === 1) {
+        setEmailLogs(data.emails || []);
+        setEmailLogsStats(data.stats);
+      } else {
+        setEmailLogs(prev => [...prev, ...(data.emails || [])]);
+      }
+      setEmailLogsPagination(data.pagination);
+    } catch (error) {
+      console.error("Error loading email logs:", error);
+    } finally {
+      setLoadingEmailLogs(false);
+      setLoadingMoreEmailLogs(false);
+    }
+  };
+
+  const loadMoreEmailLogs = useCallback(() => {
+    if (loadingMoreEmailLogs || !emailLogsPagination?.hasMore) return;
+    setLoadingMoreEmailLogs(true);
+    loadEmailLogs(emailLogsPagination.page + 1);
+  }, [loadingMoreEmailLogs, emailLogsPagination]);
+
+  // Set up intersection observer for infinite scroll
+  useEffect(() => {
+    if (emailLogsObserverRef.current) {
+      emailLogsObserverRef.current.disconnect();
+    }
+
+    emailLogsObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && emailLogsPagination?.hasMore && !loadingMoreEmailLogs) {
+          loadMoreEmailLogs();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (emailLogsLoadMoreRef.current) {
+      emailLogsObserverRef.current.observe(emailLogsLoadMoreRef.current);
+    }
+
+    return () => {
+      if (emailLogsObserverRef.current) {
+        emailLogsObserverRef.current.disconnect();
+      }
+    };
+  }, [emailLogsPagination, loadingMoreEmailLogs, loadMoreEmailLogs]);
+
+  const getEmailLogStatusBadge = (status: string) => {
+    switch (status) {
+      case "sent":
+        return <Badge variant="success" className="text-[10px]">Sent</Badge>;
+      case "failed":
+        return <Badge variant="error" className="text-[10px]">Failed</Badge>;
+      case "bounced":
+        return <Badge variant="error" className="text-[10px]">Bounced</Badge>;
+      case "pending":
+        return <Badge variant="warning" className="text-[10px]">Pending</Badge>;
+      default:
+        return <Badge variant="default" className="text-[10px]">{status}</Badge>;
+    }
+  };
+
+  const getEmailLogTypeBadge = (emailType: string) => {
+    const colors: Record<string, string> = {
+      template: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      contact_form: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      magic_link: "bg-green-500/20 text-green-400 border-green-500/30",
+      direct: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+      system: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    };
+    const color = colors[emailType] || "bg-gray-500/20 text-gray-400 border-gray-500/30";
+    return (
+      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${color}`}>
+        {emailType}
+      </span>
+    );
+  };
+
+  const formatEmailLogDate = (dateString: string | null) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   const loadTemplates = async () => {
     try {
@@ -216,7 +419,7 @@ export default function AdminCommunicationsPage() {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "templates" | "stats")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "templates" | "stats" | "logs")}>
         <TabsList>
           <TabsTrigger value="templates">
             <Mail className="h-4 w-4 mr-2" />
@@ -224,7 +427,11 @@ export default function AdminCommunicationsPage() {
           </TabsTrigger>
           <TabsTrigger value="stats">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Stats & Logs
+            Stats
+          </TabsTrigger>
+          <TabsTrigger value="logs">
+            <Mail className="h-4 w-4 mr-2" />
+            Email Logs
           </TabsTrigger>
         </TabsList>
 
@@ -579,75 +786,231 @@ export default function AdminCommunicationsPage() {
               </Card>
             ) : null}
 
-            {/* Recent Logs */}
-            <Card>
-              <div className="p-4 border-b border-border-subtle flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-primary">Recent Email Logs</h2>
-                <Button variant="ghost" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
+          </div>
+        </TabsContent>
+
+        <TabsContent value="logs">
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="font-mono text-xl font-bold uppercase tracking-widest text-primary">
+                  Email Logs
+                </h2>
+                <p className="mt-1 text-xs text-secondary">
+                  Complete log of all emails sent by the platform
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowEmailLogsFilters(!showEmailLogsFilters)}
+                >
+                  <Filter className="h-3.5 w-3.5 mr-1.5" />
+                  Filters
                 </Button>
               </div>
-              {loadingStats ? (
-                <div className="flex items-center justify-center h-32">
-                  <LoadingSpinner text="Loading logs..." />
+            </div>
+
+            {/* Stats Cards */}
+            {emailLogsStats && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <Card className="!p-3">
+                  <p className="text-xs text-secondary mb-1">Total Sent</p>
+                  <p className="text-2xl font-bold text-primary">{emailLogsStats.totalSent}</p>
+                </Card>
+                <Card className="!p-3">
+                  <p className="text-xs text-secondary mb-1">Open Rate</p>
+                  <p className="text-2xl font-bold text-green-400">{emailLogsStats.openRate.toFixed(1)}%</p>
+                </Card>
+                <Card className="!p-3">
+                  <p className="text-xs text-secondary mb-1">Click Rate</p>
+                  <p className="text-2xl font-bold text-blue-400">{emailLogsStats.clickRate.toFixed(1)}%</p>
+                </Card>
+                <Card className="!p-3">
+                  <p className="text-xs text-secondary mb-1">Bounce Rate</p>
+                  <p className="text-2xl font-bold text-red-400">{emailLogsStats.bounceRate.toFixed(1)}%</p>
+                </Card>
+                <Card className="!p-3">
+                  <p className="text-xs text-secondary mb-1">Today</p>
+                  <p className="text-2xl font-bold text-primary">{emailLogsStats.todayCount}</p>
+                </Card>
+              </div>
+            )}
+
+            {/* Filters */}
+            {showEmailLogsFilters && (
+              <Card className="!p-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">Status</label>
+                    <select
+                      value={emailLogsStatusFilter}
+                      onChange={(e) => setEmailLogsStatusFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-raised border border-border-subtle text-sm text-primary"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="sent">Sent</option>
+                      <option value="failed">Failed</option>
+                      <option value="bounced">Bounced</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">Email Type</label>
+                    <select
+                      value={emailLogsTypeFilter}
+                      onChange={(e) => setEmailLogsTypeFilter(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-raised border border-border-subtle text-sm text-primary"
+                    >
+                      <option value="">All Types</option>
+                      <option value="template">Template</option>
+                      <option value="contact_form">Contact Form</option>
+                      <option value="magic_link">Magic Link</option>
+                      <option value="direct">Direct</option>
+                      <option value="system">System</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">Template Slug</label>
+                    <Input
+                      value={emailLogsTemplateFilter}
+                      onChange={(e) => setEmailLogsTemplateFilter(e.target.value)}
+                      placeholder="Filter by template..."
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">Start Date</label>
+                    <Input
+                      type="date"
+                      value={emailLogsStartDate}
+                      onChange={(e) => setEmailLogsStartDate(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-secondary mb-1 block">End Date</label>
+                    <Input
+                      type="date"
+                      value={emailLogsEndDate}
+                      onChange={(e) => setEmailLogsEndDate(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
                 </div>
-              ) : logs.length === 0 ? (
-                <div className="p-8 text-center text-secondary">
-                  No email logs found
-                </div>
-              ) : (
+              </Card>
+            )}
+
+            {/* Search */}
+            <Card className="!p-3">
+              <Input
+                placeholder="Search by recipient or subject..."
+                value={emailLogsSearch}
+                onChange={(e) => setEmailLogsSearch(e.target.value)}
+                className="h-8 text-sm"
+              />
+            </Card>
+
+            {/* Results Count */}
+            <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+              Showing {emailLogs.length} of {emailLogsPagination?.total || 0} emails
+              {debouncedEmailLogsSearch && ` matching "${debouncedEmailLogsSearch}"`}
+            </div>
+
+            {/* Emails Table */}
+            {loadingEmailLogs ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <InlineSpinner size="lg" />
+                <p className="mt-4 text-sm text-secondary">Loading emails...</p>
+              </div>
+            ) : emailLogs.length === 0 ? (
+              <div className="text-center py-12 text-secondary">
+                <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No emails found</p>
+              </div>
+            ) : (
+              <Card className="!p-0 overflow-hidden">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Template</TableHead>
-                        <TableHead>Recipient</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Opened</TableHead>
-                        <TableHead>Clicked</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Recipient</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Subject</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Type</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Status</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Sent</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Opens</TableHead>
+                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Clicks</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {logs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell className="text-sm text-secondary">
-                            {new Date(log.created_at).toLocaleString()}
-                          </TableCell>
-                          <TableCell className="font-medium text-sm">
-                            {log.template_slug}
-                          </TableCell>
-                          <TableCell className="text-sm">{log.recipient}</TableCell>
-                          <TableCell className="text-sm text-secondary truncate max-w-xs">
-                            {log.subject}
+                      {emailLogs.map((email) => (
+                        <TableRow key={email.id}>
+                          <TableCell>
+                            <div className="text-sm text-primary">{email.recipient}</div>
                           </TableCell>
                           <TableCell>
-                            {log.status === "sent" ? (
-                              <Badge variant="success">Sent</Badge>
-                            ) : log.status === "failed" ? (
-                              <Badge variant="error">Failed</Badge>
-                            ) : (
-                              <Badge variant="warning">Pending</Badge>
+                            <div className="text-sm text-primary max-w-xs truncate">
+                              {email.subject}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getEmailLogTypeBadge(email.email_type)}
+                              {email.template_id && email.email_templates && (
+                                <Link
+                                  href={`/admin/communications/${email.template_id}`}
+                                  className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                                >
+                                  {email.template_slug}
+                                  <ExternalLink className="h-3 w-3" />
+                                </Link>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getEmailLogStatusBadge(email.status)}
+                            {email.bounced_at && (
+                              <div className="text-[10px] text-red-400 mt-1">
+                                {email.bounce_reason || "Bounced"}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell>
-                            {log.opened_at ? (
-                              <span className="text-sm text-accent-success">
-                                {new Date(log.opened_at).toLocaleString()}
-                              </span>
+                            <div className="text-xs text-secondary">
+                              {formatEmailLogDate(email.sent_at)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {email.open_count > 0 ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <Eye className="h-3 w-3 text-green-400" />
+                                <span className="text-primary">{email.open_count}</span>
+                                {email.last_opened_at && (
+                                  <span className="text-secondary">
+                                    ({formatEmailLogDate(email.last_opened_at)})
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <span className="text-sm text-secondary">—</span>
+                              <span className="text-xs text-secondary">—</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            {log.clicked_at ? (
-                              <span className="text-sm text-accent-success">
-                                {new Date(log.clicked_at).toLocaleString()}
-                              </span>
+                            {email.click_count > 0 ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <MousePointerClick className="h-3 w-3 text-blue-400" />
+                                <span className="text-primary">{email.click_count}</span>
+                                {email.last_clicked_at && (
+                                  <span className="text-secondary">
+                                    ({formatEmailLogDate(email.last_clicked_at)})
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <span className="text-sm text-secondary">—</span>
+                              <span className="text-xs text-secondary">—</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -655,8 +1018,31 @@ export default function AdminCommunicationsPage() {
                     </TableBody>
                   </Table>
                 </div>
+              </Card>
+            )}
+
+            {/* Infinite Scroll Trigger */}
+            <div
+              ref={emailLogsLoadMoreRef}
+              className="py-4 flex items-center justify-center"
+            >
+              {loadingMoreEmailLogs && (
+                <div className="flex items-center gap-2 text-secondary">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-xs">Loading more...</span>
+                </div>
               )}
-            </Card>
+              {!loadingMoreEmailLogs && emailLogsPagination?.hasMore && (
+                <Button variant="ghost" size="sm" onClick={loadMoreEmailLogs}>
+                  Load More
+                </Button>
+              )}
+              {!emailLogsPagination?.hasMore && emailLogs.length > 0 && (
+                <p className="text-xs text-secondary">
+                  All {emailLogsPagination?.total || emailLogs.length} emails loaded
+                </p>
+              )}
+            </div>
           </div>
         </TabsContent>
       </Tabs>
