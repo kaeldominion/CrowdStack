@@ -465,58 +465,109 @@ export default function VenueTableBookingsPage() {
                   <th className="text-left py-2 px-3 font-medium text-secondary">Status</th>
                   <th className="text-right py-2 px-3 font-medium text-secondary">Min Spend</th>
                   <th className="text-center py-2 px-3 font-medium text-secondary">Deposit</th>
-                  <th className="text-left py-2 px-3 font-medium text-secondary">Promoter</th>
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Notes</th>
+                  <th className="text-center py-2 px-3 font-medium text-secondary">Contact</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((booking) => (
-                  <tr
-                    key={booking.id}
-                    onClick={() => setSelectedBooking(booking)}
-                    className={`border-b border-border-subtle hover:bg-active cursor-pointer transition-colors ${
-                      selectedBooking?.id === booking.id ? "bg-purple-500/10" : ""
-                    }`}
-                  >
-                    <td className="py-2 px-3">
-                      <div className="font-medium text-primary">{booking.guest_name}</div>
-                      <div className="text-muted truncate max-w-[150px]">{booking.guest_email}</div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="text-primary">{booking.table?.name || "—"}</div>
-                      <div className="text-muted">{booking.table?.zone?.name || ""}</div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="text-primary truncate max-w-[120px]">{booking.event.name}</div>
-                      <div className="text-muted">{formatDate(booking.event.start_time)}</div>
-                    </td>
-                    <td className="py-2 px-3 text-center">
-                      <span className="text-primary">
-                        {booking.guests_joined || 0}/{booking.table?.capacity || booking.party_size}
-                      </span>
-                      {(booking.guests_checked_in || 0) > 0 && (
-                        <span className="text-green-400 text-[10px] ml-1">
-                          ({booking.guests_checked_in} in)
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 px-3">
-                      {getStatusBadge(booking.status, booking)}
-                    </td>
-                    <td className="py-2 px-3 text-right text-primary">
-                      {booking.minimum_spend ? `${currencySymbol}${booking.minimum_spend.toLocaleString()}` : "—"}
-                    </td>
-                    <td className="py-2 px-3 text-center">
-                      {getPaymentBadge(booking) || <span className="text-muted">—</span>}
-                    </td>
-                    <td className="py-2 px-3">
-                      {booking.promoter ? (
-                        <span className="text-purple-400">@{booking.promoter.slug || booking.promoter.name}</span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {bookings.map((booking) => {
+                  const totalCapacity = booking.table?.capacity || booking.party_size;
+                  const guestsJoined = booking.guests_joined || 0;
+                  const spotsLeft = totalCapacity - guestsJoined;
+                  const hasNotes = !!(booking.special_requests || booking.staff_notes);
+                  
+                  return (
+                    <tr
+                      key={booking.id}
+                      onClick={() => setSelectedBooking(booking)}
+                      className={`border-b border-border-subtle hover:bg-active cursor-pointer transition-colors ${
+                        selectedBooking?.id === booking.id ? "bg-purple-500/10" : ""
+                      }`}
+                    >
+                      <td className="py-2 px-3">
+                        <div className="font-medium text-primary">{booking.guest_name}</div>
+                        <div className="text-muted truncate max-w-[150px]">{booking.guest_email}</div>
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="text-primary">{booking.table?.name || "—"}</div>
+                        <div className="text-muted">{booking.table?.zone?.name || ""}</div>
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="text-primary truncate max-w-[120px]">{booking.event.name}</div>
+                        <div className="text-muted">{formatDate(booking.event.start_time)}</div>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-primary font-medium">
+                            {guestsJoined}/{totalCapacity}
+                          </span>
+                          {spotsLeft > 0 && (
+                            <span className="text-[10px] text-muted">
+                              {spotsLeft} {spotsLeft === 1 ? "spot" : "spots"} left
+                            </span>
+                          )}
+                          {spotsLeft === 0 && guestsJoined > 0 && (
+                            <span className="text-[10px] text-amber-400">Full</span>
+                          )}
+                          {(booking.guests_checked_in || 0) > 0 && (
+                            <span className="text-green-400 text-[10px]">
+                              {booking.guests_checked_in} checked in
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 px-3">
+                        {getStatusBadge(booking.status, booking)}
+                      </td>
+                      <td className="py-2 px-3 text-right text-primary">
+                        {booking.minimum_spend ? `${currencySymbol}${booking.minimum_spend.toLocaleString()}` : "—"}
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        {getPaymentBadge(booking) || <span className="text-muted">—</span>}
+                      </td>
+                      <td className="py-2 px-3">
+                        {hasNotes ? (
+                          <div className="flex items-center gap-1" title={
+                            `${booking.special_requests ? `Special: ${booking.special_requests}` : ""}${booking.special_requests && booking.staff_notes ? "\n" : ""}${booking.staff_notes ? `Staff: ${booking.staff_notes}` : ""}`
+                          }>
+                            <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+                            <span className="text-[10px] text-muted truncate max-w-[80px]">
+                              {booking.special_requests ? "Special" : ""}
+                              {booking.special_requests && booking.staff_notes ? " + " : ""}
+                              {booking.staff_notes ? "Staff" : ""}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          {booking.guest_whatsapp && (
+                            <a
+                              href={formatWhatsAppLink(booking.guest_whatsapp)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded hover:bg-green-500/20 text-green-400 transition-colors"
+                              title="WhatsApp"
+                            >
+                              <MessageCircle className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                          {booking.guest_email && (
+                            <a
+                              href={`mailto:${booking.guest_email}`}
+                              className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition-colors"
+                              title="Email"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
