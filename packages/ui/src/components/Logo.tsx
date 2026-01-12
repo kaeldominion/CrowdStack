@@ -439,17 +439,9 @@ export function Logo({
           className={`${triSize.icon} object-contain hidden dark:block`}
         />
         {!iconOnly && (
-          <>
-            {/* Light mode: light wordmark, Dark mode: text-based wordmark */}
-            <img 
-              src="/logos/crowdstack-wordmark-light-standard-transparent.png" 
-              alt="CrowdStack" 
-              className={`${triSize.icon} w-auto object-contain dark:hidden`}
-            />
-            <span className={`font-black tracking-tighter ${triSize.text} text-primary hidden dark:inline`}>
-              CROWDSTACK<span className="text-accent-primary">.</span>
-            </span>
-          </>
+          <span className={`font-black tracking-tighter ${triSize.text} text-primary`}>
+            CROWDSTACK<span className="text-accent-primary">.</span>
+          </span>
         )}
       </div>
     );
