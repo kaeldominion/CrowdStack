@@ -511,7 +511,7 @@ export async function POST(
       await sendTemplateEmail(
         "table_party_joined",
         guest.guest_email,
-        attendeeId,
+        attendee.id,
         {
           guest_name: updateName,
           event_name: event.name,
