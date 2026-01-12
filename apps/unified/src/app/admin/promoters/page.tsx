@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, Container, Section, Button, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner } from "@crowdstack/ui";
-import { Users, Search, ChevronRight, X, UserPlus, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Users, Search, ChevronRight, X, UserPlus, AlertCircle, CheckCircle, Loader2, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 interface Pagination {
   page: number;
@@ -328,7 +329,24 @@ export default function AdminPromotersPage() {
                         className="cursor-pointer"
                         onClick={() => setSelectedPromoter(promoter)}
                       >
-                        <TableCell className="font-medium">{promoter.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {promoter.slug ? (
+                              <Link
+                                href={`${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/promoter/${promoter.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-primary hover:underline flex items-center gap-1"
+                              >
+                                {promoter.name}
+                                <ExternalLink className="h-3 w-3" />
+                              </Link>
+                            ) : (
+                              promoter.name
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {promoter.email && (
@@ -533,6 +551,25 @@ export default function AdminPromotersPage() {
                     <p className="text-sm text-primary">{selectedPromoter.total_referrals || 0}</p>
                   </div>
                 </div>
+                {selectedPromoter.slug && (
+                  <div className="pt-4 border-t border-border">
+                    <Link
+                      href={`${process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}/promoter/${selectedPromoter.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      View Public Profile
+                    </Link>
+                  </div>
+                )}
+                {!selectedPromoter.slug && (
+                  <div className="pt-4 border-t border-border">
+                    <p className="text-sm text-secondary mb-2">No public profile yet</p>
+                    <p className="text-xs text-secondary">The promoter needs to create a profile with a slug to have a public profile page.</p>
+                  </div>
+                )}
                 <div className="flex justify-end pt-4 border-t border-border">
                   <Button variant="ghost" onClick={() => setSelectedPromoter(null)}>Close</Button>
                 </div>

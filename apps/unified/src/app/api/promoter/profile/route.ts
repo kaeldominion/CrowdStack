@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { revalidatePath } from "next/cache";
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
@@ -150,14 +149,8 @@ export async function PATCH(request: NextRequest) {
           );
         }
 
-        // Revalidate public profile page
-        if (updatedByCreator?.slug) {
-          revalidatePath(`/promoter/${updatedByCreator.slug}`);
-        }
-        // Also revalidate old slug if it changed
-        if (currentPromoter?.slug && currentPromoter.slug !== updatedByCreator?.slug) {
-          revalidatePath(`/promoter/${currentPromoter.slug}`);
-        }
+        // Note: revalidatePath doesn't work in API routes
+        // The page uses dynamic = 'force-dynamic' and noStore() to always fetch fresh data
 
         return NextResponse.json(
           { promoter: updatedByCreator },
@@ -178,14 +171,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Revalidate public profile page
-    if (updatedPromoter?.slug) {
-      revalidatePath(`/promoter/${updatedPromoter.slug}`);
-    }
-    // Also revalidate old slug if it changed
-    if (currentPromoter?.slug && currentPromoter.slug !== updatedPromoter?.slug) {
-      revalidatePath(`/promoter/${currentPromoter.slug}`);
-    }
+    // Note: revalidatePath doesn't work in API routes
+    // The page uses dynamic = 'force-dynamic' and noStore() to always fetch fresh data
 
     return NextResponse.json(
       { promoter: updatedPromoter },
