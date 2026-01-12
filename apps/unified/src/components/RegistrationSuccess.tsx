@@ -63,8 +63,8 @@ export function RegistrationSuccess({
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Blurred Flier Background - less blur to show more detail */}
+    <div className="relative min-h-screen bg-[var(--bg-void)]">
+      {/* Blurred Flier Background - theme-aware */}
       {flierUrl ? (
         <div className="fixed inset-0 z-0">
           <Image
@@ -79,10 +79,10 @@ export function RegistrationSuccess({
             }}
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[var(--bg-void)]/30 via-[var(--bg-void)]/40 to-[var(--bg-void)]/60" />
         </div>
       ) : (
-        <div className="fixed inset-0 z-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+        <div className="fixed inset-0 z-0 bg-gradient-to-br from-[var(--bg-void)] via-[var(--bg-raised)] to-[var(--bg-void)]" />
       )}
 
       {/* Navigation Bar - Use DockNav for proper logged-in navigation */}
@@ -91,15 +91,15 @@ export function RegistrationSuccess({
       {/* Content */}
       <Section spacing="xl" className="relative z-10 pt-20 sm:pt-24 pb-8">
         <Container size="sm" className="flex items-center justify-center py-8">
-          {/* Glassmorphism Card - more transparent */}
-          <div className="relative w-full max-w-md p-6 sm:p-8 rounded-2xl bg-black/20 backdrop-blur-md border border-white/10 shadow-2xl">
+          {/* Glassmorphism Card - theme-aware */}
+          <div className="relative w-full max-w-md p-6 sm:p-8 rounded-2xl bg-[var(--bg-glass)] backdrop-blur-md border border-[var(--border-subtle)] shadow-2xl">
             
             {/* Polaroid Photo Notice - Top Right */}
             {showPhotoEmailNotice && (
               <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-32 sm:w-40 rotate-6 z-10">
-                <div className="relative bg-white p-2 sm:p-2.5 shadow-2xl border-2 border-white/90 rounded-sm overflow-visible">
+                <div className="relative bg-[var(--bg-glass)] p-2 sm:p-2.5 shadow-2xl border-2 border-[var(--border-subtle)] rounded-sm overflow-visible backdrop-blur-sm">
                   {/* Photo section */}
-                  <div className="relative w-full aspect-[4/5] bg-gray-200 rounded-sm overflow-visible mb-2">
+                  <div className="relative w-full aspect-[4/5] bg-[var(--bg-raised)] rounded-sm overflow-visible mb-2">
                     <div className="absolute inset-0 overflow-hidden rounded-sm">
                       <Image
                         src="/polaroid.jpg"
@@ -116,10 +116,10 @@ export function RegistrationSuccess({
                   </div>
                   {/* Text section */}
                   <div className="px-1 pb-1">
-                    <p className="text-[8px] sm:text-[10px] font-medium text-primary text-center leading-tight">
+                    <p className="text-[8px] sm:text-[10px] font-medium text-[var(--text-primary)] text-center leading-tight">
                       Photos coming soon!
                     </p>
-                    <p className="text-[7px] sm:text-[9px] text-secondary text-center mt-0.5">
+                    <p className="text-[7px] sm:text-[9px] text-[var(--text-secondary)] text-center mt-0.5">
                       Check your emails from CrowdStack in a few days
                     </p>
                   </div>
@@ -145,10 +145,10 @@ export function RegistrationSuccess({
               {/* Success icon and title */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-success)]/20 border border-[var(--accent-success)]/30">
+                    <CheckCircle2 className="h-5 w-5 text-[var(--accent-success)]" />
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-primary">
+                  <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
                     You're Registered!
                   </h1>
                 </div>
@@ -158,26 +158,26 @@ export function RegistrationSuccess({
             {/* Event Details */}
             <div className="space-y-3">
               {/* Event Name */}
-              <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
-                <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-3 bg-[var(--bg-raised)] rounded-xl border border-[var(--border-subtle)]">
+                <Calendar className="h-5 w-5 text-[var(--accent-primary)] mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted mb-0.5">Event</p>
-                  <p className="text-sm font-semibold text-primary">{eventName}</p>
+                  <p className="text-xs text-[var(--text-muted)] mb-0.5">Event</p>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{eventName}</p>
                 </div>
               </div>
 
               {/* Venue */}
               {venueName && (
-                <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
-                  <MapPin className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-3 bg-[var(--bg-raised)] rounded-xl border border-[var(--border-subtle)]">
+                  <MapPin className="h-5 w-5 text-[var(--accent-primary)] mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted mb-0.5">Venue</p>
+                    <p className="text-xs text-[var(--text-muted)] mb-0.5">Venue</p>
                     {venueSlug ? (
-                      <Link href={`/v/${venueSlug}`} className="text-sm font-semibold text-primary hover:text-accent-secondary transition-colors">
+                      <Link href={`/v/${venueSlug}`} className="text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--accent-secondary)] transition-colors">
                         {venueName}
                       </Link>
                     ) : (
-                      <p className="text-sm font-semibold text-primary">{venueName}</p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{venueName}</p>
                     )}
                   </div>
                 </div>
@@ -185,11 +185,11 @@ export function RegistrationSuccess({
 
               {/* Start Time */}
               {startTime && (
-                <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
-                  <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-3 bg-[var(--bg-raised)] rounded-xl border border-[var(--border-subtle)]">
+                  <Calendar className="h-5 w-5 text-[var(--accent-primary)] mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted mb-0.5">Date & Time</p>
-                    <p className="text-sm font-semibold text-primary">
+                    <p className="text-xs text-[var(--text-muted)] mb-0.5">Date & Time</p>
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">
                       {new Date(startTime).toLocaleDateString(undefined, {
                         weekday: "long",
                         year: "numeric",
@@ -212,7 +212,7 @@ export function RegistrationSuccess({
                   View QR Pass
                 </Button>
               </Link>
-              <p className="text-xs text-muted text-center">
+              <p className="text-xs text-[var(--text-muted)] text-center">
                 Show your QR pass at the event entrance
               </p>
               
@@ -228,7 +228,7 @@ export function RegistrationSuccess({
               )}
               
               {/* Share Button */}
-              <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
                 <div className="w-full [&>div]:w-full [&>div>button]:w-full">
                   <ShareButton
                     title={eventName}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Mail, CheckCircle2, Eye, MousePointerClick, AlertCircle, TrendingUp } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Card, Badge, LoadingSpinner, Modal } from "@crowdstack/ui";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { Mail, CheckCircle2, Eye, MousePointerClick, AlertCircle, TrendingUp, ChevronRight } from "lucide-react";
 
 interface EmailStatsProps {
   eventId: string;
@@ -38,6 +39,10 @@ export function EmailStats({ eventId }: EmailStatsProps) {
   const [stats, setStats] = useState<EmailStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const [emailDetails, setEmailDetails] = useState<any>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadStats();
@@ -80,6 +85,40 @@ export function EmailStats({ eventId }: EmailStatsProps) {
   };
 
   const selectedStat = stats.find((s) => s.type === selectedType);
+  const emails = selectedStat?.emails || [];
+
+  // Virtual scrolling for emails
+  const rowVirtualizer = useVirtualizer({
+    count: emails.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 36,
+    overscan: 10,
+  });
+
+  const loadEmailDetails = async (emailId: string) => {
+    try {
+      setLoadingDetails(true);
+      const response = await fetch(`/api/admin/emails/${emailId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setEmailDetails(data);
+      }
+    } catch (error) {
+      console.error("Failed to load email details:", error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleEmailClick = (emailId: string) => {
+    setSelectedEmail(emailId);
+    loadEmailDetails(emailId);
+  };
+
+  const formatDateCompact = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
 
   if (loading) {
     return (
@@ -188,66 +227,253 @@ export function EmailStats({ eventId }: EmailStatsProps) {
             </Card>
           </div>
 
-          {/* Email List */}
+          {/* Email List - Compact Format */}
           <Card>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="section-header">Email Details</h3>
                 <Badge color="slate" variant="solid" size="sm">
-                  {selectedStat.emails.length} emails
+                  {emails.length} emails
                 </Badge>
               </div>
 
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {selectedStat.emails.map((email) => (
-                  <div
-                    key={email.id}
-                    className="p-3 rounded-lg bg-raised border border-border-subtle"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-primary truncate">
-                          {email.recipient_email}
-                        </p>
-                        <p className="text-xs text-secondary mt-0.5 truncate">
-                          {email.subject}
-                        </p>
-                        <p className="text-[10px] text-muted mt-1 font-mono">
-                          Sent: {new Date(email.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {email.delivered_at && (
-                          <Badge color="green" variant="solid" size="sm" title="Delivered">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                          </Badge>
-                        )}
-                        {email.opened_at && (
-                          <Badge color="blue" variant="solid" size="sm" title={`Opened${(email.open_count ?? 0) > 1 ? ` (${email.open_count}x)` : ""}`}>
-                            <Eye className="h-3 w-3 mr-1" />
-                            {(email.open_count ?? 0) > 1 && <span className="ml-1">{email.open_count}</span>}
-                          </Badge>
-                        )}
-                        {email.clicked_at && (
-                          <Badge color="purple" variant="solid" size="sm" title={`Clicked${(email.click_count ?? 0) > 1 ? ` (${email.click_count}x)` : ""}`}>
-                            <MousePointerClick className="h-3 w-3 mr-1" />
-                            {(email.click_count ?? 0) > 1 && <span className="ml-1">{email.click_count}</span>}
-                          </Badge>
-                        )}
-                        {email.bounced_at && (
-                          <Badge color="red" variant="solid" size="sm" title={`Bounced: ${email.bounce_reason || "Unknown"}`}>
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                          </Badge>
-                        )}
-                      </div>
+              <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px] gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+                  <div>Recipient</div>
+                  <div>Subject</div>
+                  <div className="text-center">Sent</div>
+                  <div className="text-center">Delivered</div>
+                  <div className="text-center">Opened</div>
+                  <div className="text-center">Clicked</div>
+                  <div className="text-center">Bounced</div>
+                  <div></div>
+                </div>
+
+                {/* Virtual Scrolling Container */}
+                <div
+                  ref={parentRef}
+                  className="overflow-auto"
+                  style={{ height: Math.min(emails.length * 36 + 20, 600) }}
+                >
+                  {emails.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+                      No emails found
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <div
+                      style={{
+                        height: `${rowVirtualizer.getTotalSize()}px`,
+                        width: "100%",
+                        position: "relative",
+                      }}
+                    >
+                      {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                        const email = emails[virtualItem.index];
+                        return (
+                          <div
+                            key={email.id}
+                            className="grid grid-cols-[2fr_2fr_60px_60px_60px_60px_60px_24px] gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer"
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                            onClick={() => handleEmailClick(email.id)}
+                          >
+                            {/* Recipient */}
+                            <div className="text-xs text-[var(--text-primary)] truncate">
+                              {email.recipient_email}
+                            </div>
+                            {/* Subject */}
+                            <div className="text-xs text-[var(--text-secondary)] truncate">
+                              {email.subject}
+                            </div>
+                            {/* Sent Date */}
+                            <div className="text-[10px] text-[var(--text-muted)] text-center">
+                              {formatDateCompact(email.created_at)}
+                            </div>
+                            {/* Delivered */}
+                            <div className="flex items-center justify-center">
+                              {email.delivered_at ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--accent-success)]" />
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                              )}
+                            </div>
+                            {/* Opened */}
+                            <div className="flex items-center justify-center">
+                              {email.opened_at ? (
+                                <div className="flex items-center gap-1">
+                                  <Eye className="h-3.5 w-3.5 text-[var(--accent-secondary)]" />
+                                  {(email.open_count ?? 0) > 1 && (
+                                    <span className="text-[10px] text-[var(--text-muted)]">{email.open_count}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                              )}
+                            </div>
+                            {/* Clicked */}
+                            <div className="flex items-center justify-center">
+                              {email.clicked_at ? (
+                                <div className="flex items-center gap-1">
+                                  <MousePointerClick className="h-3.5 w-3.5 text-[var(--accent-primary)]" />
+                                  {(email.click_count ?? 0) > 1 && (
+                                    <span className="text-[10px] text-[var(--text-muted)]">{email.click_count}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                              )}
+                            </div>
+                            {/* Bounced */}
+                            <div className="flex items-center justify-center">
+                              {email.bounced_at ? (
+                                <AlertCircle className="h-3.5 w-3.5 text-[var(--accent-error)]" />
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                              )}
+                            </div>
+                            {/* Chevron */}
+                            <div className="flex items-center justify-center">
+                              <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-3 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-raised)]">
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                    {emails.length} emails
+                  </p>
+                </div>
               </div>
             </div>
           </Card>
         </>
       )}
+
+      {/* Email Detail Modal */}
+      <Modal
+        isOpen={!!selectedEmail}
+        onClose={() => {
+          setSelectedEmail(null);
+          setEmailDetails(null);
+        }}
+        title="Email Details"
+        size="lg"
+      >
+        {loadingDetails ? (
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner text="Loading email details..." />
+          </div>
+        ) : emailDetails ? (
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Recipient</p>
+                <p className="text-sm text-[var(--text-primary)]">{emailDetails.email.recipient}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Subject</p>
+                <p className="text-sm text-[var(--text-primary)]">{emailDetails.email.subject}</p>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Status</p>
+                <Badge
+                  color={
+                    emailDetails.email.status === "sent"
+                      ? "green"
+                      : emailDetails.email.status === "failed"
+                      ? "red"
+                      : emailDetails.email.status === "bounced"
+                      ? "red"
+                      : "amber"
+                  }
+                  variant="solid"
+                  size="sm"
+                >
+                  {emailDetails.email.status}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1">Sent At</p>
+                <p className="text-sm text-[var(--text-primary)]">
+                  {new Date(emailDetails.email.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Engagement Stats */}
+            {(emailDetails.email.opened_at || emailDetails.email.clicked_at) && (
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-3">Engagement</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {emailDetails.email.opened_at && (
+                    <div>
+                      <p className="text-xs text-[var(--text-muted)]">Opened</p>
+                      <p className="text-sm text-[var(--text-primary)]">
+                        {new Date(emailDetails.email.opened_at).toLocaleString()}
+                        {emailDetails.email.open_count && emailDetails.email.open_count > 1 && (
+                          <span className="ml-2 text-[var(--text-muted)]">
+                            ({emailDetails.email.open_count} times)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {emailDetails.email.clicked_at && (
+                    <div>
+                      <p className="text-xs text-[var(--text-muted)]">Clicked</p>
+                      <p className="text-sm text-[var(--text-primary)]">
+                        {new Date(emailDetails.email.clicked_at).toLocaleString()}
+                        {emailDetails.email.click_count && emailDetails.email.click_count > 1 && (
+                          <span className="ml-2 text-[var(--text-muted)]">
+                            ({emailDetails.email.click_count} times)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Email Content Preview */}
+            {emailDetails.rendered?.html && (
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-3">Email Preview</p>
+                <div className="border border-[var(--border-subtle)] rounded-lg overflow-hidden">
+                  <iframe
+                    srcDoc={emailDetails.rendered.html}
+                    className="w-full h-96 border-0"
+                    title="Email Preview"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            {emailDetails.email.metadata && (
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide mb-3">Metadata</p>
+                <pre className="text-xs text-[var(--text-secondary)] bg-[var(--bg-raised)] p-3 rounded-lg overflow-auto max-h-48">
+                  {JSON.stringify(emailDetails.email.metadata, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

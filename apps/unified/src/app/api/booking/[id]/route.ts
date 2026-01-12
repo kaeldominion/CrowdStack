@@ -269,6 +269,22 @@ export async function GET(
       };
     }
 
+    // Look up attendee to get full name (first + last)
+    let guestFullName = booking.guest_name;
+    if (booking.guest_email) {
+      const { data: attendee } = await serviceSupabase
+        .from("attendees")
+        .select("name, surname")
+        .eq("email", booking.guest_email)
+        .single();
+      
+      if (attendee && attendee.name) {
+        guestFullName = attendee.surname 
+          ? `${attendee.name} ${attendee.surname}`
+          : attendee.name;
+      }
+    }
+
     return NextResponse.json(
       {
         booking: {
@@ -276,7 +292,7 @@ export async function GET(
           // CRITICAL: Use authoritative status from direct query to avoid PostgREST field collision
           status: authoritativeStatus,
           payment_status: authoritativePaymentStatus || "not_required",
-          guest_name: booking.guest_name,
+          guest_name: guestFullName, // Use full name from attendee lookup
           guest_email: booking.guest_email,
           party_size: booking.party_size,
           deposit_required: booking.deposit_required,
