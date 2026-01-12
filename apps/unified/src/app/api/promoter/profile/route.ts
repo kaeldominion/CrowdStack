@@ -89,17 +89,18 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const serviceSupabase = createServiceRoleClient();
 
-    // Get current promoter to check slug for revalidation
+    // Find the promoter profile (check both user_id and created_by like GET route does)
     let { data: currentPromoter } = await serviceSupabase
       .from("promoters")
-      .select("slug")
+      .select("id, slug")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (!currentPromoter) {
+      // Fallback: check created_by
       const { data: promoterByCreator } = await serviceSupabase
         .from("promoters")
-        .select("slug")
+        .select("id, slug")
         .eq("created_by", user.id)
         .maybeSingle();
       currentPromoter = promoterByCreator;
@@ -112,7 +113,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update the profile
+    // Update the profile using the promoter's ID (this ensures we update the correct record)
     const updateData: any = {};
     if (body.name !== undefined) updateData.name = body.name;
     if (body.email !== undefined) updateData.email = body.email || null;
@@ -127,43 +128,11 @@ export async function PATCH(request: NextRequest) {
     const { data: updatedPromoter, error: updateError } = await serviceSupabase
       .from("promoters")
       .update(updateData)
-      .eq("user_id", user.id)
+      .eq("id", currentPromoter.id)
       .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
       .single();
 
     if (updateError) {
-      // If user_id didn't work, try created_by
-      if (updateError.code === 'PGRST116') {
-        const { data: updatedByCreator, error: creatorError } = await serviceSupabase
-          .from("promoters")
-          .update(updateData)
-          .eq("created_by", user.id)
-          .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
-          .single();
-
-        if (creatorError) {
-          console.error("Error updating promoter profile:", creatorError);
-          return NextResponse.json(
-            { error: creatorError.message || "Failed to update profile" },
-            { status: 500 }
-          );
-        }
-
-        // Note: revalidatePath doesn't work in API routes
-        // The page uses dynamic = 'force-dynamic' and noStore() to always fetch fresh data
-
-        return NextResponse.json(
-          { promoter: updatedByCreator },
-          {
-            headers: {
-              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0',
-            },
-          }
-        );
-      }
-
       console.error("Error updating promoter profile:", updateError);
       return NextResponse.json(
         { error: updateError.message || "Failed to update profile" },

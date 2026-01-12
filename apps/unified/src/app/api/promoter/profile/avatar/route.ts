@@ -47,12 +47,23 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Find promoter linked to this user
-    const { data: promoter } = await serviceSupabase
+    // Find promoter linked to this user (check both user_id and created_by like profile route does)
+    let { data: promoter } = await serviceSupabase
       .from("promoters")
       .select("id, profile_image_url")
-      .eq("created_by", user.id)
-      .single();
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!promoter) {
+      // Fallback: check created_by
+      const { data: promoterByCreator } = await serviceSupabase
+        .from("promoters")
+        .select("id, profile_image_url")
+        .eq("created_by", user.id)
+        .maybeSingle();
+      
+      promoter = promoterByCreator;
+    }
 
     if (!promoter) {
       return NextResponse.json({ error: "Promoter profile not found" }, { status: 404 });
@@ -127,14 +138,29 @@ export async function DELETE(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Find promoter linked to this user
-    const { data: promoter } = await serviceSupabase
+    // Find promoter linked to this user (check both user_id and created_by like profile route does)
+    let { data: promoter } = await serviceSupabase
       .from("promoters")
       .select("id, profile_image_url")
-      .eq("created_by", user.id)
-      .single();
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    if (!promoter?.profile_image_url) {
+    if (!promoter) {
+      // Fallback: check created_by
+      const { data: promoterByCreator } = await serviceSupabase
+        .from("promoters")
+        .select("id, profile_image_url")
+        .eq("created_by", user.id)
+        .maybeSingle();
+      
+      promoter = promoterByCreator;
+    }
+
+    if (!promoter) {
+      return NextResponse.json({ error: "Promoter profile not found" }, { status: 404 });
+    }
+
+    if (!promoter.profile_image_url) {
       return NextResponse.json({ error: "No avatar to delete" }, { status: 404 });
     }
 

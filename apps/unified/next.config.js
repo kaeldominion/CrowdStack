@@ -31,6 +31,47 @@ const nextConfig = {
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
+  // Disable caching for dynamic profile routes (promoters and venues)
+  async headers() {
+    return [
+      {
+        source: '/promoter/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        ],
+      },
+      {
+        source: '/v/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        ],
+      },
+      {
+        source: '/api/promoters/by-slug/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        ],
+      },
+      {
+        source: '/api/venues/by-slug/:slug*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
