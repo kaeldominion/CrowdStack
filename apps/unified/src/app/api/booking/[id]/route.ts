@@ -77,11 +77,15 @@ export async function GET(
       .single();
 
     if (bookingError || !booking) {
+      console.error("[Booking API] Error fetching booking:", bookingError);
       return NextResponse.json(
         { error: "Booking not found" },
         { status: 404 }
       );
     }
+
+    // Log the actual status values for debugging
+    console.log(`[Booking API] Booking ${bookingId} - status: ${booking.status}, payment_status: ${booking.payment_status}`);
 
     // Type assertions for nested data
     const event = booking.event as any;
