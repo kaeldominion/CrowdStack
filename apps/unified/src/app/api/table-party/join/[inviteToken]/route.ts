@@ -17,7 +17,7 @@ interface EventWithVenue {
   slug: string;
   start_time: string;
   timezone: string | null;
-  cover_image: string | null;
+  cover_image_url: string | null;
   venue: {
     id: string;
     name: string;
@@ -104,7 +104,7 @@ export async function GET(
           slug,
           start_time,
           timezone,
-          cover_image,
+          cover_image_url,
           venue:venues(id, name, address, city)
         )
       `)
@@ -183,7 +183,7 @@ export async function GET(
         date: eventDate,
         time: eventTime,
         start_time: event.start_time,
-        cover_image: event.cover_image,
+        cover_image: event.cover_image_url,
         is_past: isPastEvent,
       },
       venue: {

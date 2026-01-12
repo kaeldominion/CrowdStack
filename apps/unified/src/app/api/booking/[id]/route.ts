@@ -33,9 +33,10 @@ export async function GET(
     // This is a known PostgREST limitation when both parent and nested tables have
     // columns with the same name. By fetching these fields separately, we ensure
     // we get the correct values from table_bookings, not events.
+    // Also fetch updated_at for debugging and cache invalidation purposes.
     const { data: directBooking, error: directError } = await serviceSupabase
       .from("table_bookings")
-      .select("id, status, payment_status")
+      .select("id, status, payment_status, updated_at")
       .eq("id", bookingId)
       .single();
 
@@ -113,6 +114,7 @@ export async function GET(
     console.log(`[Booking API] Authoritative status values:`, {
       status: authoritativeStatus,
       payment_status: authoritativePaymentStatus,
+      updated_at: directBooking.updated_at,
       bookingId,
     });
 
@@ -277,6 +279,7 @@ export async function GET(
           minimum_spend: booking.minimum_spend,
           special_requests: booking.special_requests,
           created_at: booking.created_at,
+          updated_at: directBooking.updated_at, // Useful for debugging and cache invalidation
         },
         event: {
           id: event?.id,
