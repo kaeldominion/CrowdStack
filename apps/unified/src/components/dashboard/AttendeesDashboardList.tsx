@@ -172,7 +172,7 @@ export function AttendeesDashboardList({
               return (
                 <div
                   key={attendee.id}
-                  className={`grid gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
+                  className={`grid gap-2 items-center px-3 py-1 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
                     role === "promoter"
                       ? "grid-cols-[2fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
                       : role === "admin"
@@ -238,7 +238,7 @@ export function AttendeesDashboardList({
                   ) : role === "admin" ? (
                     <>
                       {/* Account */}
-                      <div className="text-center">
+                      <div className="flex items-center justify-center">
                         {attendee.user_id ? (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--accent-success)]/10">
                             <UserCheck className="h-3 w-3 text-[var(--accent-success)]" />
@@ -263,7 +263,7 @@ export function AttendeesDashboardList({
                   ) : (
                     <>
                       {/* VIP */}
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         {attendee.is_global_vip && (
                           <VipBadge level="global" variant="badge" size="xs" />
                         )}
@@ -278,7 +278,7 @@ export function AttendeesDashboardList({
                         )}
                       </div>
                       {/* Account */}
-                      <div className="text-center">
+                      <div className="flex items-center justify-center">
                         {attendee.user_id ? (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--accent-success)]/10">
                             <UserCheck className="h-3 w-3 text-[var(--accent-success)]" />
@@ -296,8 +296,15 @@ export function AttendeesDashboardList({
                         {attendee.total_check_ins || 0}
                       </div>
                       {/* Status */}
-                      <div>
-                        {getStrikeBadge(attendee.strike_count)}
+                      <div className="flex items-center justify-start gap-1.5">
+                        {attendee.total_check_ins > 0 ? (
+                          <>
+                            <UserCheck className="h-3.5 w-3.5 text-[var(--accent-success)] flex-shrink-0" />
+                            <span className="text-[10px] text-[var(--accent-success)]">In</span>
+                          </>
+                        ) : (
+                          getStrikeBadge(attendee.strike_count) || <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                        )}
                       </div>
                     </>
                   )}
