@@ -112,6 +112,7 @@ export default function VenueTableBookingsPage() {
   const [partyGuests, setPartyGuests] = useState<PartyGuest[]>([]);
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [updatingDeposit, setUpdatingDeposit] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -199,6 +200,35 @@ export default function VenueTableBookingsPage() {
       alert(err.message);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleDepositToggle = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      setUpdatingDeposit(true);
+      const response = await fetch(`/api/venue/events/${selectedBooking.event.id}/bookings/${selectedBooking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deposit_received: !selectedBooking.deposit_received }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update deposit status");
+      }
+
+      // Refresh bookings and update selected booking
+      await fetchBookings();
+      if (selectedBooking) {
+        const updatedBooking = { ...selectedBooking, deposit_received: !selectedBooking.deposit_received };
+        setSelectedBooking(updatedBooking);
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setUpdatingDeposit(false);
     }
   };
 
@@ -620,12 +650,32 @@ export default function VenueTableBookingsPage() {
                 </div>
               )}
               {selectedBooking.deposit_required && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Deposit</span>
-                  <span className={selectedBooking.deposit_received ? "text-green-400" : "text-amber-400"}>
-                    {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
-                    {selectedBooking.deposit_received ? " (Paid)" : " (Pending)"}
-                  </span>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-400">Deposit</span>
+                    <span className={selectedBooking.deposit_received ? "text-green-400" : "text-amber-400"}>
+                      {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
+                      {selectedBooking.deposit_received ? " (Paid)" : " (Pending)"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="deposit-received-table-bookings"
+                        checked={selectedBooking.deposit_received || false}
+                        onChange={handleDepositToggle}
+                        disabled={updatingDeposit || actionLoading !== null}
+                        className="rounded bg-gray-700 border-gray-600 text-purple-500 focus:ring-purple-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <label htmlFor="deposit-received-table-bookings" className="text-xs text-white cursor-pointer">
+                        Mark as Paid
+                      </label>
+                    </div>
+                    {updatingDeposit && (
+                      <InlineSpinner className="h-3 w-3" />
+                    )}
+                  </div>
                 </div>
               )}
               {selectedBooking.actual_spend && (
