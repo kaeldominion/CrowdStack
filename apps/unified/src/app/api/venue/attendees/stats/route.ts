@@ -115,14 +115,18 @@ export async function GET() {
     if (topAttendeeIds.length > 0) {
       const { data: attendeesData } = await serviceSupabase
         .from("attendees")
-        .select("id, name, xp_points")
+        .select("id, name, surname, xp_points")
         .in("id", topAttendeeIds);
 
       topAttendees = topAttendeeIds.map((id) => {
         const attendee = attendeesData?.find((a) => a.id === id);
+        // Combine first and last name
+        const fullName = attendee 
+          ? (attendee.surname ? `${attendee.name || ""} ${attendee.surname}`.trim() : attendee.name || "Unknown")
+          : "Unknown";
         return {
           id,
-          name: attendee?.name || "Unknown",
+          name: fullName,
           checkins: attendeeCheckins.get(id) || 0,
           events: attendeeCounts.get(id) || 0,
           xp_points: attendee?.xp_points || 0,

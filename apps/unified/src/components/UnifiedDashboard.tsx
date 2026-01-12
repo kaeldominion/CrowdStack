@@ -12,6 +12,7 @@ import { EarningsChart } from "@/components/charts/EarningsChart";
 import { createBrowserClient } from "@crowdstack/shared";
 import { DJProfileSelector } from "@/components/DJProfileSelector";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
@@ -118,6 +119,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
   const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [djStats, setDJStats] = useState({
     mixesCount: 0,
@@ -711,7 +713,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       {attendeeStats.topAttendees.map((attendee, index) => (
                         <div
                           key={attendee.id}
-                          className="flex items-center gap-2 bg-glass/50 rounded-full px-3 py-1.5 border border-border-subtle"
+                          onClick={() => setSelectedAttendeeId(attendee.id)}
+                          className="flex items-center gap-2 bg-glass/50 rounded-full px-3 py-1.5 border border-border-subtle hover:bg-active cursor-pointer transition-colors"
                         >
                           <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white">
                             {index + 1}
@@ -1538,6 +1541,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </div>
           </BentoCard>
         </section>
+      )}
+
+      {/* Attendee Detail Modal */}
+      {isVenue && (
+        <AttendeeDetailModal
+          isOpen={!!selectedAttendeeId}
+          onClose={() => setSelectedAttendeeId(null)}
+          attendeeId={selectedAttendeeId || ""}
+          role="venue"
+        />
       )}
     </div>
   );

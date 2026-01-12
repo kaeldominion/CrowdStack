@@ -29,6 +29,7 @@ import {
 } from "@crowdstack/ui";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { ActivityLog } from "@/components/ActivityLog";
+import { VenueFeedbackPanel } from "@/components/feedback/VenueFeedbackPanel";
 
 // Fetcher for SWR
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -97,6 +98,7 @@ import {
   Sparkles,
   RefreshCw,
   Layers,
+  MessageSquare,
 } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 import Link from "next/link";
@@ -1495,6 +1497,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (config.canViewBookings && (config.role === "venue" || config.role === "organizer")) {
     tabs.push({ value: "bookings", label: "Bookings" });
   }
+  // Venue Pulse (Feedback) tab - show for venues only
+  if (config.role === "venue") {
+    tabs.push({ value: "feedback", label: "Venue Pulse" });
+  }
 
   return (
     <div className="relative min-h-screen">
@@ -1930,6 +1936,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 {tab.value === "email-stats" && <Mail className="h-4 w-4 mr-1" />}
                 {tab.value === "leaderboard" && <Trophy className="h-4 w-4 mr-1" />}
                 {tab.value === "tables" && <Layers className="h-4 w-4 mr-1" />}
+                {tab.value === "feedback" && <MessageSquare className="h-4 w-4 mr-1" />}
                 {tab.label}
               </TabsTrigger>
             ))}
@@ -3113,6 +3120,13 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 </div>
                 <BookingsTab eventId={event.id} />
               </Card>
+            </TabsContent>
+          )}
+
+          {/* Venue Pulse (Feedback) Tab */}
+          {config.role === "venue" && (
+            <TabsContent value="feedback" className="space-y-4">
+              <VenueFeedbackPanel eventId={eventId} />
             </TabsContent>
           )}
         </Tabs>
