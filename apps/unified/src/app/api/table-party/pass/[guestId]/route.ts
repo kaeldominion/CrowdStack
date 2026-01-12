@@ -77,7 +77,17 @@ export async function GET(
       );
     }
 
-    // Get the booking with event and table details
+    // CRITICAL: Get authoritative status separately to avoid PostgREST field collision
+    // (events table also has a "status" column that can interfere with nested selects)
+    const { data: statusData } = await serviceSupabase
+      .from("table_bookings")
+      .select("status")
+      .eq("id", guest.booking_id)
+      .single();
+
+    const authoritativeStatus = statusData?.status;
+
+    // Get the booking with event and table details (excluding status to avoid collision)
     const { data: bookingData, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
@@ -85,7 +95,6 @@ export async function GET(
         event_id,
         guest_name,
         party_size,
-        status,
         table:venue_tables(
           id,
           name,
@@ -114,8 +123,8 @@ export async function GET(
     const booking = bookingData as unknown as BookingWithTable;
     const event = booking.event as EventWithVenue;
 
-    // Check if booking is still valid
-    if (booking.status === "cancelled") {
+    // Check if booking is still valid (using authoritative status)
+    if (authoritativeStatus === "cancelled") {
       return NextResponse.json(
         { error: "This booking has been cancelled" },
         { status: 400 }
@@ -161,7 +170,7 @@ export async function GET(
         party_size: booking.party_size,
         table_name: booking.table?.name || "Table",
         zone_name: booking.table?.zone?.name || "General",
-        status: booking.status,
+        status: authoritativeStatus, // Use authoritative status from direct query
       },
       event: {
         id: event.id,

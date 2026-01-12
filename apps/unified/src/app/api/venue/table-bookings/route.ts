@@ -197,6 +197,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
     }
 
+    // CRITICAL: Get authoritative status values separately to avoid PostgREST field collision
+    // (events table also has a "status" column that can interfere with nested selects)
+    let bookingsWithAuthoritativeStatus = bookings || [];
+    if (bookings && bookings.length > 0) {
+      const bookingIds = bookings.map(b => b.id);
+      const { data: statusData } = await serviceSupabase
+        .from("table_bookings")
+        .select("id, status")
+        .in("id", bookingIds);
+
+      if (statusData) {
+        const statusMap = new Map(statusData.map(s => [s.id, s.status]));
+        bookingsWithAuthoritativeStatus = bookings.map(b => ({
+          ...b,
+          status: statusMap.get(b.id) || b.status, // Use authoritative status
+        }));
+      }
+    }
+
     // Get summary counts using event IDs (all non-archived bookings)
     let summaryQuery = serviceSupabase
       .from("table_bookings")
@@ -226,7 +245,7 @@ export async function GET(request: NextRequest) {
       .limit(50);
 
     return NextResponse.json({
-      bookings: bookings || [],
+      bookings: bookingsWithAuthoritativeStatus, // Use authoritative status values
       summary,
       events: eventsData || [],
       currency: venue?.currency || "USD",

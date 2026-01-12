@@ -50,12 +50,21 @@ export async function POST(
       );
     }
 
-    // Get the booking and verify ownership
+    // CRITICAL: Get authoritative status separately to avoid PostgREST field collision
+    // (events table also has a "status" column that can interfere with nested selects)
+    const { data: statusData } = await serviceSupabase
+      .from("table_bookings")
+      .select("status")
+      .eq("id", bookingId)
+      .single();
+
+    const authoritativeStatus = statusData?.status;
+
+    // Get the booking and verify ownership (excluding status to avoid collision)
     const { data: booking, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
         id,
-        status,
         attendee_id,
         guest_name,
         guest_email,
@@ -96,10 +105,10 @@ export async function POST(
       }
     }
 
-    // Check if booking can be cancelled
-    if (!["pending", "confirmed"].includes(booking.status)) {
+    // Check if booking can be cancelled (using authoritative status)
+    if (!["pending", "confirmed"].includes(authoritativeStatus)) {
       return NextResponse.json(
-        { error: `Cannot cancel a booking with status: ${booking.status}` },
+        { error: `Cannot cancel a booking with status: ${authoritativeStatus}` },
         { status: 400 }
       );
     }
