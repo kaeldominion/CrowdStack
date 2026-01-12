@@ -78,6 +78,25 @@ export async function sendTemplateEmail(
       ? renderTemplate(template.text_body, data)
       : undefined;
 
+    // Enhance metadata with organizer_id and venue_id if event_id is present
+    let enhancedMetadata = { ...(metadata || {}) };
+    if (metadata?.event_id) {
+      // Fetch event to get organizer_id and venue_id
+      const { data: event } = await supabase
+        .from("events")
+        .select("organizer_id, venue_id")
+        .eq("id", metadata.event_id)
+        .single();
+      
+      if (event) {
+        enhancedMetadata = {
+          ...enhancedMetadata,
+          organizer_id: event.organizer_id || null,
+          venue_id: event.venue_id || null,
+        };
+      }
+    }
+
     // Log email send attempt
     let logEntry: any = null;
     const { data: insertedLog, error: logError } = await supabase
@@ -90,7 +109,7 @@ export async function sendTemplateEmail(
         subject,
         email_type: "template",
         status: "pending",
-        metadata: metadata || {},
+        metadata: enhancedMetadata,
       })
       .select()
       .single();
@@ -120,7 +139,7 @@ export async function sendTemplateEmail(
         const existingMetadata = (logEntry.metadata as Record<string, any>) || {};
         const updatedMetadata = {
           ...existingMetadata,
-          ...(metadata || {}), // Preserve original metadata (event_id, etc.)
+          ...enhancedMetadata, // Use enhanced metadata with organizer_id/venue_id
           postmark_message_id: result.MessageID,
         };
         
@@ -145,7 +164,7 @@ export async function sendTemplateEmail(
       } else {
         // Initial insert failed, try to create log entry now with Postmark message ID
         const finalMetadata = {
-          ...(metadata || {}),
+          ...enhancedMetadata, // Use enhanced metadata with organizer_id/venue_id
           postmark_message_id: result.MessageID,
         };
         
@@ -193,7 +212,7 @@ export async function sendTemplateEmail(
           .eq("id", logEntry.id);
       } else {
         // Initial insert failed, try to create log entry now with error status
-        const finalMetadata = metadata || {};
+        const finalMetadata = enhancedMetadata || {};
         await supabase
           .from("email_send_logs")
           .insert({

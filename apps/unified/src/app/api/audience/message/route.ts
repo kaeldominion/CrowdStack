@@ -160,19 +160,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log to message_logs (for audit trail - one entry per message, not per recipient)
-    // In the future, individual recipient logs will be created when messages are actually sent
-    const { error: logError } = await serviceSupabase.from("message_logs").insert({
+    // Log to email_send_logs as a queued message (for audit trail)
+    // Individual recipient logs will be created when messages are actually sent
+    const { logEmail } = await import("@crowdstack/shared/email/log-email");
+    await logEmail({
       recipient: `${audience_type}:${audience_id}`,
       subject: `[Queued] ${subject}`,
+      emailType: "system",
+      templateSlug: "audience_message",
       status: "pending",
-      // sent_at will be set when message is actually processed
+      metadata: {
+        audience_type,
+        audience_id,
+        message_id: message.id,
+        recipient_count: recipientCount,
+      },
     });
-
-    if (logError) {
-      // Don't fail the request if logging fails, but log the error
-      console.error("Failed to log message:", logError);
-    }
 
     return NextResponse.json({
       success: true,

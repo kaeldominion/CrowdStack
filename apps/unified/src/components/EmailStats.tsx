@@ -19,17 +19,19 @@ interface EmailStat {
   openRate: number;
   clickRate: number;
   bounceRate: number;
-  emails: Array<{
-    id: string;
-    recipient_email: string;
-    subject: string;
-    created_at: string;
-    delivered_at: string | null;
-    opened_at: string | null;
-    clicked_at: string | null;
-    bounced_at: string | null;
-    bounce_reason: string | null;
-  }>;
+    emails: Array<{
+      id: string;
+      recipient_email: string;
+      subject: string;
+      created_at: string;
+      delivered_at: string | null;
+      opened_at: string | null;
+      clicked_at: string | null;
+      bounced_at: string | null;
+      bounce_reason: string | null;
+      open_count?: number;
+      click_count?: number;
+    }>;
 }
 
 export function EmailStats({ eventId }: EmailStatsProps) {
@@ -221,13 +223,15 @@ export function EmailStats({ eventId }: EmailStatsProps) {
                           </Badge>
                         )}
                         {email.opened_at && (
-                          <Badge color="blue" variant="solid" size="sm" title="Opened">
+                          <Badge color="blue" variant="solid" size="sm" title={`Opened${email.open_count > 1 ? ` (${email.open_count}x)` : ""}`}>
                             <Eye className="h-3 w-3 mr-1" />
+                            {email.open_count > 1 && <span className="ml-1">{email.open_count}</span>}
                           </Badge>
                         )}
                         {email.clicked_at && (
-                          <Badge color="purple" variant="solid" size="sm" title="Clicked">
+                          <Badge color="purple" variant="solid" size="sm" title={`Clicked${email.click_count > 1 ? ` (${email.click_count}x)` : ""}`}>
                             <MousePointerClick className="h-3 w-3 mr-1" />
+                            {email.click_count > 1 && <span className="ml-1">{email.click_count}</span>}
                           </Badge>
                         )}
                         {email.bounced_at && (

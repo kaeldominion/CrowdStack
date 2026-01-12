@@ -276,20 +276,8 @@ export async function POST(
       .update({ photo_last_notified_at: new Date().toISOString() })
       .eq("id", album.id);
 
-    // Log to message_logs for audit trail
-    const logSubject = venueName 
-      ? `Photos from ${event.name} @ ${venueName} are now available!`
-      : `Photos from ${event.name} are now available!`;
-    
-    await serviceSupabase
-      .from("message_logs")
-      .insert({
-        recipient: `${result.sent} attendees`,
-        subject: logSubject,
-        status: result.failed === 0 ? "sent" : "sent",
-        sent_at: new Date().toISOString(),
-        error_message: result.errors.length > 0 ? result.errors.slice(0, 5).join("; ") : null,
-      });
+    // Note: Individual emails are already logged to email_send_logs via sendTemplateEmail
+    // No need for additional logging here
 
     return NextResponse.json({
       success: true,

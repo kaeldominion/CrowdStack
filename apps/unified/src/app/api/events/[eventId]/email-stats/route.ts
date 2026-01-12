@@ -27,12 +27,14 @@ function processEmailLogs(emailLogs: any[]) {
       clicked_at: string | null;
       bounced_at: string | null;
       bounce_reason: string | null;
+      open_count?: number;
+      click_count?: number;
     }>;
   }> = {};
 
   emailLogs.forEach((log: any) => {
-    // Use template_slug as the type, or fallback to email_type from metadata
-    const type = log.metadata?.email_type || log.template_slug || "unknown";
+    // Use email_type field (new centralized system) or fallback to template_slug
+    const type = log.email_type || log.template_slug || "unknown";
     
     if (!statsByType[type]) {
       statsByType[type] = {
@@ -55,9 +57,19 @@ function processEmailLogs(emailLogs: any[]) {
     
     // email_send_logs uses status field: 'sent' = delivered, 'bounced' = bounced
     if (log.status === "sent") stats.delivered++;
-    if (log.opened_at) stats.opened++;
-    if (log.clicked_at) stats.clicked++;
-    if (log.status === "bounced") stats.bounced++;
+    // Use open_count if available (new system), otherwise check opened_at
+    if (log.open_count && log.open_count > 0) {
+      stats.opened += log.open_count;
+    } else if (log.opened_at) {
+      stats.opened++;
+    }
+    // Use click_count if available (new system), otherwise check clicked_at
+    if (log.click_count && log.click_count > 0) {
+      stats.clicked += log.click_count;
+    } else if (log.clicked_at) {
+      stats.clicked++;
+    }
+    if (log.status === "bounced" || log.bounced_at) stats.bounced++;
 
     stats.emails.push({
       id: log.id,
@@ -65,10 +77,12 @@ function processEmailLogs(emailLogs: any[]) {
       subject: log.subject || "No subject",
       created_at: log.created_at,
       delivered_at: log.status === "sent" ? (log.sent_at || log.created_at) : null,
-      opened_at: log.opened_at,
-      clicked_at: log.clicked_at,
-      bounced_at: log.status === "bounced" ? (log.sent_at || log.created_at) : null,
-      bounce_reason: log.error_message || null,
+      opened_at: log.last_opened_at || log.opened_at || null,
+      clicked_at: log.last_clicked_at || log.clicked_at || null,
+      bounced_at: log.bounced_at || (log.status === "bounced" ? (log.sent_at || log.created_at) : null),
+      bounce_reason: log.bounce_reason || log.error_message || null,
+      open_count: log.open_count || (log.opened_at ? 1 : 0),
+      click_count: log.click_count || (log.clicked_at ? 1 : 0),
     });
   });
 
@@ -80,7 +94,9 @@ function processEmailLogs(emailLogs: any[]) {
     stats.bounceRate = stats.total > 0 ? (stats.bounced / stats.total) * 100 : 0;
   });
 
-  return Object.values(statsByType);
+  // Sort by total (most emails first)
+  return Object.values(statsByType).sort((a, b) => b.total - a.total);
+
 }
 
 /**
@@ -193,7 +209,7 @@ export async function GET(
     let emailLogs: any[] | null = null;
     let queryError: any = null;
 
-    // First, try the standard query with text extraction
+    // First, try the standard query with text extraction (most common)
     const { data: logs1, error: err1 } = await serviceSupabase
       .from("email_send_logs")
       .select("*")
@@ -219,6 +235,15 @@ export async function GET(
         queryError = err2 || err1;
         console.log(`[Email Stats] No logs found for event ${params.eventId}`, { err1, err2 });
       }
+    }
+
+    // Filter to ensure we only return emails for this specific event
+    // (Double-check in case of any edge cases)
+    if (emailLogs) {
+      emailLogs = emailLogs.filter((log: any) => {
+        const logEventId = log.metadata?.event_id;
+        return logEventId === params.eventId;
+      });
     }
 
     if (queryError && !emailLogs) {
