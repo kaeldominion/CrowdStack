@@ -452,7 +452,7 @@ export async function POST(
       registration = newRegistration;
 
       // Emit registration event
-      await emitOutboxEvent("registration.created", {
+      await emitOutboxEvent("registration_created", {
         registration_id: registration.id,
         attendee_id: attendee.id,
         event_id: event.id,
