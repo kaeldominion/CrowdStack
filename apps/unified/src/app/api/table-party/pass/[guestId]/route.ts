@@ -9,7 +9,7 @@ interface EventWithVenue {
   slug: string;
   start_time: string;
   timezone: string | null;
-  cover_image: string | null;
+  cover_image_url: string | null;
   venue: {
     id: string;
     name: string;
@@ -55,11 +55,20 @@ export async function GET(
       .single();
 
     if (guestError || !guest) {
+      console.error("[Pass API] Guest not found:", { guestId, error: guestError });
       return NextResponse.json(
         { error: "Pass not found" },
         { status: 404 }
       );
     }
+
+    console.log("[Pass API] Found guest:", {
+      guestId: guest.id,
+      booking_id: guest.booking_id,
+      status: guest.status,
+      is_host: guest.is_host,
+      has_qr_token: !!guest.qr_token,
+    });
 
     // Check if guest has joined (has QR token)
     if (guest.status !== "joined" || !guest.qr_token) {
@@ -106,7 +115,7 @@ export async function GET(
           slug,
           start_time,
           timezone,
-          cover_image,
+          cover_image_url,
           venue:venues(id, name, address, city)
         )
       `)
@@ -114,6 +123,11 @@ export async function GET(
       .single();
 
     if (bookingError || !bookingData) {
+      console.error("[Pass API] Booking not found:", {
+        booking_id: guest.booking_id,
+        error: bookingError,
+        statusData,
+      });
       return NextResponse.json(
         { error: "Booking not found" },
         { status: 404 }
@@ -179,7 +193,7 @@ export async function GET(
         date: eventDate,
         time: eventTime,
         start_time: event.start_time,
-        cover_image: event.cover_image,
+        cover_image: event.cover_image_url,
         is_past: isPastEvent,
       },
       venue: {
