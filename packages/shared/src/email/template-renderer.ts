@@ -88,6 +88,7 @@ export async function sendTemplateEmail(
         recipient,
         recipient_user_id: recipientUserId,
         subject,
+        email_type: "template",
         status: "pending",
         metadata: metadata || {},
       })
@@ -110,6 +111,7 @@ export async function sendTemplateEmail(
         htmlBody,
         textBody,
         tag: `template:${template.slug}`,
+        skipLogging: true, // Template-renderer handles its own logging
       });
 
       // Ensure log entry exists - create or update
@@ -155,6 +157,7 @@ export async function sendTemplateEmail(
             recipient,
             recipient_user_id: recipientUserId,
             subject,
+            email_type: "template",
             status: "sent",
             sent_at: new Date().toISOString(),
             metadata: finalMetadata,
@@ -199,6 +202,7 @@ export async function sendTemplateEmail(
             recipient,
             recipient_user_id: recipientUserId,
             subject,
+            email_type: "template",
             status: "failed",
             error_message: emailError.message || "Failed to send email",
             metadata: finalMetadata,

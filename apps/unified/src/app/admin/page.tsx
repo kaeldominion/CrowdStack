@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, Container, Section } from "@crowdstack/ui";
-import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine, Mail, Database } from "lucide-react";
+import { Building2, Calendar, Users, QrCode, Settings, ExternalLink, Merge, AlertTriangle, Shield, Radio, MapPin, UserCheck, Download, Palette, TrendingUp, ScanLine, Mail, Database, Mailbox } from "lucide-react";
 
 interface LiveEvent {
   id: string;
@@ -92,6 +92,12 @@ export default function AdminDashboardPage() {
       href: "/admin/attendees",
       description: "Comprehensive attendee database",
       icon: <Users className="h-6 w-6" />,
+    },
+    {
+      name: "Email Logs",
+      href: "/admin/emails",
+      description: "Complete log of all emails sent by the platform",
+      icon: <Mailbox className="h-6 w-6" />,
     },
   ];
 

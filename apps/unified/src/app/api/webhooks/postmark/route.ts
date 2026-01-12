@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Find the email log entry by Postmark message ID
     const { data: emailLog, error: findError } = await supabase
       .from("email_send_logs")
-      .select("id, status, opened_at, clicked_at")
+      .select("id, status, opened_at, clicked_at, open_count, click_count, last_opened_at, last_clicked_at, bounced_at")
       .eq("metadata->>postmark_message_id", messageId)
       .single();
 
@@ -71,42 +71,51 @@ export async function POST(request: NextRequest) {
 
     // Update based on record type
     const updates: Record<string, any> = {};
+    const timestamp = receivedAt || new Date().toISOString();
 
     switch (recordType) {
       case "Open":
-        // Only update if not already opened (first open)
+        // Track multiple opens
+        updates.open_count = (emailLog.open_count || 0) + 1;
+        updates.last_opened_at = timestamp;
+        
+        // Set first opened_at if not already set
         if (!emailLog.opened_at) {
-          updates.opened_at = receivedAt || new Date().toISOString();
+          updates.opened_at = timestamp;
         }
         break;
 
       case "Click":
-        // Only update if not already clicked (first click)
+        // Track multiple clicks
+        updates.click_count = (emailLog.click_count || 0) + 1;
+        updates.last_clicked_at = timestamp;
+        
+        // Set first clicked_at if not already set
         if (!emailLog.clicked_at) {
-          updates.clicked_at = receivedAt || new Date().toISOString();
+          updates.clicked_at = timestamp;
         }
         break;
 
       case "Bounce":
         updates.status = "bounced";
+        updates.bounced_at = timestamp;
+        updates.bounce_reason = body.Description || body.Message || body.BounceType || "Email bounced";
         updates.error_message = body.Description || body.Message || "Email bounced";
-        // Note: We don't have a bounced_at field, using sent_at for bounce timestamp
-        if (receivedAt) {
-          updates.sent_at = receivedAt;
-        }
         break;
 
       case "Delivery":
         // Update status to sent if still pending
         if (emailLog.status === "pending") {
           updates.status = "sent";
-          updates.sent_at = receivedAt || new Date().toISOString();
+          updates.sent_at = timestamp;
         }
         break;
 
       case "SpamComplaint":
         // Mark as bounced/spam
         updates.status = "bounced";
+        updates.bounced_at = timestamp;
+        updates.bounce_reason = "Spam complaint";
         updates.error_message = "Spam complaint";
         break;
 

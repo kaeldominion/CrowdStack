@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logEmail } from "./log-email";
+
 interface PostmarkEmailOptions {
   from: string;
   to: string;
@@ -9,6 +11,12 @@ interface PostmarkEmailOptions {
   replyTo?: string;
   tag?: string;
   messageStream?: string;
+  // Optional logging metadata
+  recipientUserId?: string | null;
+  emailType?: "direct" | "system";
+  metadata?: Record<string, any>;
+  // Skip logging if already logged elsewhere (e.g., by template-renderer)
+  skipLogging?: boolean;
 }
 
 interface PostmarkResponse {
@@ -21,6 +29,7 @@ interface PostmarkResponse {
 
 /**
  * Send an email using Postmark HTTP API
+ * Automatically logs to email_send_logs
  * 
  * @see https://postmarkapp.com/developer/api/email-api
  */
@@ -42,30 +51,88 @@ export async function sendEmail(options: PostmarkEmailOptions): Promise<Postmark
     MessageStream: options.messageStream || "outbound",
   };
 
-  const response = await fetch("https://api.postmarkapp.com/email", {
-    method: "POST",
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "X-Postmark-Server-Token": apiToken,
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Postmark-Server-Token": apiToken,
+      },
+      body: JSON.stringify(payload),
+    });
 
-  const result = await response.json();
+    const result = await response.json();
 
-  if (!response.ok || result.ErrorCode !== 0) {
-    console.error("[Postmark] Email send failed:", result);
-    throw new Error(result.Message || "Failed to send email");
+    if (!response.ok || result.ErrorCode !== 0) {
+      console.error("[Postmark] Email send failed:", result);
+      
+      // Log failed email (unless logging is skipped)
+      if (!options.skipLogging) {
+        await logEmail({
+          recipient: options.to,
+          recipientUserId: options.recipientUserId || null,
+          subject: options.subject,
+          emailType: options.emailType || "direct",
+          postmarkMessageId: result.MessageID || null,
+          status: "failed",
+          errorMessage: result.Message || "Failed to send email",
+          metadata: {
+            ...(options.metadata || {}),
+            tag: options.tag,
+            from: options.from,
+          },
+        });
+      }
+      
+      throw new Error(result.Message || "Failed to send email");
+    }
+
+    console.log("[Postmark] Email sent successfully:", {
+      to: options.to,
+      subject: options.subject,
+      messageId: result.MessageID,
+    });
+
+    // Log successful email (unless logging is skipped)
+    if (!options.skipLogging) {
+      await logEmail({
+        recipient: options.to,
+        recipientUserId: options.recipientUserId || null,
+        subject: options.subject,
+        emailType: options.emailType || "direct",
+        postmarkMessageId: result.MessageID,
+        status: "sent",
+        sentAt: result.SubmittedAt || new Date().toISOString(),
+        metadata: {
+          ...(options.metadata || {}),
+          tag: options.tag,
+          from: options.from,
+          submitted_at: result.SubmittedAt,
+        },
+      });
+    }
+
+    return result;
+  } catch (error: any) {
+    // Log error if not already logged (and logging is not skipped)
+    if (!options.skipLogging && error.message !== "Failed to send email") {
+      await logEmail({
+        recipient: options.to,
+        recipientUserId: options.recipientUserId || null,
+        subject: options.subject,
+        emailType: options.emailType || "direct",
+        status: "failed",
+        errorMessage: error.message || "Unknown error",
+        metadata: {
+          ...(options.metadata || {}),
+          tag: options.tag,
+          from: options.from,
+        },
+      });
+    }
+    throw error;
   }
-
-  console.log("[Postmark] Email sent successfully:", {
-    to: options.to,
-    subject: options.subject,
-    messageId: result.MessageID,
-  });
-
-  return result;
 }
 
 /**
@@ -161,6 +228,14 @@ This email was sent from the CrowdStack contact form.
     htmlBody,
     textBody,
     tag: "contact-form",
+    emailType: "contact_form",
+    metadata: {
+      contact_name: data.name,
+      contact_email: data.email,
+      contact_phone: data.phone || null,
+      interest_type: data.interestType,
+      venue_name: data.venueName || null,
+    },
   });
 }
 
