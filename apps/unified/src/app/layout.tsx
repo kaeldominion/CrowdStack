@@ -11,7 +11,7 @@ import { ToastProvider } from "@crowdstack/ui";
 import { QueryProvider } from "@/components/QueryProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-sans",

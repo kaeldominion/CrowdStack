@@ -72,6 +72,10 @@ export async function sendFeedbackRequest(
       feedbackRequest = newRequest;
     }
 
+    if (!feedbackRequest) {
+      throw new Error("Failed to get or create feedback request");
+    }
+
     // Build feedback link with secure token
     const feedbackLink = `${baseUrl}/feedback/${eventId}/${registrationId}?token=${feedbackRequest.token}`;
 

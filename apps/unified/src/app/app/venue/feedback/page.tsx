@@ -62,7 +62,7 @@ export default function VenueFeedbackPage() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
     loadFeedback();
@@ -79,11 +79,7 @@ export default function VenueFeedbackPage() {
       setStats(data.stats);
     } catch (error) {
       console.error("Error loading feedback:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load feedback data.",
-        variant: "error",
-      });
+      toastError("Failed to load feedback data.", "Error");
     } finally {
       setLoading(false);
     }
@@ -109,11 +105,7 @@ export default function VenueFeedbackPage() {
       setEvents(pastEvents);
     } catch (error) {
       console.error("Error loading events:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load events",
-        variant: "error",
-      });
+      toastError("Failed to load events", "Error");
     } finally {
       setLoadingEvents(false);
     }
@@ -128,11 +120,7 @@ export default function VenueFeedbackPage() {
       setAttendees(data.attendees || []);
     } catch (error) {
       console.error("Error loading attendees:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load attendees",
-        variant: "error",
-      });
+      toastError("Failed to load attendees", "Error");
     } finally {
       setLoadingAttendees(false);
     }
@@ -140,11 +128,7 @@ export default function VenueFeedbackPage() {
 
   const handleSendRequest = async () => {
     if (!selectedEventId || !selectedRegistrationId) {
-      toast({
-        title: "Error",
-        description: "Please select an event and attendee",
-        variant: "error",
-      });
+      toastError("Please select an event and attendee", "Error");
       return;
     }
 
@@ -162,21 +146,13 @@ export default function VenueFeedbackPage() {
       }
 
       const data = await response.json();
-      toast({
-        title: "Feedback Request Sent",
-        description: `Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`,
-        variant: "success",
-      });
+      toastSuccess(`Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`, "Feedback Request Sent");
       setSelectedRegistrationId("");
       // Reload feedback stats
       loadFeedback();
     } catch (error: any) {
       console.error("Error sending feedback request:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send feedback request",
-        variant: "error",
-      });
+      toastError(error.message || "Failed to send feedback request", "Error");
     } finally {
       setSendingRequest(false);
     }
@@ -274,15 +250,15 @@ export default function VenueFeedbackPage() {
                     </label>
                     <Select
                       value={selectedEventId}
-                      onValueChange={setSelectedEventId}
-                    >
-                      <option value="">Choose an event...</option>
-                      {events.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.name} - {new Date(event.start_time).toLocaleDateString()}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(e) => setSelectedEventId(e.target.value)}
+                      options={[
+                        { value: "", label: "Choose an event..." },
+                        ...events.map((event) => ({
+                          value: event.id,
+                          label: `${event.name} - ${new Date(event.start_time).toLocaleDateString()}`
+                        }))
+                      ]}
+                    />
                   </div>
 
                   {selectedEventId && (
@@ -306,15 +282,15 @@ export default function VenueFeedbackPage() {
                             </label>
                             <Select
                               value={selectedRegistrationId}
-                              onValueChange={setSelectedRegistrationId}
-                            >
-                              <option value="">Choose an attendee...</option>
-                              {attendees.map((attendee) => (
-                                <option key={attendee.registration_id} value={attendee.registration_id}>
-                                  {attendee.name} {attendee.email ? `(${attendee.email})` : ""}
-                                </option>
-                              ))}
-                            </Select>
+                              onChange={(e) => setSelectedRegistrationId(e.target.value)}
+                              options={[
+                                { value: "", label: "Choose an attendee..." },
+                                ...attendees.map((attendee) => ({
+                                  value: attendee.registration_id,
+                                  label: `${attendee.name} ${attendee.email ? `(${attendee.email})` : ""}`
+                                }))
+                              ]}
+                            />
                             <p className="text-xs text-secondary mt-1">
                               Only checked-in attendees with email addresses are shown
                             </p>
@@ -490,7 +466,7 @@ function FeedbackItemCard({
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(item.internal_notes || "");
   const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const handleMarkResolved = async () => {
     setSaving(true);
@@ -505,21 +481,13 @@ function FeedbackItemCard({
         throw new Error("Failed to update feedback");
       }
 
-      toast({
-        title: "Success",
-        description: item.resolved_at 
-          ? "Feedback marked as unresolved" 
-          : "Feedback marked as resolved",
-        variant: "success",
-      });
+      toastSuccess(item.resolved_at
+        ? "Feedback marked as unresolved"
+        : "Feedback marked as resolved", "Success");
 
       onUpdate();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update feedback",
-        variant: "error",
-      });
+      toastError("Failed to update feedback", "Error");
     } finally {
       setSaving(false);
     }
@@ -538,20 +506,12 @@ function FeedbackItemCard({
         throw new Error("Failed to save notes");
       }
 
-      toast({
-        title: "Success",
-        description: "Internal notes saved",
-        variant: "success",
-      });
+      toastSuccess("Internal notes saved", "Success");
 
       setShowNotes(false);
       onUpdate();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save notes",
-        variant: "error",
-      });
+      toastError("Failed to save notes", "Error");
     } finally {
       setSaving(false);
     }

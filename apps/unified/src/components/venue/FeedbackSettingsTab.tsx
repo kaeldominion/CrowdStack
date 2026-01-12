@@ -20,7 +20,7 @@ export function FeedbackSettingsTab({ venueId }: FeedbackSettingsTabProps) {
     enabled: true,
     delay_hours: 24,
   });
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
     if (venueId) {
@@ -53,11 +53,7 @@ export function FeedbackSettingsTab({ venueId }: FeedbackSettingsTabProps) {
 
   const handleSave = async () => {
     if (!venueId) {
-      toast({
-        title: "Error",
-        description: "Venue ID is required",
-        variant: "error",
-      });
+      toastError("Venue ID is required", "Error");
       return;
     }
 
@@ -75,18 +71,10 @@ export function FeedbackSettingsTab({ venueId }: FeedbackSettingsTabProps) {
         throw new Error("Failed to save settings");
       }
 
-      toast({
-        title: "Settings saved",
-        description: "Feedback settings have been updated successfully.",
-        variant: "success",
-      });
+      toastSuccess("Feedback settings have been updated successfully.", "Settings saved");
     } catch (error: any) {
       console.error("Error saving feedback settings:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save settings",
-        variant: "error",
-      });
+      toastError(error.message || "Failed to save settings", "Error");
     } finally {
       setSaving(false);
     }
@@ -126,8 +114,8 @@ export function FeedbackSettingsTab({ venueId }: FeedbackSettingsTabProps) {
             </div>
             <Switch
               checked={settings.enabled}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, enabled: checked })
+              onChange={(e) =>
+                setSettings({ ...settings, enabled: e.target.checked })
               }
             />
           </div>

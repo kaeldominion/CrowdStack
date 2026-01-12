@@ -297,7 +297,7 @@ export function AttendeesDashboardList({
                       </div>
                       {/* Status */}
                       <div className="flex items-center justify-start gap-1.5">
-                        {attendee.total_check_ins > 0 ? (
+                        {(attendee.total_check_ins || 0) > 0 ? (
                           <>
                             <UserCheck className="h-3.5 w-3.5 text-[var(--accent-success)] flex-shrink-0" />
                             <span className="text-[10px] text-[var(--accent-success)]">In</span>

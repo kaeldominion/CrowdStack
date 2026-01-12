@@ -28,7 +28,7 @@ export default function FeedbackPage() {
   const eventId = params.eventId as string;
   const registrationId = params.registrationId as string;
   const token = searchParams.get("token");
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -147,19 +147,11 @@ export default function FeedbackPage() {
       }
 
       setHasSubmitted(true);
-      toast({
-        title: "Thank you!",
-        description: "Your feedback has been submitted successfully.",
-        variant: "success",
-      });
+      toastSuccess("Your feedback has been submitted successfully.", "Thank you!");
     } catch (err: any) {
       console.error("Error submitting feedback:", err);
       setError(err.message || "Failed to submit feedback. Please try again.");
-      toast({
-        title: "Error",
-        description: err.message || "Failed to submit feedback.",
-        variant: "error",
-      });
+      toastError(err.message || "Failed to submit feedback.", "Error");
     } finally {
       setSubmitting(false);
     }
@@ -325,7 +317,7 @@ export default function FeedbackPage() {
                       <Checkbox
                         id={category.code}
                         checked={selectedCategories.includes(category.code)}
-                        onCheckedChange={() => handleCategoryToggle(category.code)}
+                        onChange={() => handleCategoryToggle(category.code)}
                       />
                       <label
                         htmlFor={category.code}

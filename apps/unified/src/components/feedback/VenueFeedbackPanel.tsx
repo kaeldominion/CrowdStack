@@ -57,7 +57,7 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string>("");
   const [sendingTest, setSendingTest] = useState(false);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
     const loadFeedback = async () => {
@@ -70,18 +70,14 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
         setFeedback(data.feedback);
       } catch (error) {
         console.error("Error loading feedback:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load feedback data.",
-          variant: "error",
-        });
+        toastError("Failed to load feedback data.", "Error");
       } finally {
         setLoading(false);
       }
     };
 
     loadFeedback();
-  }, [eventId, toast]);
+  }, [eventId]);
 
   const toggleExpand = (id: string) => {
     setExpandedItems((prev) => {
@@ -106,11 +102,7 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
       setTestAttendees(data.attendees || []);
     } catch (error) {
       console.error("Error loading attendees:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load attendees.",
-        variant: "error",
-      });
+      toastError("Failed to load attendees.", "Error");
     } finally {
       setLoadingAttendees(false);
     }
@@ -118,11 +110,7 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
 
   const handleSendTest = async () => {
     if (!selectedRegistrationId) {
-      toast({
-        title: "Error",
-        description: "Please select an attendee",
-        variant: "error",
-      });
+      toastError("Please select an attendee", "Error");
       return;
     }
 
@@ -144,19 +132,11 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
       }
 
       const data = await response.json();
-      toast({
-        title: "Feedback Request Sent",
-        description: `Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`,
-        variant: "success",
-      });
+      toastSuccess(`Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`, "Feedback Request Sent");
       setSelectedRegistrationId("");
     } catch (error: any) {
       console.error("Error sending feedback request:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send feedback request",
-        variant: "error",
-      });
+      toastError(error.message || "Failed to send feedback request", "Error");
     } finally {
       setSendingTest(false);
     }
@@ -245,15 +225,15 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
                     </label>
                     <Select
                       value={selectedRegistrationId}
-                      onValueChange={setSelectedRegistrationId}
-                    >
-                      <option value="">Choose an attendee...</option>
-                      {testAttendees.map((attendee) => (
-                        <option key={attendee.registration_id} value={attendee.registration_id}>
-                          {attendee.name} {attendee.email ? `(${attendee.email})` : ""}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(e) => setSelectedRegistrationId(e.target.value)}
+                      options={[
+                        { value: "", label: "Choose an attendee..." },
+                        ...testAttendees.map((attendee) => ({
+                          value: attendee.registration_id,
+                          label: `${attendee.name} ${attendee.email ? `(${attendee.email})` : ""}`
+                        }))
+                      ]}
+                    />
                     <p className="text-xs text-secondary mt-1">
                       Only checked-in attendees with email addresses are shown
                     </p>
@@ -432,7 +412,7 @@ function FeedbackItemCard({
   const [notes, setNotes] = useState(item.internal_notes || "");
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const { toast } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const handleMarkResolved = async () => {
     setSaving(true);
@@ -447,21 +427,13 @@ function FeedbackItemCard({
         throw new Error("Failed to update feedback");
       }
 
-      toast({
-        title: "Success",
-        description: item.resolved_at 
-          ? "Feedback marked as unresolved" 
-          : "Feedback marked as resolved",
-        variant: "success",
-      });
+      toastSuccess(item.resolved_at
+        ? "Feedback marked as unresolved"
+        : "Feedback marked as resolved", "Success");
 
       onUpdate();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update feedback",
-        variant: "error",
-      });
+      toastError("Failed to update feedback", "Error");
     } finally {
       setSaving(false);
     }
@@ -480,20 +452,12 @@ function FeedbackItemCard({
         throw new Error("Failed to save notes");
       }
 
-      toast({
-        title: "Success",
-        description: "Internal notes saved",
-        variant: "success",
-      });
+      toastSuccess("Internal notes saved", "Success");
 
       setShowNotes(false);
       onUpdate();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save notes",
-        variant: "error",
-      });
+      toastError("Failed to save notes", "Error");
     } finally {
       setSaving(false);
     }
