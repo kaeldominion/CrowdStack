@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
-import { Star, MessageSquare, TrendingUp, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Card, Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent, Select } from "@crowdstack/ui";
+import { Star, MessageSquare, TrendingUp, AlertCircle, CheckCircle2, XCircle, Send } from "lucide-react";
 import Link from "next/link";
 
 interface FeedbackItem {
@@ -36,10 +36,32 @@ interface VenueFeedbackStats {
   recent_feedback: FeedbackItem[];
 }
 
+interface EventOption {
+  id: string;
+  name: string;
+  start_time: string;
+}
+
+interface CheckedInAttendee {
+  registration_id: string;
+  attendee_id: string;
+  name: string;
+  email: string | null;
+  checked_in: boolean;
+}
+
 export default function VenueFeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<VenueFeedbackStats | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "unresolved" | "resolved">("all");
+  const [showManualRequest, setShowManualRequest] = useState(false);
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [attendees, setAttendees] = useState<CheckedInAttendee[]>([]);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string>("");
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +95,109 @@ export default function VenueFeedbackPage() {
     return true;
   }) || [];
 
+  const loadEvents = async () => {
+    setLoadingEvents(true);
+    try {
+      const response = await fetch("/api/venue/events?event_status=published");
+      if (!response.ok) throw new Error("Failed to load events");
+      const data = await response.json();
+      // Filter to events that have ended (can request feedback)
+      const now = new Date();
+      const pastEvents = (data.events || []).filter((e: any) => 
+        new Date(e.start_time) < now
+      );
+      setEvents(pastEvents);
+    } catch (error) {
+      console.error("Error loading events:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load events",
+        variant: "error",
+      });
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const loadAttendees = async (eventId: string) => {
+    setLoadingAttendees(true);
+    try {
+      const response = await fetch(`/api/venue/events/${eventId}/feedback/test-attendees`);
+      if (!response.ok) throw new Error("Failed to load attendees");
+      const data = await response.json();
+      setAttendees(data.attendees || []);
+    } catch (error) {
+      console.error("Error loading attendees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load attendees",
+        variant: "error",
+      });
+    } finally {
+      setLoadingAttendees(false);
+    }
+  };
+
+  const handleSendRequest = async () => {
+    if (!selectedEventId || !selectedRegistrationId) {
+      toast({
+        title: "Error",
+        description: "Please select an event and attendee",
+        variant: "error",
+      });
+      return;
+    }
+
+    setSendingRequest(true);
+    try {
+      const response = await fetch(`/api/venue/events/${selectedEventId}/feedback/send-test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId: selectedRegistrationId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to send feedback request");
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Feedback Request Sent",
+        description: `Feedback request email sent to ${data.attendee.email}. The email has been logged to email_send_logs.`,
+        variant: "success",
+      });
+      setSelectedRegistrationId("");
+      // Reload feedback stats
+      loadFeedback();
+    } catch (error: any) {
+      console.error("Error sending feedback request:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send feedback request",
+        variant: "error",
+      });
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showManualRequest && events.length === 0) {
+      loadEvents();
+    }
+  }, [showManualRequest]);
+
+  useEffect(() => {
+    if (selectedEventId) {
+      loadAttendees(selectedEventId);
+      setSelectedRegistrationId("");
+    } else {
+      setAttendees([]);
+      setSelectedRegistrationId("");
+    }
+  }, [selectedEventId]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -100,6 +225,126 @@ export default function VenueFeedbackPage() {
           View and manage feedback from attendees across all your events
         </p>
       </div>
+
+      {/* Manual Feedback Request Section */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Send Feedback Request
+              </h3>
+              <p className="text-sm text-secondary mt-1">
+                Manually send a feedback request email to a checked-in attendee. Emails are automatically logged to email_send_logs.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setShowManualRequest(!showManualRequest);
+                if (!showManualRequest && events.length === 0) {
+                  loadEvents();
+                }
+              }}
+            >
+              {showManualRequest ? "Hide" : "Send Request"}
+            </Button>
+          </div>
+
+          {showManualRequest && (
+            <div className="space-y-4 pt-4 border-t border-border-subtle">
+              {loadingEvents ? (
+                <div className="flex items-center justify-center py-4">
+                  <LoadingSpinner size="sm" />
+                  <span className="ml-2 text-sm text-secondary">Loading events...</span>
+                </div>
+              ) : events.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-secondary">
+                    No past events found. Feedback requests can only be sent for events that have already occurred.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-primary mb-2">
+                      Select Event
+                    </label>
+                    <Select
+                      value={selectedEventId}
+                      onValueChange={setSelectedEventId}
+                    >
+                      <option value="">Choose an event...</option>
+                      {events.map((event) => (
+                        <option key={event.id} value={event.id}>
+                          {event.name} - {new Date(event.start_time).toLocaleDateString()}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {selectedEventId && (
+                    <>
+                      {loadingAttendees ? (
+                        <div className="flex items-center justify-center py-4">
+                          <LoadingSpinner size="sm" />
+                          <span className="ml-2 text-sm text-secondary">Loading checked-in attendees...</span>
+                        </div>
+                      ) : attendees.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-secondary">
+                            No checked-in attendees with email addresses found for this event.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-primary mb-2">
+                              Select Attendee
+                            </label>
+                            <Select
+                              value={selectedRegistrationId}
+                              onValueChange={setSelectedRegistrationId}
+                            >
+                              <option value="">Choose an attendee...</option>
+                              {attendees.map((attendee) => (
+                                <option key={attendee.registration_id} value={attendee.registration_id}>
+                                  {attendee.name} {attendee.email ? `(${attendee.email})` : ""}
+                                </option>
+                              ))}
+                            </Select>
+                            <p className="text-xs text-secondary mt-1">
+                              Only checked-in attendees with email addresses are shown
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleSendRequest}
+                            disabled={!selectedRegistrationId || sendingRequest}
+                            loading={sendingRequest}
+                            variant="primary"
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Send Feedback Request
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <p className="text-xs text-blue-300">
+                      <strong>Note:</strong> The feedback request email will be sent immediately and logged to the email management system (email_send_logs table). 
+                      You can view email stats in the Email Stats tab.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
