@@ -13,7 +13,7 @@ interface PostmarkEmailOptions {
   messageStream?: string;
   // Optional logging metadata
   recipientUserId?: string | null;
-  emailType?: "direct" | "system";
+  emailType?: "direct" | "system" | "contact_form" | "magic_link" | "template";
   metadata?: Record<string, any>;
   // Skip logging if already logged elsewhere (e.g., by template-renderer)
   skipLogging?: boolean;
