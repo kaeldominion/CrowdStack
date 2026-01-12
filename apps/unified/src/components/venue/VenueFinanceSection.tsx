@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge, Card, Tabs, TabsList, TabsTrigger, TabsContent, Modal, Input, Textarea, Select, LoadingSpinner } from "@crowdstack/ui";
 import { VenuePaymentSettings } from "@/components/VenuePaymentSettings";
 import { DollarSign, FileText, Plus, Star, Edit2, Trash2, Settings } from "lucide-react";
@@ -62,16 +61,8 @@ export function VenueFinanceSection() {
   };
 
   return (
-    <BentoCard span={4}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-indigo-400" />
-            Finance
-          </h3>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "payments" | "templates")}>
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "payments" | "templates")}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="payments">Payment Setup</TabsTrigger>
             <TabsTrigger value="templates">Payout Templates</TabsTrigger>
@@ -232,7 +223,7 @@ export function VenueFinanceSection() {
           }}
         />
       )}
-    </BentoCard>
+    </div>
   );
 }
 

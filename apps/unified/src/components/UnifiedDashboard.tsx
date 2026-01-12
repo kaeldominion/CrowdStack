@@ -741,7 +741,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           </Link>
 
           {/* Finance Section */}
-          <VenueFinanceSection />
+          <BentoCard span={4}>
+            <VenueFinanceSection />
+          </BentoCard>
         </section>
       )}
 

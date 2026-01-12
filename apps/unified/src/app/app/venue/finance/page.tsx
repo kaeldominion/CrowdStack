@@ -1,6 +1,7 @@
 "use client";
 
 import { VenueFinanceSection } from "@/components/venue/VenueFinanceSection";
+import { Card } from "@crowdstack/ui";
 
 export default function VenueFinancePage() {
   return (
@@ -14,7 +15,9 @@ export default function VenueFinancePage() {
         </p>
       </div>
 
-      <VenueFinanceSection />
+      <Card>
+        <VenueFinanceSection />
+      </Card>
     </div>
   );
 }
