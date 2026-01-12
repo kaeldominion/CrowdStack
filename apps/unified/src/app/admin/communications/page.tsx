@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, LoadingSpinner, Badge, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input, InlineSpinner } from "@crowdstack/ui";
-import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download, Search, ExternalLink, Eye, MousePointerClick, Loader2 } from "lucide-react";
+import { Button, Card, LoadingSpinner, Badge, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input, InlineSpinner, Modal } from "@crowdstack/ui";
+import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download, Search, ExternalLink, Eye, MousePointerClick, Loader2, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 interface EmailTemplate {
   id: string;
@@ -175,6 +176,10 @@ export default function AdminCommunicationsPage() {
   const [showEmailLogsFilters, setShowEmailLogsFilters] = useState(false);
   const emailLogsObserverRef = useRef<IntersectionObserver | null>(null);
   const emailLogsLoadMoreRef = useRef<HTMLDivElement | null>(null);
+  const emailLogsParentRef = useRef<HTMLDivElement>(null);
+  const [selectedEmailLog, setSelectedEmailLog] = useState<EmailLogEntry | null>(null);
+  const [emailLogDetails, setEmailLogDetails] = useState<{ email: any; rendered: { html: string | null; text: string | null } } | null>(null);
+  const [loadingEmailDetails, setLoadingEmailDetails] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -320,6 +325,39 @@ export default function AdminCommunicationsPage() {
       minute: "2-digit",
     });
   };
+
+  const formatEmailLogDateCompact = (dateString: string | null) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  const loadEmailDetails = async (emailId: string) => {
+    try {
+      setLoadingEmailDetails(true);
+      const response = await fetch(`/api/admin/emails/${emailId}`);
+      if (!response.ok) throw new Error("Failed to load email details");
+      const data = await response.json();
+      setEmailLogDetails(data);
+    } catch (error) {
+      console.error("Error loading email details:", error);
+      setEmailLogDetails(null);
+    } finally {
+      setLoadingEmailDetails(false);
+    }
+  };
+
+  const handleEmailLogClick = (email: EmailLogEntry) => {
+    setSelectedEmailLog(email);
+    loadEmailDetails(email.id);
+  };
+
+  // Virtual scrolling for email logs
+  const emailLogsRowVirtualizer = useVirtualizer({
+    count: emailLogs.length,
+    getScrollElement: () => emailLogsParentRef.current,
+    estimateSize: () => 36,
+    overscan: 15,
+  });
 
   const loadTemplates = async () => {
     try {
@@ -919,7 +957,7 @@ export default function AdminCommunicationsPage() {
               {debouncedEmailLogsSearch && ` matching "${debouncedEmailLogsSearch}"`}
             </div>
 
-            {/* Emails Table */}
+            {/* Compact Email Logs List */}
             {loadingEmailLogs ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <InlineSpinner size="lg" />
@@ -931,94 +969,121 @@ export default function AdminCommunicationsPage() {
                 <p>No emails found</p>
               </div>
             ) : (
-              <Card className="!p-0 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Recipient</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Subject</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Type</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Status</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Sent</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Opens</TableHead>
-                        <TableHead className="text-xs font-mono font-bold uppercase tracking-widest">Clicks</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {emailLogs.map((email) => (
-                        <TableRow key={email.id}>
-                          <TableCell>
-                            <div className="text-sm text-primary">{email.recipient}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-primary max-w-xs truncate">
+              <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+                {/* Table Header */}
+                <div className="grid gap-2 px-3 py-2 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)] grid-cols-[2fr_2fr_80px_60px_60px_60px_60px_24px]">
+                  <div>Recipient</div>
+                  <div>Subject</div>
+                  <div className="text-center">Type</div>
+                  <div className="text-center">Status</div>
+                  <div className="text-center">Opens</div>
+                  <div className="text-center">Clicks</div>
+                  <div>Sent</div>
+                  <div></div>
+                </div>
+
+                {/* Virtual Scrolling Container */}
+                <div
+                  ref={emailLogsParentRef}
+                  className="overflow-auto"
+                  style={{ height: Math.min(emailLogs.length * 36 + 20, 600) }}
+                >
+                  {emailLogs.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+                      No emails found
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        height: `${emailLogsRowVirtualizer.getTotalSize()}px`,
+                        width: "100%",
+                        position: "relative",
+                      }}
+                    >
+                      {emailLogsRowVirtualizer.getVirtualItems().map((virtualItem) => {
+                        const email = emailLogs[virtualItem.index];
+
+                        return (
+                          <div
+                            key={email.id}
+                            className="grid gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer grid-cols-[2fr_2fr_80px_60px_60px_60px_60px_24px]"
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: `${virtualItem.size}px`,
+                              transform: `translateY(${virtualItem.start}px)`,
+                            }}
+                            onClick={() => handleEmailLogClick(email)}
+                          >
+                            {/* Recipient */}
+                            <div className="text-xs font-medium text-[var(--text-primary)] truncate">
+                              {email.recipient}
+                            </div>
+
+                            {/* Subject */}
+                            <div className="text-xs text-[var(--text-secondary)] truncate">
                               {email.subject}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+
+                            {/* Type */}
+                            <div className="flex items-center justify-center">
                               {getEmailLogTypeBadge(email.email_type)}
-                              {email.template_id && email.email_templates && (
-                                <Link
-                                  href={`/admin/communications/${email.template_id}`}
-                                  className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                                >
-                                  {email.template_slug}
-                                  <ExternalLink className="h-3 w-3" />
-                                </Link>
+                            </div>
+
+                            {/* Status */}
+                            <div className="flex items-center justify-center">
+                              {getEmailLogStatusBadge(email.status)}
+                            </div>
+
+                            {/* Opens */}
+                            <div className="text-center">
+                              {email.open_count > 0 ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Eye className="h-3 w-3 text-green-400" />
+                                  <span className="text-xs text-[var(--text-primary)]">{email.open_count}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {getEmailLogStatusBadge(email.status)}
-                            {email.bounced_at && (
-                              <div className="text-[10px] text-red-400 mt-1">
-                                {email.bounce_reason || "Bounced"}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-xs text-secondary">
-                              {formatEmailLogDate(email.sent_at)}
+
+                            {/* Clicks */}
+                            <div className="text-center">
+                              {email.click_count > 0 ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <MousePointerClick className="h-3 w-3 text-blue-400" />
+                                  <span className="text-xs text-[var(--text-primary)]">{email.click_count}</span>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                              )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            {email.open_count > 0 ? (
-                              <div className="flex items-center gap-1 text-xs">
-                                <Eye className="h-3 w-3 text-green-400" />
-                                <span className="text-primary">{email.open_count}</span>
-                                {email.last_opened_at && (
-                                  <span className="text-secondary">
-                                    ({formatEmailLogDate(email.last_opened_at)})
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-secondary">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {email.click_count > 0 ? (
-                              <div className="flex items-center gap-1 text-xs">
-                                <MousePointerClick className="h-3 w-3 text-blue-400" />
-                                <span className="text-primary">{email.click_count}</span>
-                                {email.last_clicked_at && (
-                                  <span className="text-secondary">
-                                    ({formatEmailLogDate(email.last_clicked_at)})
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-secondary">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+
+                            {/* Sent Date */}
+                            <div className="text-[10px] text-[var(--text-muted)]">
+                              {formatEmailLogDateCompact(email.sent_at)}
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="flex items-center justify-center">
+                              <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </Card>
+
+                {/* Footer */}
+                <div className="px-3 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-raised)]">
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                    {emailLogs.length} of {emailLogsPagination?.total || emailLogs.length} emails
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Infinite Scroll Trigger */}
@@ -1046,6 +1111,133 @@ export default function AdminCommunicationsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Email Detail Modal */}
+      <Modal
+        isOpen={!!selectedEmailLog}
+        onClose={() => {
+          setSelectedEmailLog(null);
+          setEmailLogDetails(null);
+        }}
+        title="Email Details"
+        size="lg"
+      >
+        {loadingEmailDetails ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner text="Loading email details..." size="md" />
+          </div>
+        ) : emailLogDetails && selectedEmailLog ? (
+          <div className="space-y-4">
+            {/* Email Info */}
+            <div className="space-y-3">
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Recipient</p>
+                <p className="text-sm text-primary">{selectedEmailLog.recipient}</p>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Subject</p>
+                <p className="text-sm text-primary">{selectedEmailLog.subject}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Status</p>
+                  {getEmailLogStatusBadge(selectedEmailLog.status)}
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Type</p>
+                  {getEmailLogTypeBadge(selectedEmailLog.email_type)}
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Sent</p>
+                  <p className="text-xs text-primary">{formatEmailLogDate(selectedEmailLog.sent_at)}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">Template</p>
+                  {selectedEmailLog.template_slug ? (
+                    <Link
+                      href={`/admin/communications/${selectedEmailLog.template_id}`}
+                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      {selectedEmailLog.template_slug}
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  ) : (
+                    <p className="text-xs text-secondary">-</p>
+                  )}
+                </div>
+              </div>
+              {selectedEmailLog.bounced_at && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Bounced</p>
+                  <p className="text-xs text-red-400">{selectedEmailLog.bounce_reason || "Email bounced"}</p>
+                  <p className="text-[10px] text-secondary mt-1">{formatEmailLogDate(selectedEmailLog.bounced_at)}</p>
+                </div>
+              )}
+              {selectedEmailLog.error_message && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Error</p>
+                  <p className="text-xs text-red-400">{selectedEmailLog.error_message}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Engagement Stats */}
+            <div className="border-t border-[var(--border-subtle)] pt-3">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Engagement</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Eye className="h-4 w-4 text-green-400" />
+                    <span className="text-xs font-medium text-primary">Opens</span>
+                  </div>
+                  <p className="text-lg font-bold text-green-400">{selectedEmailLog.open_count || 0}</p>
+                  {selectedEmailLog.last_opened_at && (
+                    <p className="text-[10px] text-secondary mt-1">Last: {formatEmailLogDate(selectedEmailLog.last_opened_at)}</p>
+                  )}
+                </div>
+                <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MousePointerClick className="h-4 w-4 text-blue-400" />
+                    <span className="text-xs font-medium text-primary">Clicks</span>
+                  </div>
+                  <p className="text-lg font-bold text-blue-400">{selectedEmailLog.click_count || 0}</p>
+                  {selectedEmailLog.last_clicked_at && (
+                    <p className="text-[10px] text-secondary mt-1">Last: {formatEmailLogDate(selectedEmailLog.last_clicked_at)}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Email Content */}
+            {emailLogDetails.rendered.html && (
+              <div className="border-t border-[var(--border-subtle)] pt-3">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Email Content</p>
+                <div className="border border-[var(--border-subtle)] rounded-lg overflow-hidden">
+                  <iframe
+                    srcDoc={emailLogDetails.rendered.html}
+                    className="w-full h-96 border-0"
+                    title="Email Preview"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            {selectedEmailLog.metadata && Object.keys(selectedEmailLog.metadata).length > 0 && (
+              <div className="border-t border-[var(--border-subtle)] pt-3">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Metadata</p>
+                <pre className="text-xs text-secondary bg-[var(--bg-void)] p-3 rounded-lg overflow-auto max-h-40">
+                  {JSON.stringify(selectedEmailLog.metadata, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="py-12 text-center text-secondary">
+            <p>Failed to load email details</p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
