@@ -21,6 +21,7 @@ import {
   Mail,
   X,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 
 interface BookingData {
@@ -110,13 +111,16 @@ export default function BookingStatusPage() {
       setLoading(true);
       setError(null);
 
-      // Add cache-busting to ensure fresh data
+      // Add cache-busting to ensure fresh data - use timestamp and random to prevent any caching
       const timestamp = Date.now();
-      const response = await fetch(`/api/booking/${bookingId}?t=${timestamp}`, {
+      const random = Math.random().toString(36).substring(7);
+      const response = await fetch(`/api/booking/${bookingId}?t=${timestamp}&r=${random}`, {
         cache: 'no-store',
+        method: 'GET',
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, proxy-revalidate',
           'Pragma': 'no-cache',
+          'Expires': '0',
         },
       });
       const result = await response.json();
@@ -292,13 +296,25 @@ export default function BookingStatusPage() {
         )}
 
         <div className="relative max-w-2xl mx-auto px-4 pt-8 pb-4">
-          <Link
-            href={`/e/${event.slug}`}
-            className="inline-flex items-center text-sm text-secondary hover:text-primary transition-colors mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            View event
-          </Link>
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              href={`/e/${event.slug}`}
+              className="inline-flex items-center text-sm text-secondary hover:text-primary transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              View event
+            </Link>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={fetchBookingStatus}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
 
           <h1 className="text-2xl font-bold text-primary mb-2">Your Table Booking</h1>
           <p className="text-secondary">{event.name}</p>
