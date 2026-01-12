@@ -71,14 +71,20 @@ interface Stats {
 interface PromoterProfileClientProps {
   slug: string;
   promoterId: string;
+  initialData?: {
+    promoter: Promoter;
+    upcoming_events: Event[];
+    past_events: PastEvent[];
+    stats: Stats;
+  };
 }
 
-export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClientProps) {
-  const [promoter, setPromoter] = useState<Promoter | null>(null);
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-  const [pastEvents, setPastEvents] = useState<PastEvent[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+export function PromoterProfileClient({ slug, promoterId, initialData }: PromoterProfileClientProps) {
+  const [promoter, setPromoter] = useState<Promoter | null>(initialData?.promoter || null);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>(initialData?.upcoming_events || []);
+  const [pastEvents, setPastEvents] = useState<PastEvent[]>(initialData?.past_events || []);
+  const [stats, setStats] = useState<Stats | null>(initialData?.stats || null);
+  const [loading, setLoading] = useState(!initialData);
   const [copied, setCopied] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -86,6 +92,12 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // If we have initial data from server, skip the API fetch
+    if (initialData) {
+      setLoading(false);
+      return;
+    }
+
     const loadProfile = async () => {
       try {
         // Check if current user owns this profile
@@ -104,7 +116,7 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
           }
         }
 
-        // Load profile data with cache-busting
+        // Load profile data with cache-busting (fallback if no initial data)
         const timestamp = new Date().getTime();
         const response = await fetch(`/api/promoters/by-slug/${slug}?t=${timestamp}`, {
           cache: 'no-store',
@@ -127,7 +139,7 @@ export function PromoterProfileClient({ slug, promoterId }: PromoterProfileClien
     };
 
     loadProfile();
-  }, [slug, promoterId]);
+  }, [slug, promoterId, initialData]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
