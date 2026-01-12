@@ -89,8 +89,7 @@ CREATE INDEX IF NOT EXISTS idx_feedback_requests_token
   ON public.event_feedback_requests(token);
 
 CREATE INDEX IF NOT EXISTS idx_feedback_requests_token_expires 
-  ON public.event_feedback_requests(token_expires_at) 
-  WHERE token_expires_at > NOW();
+  ON public.event_feedback_requests(token_expires_at);
 
 COMMENT ON TABLE public.event_feedback_requests IS 'Tracks feedback requests sent to attendees';
 COMMENT ON COLUMN public.event_feedback_requests.token IS 'Secure token for feedback link (expires after 7 days)';

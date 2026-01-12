@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Badge, Button, LoadingSpinner, useToast } from "@crowdstack/ui";
-import { Star, TrendingUp, AlertCircle, MessageSquare } from "lucide-react";
+import { Card, Badge, Button, LoadingSpinner, useToast, Select } from "@crowdstack/ui";
+import { Star, TrendingUp, AlertCircle, MessageSquare, Send, TestTube } from "lucide-react";
 
 interface FeedbackItem {
   id: string;
@@ -38,10 +38,23 @@ interface VenueFeedbackPanelProps {
   eventId: string;
 }
 
+interface CheckedInAttendee {
+  registration_id: string;
+  attendee_id: string;
+  name: string;
+  email: string | null;
+  checked_in: boolean;
+}
+
 export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<EventFeedbackStats | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [showTestSection, setShowTestSection] = useState(false);
+  const [testAttendees, setTestAttendees] = useState<CheckedInAttendee[]>([]);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string>("");
+  const [sendingTest, setSendingTest] = useState(false);
+  const [loadingAttendees, setLoadingAttendees] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,6 +93,77 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
     });
   };
 
+  const loadTestAttendees = async () => {
+    setLoadingAttendees(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/attendees?status=checked_in`);
+      if (!response.ok) {
+        throw new Error("Failed to load attendees");
+      }
+      const data = await response.json();
+      // Filter to only attendees with email and user_id (required for feedback)
+      const eligibleAttendees = (data.attendees || []).filter(
+        (a: any) => a.email && a.checked_in
+      );
+      setTestAttendees(eligibleAttendees);
+    } catch (error) {
+      console.error("Error loading attendees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load attendees for testing.",
+        variant: "error",
+      });
+    } finally {
+      setLoadingAttendees(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!selectedRegistrationId) {
+      toast({
+        title: "Error",
+        description: "Please select an attendee",
+        variant: "error",
+      });
+      return;
+    }
+
+    setSendingTest(true);
+    try {
+      const response = await fetch(`/api/venue/events/${eventId}/feedback/send-test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          registrationId: selectedRegistrationId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to send test feedback request");
+      }
+
+      const data = await response.json();
+      toast({
+        title: "Success!",
+        description: `Feedback request sent to ${data.attendee.email}. Email logged in email_send_logs.`,
+        variant: "success",
+      });
+      setSelectedRegistrationId("");
+    } catch (error: any) {
+      console.error("Error sending test feedback:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send test feedback request",
+        variant: "error",
+      });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -115,6 +199,89 @@ export function VenueFeedbackPanel({ eventId }: VenueFeedbackPanelProps) {
 
   return (
     <div className="space-y-6">
+      {/* Test Section */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                <TestTube className="h-5 w-5" />
+                Test Feedback Request
+              </h3>
+              <p className="text-sm text-secondary mt-1">
+                Manually send a feedback request email to test the system. Emails are automatically logged to email_send_logs.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setShowTestSection(!showTestSection);
+                if (!showTestSection && testAttendees.length === 0) {
+                  loadTestAttendees();
+                }
+              }}
+            >
+              {showTestSection ? "Hide" : "Show Test"}
+            </Button>
+          </div>
+
+          {showTestSection && (
+            <div className="space-y-4 pt-4 border-t border-border-subtle">
+              {loadingAttendees ? (
+                <div className="flex items-center justify-center py-4">
+                  <LoadingSpinner size="sm" />
+                  <span className="ml-2 text-sm text-secondary">Loading checked-in attendees...</span>
+                </div>
+              ) : testAttendees.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-secondary">
+                    No checked-in attendees with email addresses found.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-primary mb-2">
+                      Select Attendee
+                    </label>
+                    <Select
+                      value={selectedRegistrationId}
+                      onValueChange={setSelectedRegistrationId}
+                    >
+                      <option value="">Choose an attendee...</option>
+                      {testAttendees.map((attendee) => (
+                        <option key={attendee.registration_id} value={attendee.registration_id}>
+                          {attendee.name} {attendee.email ? `(${attendee.email})` : ""}
+                        </option>
+                      ))}
+                    </Select>
+                    <p className="text-xs text-secondary mt-1">
+                      Only checked-in attendees with email addresses are shown
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleSendTest}
+                    disabled={!selectedRegistrationId || sendingTest}
+                    loading={sendingTest}
+                    variant="primary"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Test Feedback Request
+                  </Button>
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <p className="text-xs text-blue-300">
+                      <strong>Note:</strong> The email will be sent immediately and logged to the email management system (email_send_logs table). 
+                      You can view email stats in the Email Stats tab.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
