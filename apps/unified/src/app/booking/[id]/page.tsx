@@ -60,6 +60,8 @@ interface BookingData {
     payment_url: string | null;
     expires_at: string | null;
     doku_enabled: boolean;
+    manual_payment_enabled: boolean;
+    manual_payment_instructions: string;
   } | null;
   party: {
     host: {
@@ -356,7 +358,7 @@ export default function BookingStatusPage() {
           </div>
         </Card>
 
-        {/* Payment Card - Show if deposit pending */}
+        {/* Payment Card - Show if deposit pending and DOKU enabled */}
         {showPaymentButton && (
           <Card>
             <div className="flex items-center gap-3 mb-4">
@@ -406,6 +408,62 @@ export default function BookingStatusPage() {
             </p>
           </Card>
         )}
+
+        {/* Manual Payment Instructions - Show if deposit pending, DOKU not enabled, but manual payment enabled */}
+        {booking.payment_status === "pending" &&
+          booking.deposit_required &&
+          booking.deposit_required > 0 &&
+          !payment?.doku_enabled &&
+          payment?.manual_payment_enabled && (
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-raised border border-border-subtle">
+                  <Wallet className="h-5 w-5 text-accent-primary" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-primary">Deposit Required</h2>
+                  <p className="text-xs text-secondary">Complete payment to confirm your booking</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-raised border border-border-subtle">
+                <span className="text-secondary text-sm">Amount</span>
+                <span className="text-xl font-bold text-primary">
+                  {currencySymbol}{booking.deposit_required?.toLocaleString()}
+                </span>
+              </div>
+
+              {payment.manual_payment_instructions ? (
+                <div className="mb-4 p-4 rounded-lg bg-raised border border-border-subtle">
+                  <p className="text-xs text-muted uppercase tracking-wide mb-2">Payment Instructions</p>
+                  <div className="text-sm text-secondary whitespace-pre-wrap">
+                    {payment.manual_payment_instructions}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border-subtle">
+                    <p className="text-xs text-muted">
+                      <strong className="text-primary">Important:</strong> Include your booking reference{" "}
+                      <span className="font-mono text-accent-primary">
+                        {booking.id.split("-")[0].toUpperCase()}
+                      </span>{" "}
+                      in your payment description.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 p-4 rounded-lg bg-raised border border-border-subtle">
+                  <p className="text-sm text-secondary">
+                    Please contact the venue directly to complete your deposit payment.
+                  </p>
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+                <p className="text-xs text-secondary">
+                  After making your payment, the venue will confirm your booking. You'll receive an email confirmation once your payment is verified.
+                </p>
+              </div>
+            </Card>
+          )}
 
         {/* Confirmed Booking - Party Section */}
         {(booking.status === "confirmed" || booking.payment_status === "paid") && party && (

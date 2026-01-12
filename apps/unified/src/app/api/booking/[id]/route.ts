@@ -146,16 +146,20 @@ export async function GET(
       }
     }
 
-    // Check if DOKU is enabled for this venue
+    // Check if DOKU is enabled and get manual payment fallback info for this venue
     let dokuEnabled = false;
+    let manualPaymentEnabled = false;
+    let manualPaymentInstructions = "";
     if (venue?.id) {
       const { data: paymentSettings } = await serviceSupabase
         .from("venue_payment_settings")
-        .select("doku_enabled")
+        .select("doku_enabled, manual_payment_enabled, manual_payment_instructions")
         .eq("venue_id", venue.id)
         .single();
 
       dokuEnabled = paymentSettings?.doku_enabled ?? false;
+      manualPaymentEnabled = paymentSettings?.manual_payment_enabled ?? false;
+      manualPaymentInstructions = paymentSettings?.manual_payment_instructions || "";
     }
 
     // Determine currency
@@ -303,6 +307,8 @@ export async function GET(
         payment: {
           ...paymentInfo,
           doku_enabled: dokuEnabled,
+          manual_payment_enabled: manualPaymentEnabled,
+          manual_payment_instructions: manualPaymentInstructions,
         },
         party: partyData,
         currency,
