@@ -15,7 +15,7 @@ export default function VenueFinancePage() {
         </p>
       </div>
 
-      <Card>
+      <Card className="p-6">
         <VenueFinanceSection />
       </Card>
     </div>
