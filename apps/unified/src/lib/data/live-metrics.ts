@@ -112,7 +112,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       registration_id,
       registrations!inner(
         event_id,
-        attendee:attendees(id, name),
+        attendee:attendees(id, name, surname),
         referral_promoter_id
       )
     `)
@@ -281,7 +281,13 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     return {
       id: c.id,
       attendee_id: attendeeId,
-      attendee_name: c.registrations?.attendee?.name || "Unknown",
+      attendee_name: (() => {
+        const attendee = c.registrations?.attendee;
+        if (!attendee) return "Unknown";
+        return attendee.surname 
+          ? `${attendee.name || ""} ${attendee.surname}`.trim() 
+          : attendee.name || "Unknown";
+      })(),
       checked_in_at: c.checked_in_at,
       promoter_name: c.registrations?.referral_promoter_id 
         ? promoterNameMap.get(c.registrations.referral_promoter_id) || null 
@@ -298,7 +304,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     .select(`
       id,
       registered_at,
-      attendee:attendees(id, name),
+      attendee:attendees(id, name, surname),
       referral_promoter_id
     `)
     .eq("event_id", eventId)
@@ -375,7 +381,13 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
       return {
         id: r.id,
         attendee_id: attendeeId,
-        attendee_name: r.attendee?.name || "Unknown",
+        attendee_name: (() => {
+          const attendee = r.attendee;
+          if (!attendee) return "Unknown";
+          return attendee.surname 
+            ? `${attendee.name || ""} ${attendee.surname}`.trim() 
+            : attendee.name || "Unknown";
+        })(),
         registered_at: r.registered_at,
         promoter_name: r.referral_promoter_id 
           ? regPromoterMap.get(r.referral_promoter_id) || promoterNameMap.get(r.referral_promoter_id) || null 

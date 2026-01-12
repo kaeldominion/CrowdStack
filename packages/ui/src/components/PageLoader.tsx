@@ -46,82 +46,99 @@ export function PageLoader({ message, showProgress = true }: PageLoaderProps) {
         transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         className="relative z-10 flex flex-col items-center gap-5"
       >
-        {/* Animated tricolor logo */}
+        {/* Animated tricolor logo - theme-aware using PNG images */}
         <div className="relative" style={{ width: 64, height: 64 }}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+          {/* Light mode: inverted tricolor icon */}
+          <motion.div
+            className="dark:hidden"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             style={{ width: 64, height: 64 }}
           >
-            <defs>
-              <linearGradient id="pageLoaderPurple" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#A855F7"/>
-                <stop offset="100%" stopColor="#C084FC"/>
-              </linearGradient>
-              <linearGradient id="pageLoaderBlue" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3B82F6"/>
-                <stop offset="100%" stopColor="#60A5FA"/>
-              </linearGradient>
-            </defs>
-            
-            {/* Top layer (white) - pulsing */}
-            <motion.path
-              d="M12 2L2 7L12 12L22 7L12 2Z"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              animate={{
-                opacity: [0.6, 1, 0.6],
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0,
-              }}
+            <img 
+              src="/logos/crowdstack-icon-tricolor-inverted-on-transparent.png" 
+              alt="CrowdStack" 
+              style={{ width: 64, height: 64 }}
+              className="object-contain"
             />
-            
-            {/* Middle layer (purple) - pulsing */}
-            <motion.path
-              d="M2 12L12 17L22 12"
-              stroke="url(#pageLoaderPurple)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          </motion.div>
+          {/* Dark mode: SVG animated tricolor logo */}
+          <div className="hidden dark:block" style={{ width: 64, height: 64 }}>
+            <svg
+              viewBox="0 0 24 24"
               fill="none"
-              animate={{
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.15,
-              }}
-            />
-            
-            {/* Bottom layer (blue) - pulsing with delay */}
-            <motion.path
-              d="M2 17L12 22L22 17"
-              stroke="url(#pageLoaderBlue)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-              animate={{
-                opacity: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.3,
-              }}
-            />
-          </svg>
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ width: 64, height: 64 }}
+            >
+              <defs>
+                <linearGradient id="pageLoaderPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#A855F7"/>
+                  <stop offset="100%" stopColor="#C084FC"/>
+                </linearGradient>
+                <linearGradient id="pageLoaderBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3B82F6"/>
+                  <stop offset="100%" stopColor="#60A5FA"/>
+                </linearGradient>
+              </defs>
+              
+              {/* Top layer (white) - pulsing */}
+              <motion.path
+                d="M12 2L2 7L12 12L22 7L12 2Z"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                animate={{
+                  opacity: [0.6, 1, 0.6],
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0,
+                }}
+              />
+              
+              {/* Middle layer (purple) - pulsing */}
+              <motion.path
+                d="M2 12L12 17L22 12"
+                stroke="url(#pageLoaderPurple)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.15,
+                }}
+              />
+              
+              {/* Bottom layer (blue) - pulsing with delay */}
+              <motion.path
+                d="M2 17L12 22L22 17"
+                stroke="url(#pageLoaderBlue)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                animate={{
+                  opacity: [0.5, 1, 0.5],
+                }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.3,
+                }}
+              />
+            </svg>
+          </div>
         </div>
 
         {/* Brand name */}

@@ -203,7 +203,7 @@ export function VenuePaymentSettings() {
     return (
       <div className="py-12 text-center">
         <InlineSpinner className="mx-auto" />
-        <p className="mt-2 text-sm text-gray-400">Loading payment settings...</p>
+        <p className="mt-2 text-sm text-secondary">Loading payment settings...</p>
       </div>
     );
   }
@@ -226,15 +226,15 @@ export function VenuePaymentSettings() {
       )}
 
       {/* DOKU Configuration */}
-      <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+      <div className="bg-active rounded-xl border border-border-subtle p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/20">
               <Wallet className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">DOKU Payment Gateway</h3>
-              <p className="text-sm text-gray-400">Accept payments via Indonesia's leading payment gateway</p>
+              <h3 className="text-lg font-semibold text-primary">DOKU Payment Gateway</h3>
+              <p className="text-sm text-secondary">Accept payments via Indonesia's leading payment gateway</p>
             </div>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -246,8 +246,8 @@ export function VenuePaymentSettings() {
               }
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-            <span className="ml-3 text-sm font-medium text-gray-300">
+            <div className="w-11 h-6 bg-active peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+            <span className="ml-3 text-sm font-medium text-primary">
               {settings.doku_enabled ? "Enabled" : "Disabled"}
             </span>
           </label>
@@ -256,7 +256,7 @@ export function VenuePaymentSettings() {
         <div className="space-y-4">
           {/* Client ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Client ID
             </label>
             <Input
@@ -267,14 +267,14 @@ export function VenuePaymentSettings() {
               placeholder="BRN-0123-1234567890"
               className="w-full"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               Your DOKU merchant Client ID
             </p>
           </div>
 
           {/* Secret Key */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Secret Key
             </label>
             <div className="relative">
@@ -290,7 +290,7 @@ export function VenuePaymentSettings() {
               <button
                 type="button"
                 onClick={() => setShowSecretKey(!showSecretKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
               >
                 {showSecretKey ? (
                   <EyeOff className="h-4 w-4" />
@@ -299,14 +299,14 @@ export function VenuePaymentSettings() {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               Your DOKU Secret Key (stored securely)
             </p>
           </div>
 
           {/* Environment */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Environment
             </label>
             <div className="flex gap-4">
@@ -319,9 +319,9 @@ export function VenuePaymentSettings() {
                   onChange={() =>
                     setSettings({ ...settings, doku_environment: "sandbox" })
                   }
-                  className="text-blue-500 focus:ring-blue-500 bg-gray-700 border-gray-600"
+                  className="text-blue-500 focus:ring-blue-500 bg-active border-border-subtle"
                 />
-                <span className="text-sm text-gray-300">Sandbox (Testing)</span>
+                <span className="text-sm text-primary">Sandbox (Testing)</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -332,15 +332,15 @@ export function VenuePaymentSettings() {
                   onChange={() =>
                     setSettings({ ...settings, doku_environment: "production" })
                   }
-                  className="text-blue-500 focus:ring-blue-500 bg-gray-700 border-gray-600"
+                  className="text-blue-500 focus:ring-blue-500 bg-active border-border-subtle"
                 />
-                <span className="text-sm text-gray-300">Production (Live)</span>
+                <span className="text-sm text-primary">Production (Live)</span>
               </label>
             </div>
           </div>
 
           {/* Test Connection */}
-          <div className="flex items-center gap-4 pt-4 border-t border-gray-700">
+          <div className="flex items-center gap-4 pt-4 border-t border-border-subtle">
             <Button
               onClick={testConnection}
               disabled={testing || !settings.doku_client_id}
@@ -375,7 +375,7 @@ export function VenuePaymentSettings() {
             )}
 
             {settings.last_tested_at && !testResult && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted">
                 Last tested:{" "}
                 {new Date(settings.last_tested_at).toLocaleString()} -{" "}
                 <span
@@ -396,14 +396,14 @@ export function VenuePaymentSettings() {
       </div>
 
       {/* Payment Settings */}
-      <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+      <div className="bg-active rounded-xl border border-border-subtle p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-purple-500/20">
             <Settings className="h-5 w-5 text-purple-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">Payment Settings</h3>
-            <p className="text-sm text-gray-400">Configure payment behavior</p>
+            <h3 className="text-lg font-semibold text-primary">Payment Settings</h3>
+            <p className="text-sm text-secondary">Configure payment behavior</p>
           </div>
         </div>
 
@@ -411,10 +411,10 @@ export function VenuePaymentSettings() {
           {/* Auto-confirm */}
           <label className="flex items-center justify-between cursor-pointer">
             <div>
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium text-primary">
                 Auto-confirm bookings on payment
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Automatically confirm table bookings when payment is received
               </p>
             </div>
@@ -427,13 +427,13 @@ export function VenuePaymentSettings() {
                   auto_confirm_on_payment: e.target.checked,
                 })
               }
-              className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-purple-500 focus:ring-purple-500"
+              className="w-5 h-5 rounded bg-active border-border-subtle text-purple-500 focus:ring-purple-500"
             />
           </label>
 
           {/* Payment Expiry */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Payment link expires after
             </label>
             <div className="flex items-center gap-2">
@@ -450,24 +450,24 @@ export function VenuePaymentSettings() {
                 max={168}
                 className="w-24"
               />
-              <span className="text-sm text-gray-400">hours</span>
+              <span className="text-sm text-secondary">hours</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Manual Payment Fallback */}
-      <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+      <div className="bg-active rounded-xl border border-border-subtle p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-500/20">
               <CreditCard className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-primary">
                 Manual Payment Fallback
               </h3>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-secondary">
                 Show bank transfer instructions when DOKU is unavailable
               </p>
             </div>
@@ -484,8 +484,8 @@ export function VenuePaymentSettings() {
               }
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-            <span className="ml-3 text-sm font-medium text-gray-300">
+            <div className="w-11 h-6 bg-active peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+            <span className="ml-3 text-sm font-medium text-primary">
               {settings.manual_payment_enabled ? "Enabled" : "Disabled"}
             </span>
           </label>
@@ -493,7 +493,7 @@ export function VenuePaymentSettings() {
 
         {settings.manual_payment_enabled && (
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-primary mb-2">
               Payment Instructions
             </label>
             <Textarea
@@ -508,7 +508,7 @@ export function VenuePaymentSettings() {
               rows={5}
               className="w-full"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted">
               These instructions will be shown to guests when making manual payments
             </p>
           </div>
@@ -539,7 +539,7 @@ export function VenuePaymentSettings() {
       </div>
 
       {/* Save Button */}
-      <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-700">
+      <div className="flex items-center justify-end gap-4 pt-4 border-t border-border-subtle">
         {hasChanges && (
           <span className="text-sm text-amber-400">You have unsaved changes</span>
         )}

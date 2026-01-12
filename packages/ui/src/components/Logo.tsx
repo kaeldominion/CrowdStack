@@ -414,7 +414,7 @@ export function Logo({
     );
   };
 
-  // Tricolor logo variant - uses PNG image
+  // Tricolor logo variant - uses PNG image, theme-aware
   if (variant === "tricolor") {
     const tricolorSizes = {
       xs: { icon: "h-5 w-5", text: "text-[10px]" },
@@ -427,15 +427,29 @@ export function Logo({
     
     return (
       <div className={`inline-flex items-center gap-2 ${className}`}>
+        {/* Light mode: inverted tricolor icon, Dark mode: tricolor icon */}
+        <img 
+          src="/logos/crowdstack-icon-tricolor-inverted-on-transparent.png" 
+          alt="CrowdStack" 
+          className={`${triSize.icon} object-contain dark:hidden`}
+        />
         <img 
           src="/crowdstack-logo-tricolor-on-transparent.png" 
           alt="CrowdStack" 
-          className={`${triSize.icon} object-contain`}
+          className={`${triSize.icon} object-contain hidden dark:block`}
         />
         {!iconOnly && (
-          <span className={`font-black tracking-tighter ${triSize.text} text-primary`}>
-            CROWDSTACK<span className="text-accent-primary">.</span>
-          </span>
+          <>
+            {/* Light mode: light wordmark, Dark mode: text-based wordmark */}
+            <img 
+              src="/logos/crowdstack-wordmark-light-standard-transparent.png" 
+              alt="CrowdStack" 
+              className={`${triSize.text} h-auto object-contain dark:hidden`}
+            />
+            <span className={`font-black tracking-tighter ${triSize.text} text-primary hidden dark:inline`}>
+              CROWDSTACK<span className="text-accent-primary">.</span>
+            </span>
+          </>
         )}
       </div>
     );

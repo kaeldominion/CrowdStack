@@ -116,10 +116,10 @@ export function RegistrationSuccess({
                   </div>
                   {/* Text section */}
                   <div className="px-1 pb-1">
-                    <p className="text-[8px] sm:text-[10px] font-medium text-gray-800 text-center leading-tight">
+                    <p className="text-[8px] sm:text-[10px] font-medium text-primary text-center leading-tight">
                       Photos coming soon!
                     </p>
-                    <p className="text-[7px] sm:text-[9px] text-gray-600 text-center mt-0.5">
+                    <p className="text-[7px] sm:text-[9px] text-secondary text-center mt-0.5">
                       Check your emails from CrowdStack in a few days
                     </p>
                   </div>
@@ -148,7 +148,7 @@ export function RegistrationSuccess({
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-500/30">
                     <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">
+                  <h1 className="text-xl sm:text-2xl font-bold text-primary">
                     You're Registered!
                   </h1>
                 </div>
@@ -158,26 +158,26 @@ export function RegistrationSuccess({
             {/* Event Details */}
             <div className="space-y-3">
               {/* Event Name */}
-              <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+              <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
                 <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/50 mb-0.5">Event</p>
-                  <p className="text-sm font-semibold text-white">{eventName}</p>
+                  <p className="text-xs text-muted mb-0.5">Event</p>
+                  <p className="text-sm font-semibold text-primary">{eventName}</p>
                 </div>
               </div>
 
               {/* Venue */}
               {venueName && (
-                <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
                   <MapPin className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-white/50 mb-0.5">Venue</p>
+                    <p className="text-xs text-muted mb-0.5">Venue</p>
                     {venueSlug ? (
-                      <Link href={`/v/${venueSlug}`} className="text-sm font-semibold text-white hover:text-primary transition-colors">
+                      <Link href={`/v/${venueSlug}`} className="text-sm font-semibold text-primary hover:text-accent-secondary transition-colors">
                         {venueName}
                       </Link>
                     ) : (
-                      <p className="text-sm font-semibold text-white">{venueName}</p>
+                      <p className="text-sm font-semibold text-primary">{venueName}</p>
                     )}
                   </div>
                 </div>
@@ -185,11 +185,11 @@ export function RegistrationSuccess({
 
               {/* Start Time */}
               {startTime && (
-                <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-start gap-3 p-3 bg-glass/50 rounded-xl border border-border-subtle">
                   <Calendar className="h-5 w-5 text-indigo-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-white/50 mb-0.5">Date & Time</p>
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-xs text-muted mb-0.5">Date & Time</p>
+                    <p className="text-sm font-semibold text-primary">
                       {new Date(startTime).toLocaleDateString(undefined, {
                         weekday: "long",
                         year: "numeric",
@@ -212,7 +212,7 @@ export function RegistrationSuccess({
                   View QR Pass
                 </Button>
               </Link>
-              <p className="text-xs text-white/40 text-center">
+              <p className="text-xs text-muted text-center">
                 Show your QR pass at the event entrance
               </p>
               

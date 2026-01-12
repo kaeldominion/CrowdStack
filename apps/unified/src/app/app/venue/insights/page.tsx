@@ -181,8 +181,8 @@ export default function VenueInsightsPage() {
         <div className="p-4 flex items-start gap-3">
           <ShieldCheck className="h-5 w-5 text-accent-secondary flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-white/90">Data Privacy Policy</p>
-            <p className="text-sm text-white/70 mt-1">
+            <p className="text-sm font-medium text-primary">Data Privacy Policy</p>
+            <p className="text-sm text-secondary mt-1">
               These insights are aggregated and read-only. Individual attendee contact information
               is not available for export. CrowdStack protects guest privacy while providing
               you with actionable venue performance data.

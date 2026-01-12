@@ -548,7 +548,7 @@ export default function OrganizerPhotosPage() {
 
                 {/* Stats overlay (bottom) */}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex items-center justify-center gap-3 text-white/80 text-xs">
+                  <div className="flex items-center justify-center gap-3 text-primary text-xs">
                     <span className="flex items-center gap-1">
                       <Eye className="h-3 w-3" />
                       {photo.view_count || 0}

@@ -531,7 +531,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
     return (
       <div className="py-12 text-center">
         <InlineSpinner className="mx-auto" />
-        <p className="mt-2 text-sm text-gray-400">Loading bookings...</p>
+        <p className="mt-2 text-sm text-secondary">Loading bookings...</p>
       </div>
     );
   }
@@ -554,14 +554,14 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
       {/* Header with Tabs */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h3 className="text-lg font-semibold text-white">Table Bookings</h3>
-          <div className="flex items-center gap-1 bg-gray-800 rounded-lg p-1">
+          <h3 className="text-lg font-semibold text-primary">Table Bookings</h3>
+          <div className="flex items-center gap-1 bg-active rounded-lg p-1">
             <button
               onClick={() => setActiveTab("bookings")}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 activeTab === "bookings"
                   ? "bg-purple-500 text-white"
-                  : "text-gray-400 hover:text-white"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               <Users className="h-4 w-4 inline mr-1.5" />
@@ -572,7 +572,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 activeTab === "closeout"
                   ? "bg-purple-500 text-white"
-                  : "text-gray-400 hover:text-white"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               <Calculator className="h-4 w-4 inline mr-1.5" />
@@ -583,7 +583,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 activeTab === "commissions"
                   ? "bg-purple-500 text-white"
-                  : "text-gray-400 hover:text-white"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               <TrendingUp className="h-4 w-4 inline mr-1.5" />
@@ -614,55 +614,55 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
             <button
               onClick={() => setStatusFilter("pending")}
               className={`p-4 rounded-lg border transition-all ${
-                statusFilter === "pending" ? "border-yellow-500 bg-yellow-500/10" : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                statusFilter === "pending" ? "border-yellow-500 bg-yellow-500/10" : "border-border-subtle bg-active hover:border-border-strong"
               }`}
             >
               <p className="text-2xl font-bold text-yellow-400">{summary.pending}</p>
-              <p className="text-xs text-gray-400">Pending</p>
+              <p className="text-xs text-secondary">Pending</p>
             </button>
             <button
               onClick={() => setStatusFilter("confirmed")}
               className={`p-4 rounded-lg border transition-all ${
-                statusFilter === "confirmed" ? "border-green-500 bg-green-500/10" : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                statusFilter === "confirmed" ? "border-green-500 bg-green-500/10" : "border-border-subtle bg-active hover:border-border-strong"
               }`}
             >
               <p className="text-2xl font-bold text-green-400">{summary.confirmed}</p>
-              <p className="text-xs text-gray-400">Confirmed</p>
+              <p className="text-xs text-secondary">Confirmed</p>
             </button>
             <button
               onClick={() => setStatusFilter("completed")}
               className={`p-4 rounded-lg border transition-all ${
-                statusFilter === "completed" ? "border-blue-500 bg-blue-500/10" : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                statusFilter === "completed" ? "border-blue-500 bg-blue-500/10" : "border-border-subtle bg-active hover:border-border-strong"
               }`}
             >
               <p className="text-2xl font-bold text-blue-400">{summary.completed}</p>
-              <p className="text-xs text-gray-400">Completed</p>
+              <p className="text-xs text-secondary">Completed</p>
             </button>
             <button
               onClick={() => setStatusFilter("cancelled")}
               className={`p-4 rounded-lg border transition-all ${
-                statusFilter === "cancelled" ? "border-gray-500 bg-gray-500/10" : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                statusFilter === "cancelled" ? "border-gray-500 bg-gray-500/10" : "border-border-subtle bg-active hover:border-border-strong"
               }`}
             >
-              <p className="text-2xl font-bold text-gray-400">{summary.cancelled}</p>
-              <p className="text-xs text-gray-400">Cancelled</p>
+              <p className="text-2xl font-bold text-muted">{summary.cancelled}</p>
+              <p className="text-xs text-secondary">Cancelled</p>
             </button>
             <button
               onClick={() => setStatusFilter("all")}
               className={`p-4 rounded-lg border transition-all ${
-                statusFilter === "all" ? "border-purple-500 bg-purple-500/10" : "border-gray-700 bg-gray-800/50 hover:border-gray-600"
+                statusFilter === "all" ? "border-purple-500 bg-purple-500/10" : "border-border-subtle bg-active hover:border-border-strong"
               }`}
             >
-              <p className="text-2xl font-bold text-white">{summary.total}</p>
-              <p className="text-xs text-gray-400">Total</p>
+              <p className="text-2xl font-bold text-primary">{summary.total}</p>
+              <p className="text-xs text-secondary">Total</p>
             </button>
           </div>
 
       {/* Bookings List */}
       {bookings.length === 0 ? (
-        <div className="py-12 text-center border border-dashed border-gray-700 rounded-lg">
-          <Clock className="mx-auto h-8 w-8 text-gray-500" />
-          <p className="mt-2 text-sm text-gray-400">
+        <div className="py-12 text-center border border-dashed border-border-subtle rounded-lg">
+          <Clock className="mx-auto h-8 w-8 text-muted" />
+          <p className="mt-2 text-sm text-secondary">
             {statusFilter === "all" ? "No table bookings yet" : `No ${statusFilter} bookings`}
           </p>
         </div>
@@ -671,14 +671,14 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
           {bookings.map((booking) => (
             <div
               key={booking.id}
-              className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-gray-600 cursor-pointer transition-all"
+              className="bg-active border border-border-subtle rounded-lg p-4 hover:border-border-strong cursor-pointer transition-all"
               onClick={() => openBookingDetail(booking)}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-white">{booking.table.name}</h3>
-                    <span className="text-sm text-gray-500">({booking.table.zone.name})</span>
+                    <h3 className="font-semibold text-primary">{booking.table.name}</h3>
+                    <span className="text-sm text-muted">({booking.table.zone.name})</span>
                     {getStatusBadge(booking.status)}
                     {booking.deposit_required && (
                       <Badge color={booking.deposit_received ? "green" : "amber"}>
@@ -687,7 +687,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                     )}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+                  <div className="mt-2 flex items-center gap-4 text-sm text-secondary flex-wrap">
                     <span className="flex items-center gap-1">
                       <Users className="h-4 w-4" />
                       {booking.guest_name}
@@ -702,7 +702,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                     )}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+                  <div className="mt-2 flex items-center gap-4 text-sm text-muted flex-wrap">
                     {booking.minimum_spend && (
                       <span>
                         Min: {currencySymbol}{booking.minimum_spend.toLocaleString()}
@@ -792,7 +792,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               <div className="flex items-center gap-2">
                 {getStatusBadge(selectedBooking.status)}
                 {selectedBooking.confirmed_at && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted">
                     Confirmed {new Date(selectedBooking.confirmed_at).toLocaleDateString()}
                   </span>
                 )}
@@ -841,25 +841,25 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
             </div>
 
             {/* Guest Info */}
-            <div className="bg-gray-800 rounded-lg p-4 space-y-3">
-              <h4 className="font-medium text-white">Guest Information</h4>
+            <div className="bg-active rounded-lg p-4 space-y-3">
+              <h4 className="font-medium text-primary">Guest Information</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-400">Name</p>
-                  <p className="text-white">{selectedBooking.guest_name}</p>
+                  <p className="text-secondary">Name</p>
+                  <p className="text-primary">{selectedBooking.guest_name}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Party Size</p>
-                  <p className="text-white">{selectedBooking.party_size}</p>
+                  <p className="text-secondary">Party Size</p>
+                  <p className="text-primary">{selectedBooking.party_size}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Email</p>
+                  <p className="text-secondary">Email</p>
                   <a href={`mailto:${selectedBooking.guest_email}`} className="text-blue-400 hover:underline">
                     {selectedBooking.guest_email}
                   </a>
                 </div>
                 <div>
-                  <p className="text-gray-400">WhatsApp</p>
+                  <p className="text-secondary">WhatsApp</p>
                   <a
                     href={formatWhatsAppLink(selectedBooking.guest_whatsapp)}
                     target="_blank"
@@ -873,13 +873,13 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               </div>
               {selectedBooking.special_requests && (
                 <div>
-                  <p className="text-gray-400 text-sm">Special Requests</p>
-                  <p className="text-white text-sm">{selectedBooking.special_requests}</p>
+                  <p className="text-secondary text-sm">Special Requests</p>
+                  <p className="text-primary text-sm">{selectedBooking.special_requests}</p>
                 </div>
               )}
               {selectedBooking.promoter && (
                 <div>
-                  <p className="text-gray-400 text-sm">Referred By</p>
+                  <p className="text-secondary text-sm">Referred By</p>
                   <p className="text-purple-400 text-sm">
                     @{selectedBooking.promoter.slug || selectedBooking.promoter.name}
                   </p>
@@ -896,8 +896,8 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                       <UserPlus className="h-5 w-5 text-purple-400" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-white">Party Guests</h4>
-                      <p className="text-sm text-gray-400">
+                      <h4 className="font-medium text-primary">Party Guests</h4>
+                      <p className="text-sm text-secondary">
                         Manage individual guests and send QR invites
                       </p>
                     </div>
@@ -916,13 +916,13 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
             )}
 
             {/* Table Selection */}
-            <div className="bg-gray-800 rounded-lg p-4 space-y-3">
-              <h4 className="font-medium text-white">Table Assignment</h4>
+            <div className="bg-active rounded-lg p-4 space-y-3">
+              <h4 className="font-medium text-primary">Table Assignment</h4>
               <div className="flex items-center gap-3">
                 <select
                   value={editTableId}
                   onChange={(e) => setEditTableId(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                  className="flex-1 px-3 py-2 bg-glass border border-border-subtle rounded-lg text-primary"
                   disabled={selectedBooking.status === "cancelled" || selectedBooking.status === "no_show"}
                 >
                   {allTables.map((table) => (
@@ -940,21 +940,21 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
             </div>
 
             {/* Financial */}
-            <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-              <h4 className="font-medium text-white">Financial</h4>
+            <div className="bg-active rounded-lg p-4 space-y-4">
+              <h4 className="font-medium text-primary">Financial</h4>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm">Minimum Spend</p>
-                  <p className="text-white">
+                  <p className="text-secondary text-sm">Minimum Spend</p>
+                  <p className="text-primary">
                     {selectedBooking.minimum_spend
                       ? `${currencySymbol}${selectedBooking.minimum_spend.toLocaleString()}`
                       : "None"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Deposit Required</p>
-                  <p className="text-white">
+                  <p className="text-secondary text-sm">Deposit Required</p>
+                  <p className="text-primary">
                     {selectedBooking.deposit_required
                       ? `${currencySymbol}${selectedBooking.deposit_required.toLocaleString()}`
                       : "None"}
@@ -963,7 +963,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               </div>
 
               {selectedBooking.deposit_required && (
-                <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -971,14 +971,14 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                       checked={selectedBooking.deposit_received}
                       onChange={handleDepositToggle}
                       disabled={updating}
-                      className="rounded bg-gray-700 border-gray-600 text-purple-500 focus:ring-purple-500"
+                      className="rounded bg-active border-border-subtle text-purple-500 focus:ring-purple-500"
                     />
-                    <label htmlFor="deposit-received" className="text-sm text-white">
+                    <label htmlFor="deposit-received" className="text-sm text-primary">
                       Deposit Received
                     </label>
                   </div>
                   {selectedBooking.deposit_received_at && (
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted">
                       {new Date(selectedBooking.deposit_received_at).toLocaleString()}
                     </span>
                   )}
@@ -986,11 +986,11 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               )}
 
               {(selectedBooking.status === "confirmed" || selectedBooking.status === "completed") && (
-                <div className="pt-2 border-t border-gray-700">
-                  <p className="text-gray-400 text-sm mb-2">Actual Spend</p>
+                <div className="pt-2 border-t border-border-subtle">
+                  <p className="text-secondary text-sm mb-2">Actual Spend</p>
                   <div className="flex items-center gap-3">
                     <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">
                         {currencySymbol}
                       </span>
                       <input
@@ -998,7 +998,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                         value={editActualSpend}
                         onChange={(e) => setEditActualSpend(e.target.value)}
                         placeholder="0.00"
-                        className="w-full pl-8 pr-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
+                        className="w-full pl-8 pr-3 py-2 bg-glass border border-border-subtle rounded-lg text-primary"
                       />
                     </div>
                     {editActualSpend !== (selectedBooking.actual_spend?.toString() || "") && (
@@ -1013,12 +1013,12 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
 
             {/* Staff Notes */}
             <div className="space-y-2">
-              <label className="text-sm text-gray-400">Staff Notes</label>
+              <label className="text-sm text-secondary">Staff Notes</label>
               <textarea
                 value={editStaffNotes}
                 onChange={(e) => setEditStaffNotes(e.target.value)}
                 placeholder="Internal notes about this booking..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none"
+                className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary resize-none"
                 rows={3}
               />
               {editStaffNotes !== (selectedBooking.staff_notes || "") && (
@@ -1029,7 +1029,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
             </div>
 
             {/* Timestamps */}
-            <div className="text-xs text-gray-500 pt-4 border-t border-gray-700">
+            <div className="text-xs text-muted pt-4 border-t border-border-subtle">
               <p>Requested: {new Date(selectedBooking.created_at).toLocaleString()}</p>
               <p>Last Updated: {new Date(selectedBooking.updated_at).toLocaleString()}</p>
             </div>
@@ -1046,7 +1046,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-secondary">
               Generate shareable links for direct table booking
             </p>
             <Button
@@ -1059,9 +1059,9 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
           </div>
 
           {bookingLinks.length === 0 ? (
-            <div className="py-8 text-center border border-dashed border-gray-700 rounded-lg">
-              <LinkIcon className="mx-auto h-8 w-8 text-gray-500" />
-              <p className="mt-2 text-sm text-gray-400">No booking links generated yet</p>
+            <div className="py-8 text-center border border-dashed border-border-subtle rounded-lg">
+              <LinkIcon className="mx-auto h-8 w-8 text-muted" />
+              <p className="mt-2 text-sm text-secondary">No booking links generated yet</p>
               <Button
                 size="sm"
                 className="mt-4"
@@ -1076,11 +1076,11 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               {bookingLinks.filter(l => l.is_active).map((link) => (
                 <div
                   key={link.id}
-                  className="bg-gray-800 rounded-lg p-4 flex items-center justify-between gap-4"
+                  className="bg-active rounded-lg p-4 flex items-center justify-between gap-4"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <code className="text-sm text-purple-400 bg-gray-900 px-2 py-1 rounded">
+                      <code className="text-sm text-purple-400 bg-glass px-2 py-1 rounded">
                         /book/{link.code}
                       </code>
                       {link.table ? (
@@ -1093,12 +1093,12 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                         </Badge>
                       )}
                       {link.expires_at && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted">
                           Expires: {new Date(link.expires_at).toLocaleDateString()}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted mt-1">
                       Created {new Date(link.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -1153,11 +1153,11 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm text-gray-300">Table</label>
+            <label className="text-sm text-secondary">Table</label>
             <select
               value={newLinkTableId}
               onChange={(e) => setNewLinkTableId(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+              className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary"
             >
               <option value="any">Any available table</option>
               {allTables.map((table) => (
@@ -1166,21 +1166,21 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Select a specific table or allow guest to choose any available table
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm text-gray-300">Expiry Date (Optional)</label>
+            <label className="text-sm text-secondary">Expiry Date (Optional)</label>
             <input
               type="date"
               value={newLinkExpiry}
               onChange={(e) => setNewLinkExpiry(e.target.value)}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+              className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               Leave blank for no expiry
             </p>
           </div>
@@ -1251,7 +1251,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
           <div className="space-y-4">
             {/* Attendee Search */}
             <div className="space-y-2">
-              <label className="text-sm text-gray-300">Search Guest by Email *</label>
+              <label className="text-sm text-secondary">Search Guest by Email *</label>
               {!selectedAttendee ? (
                 <div className="relative">
                   <input
@@ -1259,7 +1259,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                     value={attendeeSearchQuery}
                     onChange={(e) => setAttendeeSearchQuery(e.target.value)}
                     placeholder="Type email to search existing accounts..."
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary"
                     autoFocus
                   />
                   {searchingAttendees && (
@@ -1270,17 +1270,17 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
 
                   {/* Search Results Dropdown */}
                   {attendeeSearchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-raised border border-border-subtle rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {attendeeSearchResults.map((attendee) => (
                         <button
                           key={attendee.id}
                           onClick={() => selectAttendee(attendee)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700 last:border-b-0"
+                          className="w-full px-3 py-2 text-left hover:bg-active border-b border-border-subtle last:border-b-0"
                         >
-                          <div className="text-white font-medium">{attendee.name}</div>
-                          <div className="text-sm text-gray-400">{attendee.email}</div>
+                          <div className="text-primary font-medium">{attendee.name}</div>
+                          <div className="text-sm text-secondary">{attendee.email}</div>
                           {attendee.phone && (
-                            <div className="text-xs text-gray-500">{attendee.phone}</div>
+                            <div className="text-xs text-muted">{attendee.phone}</div>
                           )}
                         </button>
                       ))}
@@ -1289,9 +1289,9 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
 
                   {/* No results message */}
                   {attendeeSearchQuery.length >= 3 && !searchingAttendees && attendeeSearchResults.length === 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg p-3 text-center">
-                      <p className="text-gray-400 text-sm">No accounts found with that email</p>
-                      <p className="text-gray-500 text-xs mt-1">Only existing accounts can be assigned</p>
+                    <div className="absolute z-10 w-full mt-1 bg-raised border border-border-subtle rounded-lg p-3 text-center">
+                      <p className="text-secondary text-sm">No accounts found with that email</p>
+                      <p className="text-muted text-xs mt-1">Only existing accounts can be assigned</p>
                     </div>
                   )}
                 </div>
@@ -1300,10 +1300,10 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-white font-medium">{selectedAttendee.name}</div>
-                      <div className="text-sm text-gray-400">{selectedAttendee.email}</div>
+                      <div className="text-primary font-medium">{selectedAttendee.name}</div>
+                      <div className="text-sm text-secondary">{selectedAttendee.email}</div>
                       {selectedAttendee.phone && (
-                        <div className="text-xs text-gray-500">{selectedAttendee.phone}</div>
+                        <div className="text-xs text-muted">{selectedAttendee.phone}</div>
                       )}
                     </div>
                     <button
@@ -1316,43 +1316,43 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
                           guest_whatsapp: "",
                         }));
                       }}
-                      className="text-gray-400 hover:text-white p-1"
+                      className="text-secondary hover:text-primary p-1"
                     >
                       <XCircle className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
               )}
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted">
                 Search by email to find an existing account. Tables can only be reassigned to registered users.
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-gray-300">Party Size</label>
+              <label className="text-sm text-secondary">Party Size</label>
               <input
                 type="number"
                 min="1"
                 max="20"
                 value={reassignForm.party_size}
                 onChange={(e) => setReassignForm({ ...reassignForm, party_size: parseInt(e.target.value) || 1 })}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm text-gray-300">Staff Notes</label>
+              <label className="text-sm text-secondary">Staff Notes</label>
               <textarea
                 value={reassignForm.staff_notes}
                 onChange={(e) => setReassignForm({ ...reassignForm, staff_notes: e.target.value })}
                 placeholder="Internal notes..."
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none"
+                className="w-full px-3 py-2 bg-active border border-border-subtle rounded-lg text-primary resize-none"
                 rows={2}
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
             <Button
               variant="secondary"
               onClick={() => {

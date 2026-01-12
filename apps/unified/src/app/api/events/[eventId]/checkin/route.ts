@@ -227,7 +227,7 @@ export async function POST(
         event_id,
         attendee_id,
         referral_promoter_id,
-        attendee:attendees(id, name, email, phone)
+        attendee:attendees(id, name, surname, email, phone)
       `)
       .eq("id", registrationId)
       .single();
@@ -249,7 +249,9 @@ export async function POST(
     }
 
     const attendee = Array.isArray(registration.attendee) ? registration.attendee[0] : registration.attendee;
-    const attendeeName = attendee?.name || "Unknown Attendee";
+    const attendeeName = attendee?.surname 
+      ? `${attendee?.name || ""} ${attendee.surname}`.trim() 
+      : attendee?.name || "Unknown Attendee";
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
 
     // Fetch VIP status for this attendee

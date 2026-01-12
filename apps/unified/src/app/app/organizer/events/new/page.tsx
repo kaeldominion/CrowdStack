@@ -264,8 +264,8 @@ export default function NewEventPage() {
       </Link>
 
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-white">Create New Event</h1>
-        <p className="mt-2 text-sm text-white/60">
+        <h1 className="text-3xl font-bold tracking-tighter text-primary">Create New Event</h1>
+        <p className="mt-2 text-sm text-secondary">
           Set up a new event and start tracking attendance
         </p>
       </div>
@@ -405,7 +405,7 @@ export default function NewEventPage() {
 
           {/* Registration Type */}
           <div className="space-y-4 border-t border-border pt-6">
-            <h3 className="text-lg font-semibold text-white">Registration Settings</h3>
+            <h3 className="text-lg font-semibold text-primary">Registration Settings</h3>
             
             <div>
               <label className="block text-sm font-medium text-primary mb-2">Registration Type</label>
@@ -504,7 +504,7 @@ export default function NewEventPage() {
                           setFlierVideoFile(null);
                           setVideoPreviewUrl(null);
                         }}
-                        className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+                        className="absolute top-1 right-1 p-1 bg-void/80 rounded-full text-primary hover:bg-void/90"
                       >
                         ✕
                       </button>
@@ -528,7 +528,7 @@ export default function NewEventPage() {
 
           {/* Promoter Settings */}
           <div className="space-y-4 border-t border-border pt-6">
-            <h3 className="text-lg font-semibold text-white">Promoter Settings</h3>
+            <h3 className="text-lg font-semibold text-primary">Promoter Settings</h3>
 
             <div>
               <label className="block text-sm font-medium text-primary mb-2">Promoter Access</label>

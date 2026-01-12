@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@crowdstack/ui";
+import { useSidebar } from "@/contexts/SidebarContext";
 import {
   Calendar,
   LayoutGrid,
@@ -83,8 +84,14 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
       { href: "/app/venue/tables", label: "Tables", icon: Layers },
       { href: "/app/venue/table-bookings", label: "Table Bookings", icon: UtensilsCrossed },
       { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Ticket },
-      { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
       { href: "/app/venue/qr-codes", label: "QR Codes", icon: QrCode },
+    ],
+  },
+  {
+    title: "ADMIN",
+    items: [
+      { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
+      { href: "/app/venue/finance", label: "Finance", icon: DollarSign },
       { href: "/app/venue/settings", label: "Settings", icon: Settings },
     ],
   },
@@ -231,7 +238,7 @@ const ADMIN_SIDEBAR_ITEMS: SidebarSection[] = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, setIsCollapsed } = useSidebar();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const supabase = createBrowserClient();
@@ -322,10 +329,10 @@ export function DashboardSidebar() {
   const renderNavContent = (isMobile: boolean = false) => (
     <nav className="flex-1 overflow-y-auto p-2 scrollbar-thin">
       {sidebarSections.map((section, sectionIndex) => (
-        <div key={section.title} className={cn(sectionIndex > 0 && "mt-4")}>
+        <div key={section.title} className={cn(sectionIndex > 0 && "mt-2")}>
           {/* Section Title */}
           {(!isCollapsed || isMobile) && (
-            <div className="px-3 py-2">
+            <div className="px-3 py-1.5">
               <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted">
                 {section.title}
               </span>
@@ -344,7 +351,7 @@ export function DashboardSidebar() {
                   href={item.href}
                   onClick={() => isMobile && setIsMobileOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg",
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg",
                     "transition-all duration-200",
                     (isCollapsed && !isMobile) && "justify-center px-2",
                     isActive
@@ -355,10 +362,10 @@ export function DashboardSidebar() {
                 >
                   <Icon className={cn(
                     "flex-shrink-0",
-                    (isCollapsed && !isMobile) ? "w-5 h-5" : "w-4 h-4"
+                    (isCollapsed && !isMobile) ? "w-4 h-4" : "w-3.5 h-3.5"
                   )} />
                   {(!isCollapsed || isMobile) && (
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-xs font-medium truncate">
                       {item.label}
                     </span>
                   )}

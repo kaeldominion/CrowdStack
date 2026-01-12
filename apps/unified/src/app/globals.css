@@ -67,6 +67,10 @@ pre {
   opacity: 0.08;
 }
 
+[data-theme="light"] .atmosphere-noise {
+  opacity: 0.02;
+}
+
 /* ---------- SCROLLBAR ---------- */
 ::-webkit-scrollbar {
   width: 8px;
@@ -82,12 +86,25 @@ pre {
   border-radius: 4px;
 }
 
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-secondary);
 }
 
 /* ---------- SELECTION ---------- */
 ::selection {
+  background: var(--accent-secondary);
+  color: #ffffff;
+}
+
+[data-theme="light"] ::selection {
   background: var(--accent-secondary);
   color: #ffffff;
 }

@@ -9,12 +9,12 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { attendeeId: string } }
+  { params }: { params: Promise<{ attendeeId: string }> }
 ) {
   try {
+    const { attendeeId } = await params;
     const supabase = await createClient();
     const serviceSupabase = createServiceRoleClient();
-    const attendeeId = params.attendeeId;
 
     // Get current user
     const {
@@ -107,12 +107,12 @@ export async function POST(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { attendeeId: string } }
+  { params }: { params: Promise<{ attendeeId: string }> }
 ) {
   try {
+    const { attendeeId } = await params;
     const supabase = await createClient();
     const serviceSupabase = createServiceRoleClient();
-    const attendeeId = params.attendeeId;
 
     // Get current user
     const {

@@ -142,26 +142,26 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
 
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto">
-      <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
+      <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-border-strong backdrop-blur-xl bg-glass/80 shadow-lg shadow-void/50">
         <Link href="/" className="flex items-center transition-all duration-300 hover:scale-105 pr-2">
-          <Logo variant="full" size="sm" animated={false} className="text-white" />
+          <Logo variant="full" size="sm" animated={false} className="text-primary" />
         </Link>
         
         {variant === "marketing" ? (
           <>
-            <div className="h-4 w-px bg-white/20 hidden sm:block" />
+            <div className="h-4 w-px bg-border-subtle hidden sm:block" />
             
             {/* Desktop Marketing Navigation */}
             <div className="hidden sm:flex items-center gap-4 sm:gap-6">
               {showForBusiness && (
-                <Link href="/for-business" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
+                <Link href="/for-business" className="text-xs sm:text-sm text-secondary hover:text-primary transition-all duration-300 whitespace-nowrap">
                   For Business
                 </Link>
               )}
-              <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
+              <Link href="/login" className="text-xs sm:text-sm text-secondary hover:text-primary transition-all duration-300 whitespace-nowrap">
                 Log in
               </Link>
-              <div className="h-4 w-px bg-white/20" />
+              <div className="h-4 w-px bg-border-subtle" />
               <Link href="/contact">
                 <button className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/50 whitespace-nowrap">
                   Book a demo
@@ -172,7 +172,7 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
             {/* Mobile Marketing Menu Button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="sm:hidden ml-2 p-2 text-white/60 hover:text-white transition-colors"
+              className="sm:hidden ml-2 p-2 text-secondary hover:text-primary transition-colors"
               aria-label="Toggle menu"
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -187,13 +187,13 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
                   onTouchEnd={(e) => { e.preventDefault(); setIsOpen(false); }}
                   style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
                 />
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-border-strong backdrop-blur-xl bg-raised shadow-lg shadow-void/50 z-50 sm:hidden">
                   <div className="flex flex-col py-2">
                     {showForBusiness && (
                       <Link
                         href="/for-business"
                         onClick={() => setIsOpen(false)}
-                        className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                        className="px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                       >
                         For Business
                       </Link>
@@ -201,11 +201,11 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
                     <Link
                       href="/login"
                       onClick={() => setIsOpen(false)}
-                      className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                      className="px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                     >
                       Log in
                     </Link>
-                    <div className="h-px bg-white/20 my-2" />
+                    <div className="h-px bg-border-subtle my-2" />
                     <Link
                       href="/contact"
                       onClick={() => setIsOpen(false)}
@@ -221,13 +221,13 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
         ) : (
           <>
             {/* Simple Navigation - logo and auth-aware content */}
-            <div className="h-4 w-px bg-white/20 hidden sm:block" />
+            <div className="h-4 w-px bg-border-subtle hidden sm:block" />
             <PublicNavigationWithAuth />
             
             {/* Mobile Menu Button for Simple Nav */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="sm:hidden ml-2 p-2 text-white/60 hover:text-white transition-colors"
+              className="sm:hidden ml-2 p-2 text-secondary hover:text-primary transition-colors"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -242,7 +242,7 @@ function PublicNavigation({ variant = "marketing", showForBusiness = false }: { 
                   onTouchEnd={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); }}
                   style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
                 />
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-lg border border-border-strong backdrop-blur-xl bg-raised shadow-lg shadow-void/50 z-50 sm:hidden">
                   <PublicNavigationWithAuthMobile onClose={() => setIsMobileMenuOpen(false)} />
                 </div>
               </>
@@ -408,7 +408,7 @@ function PublicNavigationWithAuth() {
   if (loading) {
     return (
       <div className="hidden sm:flex items-center gap-4">
-        <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
+        <Link href="/login" className="text-xs sm:text-sm text-secondary hover:text-primary transition-all duration-300 whitespace-nowrap">
           Log in
         </Link>
       </div>
@@ -422,7 +422,7 @@ function PublicNavigationWithAuth() {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
+            className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-primary hover:text-primary hover:bg-active"
           >
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
               {getUserInitial()}
@@ -432,13 +432,13 @@ function PublicNavigationWithAuth() {
 
           {/* Profile Dropdown */}
           {isProfileOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden z-50">
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-border-strong backdrop-blur-xl bg-raised shadow-lg shadow-void/50 overflow-hidden z-50">
               {/* User Info */}
-              <div className="px-4 py-3 border-b border-white/10">
-                <p className="text-sm font-medium text-white truncate">
+              <div className="px-4 py-3 border-b border-border-subtle">
+                <p className="text-sm font-medium text-primary truncate">
                   {user.name || "Guest"}
                 </p>
-                <p className="text-xs text-white/50 truncate">{user.email}</p>
+                <p className="text-xs text-muted truncate">{user.email}</p>
               </div>
 
               {/* Profile Links */}
@@ -450,7 +450,7 @@ function PublicNavigationWithAuth() {
                       key={item.href}
                       href={item.href}
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
@@ -460,10 +460,10 @@ function PublicNavigationWithAuth() {
               </div>
 
               {/* Sign Out */}
-              <div className="border-t border-white/10 py-1">
+              <div className="border-t border-border-subtle py-1">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:text-accent-error/80 hover:bg-active transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out
@@ -479,7 +479,7 @@ function PublicNavigationWithAuth() {
   // Show "Log in" link if not logged in
   return (
     <div className="hidden sm:flex items-center gap-4">
-      <Link href="/login" className="text-xs sm:text-sm text-white/60 hover:text-white transition-all duration-300 whitespace-nowrap">
+      <Link href="/login" className="text-xs sm:text-sm text-secondary hover:text-primary transition-all duration-300 whitespace-nowrap">
         Log in
       </Link>
     </div>
@@ -624,7 +624,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
         <Link
           href="/login"
           onClick={onClose}
-          className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
         >
           Log in
         </Link>
@@ -636,15 +636,15 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
     return (
       <div className="flex flex-col">
         {/* User Info */}
-        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+        <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
             {getUserInitial()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
+            <p className="text-sm font-medium text-primary truncate">
               {user.name || "Guest"}
             </p>
-            <p className="text-xs text-white/50 truncate">{user.email}</p>
+            <p className="text-xs text-muted truncate">{user.email}</p>
           </div>
         </div>
 
@@ -657,7 +657,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
@@ -666,7 +666,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <div className="h-px bg-white/10" />
+        <div className="h-px bg-border-subtle" />
 
         {/* Sign Out */}
         <div className="py-2">
@@ -675,7 +675,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
               onClose();
               handleLogout();
             }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-accent-error hover:text-accent-error/80 hover:bg-active transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
@@ -690,7 +690,7 @@ function PublicNavigationWithAuthMobile({ onClose }: { onClose: () => void }) {
       <Link
         href="/login"
         onClick={onClose}
-        className="px-4 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+        className="px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
       >
         Log in
       </Link>

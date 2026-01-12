@@ -7,6 +7,7 @@ import { createBrowserClient } from "@crowdstack/shared";
 import type { UserRole } from "@crowdstack/shared";
 import { DockNav } from "./navigation/DockNav";
 import { DashboardSidebar } from "./navigation/DashboardSidebar";
+import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -15,10 +16,11 @@ interface AppLayoutProps {
   userId?: string;
 }
 
-export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps) {
+function AppLayoutContent({ children, roles, userEmail, userId }: AppLayoutProps) {
   const [userRoles, setUserRoles] = useState<string[]>(roles);
   const [mounted, setMounted] = useState(false);
   const supabase = createBrowserClient();
+  const { isCollapsed } = useSidebar();
 
   const nextPathname = usePathname();
 
@@ -65,7 +67,7 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       <main className={cn(
         "min-h-screen relative z-10 pt-24 pb-8 px-4 lg:px-8",
         "transition-all duration-300",
-        isDashboardRoute && "lg:pl-60" // Account for sidebar width (w-56 + some padding)
+        isDashboardRoute && (isCollapsed ? "lg:pl-20" : "lg:pl-60") // Account for sidebar width (w-16 when collapsed, w-56 when expanded)
       )}>
         <div className="mx-auto max-w-7xl">
           {children}
@@ -75,6 +77,16 @@ export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps
       {/* DockNav - floating pill navigation (primary nav for /app routes) */}
       <DockNav />
     </div>
+  );
+}
+
+export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps) {
+  return (
+    <SidebarProvider>
+      <AppLayoutContent roles={roles} userEmail={userEmail} userId={userId}>
+        {children}
+      </AppLayoutContent>
+    </SidebarProvider>
   );
 }
 

@@ -4,13 +4,14 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal, ConfirmModal, LoadingSpinner, Select } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin, Plus, FileText, Edit2 } from "lucide-react";
+import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin, Plus, FileText, Edit2, Palette } from "lucide-react";
 import Image from "next/image";
 import { MapPreview } from "@/components/venue/MapPreview";
 import { VenuePaymentSettings } from "@/components/VenuePaymentSettings";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import { CURRENCIES } from "@/lib/constants/currencies";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag, PromoterPayoutTemplate, BonusTier } from "@crowdstack/shared/types";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface VenueSettingsData {
   venue: Venue;
@@ -34,7 +35,8 @@ export default function VenueSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState<VenueSettingsData | null>(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam || "profile");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
   const [savedTab, setSavedTab] = useState<string | null>(null);
@@ -97,8 +99,15 @@ export default function VenueSettingsPage() {
     loadSettings();
   }, [venueId]);
 
+  // Update active tab when tab param changes
   useEffect(() => {
-    if (activeTab === "payout-templates") {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (activeTab === "finance") {
       loadTemplates();
     }
   }, [activeTab, venueId]);
@@ -549,7 +558,7 @@ export default function VenueSettingsPage() {
     return (
       <div className="space-y-8 pt-4">
         <div className="text-center py-12">
-          <p className="text-white/60">Loading settings...</p>
+          <p className="text-secondary">Loading settings...</p>
         </div>
       </div>
     );
@@ -559,7 +568,7 @@ export default function VenueSettingsPage() {
     return (
       <div className="space-y-8 pt-4">
         <div className="text-center py-12">
-          <p className="text-white/60">Failed to load settings</p>
+          <p className="text-secondary">Failed to load settings</p>
         </div>
       </div>
     );
@@ -612,8 +621,7 @@ export default function VenueSettingsPage() {
           <TabsTrigger value="tags">Tags</TabsTrigger>
           <TabsTrigger value="policies">Policies</TabsTrigger>
           <TabsTrigger value="defaults">Defaults</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="payout-templates">Payout Templates</TabsTrigger>
+          <TabsTrigger value="finance">Finance</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -715,6 +723,21 @@ export default function VenueSettingsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Appearance Settings */}
+              <div className="border-t border-border-subtle pt-6">
+                <h3 className="text-sm font-medium text-primary mb-4 flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Appearance
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
+                  <div>
+                    <p className="text-primary font-medium">Theme</p>
+                    <p className="text-sm text-muted">Choose between light and dark mode</p>
+                  </div>
+                  <ThemeToggle showLabel={false} />
+                </div>
               </div>
 
               {errors.save && <p className="text-accent-error text-sm">{errors.save}</p>}
@@ -961,7 +984,7 @@ export default function VenueSettingsPage() {
                     />
                     <label
                       htmlFor="logo-upload"
-                      className={`inline-flex items-center gap-2 px-4 py-2 bg-glass border border-border rounded-lg text-sm cursor-pointer hover:bg-white/5 transition-colors ${
+                      className={`inline-flex items-center gap-2 px-4 py-2 bg-glass border border-border rounded-lg text-sm cursor-pointer hover:bg-active transition-colors ${
                         uploadingImage === "logo" ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                     >
@@ -1382,16 +1405,16 @@ export default function VenueSettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Payments Tab */}
-        <TabsContent value="payments">
-          <Card>
-            <VenuePaymentSettings />
-          </Card>
-        </TabsContent>
+        {/* Finance Tab */}
+        <TabsContent value="finance">
+          <div className="space-y-6">
+            {/* Payment Settings Section */}
+            <Card>
+              <VenuePaymentSettings />
+            </Card>
 
-        {/* Payout Templates Tab */}
-        <TabsContent value="payout-templates">
-          <Card>
+            {/* Payout Templates Section */}
+            <Card>
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -1524,6 +1547,7 @@ export default function VenueSettingsPage() {
               )}
             </div>
           </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -1565,12 +1589,12 @@ export default function VenueSettingsPage() {
                 </div>
               )}
               <div className="p-6">
-                <h2 className="text-2xl font-bold text-white mb-2">{data.venue.name}</h2>
+                <h2 className="text-2xl font-bold text-primary mb-2">{data.venue.name}</h2>
                 {data.venue.description && (
-                  <p className="text-white/80 mb-4">{data.venue.description}</p>
+                  <p className="text-primary mb-4">{data.venue.description}</p>
                 )}
                 {data.venue.address && (
-                  <div className="flex items-center gap-2 text-white/60 mb-4">
+                  <div className="flex items-center gap-2 text-secondary mb-4">
                     <MapPin className="h-4 w-4" />
                     <span>{data.venue.address}</span>
                   </div>

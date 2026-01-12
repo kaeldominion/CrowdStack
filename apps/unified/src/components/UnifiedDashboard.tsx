@@ -301,8 +301,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Dashboard</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Dashboard</h1>
+          <p className="mt-2 text-sm text-secondary">
             {userRoles.length > 1 
               ? "Overview across all your roles" 
               : "Overview of your performance"}
@@ -334,9 +334,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-              <h2 className="text-xl font-semibold text-white">Live Now</h2>
+              <h2 className="text-xl font-semibold text-primary">Live Now</h2>
             </div>
-            <span className="text-sm text-white/60">
+            <span className="text-sm text-secondary">
               {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
             </span>
           </div>
@@ -346,16 +346,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 key={event.id} 
                 href={isVenue ? `/app/venue/events/${event.id}` : isOrganizer ? `/app/organizer/events/${event.id}` : `/app/promoter/events/${event.id}`}
               >
-                <BentoCard className="border-l-4 border-l-red-500 hover:bg-white/10 transition-colors cursor-pointer">
+                <BentoCard className="border-l-4 border-l-red-500 hover:bg-active transition-colors cursor-pointer">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-white truncate">
+                      <h3 className="text-sm font-semibold text-primary truncate">
                         {event.name}
                       </h3>
                       {event.venue && (
                         <div className="flex items-center gap-1 mt-1">
-                          <MapPin className="h-3 w-3 text-white/40 flex-shrink-0" />
-                          <span className="text-xs text-white/40 truncate">
+                          <MapPin className="h-3 w-3 text-muted flex-shrink-0" />
+                          <span className="text-xs text-muted truncate">
                             {event.venue.name}
                           </span>
                         </div>
@@ -366,8 +366,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                   
                   <div className="flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-1">
-                      <Users className="h-3 w-3 text-white/40" />
-                      <span className="text-white/60">
+                      <Users className="h-3 w-3 text-muted" />
+                      <span className="text-secondary">
                         {event.registrations} registered
                       </span>
                     </div>
@@ -381,7 +381,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
                   {event.capacity && (
                     <div className="mt-3">
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-active rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
                           style={{
@@ -389,7 +389,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                           }}
                         />
                       </div>
-                      <p className="text-[10px] text-white/40 mt-1">
+                      <p className="text-[10px] text-muted mt-1">
                         {Math.round((event.checkins / event.capacity) * 100)}% capacity
                       </p>
                     </div>
@@ -438,7 +438,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Venue Admin Section */}
       {isVenue && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Venue Performance
           </h2>
@@ -450,7 +450,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 {/* Venue Image/Logo Preview */}
                 <div className="flex-shrink-0">
                   {venue.cover_image_url ? (
-                    <div className="relative w-full md:w-48 h-32 rounded-lg overflow-hidden border border-white/10">
+                    <div className="relative w-full md:w-48 h-32 rounded-lg overflow-hidden border border-border-subtle">
                       <Image
                         src={venue.cover_image_url}
                         alt={venue.name || "Venue"}
@@ -459,7 +459,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       />
                     </div>
                   ) : venue.logo_url ? (
-                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                    <div className="relative w-32 h-32 rounded-lg overflow-hidden border border-border-subtle bg-glass/50 flex items-center justify-center">
                       <Image
                         src={venue.logo_url}
                         alt={venue.name || "Venue"}
@@ -468,8 +468,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       />
                     </div>
                   ) : (
-                    <div className="w-full md:w-48 h-32 rounded-lg border border-white/10 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
-                      <Building2 className="h-12 w-12 text-white/40" />
+                    <div className="w-full md:w-48 h-32 rounded-lg border border-border-subtle bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                      <Building2 className="h-12 w-12 text-muted" />
                     </div>
                   )}
                 </div>
@@ -478,16 +478,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Globe className="h-4 w-4 text-white/60" />
-                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                      <Globe className="h-4 w-4 text-secondary" />
+                      <p className="text-xs uppercase tracking-widest text-muted font-medium">
                         Public Profile
                       </p>
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">{venue.name || "Venue"}</h3>
+                    <h3 className="text-2xl font-bold text-primary mb-2">{venue.name || "Venue"}</h3>
                     {venue.slug ? (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 p-2 bg-white/5 rounded-md border border-white/10">
-                          <code className="text-sm text-white/80 font-mono flex-1 truncate">
+                        <div className="flex items-center gap-2 p-2 bg-glass/50 rounded-md border border-border-subtle">
+                          <code className="text-sm text-primary font-mono flex-1 truncate">
                             {(() => {
                               if (typeof window !== "undefined") {
                                 const origin = window.location.origin;
@@ -540,7 +540,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-sm text-white/60">
+                        <p className="text-sm text-secondary">
                           Set up your public profile to share your venue with event-goers
                         </p>
                         <Link href="/app/venue/settings">
@@ -560,38 +560,38 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Total Events</p>
-                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.totalEvents}</p>
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted mb-0.5 truncate">Total Events</p>
+                  <p className="text-lg font-bold tracking-tight text-primary">{venueStats.totalEvents}</p>
                 </div>
               </div>
-              <Calendar className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
+              <Calendar className="h-3.5 w-3.5 text-muted absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
             <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">This Month</p>
-                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.thisMonth}</p>
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted mb-0.5 truncate">This Month</p>
+                  <p className="text-lg font-bold tracking-tight text-primary">{venueStats.thisMonth}</p>
                 </div>
               </div>
-              <TrendingUp className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
+              <TrendingUp className="h-3.5 w-3.5 text-muted absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
             <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Check-ins</p>
-                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.totalCheckIns}</p>
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted mb-0.5 truncate">Check-ins</p>
+                  <p className="text-lg font-bold tracking-tight text-primary">{venueStats.totalCheckIns}</p>
                 </div>
               </div>
-              <Ticket className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
+              <Ticket className="h-3.5 w-3.5 text-muted absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
             <BentoCard className="[&>div]:!px-3 [&>div]:!py-2.5 relative">
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-white/40 mb-0.5 truncate">Repeat Rate</p>
-                  <p className="text-lg font-bold tracking-tight text-white">{venueStats.repeatRate}%</p>
+                  <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-muted mb-0.5 truncate">Repeat Rate</p>
+                  <p className="text-lg font-bold tracking-tight text-primary">{venueStats.repeatRate}%</p>
                 </div>
               </div>
-              <Repeat className="h-3.5 w-3.5 text-white/40 absolute bottom-1 right-1 flex-shrink-0" />
+              <Repeat className="h-3.5 w-3.5 text-muted absolute bottom-1 right-1 flex-shrink-0" />
             </BentoCard>
           </div>
 
@@ -600,14 +600,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard span={2}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Average Attendance</p>
-                  <Users className="h-4 w-4 text-white/40" />
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium">Average Attendance</p>
+                  <Users className="h-4 w-4 text-muted" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-4xl font-bold tracking-tighter text-white">{venueStats.avgAttendance}</p>
-                  <span className="text-sm text-white/40">per event</span>
+                  <p className="text-4xl font-bold tracking-tighter text-primary">{venueStats.avgAttendance}</p>
+                  <span className="text-sm text-muted">per event</span>
                 </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-active rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
                     style={{ width: "75%" }}
@@ -618,27 +618,27 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
             {venueStats.topEventDetails ? (
               <Link href={`/app/venue/events/${venueStats.topEventDetails.id}`} className="block">
-                <BentoCard span={2} className="hover:bg-white/10 transition-colors cursor-pointer group">
+                <BentoCard span={2} className="hover:bg-active transition-colors cursor-pointer group">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
+                      <p className="text-xs uppercase tracking-widest text-muted font-medium">Top Performing Event</p>
                       <Trophy className="h-4 w-4 text-amber-400" />
                     </div>
-                    <p className="text-xl font-bold tracking-tighter text-white group-hover:text-indigo-300 transition-colors truncate">
+                    <p className="text-xl font-bold tracking-tighter text-primary group-hover:text-indigo-300 transition-colors truncate">
                       {venueStats.topEventDetails.name}
                     </p>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1.5">
-                        <Ticket className="h-3.5 w-3.5 text-white/40" />
-                        <span className="text-white/70">{venueStats.topEventDetails.registrations}</span>
-                        <span className="text-white/40 text-xs">reg</span>
+                        <Ticket className="h-3.5 w-3.5 text-muted" />
+                        <span className="text-secondary">{venueStats.topEventDetails.registrations}</span>
+                        <span className="text-muted text-xs">reg</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <UserCheck className="h-3.5 w-3.5 text-green-400" />
                         <span className="text-green-400 font-medium">{venueStats.topEventDetails.checkins}</span>
-                        <span className="text-white/40 text-xs">in</span>
+                        <span className="text-muted text-xs">in</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-white/40">
+                      <div className="flex items-center gap-1.5 text-muted">
                         <Calendar className="h-3.5 w-3.5" />
                         <span className="text-xs">
                           {new Date(venueStats.topEventDetails.date).toLocaleDateString("en-US", {
@@ -655,10 +655,10 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               <BentoCard span={2}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Top Performing Event</p>
-                    <BarChart3 className="h-4 w-4 text-white/40" />
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium">Top Performing Event</p>
+                    <BarChart3 className="h-4 w-4 text-muted" />
                   </div>
-                  <p className="text-2xl font-bold tracking-tighter text-white/40">No events yet</p>
+                  <p className="text-2xl font-bold tracking-tighter text-muted">No events yet</p>
                 </div>
               </BentoCard>
             )}
@@ -666,14 +666,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
           {/* Attendees Card */}
           <Link href="/app/venue/attendees" className="block">
-            <BentoCard span={4} className="hover:bg-white/10 transition-colors cursor-pointer group">
+            <BentoCard span={4} className="hover:bg-active transition-colors cursor-pointer group">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
                     <Users className="h-5 w-5 text-indigo-400" />
                     Attendee Database
                   </h3>
-                  <span className="text-sm text-white/40 group-hover:text-white/60 transition-colors flex items-center gap-1">
+                  <span className="text-sm text-muted group-hover:text-secondary transition-colors flex items-center gap-1">
                     View All
                     <ExternalLink className="h-3 w-3" />
                   </span>
@@ -681,43 +681,43 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 
                 {/* Quick Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                    <p className="text-2xl font-bold text-white">{attendeeStats.totalAttendees}</p>
-                    <p className="text-xs text-white/50">Total Guests</p>
+                  <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
+                    <p className="text-2xl font-bold text-primary">{attendeeStats.totalAttendees}</p>
+                    <p className="text-xs text-muted">Total Guests</p>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
                     <p className="text-2xl font-bold text-green-400">+{attendeeStats.newThisMonth}</p>
-                    <p className="text-xs text-white/50">New This Month</p>
+                    <p className="text-xs text-muted">New This Month</p>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
                     <p className="text-2xl font-bold text-indigo-400">{attendeeStats.repeatVisitors}</p>
-                    <p className="text-xs text-white/50">Repeat Visitors</p>
+                    <p className="text-xs text-muted">Repeat Visitors</p>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                    <p className="text-2xl font-bold text-white">{attendeeStats.totalCheckins}</p>
-                    <p className="text-xs text-white/50">Total Check-ins</p>
+                  <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
+                    <p className="text-2xl font-bold text-primary">{attendeeStats.totalCheckins}</p>
+                    <p className="text-xs text-muted">Total Check-ins</p>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                  <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
                     <p className="text-2xl font-bold text-amber-400">{attendeeStats.flaggedCount}</p>
-                    <p className="text-xs text-white/50">Flagged</p>
+                    <p className="text-xs text-muted">Flagged</p>
                   </div>
                 </div>
 
                 {/* Top Attendees */}
                 {attendeeStats.topAttendees.length > 0 && (
                   <div className="pt-2">
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-3">Top Attendees</p>
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium mb-3">Top Attendees</p>
                     <div className="flex flex-wrap gap-2">
                       {attendeeStats.topAttendees.map((attendee, index) => (
                         <div
                           key={attendee.id}
-                          className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-1.5 border border-white/10"
+                          className="flex items-center gap-2 bg-glass/50 rounded-full px-3 py-1.5 border border-border-subtle"
                         >
                           <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white">
                             {index + 1}
                           </div>
-                          <span className="text-sm text-white font-medium">{attendee.name}</span>
-                          <div className="flex items-center gap-1 text-xs text-white/50">
+                          <span className="text-sm text-primary font-medium">{attendee.name}</span>
+                          <div className="flex items-center gap-1 text-xs text-muted">
                             <UserCheck className="h-3 w-3" />
                             {attendee.checkins}
                           </div>
@@ -741,7 +741,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Event Organizer Section */}
       {isOrganizer && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Event Management
           </h2>
@@ -751,37 +751,37 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard className="[&>div]:!p-2">
               <div className="relative h-full flex flex-col">
                 <div className="flex-1">
-                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">EVENTS</p>
-                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.totalEvents}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-muted font-medium mb-0.5">EVENTS</p>
+                  <p className="text-lg font-bold tracking-tighter text-primary">{organizerStats.totalEvents}</p>
                 </div>
-                <Calendar className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
+                <Calendar className="h-3.5 w-3.5 text-muted absolute bottom-0 right-0" />
               </div>
             </BentoCard>
             <BentoCard className="[&>div]:!p-2">
               <div className="relative h-full flex flex-col">
                 <div className="flex-1">
-                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">RGSTRTNS</p>
-                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.registrations}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-muted font-medium mb-0.5">RGSTRTNS</p>
+                  <p className="text-lg font-bold tracking-tighter text-primary">{organizerStats.registrations}</p>
                 </div>
-                <Ticket className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
+                <Ticket className="h-3.5 w-3.5 text-muted absolute bottom-0 right-0" />
               </div>
             </BentoCard>
             <BentoCard className="[&>div]:!p-2">
               <div className="relative h-full flex flex-col">
                 <div className="flex-1">
-                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">CHECK-INS</p>
-                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.checkIns}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-muted font-medium mb-0.5">CHECK-INS</p>
+                  <p className="text-lg font-bold tracking-tighter text-primary">{organizerStats.checkIns}</p>
                 </div>
-                <TrendingUp className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
+                <TrendingUp className="h-3.5 w-3.5 text-muted absolute bottom-0 right-0" />
               </div>
             </BentoCard>
             <BentoCard className="[&>div]:!p-2">
               <div className="relative h-full flex flex-col">
                 <div className="flex-1">
-                  <p className="text-[8px] uppercase tracking-widest text-white/40 font-medium mb-0.5">PRMTRS</p>
-                  <p className="text-lg font-bold tracking-tighter text-white">{organizerStats.promoters}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-muted font-medium mb-0.5">PRMTRS</p>
+                  <p className="text-lg font-bold tracking-tighter text-primary">{organizerStats.promoters}</p>
                 </div>
-                <Users className="h-3.5 w-3.5 text-white/40 absolute bottom-0 right-0" />
+                <Users className="h-3.5 w-3.5 text-muted absolute bottom-0 right-0" />
               </div>
             </BentoCard>
           </div>
@@ -789,8 +789,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard span={4}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Registrations vs Check-ins</p>
-                  <BarChart3 className="h-4 w-4 text-white/40" />
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium">Registrations vs Check-ins</p>
+                  <BarChart3 className="h-4 w-4 text-muted" />
                 </div>
                 <RegistrationChart data={organizerChartData} height={250} />
               </div>
@@ -802,14 +802,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard span={2}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Conversion Rate</p>
-                  <Activity className="h-4 w-4 text-white/40" />
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium">Conversion Rate</p>
+                  <Activity className="h-4 w-4 text-muted" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-4xl font-bold tracking-tighter text-white">{organizerStats.conversionRate}%</p>
-                  <span className="text-sm text-white/40">registrations → check-ins</span>
+                  <p className="text-4xl font-bold tracking-tighter text-primary">{organizerStats.conversionRate}%</p>
+                  <span className="text-sm text-muted">registrations → check-ins</span>
                 </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-active rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
                     style={{ width: `${Math.min(organizerStats.conversionRate, 100)}%` }}
@@ -821,14 +821,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard span={2}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Total Revenue</p>
-                  <BarChart3 className="h-4 w-4 text-white/40" />
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium">Total Revenue</p>
+                  <BarChart3 className="h-4 w-4 text-muted" />
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-4xl font-bold tracking-tighter text-white font-mono">
+                  <p className="text-4xl font-bold tracking-tighter text-primary font-mono">
                     ${organizerStats.revenue.toLocaleString()}
                   </p>
-                  <span className="text-sm text-white/40">this month</span>
+                  <span className="text-sm text-muted">this month</span>
                 </div>
               </div>
             </BentoCard>
@@ -897,9 +897,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           {/* No Events State */}
           {organizerEvents.liveEvents.length === 0 && organizerEvents.upcomingEvents.length === 0 && (
             <BentoCard className="text-center py-8">
-              <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">No Upcoming Events</h3>
-              <p className="text-white/60 mb-4">Create your first event to start managing your business!</p>
+              <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-primary mb-2">No Upcoming Events</h3>
+              <p className="text-secondary mb-4">Create your first event to start managing your business!</p>
               <Link href="/app/organizer/events/new">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -915,7 +915,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {isPromoter && (
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
               <Users className="h-5 w-5" />
               Your Events
             </h2>
@@ -941,7 +941,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                         logoSize={30}
                       />
                     </div>
-                    <p className="text-[10px] text-white/40 mt-2 text-center">Scan to view profile</p>
+                    <p className="text-[10px] text-muted mt-2 text-center">Scan to view profile</p>
                   </div>
                 )}
 
@@ -950,18 +950,18 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Globe className="h-4 w-4 text-accent-primary" />
-                      <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                      <p className="text-xs uppercase tracking-widest text-muted font-medium">
                         Your Public Profile
                       </p>
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{promoterProfile.name}</h3>
+                    <h3 className="text-xl font-bold text-primary mb-2">{promoterProfile.name}</h3>
                     {promoterProfile.slug && promoterProfile.is_public ? (
                       <div className="space-y-3">
-                        <p className="text-sm text-white/60">
+                        <p className="text-sm text-secondary">
                           Share your profile link - guests who register through it are automatically attributed to you!
                         </p>
-                        <div className="flex items-center gap-2 p-2 bg-white/5 rounded-md border border-white/10">
-                          <code className="text-sm text-white/80 font-mono flex-1 truncate">
+                        <div className="flex items-center gap-2 p-2 bg-glass/50 rounded-md border border-border-subtle">
+                          <code className="text-sm text-primary font-mono flex-1 truncate">
                             {typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/{promoterProfile.slug}
                           </code>
                           <Button
@@ -999,7 +999,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-sm text-white/60">
+                        <p className="text-sm text-secondary">
                           {!promoterProfile.slug
                             ? "Set up your profile URL to get a shareable link and QR code"
                             : "Your profile is currently private. Make it public to share with guests."}
@@ -1015,14 +1015,14 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 </div>
 
                 {/* Conversion Stats */}
-                <div className="flex-shrink-0 flex flex-col gap-3 md:border-l md:border-white/10 md:pl-6">
+                <div className="flex-shrink-0 flex flex-col gap-3 md:border-l md:border-border-subtle md:pl-6">
                   <div className="text-center md:text-right">
-                    <p className="text-3xl font-bold text-white">{promoterStats.conversionRate}%</p>
-                    <p className="text-xs text-white/50">Conversion Rate</p>
+                    <p className="text-3xl font-bold text-primary">{promoterStats.conversionRate}%</p>
+                    <p className="text-xs text-muted">Conversion Rate</p>
                   </div>
                   <div className="text-center md:text-right">
                     <p className="text-2xl font-bold text-accent-primary">{promoterStats.avgPerEvent}</p>
-                    <p className="text-xs text-white/50">Avg per Event</p>
+                    <p className="text-xs text-muted">Avg per Event</p>
                   </div>
                 </div>
               </div>
@@ -1034,42 +1034,42 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Events</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Total Events</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">
                     {promoterEvents.liveEvents.length + promoterEvents.upcomingEvents.length + promoterEvents.pastEvents.length}
                   </p>
                 </div>
-                <Calendar className="h-5 w-5 text-white/40" />
+                <Calendar className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Registrations</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{promoterStats.referrals}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Registrations</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{promoterStats.referrals}</p>
                 </div>
-                <Ticket className="h-5 w-5 text-white/40" />
+                <Ticket className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{promoterStats.totalCheckIns}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Check-ins</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{promoterStats.totalCheckIns}</p>
                 </div>
-                <TrendingUp className="h-5 w-5 text-white/40" />
+                <TrendingUp className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <Link href="/app/promoter/earnings">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Earnings</p>
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Earnings</p>
                     {Object.keys(promoterStats.earningsByCurrency || {}).length > 0 ? (
                       <div className="space-y-1">
                         {Object.entries(promoterStats.earningsByCurrency).map(([currency, amounts]) => (
                           <div key={currency} className="flex items-baseline gap-2">
-                            <span className="text-xl font-bold tracking-tighter text-white font-mono">
+                            <span className="text-xl font-bold tracking-tighter text-primary font-mono">
                               {new Intl.NumberFormat("en-US", {
                                 style: "currency",
                                 currency,
@@ -1089,10 +1089,10 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-2xl font-bold tracking-tighter text-white/50 font-mono">$0</p>
+                      <p className="text-2xl font-bold tracking-tighter text-muted font-mono">$0</p>
                     )}
                   </div>
-                  <DollarSign className="h-5 w-5 text-white/40 flex-shrink-0" />
+                  <DollarSign className="h-5 w-5 text-muted flex-shrink-0" />
                 </div>
               </BentoCard>
             </Link>
@@ -1103,18 +1103,18 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-                <h3 className="text-lg font-semibold text-white">Live Now</h3>
+                <h3 className="text-lg font-semibold text-primary">Live Now</h3>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {promoterEvents.liveEvents.map((event) => (
                   <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                    <BentoCard className="border-l-4 border-l-red-500 hover:bg-white/10 transition-colors cursor-pointer h-full">
+                    <BentoCard className="border-l-4 border-l-red-500 hover:bg-active transition-colors cursor-pointer h-full">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-white truncate">{event.name}</h4>
+                            <h4 className="font-semibold text-primary truncate">{event.name}</h4>
                             {event.venue_name && (
-                              <p className="text-xs text-white/50 mt-1 flex items-center gap-1">
+                              <p className="text-xs text-muted mt-1 flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
                                 {event.venue_name}
                               </p>
@@ -1123,16 +1123,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                           <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
                         </div>
                         <div className="flex items-center gap-4 text-xs">
-                          <span className="text-white/60">{event.registrations} reg</span>
+                          <span className="text-secondary">{event.registrations} reg</span>
                           <span className="text-green-400 font-medium">{event.checkins} in</span>
-                          <span className="text-white/60">{event.conversionRate}%</span>
+                          <span className="text-secondary">{event.conversionRate}%</span>
                         </div>
-                        <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
+                        <div className="flex items-center gap-2 p-2 rounded bg-glass/50 border border-border-subtle">
                           <input
                             type="text"
                             value={event.referral_link}
                             readOnly
-                            className="flex-1 bg-transparent text-white/70 text-xs font-mono truncate"
+                            className="flex-1 bg-transparent text-secondary text-xs font-mono truncate"
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
@@ -1162,7 +1162,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           {promoterEvents.upcomingEvents.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-indigo-400" />
                   Upcoming Events
                 </h3>
@@ -1173,21 +1173,21 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
               <div className="space-y-2">
                 {promoterEvents.upcomingEvents.slice(0, 5).map((event) => (
                   <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-glass/50 border border-border-subtle hover:bg-active transition-colors cursor-pointer group">
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         {/* Flier thumbnail */}
-                        <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-white/10 bg-white/5">
+                        <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 border border-border-subtle bg-glass/50">
                           {event.flier_url ? (
                             <img src={event.flier_url} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Calendar className="h-5 w-5 text-white/20" />
+                              <Calendar className="h-5 w-5 text-muted" />
                             </div>
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-white truncate group-hover:text-primary transition-colors">{event.name}</p>
-                          <div className="flex items-center gap-2 text-xs text-white/50 mt-1">
+                          <p className="font-medium text-primary truncate group-hover:text-accent-secondary transition-colors">{event.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted mt-1">
                             <Clock className="h-3 w-3" />
                             <span>{new Date(event.start_time).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
                             <span>·</span>
@@ -1204,12 +1204,12 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right hidden sm:block">
-                          <p className="text-sm font-medium text-white">{event.registrations}</p>
-                          <p className="text-xs text-white/40">referrals</p>
+                          <p className="text-sm font-medium text-primary">{event.registrations}</p>
+                          <p className="text-xs text-muted">referrals</p>
                         </div>
                         <div className="text-right hidden sm:block">
                           <p className="text-sm font-medium text-green-400">{event.checkins}</p>
-                          <p className="text-xs text-white/40">check-ins</p>
+                          <p className="text-xs text-muted">check-ins</p>
                         </div>
                         <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                           <Button
@@ -1222,11 +1222,11 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                             {copiedEventId === event.id ? (
                               <Check className="h-4 w-4 text-green-400" />
                             ) : (
-                              <Copy className="h-4 w-4 text-white/60" />
+                              <Copy className="h-4 w-4 text-secondary" />
                             )}
                           </Button>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-white/40 group-hover:text-white transition-colors" />
+                        <ChevronRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
                       </div>
                     </div>
                   </Link>
@@ -1238,23 +1238,23 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           {/* Past Events */}
           {promoterEvents.pastEvents.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <History className="h-4 w-4 text-white/40" />
+              <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                <History className="h-4 w-4 text-muted" />
                 Past Events
               </h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {promoterEvents.pastEvents.slice(0, 4).map((event) => (
                   <Link key={event.id} href={`/app/promoter/events/${event.id}`}>
-                    <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer h-full opacity-75">
+                    <BentoCard className="hover:bg-active transition-colors cursor-pointer h-full opacity-75">
                       <div className="space-y-2">
-                        <h4 className="font-medium text-white truncate text-sm">{event.name}</h4>
-                        <p className="text-xs text-white/40">
+                        <h4 className="font-medium text-primary truncate text-sm">{event.name}</h4>
+                        <p className="text-xs text-muted">
                           {new Date(event.start_time).toLocaleDateString()}
                         </p>
                         <div className="flex items-center gap-3 text-xs">
-                          <span className="text-white/50">{event.registrations} reg</span>
+                          <span className="text-muted">{event.registrations} reg</span>
                           <span className="text-green-400/70">{event.checkins} in</span>
-                          <span className="text-white/50">{event.conversionRate}%</span>
+                          <span className="text-muted">{event.conversionRate}%</span>
                         </div>
                       </div>
                     </BentoCard>
@@ -1277,9 +1277,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
            promoterEvents.pastEvents.length === 0 && (
             <BentoCard>
               <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-white/20 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No Events Yet</h3>
-                <p className="text-white/60 mb-4">
+                <Calendar className="h-12 w-12 text-muted mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-primary mb-2">No Events Yet</h3>
+                <p className="text-secondary mb-4">
                   You're not assigned to any events yet. Browse available events to start promoting!
                 </p>
                 <Link href="/app/promoter/events">
@@ -1294,8 +1294,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard span={4}>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium">Earnings Over Time</p>
-                  <DollarSign className="h-4 w-4 text-white/40" />
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium">Earnings Over Time</p>
+                  <DollarSign className="h-4 w-4 text-muted" />
                 </div>
                 <EarningsChart data={promoterChartData} height={250} />
               </div>
@@ -1308,7 +1308,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {isDJ && (
         <section className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
               <Radio className="h-5 w-5" />
               DJ Dashboard
             </h2>
@@ -1331,11 +1331,11 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <Globe className="h-4 w-4 text-accent-primary" />
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium">
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium">
                       Your Public Profile
                     </p>
           </div>
-                  <p className="text-sm text-white/60">
+                  <p className="text-sm text-secondary">
                     Add mixes, photos, videos, and update your avatar and cover image directly on your public profile page.
                   </p>
                 </div>
@@ -1366,37 +1366,37 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Published Mixes</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.mixesCount}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Published Mixes</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.mixesCount}</p>
                 </div>
-                <Radio className="h-5 w-5 text-white/40" />
+                <Radio className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Plays</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.totalPlays.toLocaleString()}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Total Plays</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.totalPlays.toLocaleString()}</p>
                 </div>
-                <Eye className="h-5 w-5 text-white/40" />
+                <Eye className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Followers</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.followerCount}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Followers</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.followerCount}</p>
                 </div>
-                <Users className="h-5 w-5 text-white/40" />
+                <Users className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Upcoming Events</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.upcomingEventsCount}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Upcoming Events</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.upcomingEventsCount}</p>
                 </div>
-                <Calendar className="h-5 w-5 text-white/40" />
+                <Calendar className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
           </div>
@@ -1404,11 +1404,11 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           {/* Earnings & Referrals Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <Link href="/app/dj/earnings">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Total Earnings</p>
-                    <p className="text-2xl font-bold tracking-tighter text-white font-mono">
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Total Earnings</p>
+                    <p className="text-2xl font-bold tracking-tighter text-primary font-mono">
                       {new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: "USD",
@@ -1425,36 +1425,36 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       )}
                     </div>
                   </div>
-                  <DollarSign className="h-5 w-5 text-white/40" />
+                  <DollarSign className="h-5 w-5 text-muted" />
                 </div>
               </BentoCard>
             </Link>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Referrals</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.referrals || 0}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Referrals</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.referrals || 0}</p>
                 </div>
-                <Ticket className="h-5 w-5 text-white/40" />
+                <Ticket className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <BentoCard>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Check-ins</p>
-                  <p className="text-3xl font-bold tracking-tighter text-white">{djStats.totalCheckIns || 0}</p>
+                  <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Check-ins</p>
+                  <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.totalCheckIns || 0}</p>
                 </div>
-                <TrendingUp className="h-5 w-5 text-white/40" />
+                <TrendingUp className="h-5 w-5 text-muted" />
               </div>
             </BentoCard>
             <Link href="/app/dj/gigs">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2">Gig Invitations</p>
-                    <p className="text-3xl font-bold tracking-tighter text-white">{djStats.gigInvitationsCount || 0}</p>
+                    <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Gig Invitations</p>
+                    <p className="text-3xl font-bold tracking-tighter text-primary">{djStats.gigInvitationsCount || 0}</p>
                   </div>
-                  <Briefcase className="h-5 w-5 text-white/40" />
+                  <Briefcase className="h-5 w-5 text-muted" />
                 </div>
               </BentoCard>
             </Link>
@@ -1463,53 +1463,53 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           {/* Quick Actions */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Link href="/app/dj/gigs">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <Briefcase className="h-5 w-5 text-white" />
+                  <div className="p-2 rounded-lg bg-active">
+                    <Briefcase className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Browse Gigs</p>
-                    <p className="text-xs text-white/60">Find and apply to gig postings</p>
+                    <p className="font-medium text-primary">Browse Gigs</p>
+                    <p className="text-xs text-secondary">Find and apply to gig postings</p>
                   </div>
                 </div>
               </BentoCard>
             </Link>
             <Link href="/app/dj/qr-codes">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <QrCode className="h-5 w-5 text-white" />
+                  <div className="p-2 rounded-lg bg-active">
+                    <QrCode className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">QR Codes</p>
-                    <p className="text-xs text-white/60">Generate QR codes for referrals</p>
+                    <p className="font-medium text-primary">QR Codes</p>
+                    <p className="text-xs text-secondary">Generate QR codes for referrals</p>
                   </div>
                 </div>
               </BentoCard>
             </Link>
             <Link href="/app/dj/profile">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <Users className="h-5 w-5 text-white" />
+                  <div className="p-2 rounded-lg bg-active">
+                    <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Edit Profile</p>
-                    <p className="text-xs text-white/60">Update your bio and social links</p>
+                    <p className="font-medium text-primary">Edit Profile</p>
+                    <p className="text-xs text-secondary">Update your bio and social links</p>
                   </div>
                 </div>
               </BentoCard>
             </Link>
             <Link href="/app/dj/events">
-              <BentoCard className="hover:bg-white/10 transition-colors cursor-pointer">
+              <BentoCard className="hover:bg-active transition-colors cursor-pointer">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white/10">
-                    <Calendar className="h-5 w-5 text-white" />
+                  <div className="p-2 rounded-lg bg-active">
+                    <Calendar className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Your Events</p>
-                    <p className="text-xs text-white/60">View upcoming and past events</p>
+                    <p className="font-medium text-primary">Your Events</p>
+                    <p className="text-xs text-secondary">View upcoming and past events</p>
                   </div>
                 </div>
               </BentoCard>
@@ -1521,13 +1521,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Superadmin Section */}
       {isSuperadmin && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Admin Access
           </h2>
           <BentoCard>
             <div className="space-y-4">
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-secondary">
                 You have superadmin access. Visit the admin dashboard for full system management.
               </p>
               <Link href="/admin">

@@ -9,6 +9,7 @@ import { NavigationProgress } from "@/components/NavigationProgress";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { ToastProvider } from "@crowdstack/ui";
 import { QueryProvider } from "@/components/QueryProvider";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -39,21 +40,48 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark bg-void">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Force dark mode on landing page (logged out)
+                const isLandingPage = window.location.pathname === '/' || window.location.pathname === '';
+                if (isLandingPage) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                } else {
+                  const theme = localStorage.getItem('crowdstack-theme') || 'dark';
+                  document.documentElement.setAttribute('data-theme', theme);
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${inter.className} antialiased bg-void`}>
-        <QueryProvider>
-          <ToastProvider>
-            <Suspense fallback={null}>
-              <ImpersonationBanner />
-            </Suspense>
-            <Suspense fallback={null}>
-              <NavigationProgress />
-            </Suspense>
-            <ConditionalLayout>{children}</ConditionalLayout>
-            <Analytics />
-            <SpeedInsights />
-          </ToastProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>
+            <ToastProvider>
+              <Suspense fallback={null}>
+                <ImpersonationBanner />
+              </Suspense>
+              <Suspense fallback={null}>
+                <NavigationProgress />
+              </Suspense>
+              <ConditionalLayout>{children}</ConditionalLayout>
+              <Analytics />
+              <SpeedInsights />
+            </ToastProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

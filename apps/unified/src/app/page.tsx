@@ -118,9 +118,23 @@ export default async function HomePage() {
   const featuredEvents = await getCachedFeaturedEvents();
 
   return (
-    <Suspense fallback={<HomePageSkeleton />}>
-      <HomePageClient initialEvents={featuredEvents} />
-    </Suspense>
+    <>
+      {/* Force dark mode for landing page - set before render to avoid flash */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              document.documentElement.classList.add('dark');
+              document.documentElement.classList.remove('light');
+            })();
+          `,
+        }}
+      />
+      <Suspense fallback={<HomePageSkeleton />}>
+        <HomePageClient initialEvents={featuredEvents} />
+      </Suspense>
+    </>
   );
 }
 
@@ -128,7 +142,7 @@ function HomePageSkeleton() {
   return (
     <div className="min-h-screen bg-void">
       <div className="h-screen flex items-center justify-center">
-        <div className="text-white/60">Loading...</div>
+        <div className="text-secondary">Loading...</div>
       </div>
     </div>
   );

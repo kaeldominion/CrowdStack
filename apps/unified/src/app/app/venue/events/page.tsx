@@ -30,9 +30,16 @@ import {
   X,
   Building2,
   Plus,
+  List,
+  Grid3x3,
+  CheckCircle2,
+  DollarSign,
+  Lock,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { EventsCalendarView } from "@/components/events/EventsCalendarView";
 
 interface Event {
   id: string;
@@ -47,6 +54,12 @@ interface Event {
   venue_approval_at: string | null;
   registrations: number;
   checkins: number;
+  flier_url: string | null;
+  cover_image_url: string | null;
+  owner_user_id: string | null;
+  closed_at: string | null;
+  payouts_pending: number;
+  payouts_paid: number;
   organizer: {
     id: string;
     name: string;
@@ -62,11 +75,26 @@ export default function VenueEventsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [filteredOrganizer, setFilteredOrganizer] = useState<{ id: string; name: string } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadEvents();
+    loadCurrentUser();
   }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/me/profile");
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUserId(data.profile?.id || null);
+      }
+    } catch (error) {
+      console.error("Failed to load current user:", error);
+    }
+  };
 
   useEffect(() => {
     // If organizer filter is in URL, find and set the organizer info
@@ -133,7 +161,43 @@ export default function VenueEventsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, event: Event) => {
+    // For owned events, show lifecycle status instead of basic status
+    if (event.owner_user_id && currentUserId && event.owner_user_id === currentUserId) {
+      const isClosed = !!event.closed_at;
+      const totalPayouts = event.payouts_pending + event.payouts_paid;
+      const allPaid = totalPayouts > 0 && event.payouts_pending === 0;
+      const hasPendingPayouts = event.payouts_pending > 0;
+
+      if (allPaid) {
+        return (
+          <Badge variant="success" className="flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Paid
+          </Badge>
+        );
+      } else if (hasPendingPayouts) {
+        return (
+          <Badge variant="warning" className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3" />
+            {event.payouts_pending} unpaid
+          </Badge>
+        );
+      } else if (isClosed) {
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Closed
+          </Badge>
+        );
+      } else if (new Date(event.start_time) <= new Date()) {
+        return (
+          <Badge variant="secondary">Ended</Badge>
+        );
+      }
+    }
+
+    // Default status badges for non-owned events
     switch (status) {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
@@ -276,16 +340,42 @@ export default function VenueEventsPage() {
               <TabsTrigger value="past">Past</TabsTrigger>
             </TabsList>
 
-            <Input
-              placeholder="Search events or organizers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-xs"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search events or organizers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-xs"
+              />
+              <div className="flex items-center gap-1 p-1 bg-glass rounded-lg border border-border-subtle">
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-1.5 rounded transition-colors ${
+                    viewMode === "list"
+                      ? "bg-active text-primary"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                  title="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("calendar")}
+                  className={`p-1.5 rounded transition-colors ${
+                    viewMode === "calendar"
+                      ? "bg-active text-primary"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                  title="Calendar view"
+                >
+                  <Calendar className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </Tabs>
 
-        {/* Events Table */}
+        {/* Events View */}
         {filteredEvents.length === 0 ? (
           <Card>
             <div className="p-8 text-center">
@@ -304,7 +394,7 @@ export default function VenueEventsPage() {
               </p>
             </div>
           </Card>
-        ) : (
+        ) : viewMode === "list" ? (
           <Card>
             <Table>
               <TableHeader>
@@ -327,8 +417,23 @@ export default function VenueEventsPage() {
                     onClick={() => router.push(`/app/venue/events/${event.id}`)}
                   >
                     <TableCell>
-                      <div className="font-sans font-semibold text-primary">{event.name}</div>
-                      <div className="text-xs text-secondary mt-0.5">{event.slug}</div>
+                      <div className="flex items-center gap-2.5">
+                        {(event.flier_url || event.cover_image_url) && (
+                          <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
+                            <Image
+                              src={event.flier_url || event.cover_image_url || ""}
+                              alt={event.name}
+                              width={40}
+                              height={56}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-sans font-semibold text-primary truncate">{event.name}</div>
+                          <div className="text-xs text-secondary mt-0.5 truncate">{event.slug}</div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-primary">{event.organizer.name}</div>
@@ -361,13 +466,25 @@ export default function VenueEventsPage() {
                       {getApprovalBadge(event.venue_approval_status)}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(event.status)}
+                      {getStatusBadge(event.status, event)}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </Card>
+        ) : (
+          <EventsCalendarView
+            events={filteredEvents}
+            getStatusBadge={(status, event) => {
+              if (event) {
+                return getStatusBadge(event.status, event);
+              }
+              return null;
+            }}
+            getApprovalBadge={getApprovalBadge}
+            onEventClick={(eventId) => router.push(`/app/venue/events/${eventId}`)}
+          />
         )}
       </div>
     </div>

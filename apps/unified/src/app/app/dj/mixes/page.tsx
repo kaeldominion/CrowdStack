@@ -162,8 +162,8 @@ export default function DJMixesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-white">Mixes</h1>
-          <p className="mt-2 text-sm text-white/60">Manage your mixes and mixtapes</p>
+          <h1 className="text-3xl font-bold tracking-tighter text-primary">Mixes</h1>
+          <p className="mt-2 text-sm text-secondary">Manage your mixes and mixtapes</p>
         </div>
         <Button onClick={handleNewMix} disabled={showForm}>
           <Plus className="h-4 w-4 mr-2" />
@@ -173,7 +173,7 @@ export default function DJMixesPage() {
 
       {showForm && (
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">
+          <h2 className="text-xl font-semibold text-primary mb-4">
             {editingMix ? "Edit Mix" : "New Mix"}
           </h2>
 
@@ -221,7 +221,7 @@ export default function DJMixesPage() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as "draft" | "published")}
-                className="w-full px-3 py-2 bg-glass border border-border-subtle rounded-lg text-white"
+                className="w-full px-3 py-2 bg-glass border border-border-subtle rounded-lg text-primary"
               >
                 <option value="draft">Draft</option>
                 <option value="published">Published</option>
@@ -255,11 +255,11 @@ export default function DJMixesPage() {
 
       {mixes.length === 0 && !showForm && (
         <Card className="p-8 text-center">
-          <div className="text-white/20 mb-4">
+          <div className="text-muted mb-4">
             <Eye className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">No mixes yet</h3>
-          <p className="text-white/60 mb-4">Create your first mix to get started</p>
+          <h3 className="text-lg font-semibold text-primary mb-2">No mixes yet</h3>
+          <p className="text-secondary mb-4">Create your first mix to get started</p>
           <Button onClick={handleNewMix}>
             <Plus className="h-4 w-4 mr-2" />
             Add Mix
@@ -283,7 +283,7 @@ export default function DJMixesPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Eye className="h-8 w-8 text-white/20" />
+                      <Eye className="h-8 w-8 text-muted" />
                     </div>
                   )}
                 </div>
@@ -292,7 +292,7 @@ export default function DJMixesPage() {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white truncate">{mix.title}</h3>
+                        <h3 className="font-semibold text-primary truncate">{mix.title}</h3>
                         {mix.is_featured && (
                           <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
                             Featured
@@ -301,15 +301,15 @@ export default function DJMixesPage() {
                         <span className={`px-2 py-0.5 text-xs rounded ${
                           mix.status === "published"
                             ? "bg-green-500/20 text-green-400"
-                            : "bg-gray-500/20 text-gray-400"
+                            : "bg-gray-500/20 text-muted"
                         }`}>
                           {mix.status}
                         </span>
                       </div>
                       {mix.description && (
-                        <p className="text-sm text-white/60 line-clamp-2 mb-2">{mix.description}</p>
+                        <p className="text-sm text-secondary line-clamp-2 mb-2">{mix.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-xs text-white/40">
+                      <div className="flex items-center gap-4 text-xs text-muted">
                         <span>{mix.plays_count || 0} plays</span>
                         <a
                           href={mix.soundcloud_url}

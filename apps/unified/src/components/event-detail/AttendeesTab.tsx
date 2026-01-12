@@ -494,7 +494,7 @@ export function AttendeesTab({
                 return (
                   <div
                     key={attendee.id}
-                    className="grid grid-cols-[auto_1fr_1fr_80px_80px_60px_100px_auto] gap-2 items-center px-3 hover:bg-white/5 transition-colors border-b border-[var(--border-subtle)]/50"
+                    className="grid grid-cols-[auto_1fr_1fr_80px_80px_60px_100px_auto] gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50"
                     style={{
                       position: "absolute",
                       top: 0,
@@ -582,7 +582,7 @@ export function AttendeesTab({
                           className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
                             attendee.is_event_vip
                               ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-emerald-400"
+                              : "bg-active text-[var(--text-muted)] hover:bg-active/80 hover:text-emerald-400"
                           }`}
                           title={attendee.is_event_vip ? "Remove Event VIP" : "Mark as Event VIP"}
                         >
@@ -616,7 +616,7 @@ export function AttendeesTab({
                           className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
                             attendee.is_venue_vip
                               ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30"
-                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-[var(--accent-primary)]"
+                              : "bg-active text-[var(--text-muted)] hover:bg-active/80 hover:text-[var(--accent-primary)]"
                           }`}
                           title={
                             attendee.is_global_vip
@@ -641,7 +641,7 @@ export function AttendeesTab({
                           className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
                             attendee.is_organizer_vip
                               ? "bg-[var(--accent-secondary)]/20 text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/30"
-                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-[var(--accent-secondary)]"
+                              : "bg-active text-[var(--text-muted)] hover:bg-active/80 hover:text-[var(--accent-secondary)]"
                           }`}
                           title={
                             attendee.is_global_vip

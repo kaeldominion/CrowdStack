@@ -48,12 +48,13 @@ export async function GET(
         attendee:attendees(
           id,
           name,
+          surname,
           email,
           phone
         )
       `)
       .eq("event_id", params.eventId)
-      .or(`attendee.name.ilike.%${query}%,attendee.email.ilike.%${query}%,attendee.phone.ilike.%${query}%`)
+      .or(`attendee.name.ilike.%${query}%,attendee.surname.ilike.%${query}%,attendee.email.ilike.%${query}%,attendee.phone.ilike.%${query}%`)
       .limit(20);
 
     if (error) {
@@ -83,7 +84,13 @@ export async function GET(
       return {
         registration_id: reg.id,
         attendee_id: reg.attendee_id,
-        name: reg.attendee?.name || "Unknown",
+        name: (() => {
+          const attendee = reg.attendee;
+          if (!attendee) return "Unknown";
+          return attendee.surname 
+            ? `${attendee.name || ""} ${attendee.surname}`.trim() 
+            : attendee.name || "Unknown";
+        })(),
         email: reg.attendee?.email || null,
         phone: reg.attendee?.phone || null,
         registered_at: reg.registered_at,

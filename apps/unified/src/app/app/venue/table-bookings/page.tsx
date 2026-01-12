@@ -324,8 +324,8 @@ export default function VenueTableBookingsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-white">Table Bookings</h1>
-            <p className="text-xs text-gray-400">
+            <h1 className="text-xl font-bold text-primary">Table Bookings</h1>
+            <p className="text-xs text-secondary">
               Manage table reservations across all events
             </p>
           </div>
@@ -342,7 +342,7 @@ export default function VenueTableBookingsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "all"
                 ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             All ({summary.total})
@@ -352,7 +352,7 @@ export default function VenueTableBookingsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "pending"
                 ? "bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             Pending ({summary.pending})
@@ -362,7 +362,7 @@ export default function VenueTableBookingsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "confirmed"
                 ? "bg-green-500/20 text-green-400 ring-1 ring-green-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             Confirmed ({summary.confirmed})
@@ -372,7 +372,7 @@ export default function VenueTableBookingsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "completed"
                 ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             Completed ({summary.completed})
@@ -382,7 +382,7 @@ export default function VenueTableBookingsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "no_show"
                 ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             No Show ({summary.no_show})
@@ -391,8 +391,8 @@ export default function VenueTableBookingsPage() {
             onClick={() => setStatusFilter("cancelled")}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               statusFilter === "cancelled"
-                ? "bg-gray-500/20 text-gray-300 ring-1 ring-gray-500/50"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                ? "bg-gray-500/20 text-primary ring-1 ring-gray-500/50"
+                : "bg-active text-secondary hover:bg-active/80"
             }`}
           >
             Cancelled ({summary.cancelled})
@@ -404,7 +404,7 @@ export default function VenueTableBookingsPage() {
           <select
             value={eventFilter}
             onChange={(e) => setEventFilter(e.target.value)}
-            className="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-white text-xs"
+            className="px-2 py-1 bg-active border border-border-subtle rounded text-primary text-xs"
           >
             <option value="all">All Events</option>
             {events.map((event) => (
@@ -414,12 +414,12 @@ export default function VenueTableBookingsPage() {
             ))}
           </select>
 
-          <label className="flex items-center gap-1.5 text-xs text-gray-400">
+          <label className="flex items-center gap-1.5 text-xs text-secondary">
             <input
               type="checkbox"
               checked={upcomingOnly}
               onChange={(e) => setUpcomingOnly(e.target.checked)}
-              className="rounded bg-gray-700 border-gray-600 text-purple-500 h-3 w-3"
+              className="rounded bg-active border-border-subtle text-purple-500 h-3 w-3"
             />
             Upcoming only
           </label>
@@ -429,7 +429,7 @@ export default function VenueTableBookingsPage() {
         {loading && (
           <div className="py-12 text-center">
             <InlineSpinner className="mx-auto" />
-            <p className="mt-2 text-sm text-gray-400">Loading bookings...</p>
+            <p className="mt-2 text-sm text-secondary">Loading bookings...</p>
           </div>
         )}
 
@@ -446,26 +446,26 @@ export default function VenueTableBookingsPage() {
 
         {/* Empty State */}
         {!loading && !error && bookings.length === 0 && (
-          <div className="py-12 text-center border border-dashed border-gray-700 rounded-lg">
-            <Users className="mx-auto h-6 w-6 text-gray-500" />
-            <p className="mt-2 text-sm text-gray-400">No bookings found</p>
+          <div className="py-12 text-center border border-dashed border-border-subtle rounded-lg">
+            <Users className="mx-auto h-6 w-6 text-muted" />
+            <p className="mt-2 text-sm text-secondary">No bookings found</p>
           </div>
         )}
 
         {/* Compact Table View */}
         {!loading && !error && bookings.length > 0 && (
-          <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+          <div className="bg-glass rounded-lg border border-border-subtle overflow-hidden">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-800 bg-gray-800/50">
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">Guest</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">Table</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">Event</th>
-                  <th className="text-center py-2 px-3 font-medium text-gray-400">Guests</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">Status</th>
-                  <th className="text-right py-2 px-3 font-medium text-gray-400">Min Spend</th>
-                  <th className="text-center py-2 px-3 font-medium text-gray-400">Deposit</th>
-                  <th className="text-left py-2 px-3 font-medium text-gray-400">Promoter</th>
+                <tr className="border-b border-border-subtle bg-active">
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Guest</th>
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Table</th>
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Event</th>
+                  <th className="text-center py-2 px-3 font-medium text-secondary">Guests</th>
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Status</th>
+                  <th className="text-right py-2 px-3 font-medium text-secondary">Min Spend</th>
+                  <th className="text-center py-2 px-3 font-medium text-secondary">Deposit</th>
+                  <th className="text-left py-2 px-3 font-medium text-secondary">Promoter</th>
                 </tr>
               </thead>
               <tbody>
@@ -473,24 +473,24 @@ export default function VenueTableBookingsPage() {
                   <tr
                     key={booking.id}
                     onClick={() => setSelectedBooking(booking)}
-                    className={`border-b border-gray-800/50 hover:bg-gray-800/50 cursor-pointer transition-colors ${
+                    className={`border-b border-border-subtle hover:bg-active cursor-pointer transition-colors ${
                       selectedBooking?.id === booking.id ? "bg-purple-500/10" : ""
                     }`}
                   >
                     <td className="py-2 px-3">
-                      <div className="font-medium text-white">{booking.guest_name}</div>
-                      <div className="text-gray-500 truncate max-w-[150px]">{booking.guest_email}</div>
+                      <div className="font-medium text-primary">{booking.guest_name}</div>
+                      <div className="text-muted truncate max-w-[150px]">{booking.guest_email}</div>
                     </td>
                     <td className="py-2 px-3">
-                      <div className="text-white">{booking.table?.name || "—"}</div>
-                      <div className="text-gray-500">{booking.table?.zone?.name || ""}</div>
+                      <div className="text-primary">{booking.table?.name || "—"}</div>
+                      <div className="text-muted">{booking.table?.zone?.name || ""}</div>
                     </td>
                     <td className="py-2 px-3">
-                      <div className="text-white truncate max-w-[120px]">{booking.event.name}</div>
-                      <div className="text-gray-500">{formatDate(booking.event.start_time)}</div>
+                      <div className="text-primary truncate max-w-[120px]">{booking.event.name}</div>
+                      <div className="text-muted">{formatDate(booking.event.start_time)}</div>
                     </td>
                     <td className="py-2 px-3 text-center">
-                      <span className="text-white">
+                      <span className="text-primary">
                         {booking.guests_joined || 0}/{booking.table?.capacity || booking.party_size}
                       </span>
                       {(booking.guests_checked_in || 0) > 0 && (
@@ -502,17 +502,17 @@ export default function VenueTableBookingsPage() {
                     <td className="py-2 px-3">
                       {getStatusBadge(booking.status, booking)}
                     </td>
-                    <td className="py-2 px-3 text-right text-white">
+                    <td className="py-2 px-3 text-right text-primary">
                       {booking.minimum_spend ? `${currencySymbol}${booking.minimum_spend.toLocaleString()}` : "—"}
                     </td>
                     <td className="py-2 px-3 text-center">
-                      {getPaymentBadge(booking) || <span className="text-gray-500">—</span>}
+                      {getPaymentBadge(booking) || <span className="text-muted">—</span>}
                     </td>
                     <td className="py-2 px-3">
                       {booking.promoter ? (
                         <span className="text-purple-400">@{booking.promoter.slug || booking.promoter.name}</span>
                       ) : (
-                        <span className="text-gray-500">—</span>
+                        <span className="text-muted">—</span>
                       )}
                     </td>
                   </tr>
@@ -525,16 +525,16 @@ export default function VenueTableBookingsPage() {
 
       {/* Detail Slide-out Panel */}
       {selectedBooking && (
-        <div className="fixed right-0 top-16 bottom-0 w-96 bg-gray-900 border-l border-gray-800 overflow-y-auto shadow-xl z-40">
+        <div className="fixed right-0 top-16 bottom-0 w-96 bg-glass border-l border-border-subtle overflow-y-auto shadow-xl z-40">
           {/* Panel Header */}
-          <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-4 flex items-center justify-between">
+          <div className="sticky top-0 bg-glass border-b border-border-subtle p-4 flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-white">{selectedBooking.guest_name}</h2>
-              <p className="text-xs text-gray-400">{selectedBooking.table?.name} • {selectedBooking.table?.zone?.name}</p>
+              <h2 className="font-semibold text-primary">{selectedBooking.guest_name}</h2>
+              <p className="text-xs text-secondary">{selectedBooking.table?.name} • {selectedBooking.table?.zone?.name}</p>
             </div>
             <button
               onClick={() => setSelectedBooking(null)}
-              className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400"
+              className="p-1.5 rounded-lg hover:bg-active text-secondary"
             >
               <X className="h-4 w-4" />
             </button>
@@ -612,18 +612,18 @@ export default function VenueTableBookingsPage() {
                   {actionLoading === "cancelled" ? <InlineSpinner /> : <XCircle className="h-3 w-3 mr-1" />}
                   Cancel Booking
                 </Button>
-                <p className="text-[10px] text-gray-500 text-center">
+                <p className="text-[10px] text-muted text-center">
                   Complete = Party attended & finished • No Show = Didn't arrive
                 </p>
               </div>
             )}
 
             {/* Deposit Payment Action */}
-            <div className="bg-gray-800/50 rounded-lg p-3">
+            <div className="bg-active rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-medium text-white">Deposit Payment</span>
+                  <DollarSign className="h-4 w-4 text-muted" />
+                  <span className="text-sm font-medium text-primary">Deposit Payment</span>
                 </div>
                 {selectedBooking.deposit_received ? (
                   <Badge color="green" size="sm">Paid</Badge>
@@ -632,7 +632,7 @@ export default function VenueTableBookingsPage() {
                 )}
               </div>
               {selectedBooking.deposit_required && (
-                <p className="text-xs text-gray-400 mb-2">
+                <p className="text-xs text-secondary mb-2">
                   Amount: {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
                 </p>
               )}
@@ -642,7 +642,7 @@ export default function VenueTableBookingsPage() {
                 disabled={updatingDeposit || actionLoading !== null}
                 className={`w-full ${
                   selectedBooking.deposit_received
-                    ? "bg-gray-600 hover:bg-gray-500"
+                    ? "bg-active hover:bg-active/80"
                     : "bg-green-600 hover:bg-green-700"
                 }`}
               >
@@ -683,20 +683,20 @@ export default function VenueTableBookingsPage() {
             </div>
 
             {/* Booking Details */}
-            <div className="bg-gray-800/50 rounded-lg p-3 space-y-2 text-xs">
+            <div className="bg-active rounded-lg p-3 space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-400">Event</span>
+                <span className="text-secondary">Event</span>
                 <Link href={`/e/${selectedBooking.event.slug}`} className="text-purple-400 hover:underline">
                   {selectedBooking.event.name}
                 </Link>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Date</span>
-                <span className="text-white">{formatDate(selectedBooking.event.start_time)} at {formatTime(selectedBooking.event.start_time)}</span>
+                <span className="text-secondary">Date</span>
+                <span className="text-primary">{formatDate(selectedBooking.event.start_time)} at {formatTime(selectedBooking.event.start_time)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Guests</span>
-                <span className="text-white">
+                <span className="text-secondary">Guests</span>
+                <span className="text-primary">
                   {selectedBooking.guests_joined || 0}/{selectedBooking.table?.capacity || selectedBooking.party_size} registered
                   {(selectedBooking.guests_checked_in || 0) > 0 && (
                     <span className="text-green-400 ml-1">• {selectedBooking.guests_checked_in} checked in</span>
@@ -705,13 +705,13 @@ export default function VenueTableBookingsPage() {
               </div>
               {selectedBooking.minimum_spend && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Minimum Spend</span>
-                  <span className="text-white">{currencySymbol}{selectedBooking.minimum_spend.toLocaleString()}</span>
+                  <span className="text-secondary">Minimum Spend</span>
+                  <span className="text-primary">{currencySymbol}{selectedBooking.minimum_spend.toLocaleString()}</span>
                 </div>
               )}
               {selectedBooking.deposit_required ? (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Deposit</span>
+                  <span className="text-secondary">Deposit</span>
                   <span className={selectedBooking.deposit_received ? "text-green-400" : "text-amber-400"}>
                     {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
                     {selectedBooking.deposit_received ? " (Paid)" : " (Pending)"}
@@ -720,27 +720,27 @@ export default function VenueTableBookingsPage() {
               ) : null}
               {selectedBooking.actual_spend && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Actual Spend</span>
+                  <span className="text-secondary">Actual Spend</span>
                   <span className="text-green-400">{currencySymbol}{selectedBooking.actual_spend.toLocaleString()}</span>
                 </div>
               )}
               {selectedBooking.promoter && (
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Promoter</span>
+                  <span className="text-secondary">Promoter</span>
                   <span className="text-purple-400">@{selectedBooking.promoter.slug || selectedBooking.promoter.name}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-400">Booked</span>
-                <span className="text-white">{new Date(selectedBooking.created_at).toLocaleDateString()}</span>
+                <span className="text-secondary">Booked</span>
+                <span className="text-primary">{new Date(selectedBooking.created_at).toLocaleDateString()}</span>
               </div>
             </div>
 
             {/* Special Requests */}
             {selectedBooking.special_requests && (
-              <div className="bg-gray-800/50 rounded-lg p-3">
-                <h4 className="text-xs font-medium text-gray-400 mb-1">Special Requests</h4>
-                <p className="text-xs text-white">{selectedBooking.special_requests}</p>
+              <div className="bg-active rounded-lg p-3">
+                <h4 className="text-xs font-medium text-secondary mb-1">Special Requests</h4>
+                <p className="text-xs text-primary">{selectedBooking.special_requests}</p>
               </div>
             )}
 
@@ -748,18 +748,18 @@ export default function VenueTableBookingsPage() {
             {selectedBooking.staff_notes && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
                 <h4 className="text-xs font-medium text-amber-400 mb-1">Staff Notes</h4>
-                <p className="text-xs text-white">{selectedBooking.staff_notes}</p>
+                <p className="text-xs text-primary">{selectedBooking.staff_notes}</p>
               </div>
             )}
 
             {/* Party Guests Section */}
-            <div className="border-t border-gray-800 pt-4">
+            <div className="border-t border-border-subtle pt-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                <h3 className="text-sm font-medium text-primary flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Party Guests
                 </h3>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-secondary">
                   {joinedGuestsCount}/{selectedBooking.table?.capacity || selectedBooking.party_size} joined • {checkedInCount} checked in
                 </span>
               </div>
@@ -769,7 +769,7 @@ export default function VenueTableBookingsPage() {
                   <InlineSpinner />
                 </div>
               ) : partyGuests.length === 0 ? (
-                <div className="py-4 text-center text-xs text-gray-500">
+                <div className="py-4 text-center text-xs text-muted">
                   No party guests yet
                 </div>
               ) : (
@@ -778,23 +778,23 @@ export default function VenueTableBookingsPage() {
                     <div
                       key={guest.id}
                       className={`flex items-center justify-between p-2 rounded-lg ${
-                        guest.is_host ? "bg-purple-500/10 border border-purple-500/30" : "bg-gray-800/50"
+                        guest.is_host ? "bg-purple-500/10 border border-purple-500/30" : "bg-active"
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {guest.checked_in ? (
                           <UserCheck className="h-3 w-3 text-green-400" />
                         ) : (
-                          <div className="h-3 w-3 rounded-full border border-gray-600" />
+                          <div className="h-3 w-3 rounded-full border border-border-subtle" />
                         )}
                         <div>
-                          <div className="text-xs text-white flex items-center gap-1">
+                          <div className="text-xs text-primary flex items-center gap-1">
                             {guest.guest_name}
                             {guest.is_host && (
                               <Badge color="purple" size="sm">Host</Badge>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">{guest.guest_email}</div>
+                          <div className="text-xs text-muted">{guest.guest_email}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -813,10 +813,10 @@ export default function VenueTableBookingsPage() {
             </div>
 
             {/* View Event Link */}
-            <div className="border-t border-gray-800 pt-4 space-y-2">
+            <div className="border-t border-border-subtle pt-4 space-y-2">
               <Link
                 href={`/app/venue/events/${selectedBooking.event.id}?tab=bookings`}
-                className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs"
+                className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg bg-active text-secondary hover:bg-active/80 text-xs"
               >
                 <ExternalLink className="h-3 w-3" />
                 View in Event Management
@@ -826,7 +826,7 @@ export default function VenueTableBookingsPage() {
               <button
                 onClick={() => handleArchive(selectedBooking.id)}
                 disabled={actionLoading !== null}
-                className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-gray-700 text-gray-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 text-xs transition-colors"
+                className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-border-subtle text-muted hover:text-accent-error hover:border-accent-error/30 hover:bg-accent-error/5 text-xs transition-colors"
               >
                 {actionLoading === "archive" ? (
                   <InlineSpinner />

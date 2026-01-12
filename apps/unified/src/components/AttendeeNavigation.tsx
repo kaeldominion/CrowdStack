@@ -134,12 +134,12 @@ export function AttendeeNavigation() {
 
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-fit mx-auto">
-      <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-white/20 backdrop-blur-xl bg-black/40 shadow-lg shadow-black/50">
+      <div className="flex h-14 items-center gap-2 px-4 sm:px-6 rounded-full border border-border-strong backdrop-blur-xl bg-glass/80 shadow-lg shadow-void/50">
         {/* Logo */}
         <Link href="/me" className="flex items-center transition-all duration-300 hover:scale-105 pr-2">
-          <Logo variant="full" size="sm" animated={false} className="text-white" />
+          <Logo variant="full" size="sm" animated={false} className="text-primary" />
         </Link>
-        <div className="h-4 w-px bg-white/20 hidden sm:block" />
+        <div className="h-4 w-px bg-border-subtle hidden sm:block" />
 
         {/* Desktop Navigation */}
         {navItems.length > 0 && (
@@ -154,8 +154,8 @@ export function AttendeeNavigation() {
                     href={item.href}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-all duration-300 ${
                       isActive
-                        ? "bg-white/10 text-white"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        ? "bg-active text-primary"
+                        : "text-secondary hover:text-primary hover:bg-active"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function AttendeeNavigation() {
                 );
               })}
             </div>
-            <div className="h-4 w-px bg-white/20 hidden sm:block" />
+            <div className="h-4 w-px bg-border-subtle hidden sm:block" />
           </>
         )}
 
@@ -172,7 +172,7 @@ export function AttendeeNavigation() {
         <div className="relative hidden sm:block" ref={profileRef}>
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-white/80 hover:text-white hover:bg-white/5"
+            className="flex items-center gap-2 px-2 py-1.5 text-sm rounded-full transition-all duration-300 text-primary hover:text-primary hover:bg-active"
           >
             {user?.avatar_url ? (
               <img
@@ -190,9 +190,9 @@ export function AttendeeNavigation() {
 
           {/* Profile Dropdown */}
           {isProfileOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 overflow-hidden">
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-lg border border-border-strong backdrop-blur-xl bg-raised shadow-lg shadow-void/50 overflow-hidden">
               {/* User Info */}
-              <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+              <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-3">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url}
@@ -204,7 +204,7 @@ export function AttendeeNavigation() {
                     {getUserInitial()}
                   </div>
                 )}
-                <p className="text-xs text-white/50 truncate flex-1">{user?.email}</p>
+                <p className="text-xs text-muted truncate flex-1">{user?.email}</p>
               </div>
 
               {/* Profile Links */}
@@ -216,7 +216,7 @@ export function AttendeeNavigation() {
                       key={item.href}
                       href={item.href}
                       onClick={() => setIsProfileOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                     >
                       <Icon className="h-4 w-4" />
                       {item.label}
@@ -226,10 +226,10 @@ export function AttendeeNavigation() {
               </div>
 
               {/* Sign Out */}
-              <div className="border-t border-white/10 py-1">
+              <div className="border-t border-border-subtle py-1">
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-accent-error hover:text-accent-error/80 hover:bg-active transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign Out
@@ -242,7 +242,7 @@ export function AttendeeNavigation() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="sm:hidden ml-2 p-2 text-white/60 hover:text-white transition-colors"
+          className="sm:hidden ml-2 p-2 text-secondary hover:text-primary transition-colors"
           aria-label="Toggle menu"
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -258,9 +258,9 @@ export function AttendeeNavigation() {
             onTouchEnd={(e) => { e.preventDefault(); setIsOpen(false); }}
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
           />
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-lg border border-white/20 backdrop-blur-xl bg-black/90 shadow-lg shadow-black/50 z-50 sm:hidden overflow-hidden">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 rounded-lg border border-border-strong backdrop-blur-xl bg-raised shadow-lg shadow-void/50 z-50 sm:hidden overflow-hidden">
             {/* User Info */}
-            <div className="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+            <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-3">
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -272,7 +272,7 @@ export function AttendeeNavigation() {
                   {getUserInitial()}
                 </div>
               )}
-              <p className="text-xs text-white/50 truncate flex-1">{user?.email}</p>
+              <p className="text-xs text-muted truncate flex-1">{user?.email}</p>
             </div>
 
             {/* Navigation Links */}
@@ -289,8 +289,8 @@ export function AttendeeNavigation() {
                         onClick={() => setIsOpen(false)}
                         className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
                           isActive
-                            ? "text-white bg-white/10"
-                            : "text-white/70 hover:text-white hover:bg-white/5"
+                            ? "text-primary bg-active"
+                            : "text-secondary hover:text-primary hover:bg-active"
                         }`}
                       >
                         <Icon className="h-4 w-4" />
@@ -299,7 +299,7 @@ export function AttendeeNavigation() {
                     );
                   })}
                 </div>
-                <div className="h-px bg-white/10" />
+                <div className="h-px bg-border-subtle" />
               </>
             )}
 
@@ -312,7 +312,7 @@ export function AttendeeNavigation() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-primary hover:bg-active transition-colors"
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}
@@ -321,7 +321,7 @@ export function AttendeeNavigation() {
               })}
             </div>
 
-            <div className="h-px bg-white/10" />
+            <div className="h-px bg-border-subtle" />
 
             {/* Sign Out */}
             <div className="py-2">
@@ -330,7 +330,7 @@ export function AttendeeNavigation() {
                   setIsOpen(false);
                   handleLogout();
                 }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-accent-error hover:text-accent-error/80 hover:bg-active transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out

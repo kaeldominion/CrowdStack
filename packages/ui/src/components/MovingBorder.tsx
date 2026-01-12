@@ -48,7 +48,7 @@ export function MovingBorder({
       
       {/* Inner content with background */}
       <div 
-        className="relative z-10 h-full w-full rounded-lg bg-[#0A0A0A] border border-white/5"
+        className="relative z-10 h-full w-full rounded-lg bg-glass border border-border-subtle"
         style={{
           borderRadius: rx || ry ? `${rx || ry}px` : "8px",
         }}

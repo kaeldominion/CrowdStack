@@ -130,10 +130,10 @@ export function PhotoComments({
       <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-4">
-            <InlineSpinner size="sm" className="text-white/50" />
+            <InlineSpinner size="sm" className="text-muted" />
           </div>
         ) : comments.length === 0 ? (
-          <p className="text-white/40 text-sm text-center py-4">
+          <p className="text-secondary text-sm text-center py-4">
             No comments yet
           </p>
         ) : (
@@ -151,8 +151,8 @@ export function PhotoComments({
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-white/50" />
+                  <div className="w-8 h-8 rounded-full bg-active flex items-center justify-center">
+                    <User className="h-4 w-4 text-muted" />
                   </div>
                 )}
               </div>
@@ -160,14 +160,14 @@ export function PhotoComments({
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-white text-sm truncate">
+                  <span className="font-medium text-primary text-sm truncate">
                     {comment.user_name || "Anonymous"}
                   </span>
-                  <span className="text-white/40 text-xs">
+                  <span className="text-muted text-xs">
                     {formatTime(comment.created_at)}
                   </span>
                 </div>
-                <p className="text-white/80 text-sm break-words">
+                <p className="text-primary text-sm break-words">
                   {comment.content}
                 </p>
               </div>
@@ -177,7 +177,7 @@ export function PhotoComments({
                 <button
                   onClick={() => handleDelete(comment.id)}
                   disabled={deletingId === comment.id}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-white/40 hover:text-accent-error"
+                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted hover:text-accent-error"
                   title="Delete comment"
                 >
                   {deletingId === comment.id ? (
@@ -194,7 +194,7 @@ export function PhotoComments({
 
       {/* Input form */}
       {isLoggedIn ? (
-        <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-white/10">
+        <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-border-subtle">
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -203,7 +203,7 @@ export function PhotoComments({
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
               maxLength={1000}
-              className="flex-1 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-sm focus:outline-none focus:border-white/40"
+              className="flex-1 px-3 py-2 rounded-lg bg-active border border-border-subtle text-primary placeholder:text-muted text-sm focus:outline-none focus:border-border-strong"
             />
             <button
               type="submit"
@@ -219,7 +219,7 @@ export function PhotoComments({
           </div>
         </form>
       ) : (
-        <p className="mt-3 pt-3 border-t border-white/10 text-white/40 text-sm text-center">
+        <p className="mt-3 pt-3 border-t border-border-subtle text-secondary text-sm text-center">
           Log in to comment
         </p>
       )}

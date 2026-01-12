@@ -14,7 +14,9 @@ import {
   Check,
   AlertCircle,
   ChevronRight,
+  Palette,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -227,6 +229,34 @@ export default function SettingsPage() {
                   <input type="checkbox" className="sr-only peer" />
                   <div className="w-11 h-6 bg-active peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-secondary"></div>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Appearance */}
+          <div className="rounded-2xl border border-border-subtle bg-glass/5 backdrop-blur-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border-subtle">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
+                  <Palette className="h-5 w-5 text-accent-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-primary">Appearance</h2>
+                  <p className="text-sm text-muted">Theme preferences</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Palette className="h-5 w-5 text-muted" />
+                  <div>
+                    <p className="text-primary font-medium">Theme</p>
+                    <p className="text-sm text-muted">Choose between light and dark mode</p>
+                  </div>
+                </div>
+                <ThemeToggle showLabel={false} />
               </div>
             </div>
           </div>

@@ -172,7 +172,7 @@ export function AttendeesDashboardList({
               return (
                 <div
                   key={attendee.id}
-                  className={`grid gap-2 items-center px-3 hover:bg-white/5 transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
+                  className={`grid gap-2 items-center px-3 hover:bg-active transition-colors border-b border-[var(--border-subtle)]/50 cursor-pointer ${
                     role === "promoter"
                       ? "grid-cols-[3fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
                       : role === "admin"
@@ -318,7 +318,7 @@ export function AttendeesDashboardList({
                               ? role === "venue"
                                 ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                 : "bg-[var(--accent-secondary)]/20 text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)]/30"
-                              : "bg-white/5 text-[var(--text-muted)] hover:bg-white/10 hover:text-amber-400"
+                              : "bg-active text-[var(--text-muted)] hover:bg-active/80 hover:text-amber-400"
                           }`}
                           title={
                             attendee.is_global_vip

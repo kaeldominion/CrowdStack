@@ -61,7 +61,7 @@ export async function GET(
       .select(`
         id,
         attendee_id,
-        attendee:attendees(id, name, email, phone)
+        attendee:attendees(id, name, surname, email, phone)
       `)
       .eq("event_id", params.eventId);
 
@@ -77,15 +77,15 @@ export async function GET(
       // Search attendees table directly, then get their registrations for this event
       const attendeeSearchBuilder = serviceSupabase
         .from("attendees")
-        .select("id, name, email, phone")
-        .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        .select("id, name, surname, email, phone")
+        .or(`name.ilike.%${searchTerm}%,surname.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
 
       // For large events, try "starts with" first
       if (isLargeEvent) {
         const startsWithBuilder = serviceSupabase
           .from("attendees")
-          .select("id, name, email, phone")
-          .or(`name.ilike.${searchTerm}%,email.ilike.${searchTerm}%,phone.ilike.${searchTerm}%`)
+          .select("id, name, surname, email, phone")
+          .or(`name.ilike.${searchTerm}%,surname.ilike.${searchTerm}%,email.ilike.${searchTerm}%,phone.ilike.${searchTerm}%`)
           .limit(50);
 
         const { data: startsWithAttendees } = await startsWithBuilder;
@@ -144,24 +144,34 @@ export async function GET(
         if (!attendee) return;
         
         const nameMatch = attendee.name?.toLowerCase();
+        const surnameMatch = attendee.surname?.toLowerCase();
+        const fullNameMatch = attendee.surname 
+          ? `${attendee.name || ""} ${attendee.surname}`.toLowerCase().trim()
+          : nameMatch;
         const emailMatch = attendee.email?.toLowerCase();
         const phoneMatch = attendee.phone;
         
         // Check for exact matches first
         const isExactMatch = 
           nameMatch === searchLower ||
+          surnameMatch === searchLower ||
+          fullNameMatch === searchLower ||
           emailMatch === searchLower ||
           phoneMatch === query.trim();
         
         // Check for "starts with" matches (better than fuzzy)
         const startsWith = 
           nameMatch?.startsWith(searchLower) ||
+          surnameMatch?.startsWith(searchLower) ||
+          fullNameMatch?.startsWith(searchLower) ||
           emailMatch?.startsWith(searchLower) ||
           phoneMatch?.startsWith(query.trim());
         
         // Check for fuzzy matches (contains)
         const isFuzzyMatch = 
           nameMatch?.includes(searchLower) ||
+          surnameMatch?.includes(searchLower) ||
+          fullNameMatch?.includes(searchLower) ||
           emailMatch?.includes(searchLower) ||
           phoneMatch?.includes(query.trim());
         
@@ -248,10 +258,13 @@ export async function GET(
     const results = filtered.map((reg) => {
       const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
       const attendeeId = attendee?.id || null;
+      const attendeeName = attendee?.surname 
+        ? `${attendee?.name || ""} ${attendee.surname}`.trim() 
+        : attendee?.name || "Unknown";
       return {
         registration_id: reg.id,
         attendee_id: attendeeId,
-        attendee_name: attendee?.name || "Unknown",
+        attendee_name: attendeeName,
         attendee_email: attendee?.email || null,
         attendee_phone: attendee?.phone || null,
         checked_in: checkedInIds.has(reg.id),

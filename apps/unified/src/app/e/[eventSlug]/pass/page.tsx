@@ -343,7 +343,7 @@ export default function QRPassPage() {
               {/* Close button */}
               <button
                 onClick={() => setShowFullscreenQR(false)}
-                className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-active hover:bg-active/80 border border-border-subtle flex items-center justify-center text-primary transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -384,7 +384,7 @@ export default function QRPassPage() {
               </div>
               
               {/* Tap to close hint */}
-              <p className="mt-4 text-center text-white/60 text-sm">
+              <p className="mt-4 text-center text-secondary text-sm">
                 Tap outside to close
               </p>
             </motion.div>

@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Modal, Select, Badge, LoadingSpinner } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Plus, Check, Settings, FileText, Edit2, Star } from "lucide-react";
+import { Save, Upload, X, Trash2, Plus, Check, Settings, FileText, Edit2, Star, Palette } from "lucide-react";
 import Image from "next/image";
 import type { Organizer, OrganizerTeamMember, OrganizerPermissions, PromoterPayoutTemplate, BonusTier } from "@crowdstack/shared/types";
 import { OrganizerLogo } from "@/components/organizer/OrganizerLogo";
 import { TeamMemberCard } from "@/components/organizer/TeamMemberCard";
 import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
 import { PermissionsEditor } from "@/components/PermissionsEditor";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface OrganizerSettingsData {
   organizer: Organizer;
@@ -298,7 +299,7 @@ export default function OrganizerSettingsPage() {
     return (
       <div className="space-y-8 pt-4">
         <div className="text-center py-12">
-          <p className="text-white/60">Loading settings...</p>
+          <p className="text-secondary">Loading settings...</p>
         </div>
       </div>
     );
@@ -308,7 +309,7 @@ export default function OrganizerSettingsPage() {
     return (
       <div className="space-y-8 pt-4">
         <div className="text-center py-12">
-          <p className="text-white/60">Failed to load settings</p>
+          <p className="text-secondary">Failed to load settings</p>
         </div>
       </div>
     );
@@ -326,7 +327,7 @@ export default function OrganizerSettingsPage() {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="door-staff">Door Staff</TabsTrigger>
-          <TabsTrigger value="payout-templates">Payout Templates</TabsTrigger>
+          <TabsTrigger value="finance">Finance</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -413,6 +414,21 @@ export default function OrganizerSettingsPage() {
                   onChange={(e) => updateOrganizerField("facebook_url", e.target.value)}
                   placeholder="https://facebook.com/yourpage"
                 />
+              </div>
+
+              {/* Appearance Settings */}
+              <div className="border-t border-border-subtle pt-6">
+                <h3 className="text-sm font-medium text-primary mb-4 flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Appearance
+                </h3>
+                <div className="flex items-center justify-between p-4 bg-glass/5 rounded-xl">
+                  <div>
+                    <p className="text-primary font-medium">Theme</p>
+                    <p className="text-sm text-muted">Choose between light and dark mode</p>
+                  </div>
+                  <ThemeToggle showLabel={false} />
+                </div>
               </div>
 
               {errors.save && <p className="text-accent-error text-sm">{errors.save}</p>}
@@ -531,8 +547,8 @@ export default function OrganizerSettingsPage() {
           />
         </TabsContent>
 
-        {/* Payout Templates Tab */}
-        <TabsContent value="payout-templates">
+        {/* Finance Tab */}
+        <TabsContent value="finance">
           <Card>
             <div className="space-y-6">
               <div className="flex items-center justify-between">

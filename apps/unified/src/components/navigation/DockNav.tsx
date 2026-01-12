@@ -19,9 +19,12 @@ import {
   Mic2,
   Radio,
   HelpCircle,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
 import { NotificationBell } from "@/components/NotificationBell";
+import { useThemeSafe } from "@/hooks/useThemeSafe";
 
 interface NavItem {
   href: string;
@@ -76,6 +79,7 @@ export function DockNav() {
   const profileRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const modeRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useThemeSafe();
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>([]);
@@ -527,6 +531,37 @@ export function DockNav() {
                       </Link>
                     );
                   })}
+                </div>
+                
+                {/* Theme Toggle */}
+                <div className="mt-1 pt-1 border-t border-border-subtle">
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-secondary hover:text-primary hover:bg-active/50 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      {theme === "light" ? (
+                        <Sun className="w-3 h-3" />
+                      ) : (
+                        <Moon className="w-3 h-3" />
+                      )}
+                      <span>{theme === "light" ? "Light" : "Dark"} Mode</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className={cn(
+                        "w-8 h-4 rounded-full relative transition-colors",
+                        theme === "light" ? "bg-accent-secondary" : "bg-active"
+                      )}>
+                        <div className={cn(
+                          "absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform",
+                          theme === "light" ? "translate-x-4" : "translate-x-0"
+                        )} />
+                      </div>
+                    </div>
+                  </button>
                 </div>
                 
                 {/* Sign Out */}

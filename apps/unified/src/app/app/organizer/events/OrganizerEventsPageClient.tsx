@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, EmptyState, Badge, Card } from "@crowdstack/ui";
-import { Plus, Calendar, AlertCircle, Clock, History, MapPin, ArrowUpRight, CheckCircle2, DollarSign, Lock } from "lucide-react";
+import { Button, EmptyState, Badge, Card, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input, Tabs, TabsList, TabsTrigger } from "@crowdstack/ui";
+import { Plus, Calendar, AlertCircle, Clock, History, MapPin, ArrowUpRight, CheckCircle2, DollarSign, Lock, List, Grid3x3, Users, UserCheck, Search, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { EventCard } from "@/components/events/EventCard";
+import { EventsCalendarView } from "@/components/events/EventsCalendarView";
 
 interface Event {
   id: string;
@@ -33,6 +35,9 @@ interface OrganizerEventsPageClientProps {
 
 export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPageClientProps) {
   const router = useRouter();
+  const [viewMode, setViewMode] = useState<"cards" | "list" | "calendar">("cards");
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Categorize events
   const { liveEvents, upcomingEvents, pastEvents, pendingEvents, rejectedEvents } = useMemo(() => {
@@ -72,6 +77,89 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
 
     return { liveEvents: live, upcomingEvents: upcoming, pastEvents: past, pendingEvents: pending, rejectedEvents: rejected };
   }, [initialEvents]);
+
+  // Filter events for list/calendar view
+  const filteredEvents = useMemo(() => {
+    let filtered = initialEvents;
+
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (event) =>
+          event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (event.venue?.name && event.venue.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    // Tab filter
+    if (activeTab === "live") {
+      filtered = filtered.filter((event) => liveEvents.some((e) => e.id === event.id));
+    } else if (activeTab === "upcoming") {
+      filtered = filtered.filter((event) => upcomingEvents.some((e) => e.id === event.id));
+    } else if (activeTab === "past") {
+      filtered = filtered.filter((event) => pastEvents.some((e) => e.id === event.id));
+    } else if (activeTab === "pending") {
+      filtered = filtered.filter((event) => event.venue_approval_status === "pending");
+    } else if (activeTab === "rejected") {
+      filtered = filtered.filter((event) => event.venue_approval_status === "rejected");
+    }
+
+    return filtered;
+  }, [initialEvents, searchQuery, activeTab, liveEvents, upcomingEvents, pastEvents]);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "draft":
+        return <Badge variant="secondary">Draft</Badge>;
+      case "published":
+        return <Badge variant="success">Published</Badge>;
+      case "cancelled":
+        return <Badge variant="danger">Cancelled</Badge>;
+      case "completed":
+        return <Badge variant="secondary">Completed</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getApprovalBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return (
+          <Badge variant="warning" className="flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Pending
+          </Badge>
+        );
+      case "approved":
+        return (
+          <Badge variant="success" className="flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Approved
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge variant="danger" className="flex items-center gap-1">
+            <X className="h-3 w-3" />
+            Rejected
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -124,6 +212,80 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
         </Card>
       )}
 
+      {/* View Toggle and Filters */}
+      {initialEvents.length > 0 && (
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="all">All Events</TabsTrigger>
+              <TabsTrigger value="live">
+                Live {liveEvents.length > 0 && `(${liveEvents.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="upcoming">
+                Upcoming {upcomingEvents.length > 0 && `(${upcomingEvents.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="past">
+                Past {pastEvents.length > 0 && `(${pastEvents.length})`}
+              </TabsTrigger>
+              {pendingEvents.length > 0 && (
+                <TabsTrigger value="pending">
+                  Pending ({pendingEvents.length})
+                </TabsTrigger>
+              )}
+              {rejectedEvents.length > 0 && (
+                <TabsTrigger value="rejected">
+                  Rejected ({rejectedEvents.length})
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </Tabs>
+
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-xs"
+            />
+            <div className="flex items-center gap-1 p-1 bg-glass rounded-lg border border-border-subtle">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "cards"
+                    ? "bg-active text-primary"
+                    : "text-secondary hover:text-primary"
+                }`}
+                title="Card view"
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "list"
+                    ? "bg-active text-primary"
+                    : "text-secondary hover:text-primary"
+                }`}
+                title="List view"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "calendar"
+                    ? "bg-active text-primary"
+                    : "text-secondary hover:text-primary"
+                }`}
+                title="Calendar view"
+              >
+                <Calendar className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {initialEvents.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-12 w-12 text-secondary" />}
@@ -134,6 +296,101 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
             href: "/app/organizer/events/new"
           }}
         />
+      ) : viewMode === "calendar" ? (
+        <EventsCalendarView
+          events={filteredEvents}
+          getStatusBadge={getStatusBadge}
+          getApprovalBadge={getApprovalBadge}
+          onEventClick={(eventId) => router.push(`/app/organizer/events/${eventId}`)}
+        />
+      ) : viewMode === "list" ? (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Event</TableHead>
+                <TableHead>Venue</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Registrations</TableHead>
+                <TableHead>Check-ins</TableHead>
+                <TableHead>Approval</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEvents.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-secondary">No events found</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredEvents.map((event) => (
+                  <TableRow
+                    key={event.id}
+                    hover
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/app/organizer/events/${event.id}`)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        {(event.flier_url || event.cover_image_url) && (
+                          <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 border border-border-subtle bg-raised">
+                            <Image
+                              src={event.flier_url || event.cover_image_url || ""}
+                              alt={event.name}
+                              width={40}
+                              height={56}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-sans font-semibold text-primary truncate">{event.name}</div>
+                          <div className="text-xs text-secondary mt-0.5 truncate">{event.slug}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {event.venue ? (
+                        <div className="text-sm text-primary">{event.venue.name}</div>
+                      ) : (
+                        <span className="text-xs text-secondary">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-secondary">
+                        <Clock className="h-3 w-3 text-muted" />
+                        <span>{formatDate(event.start_time)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-primary">
+                        <Users className="h-4 w-4 text-muted" />
+                        <span>{event.registrations}</span>
+                        {event.capacity && (
+                          <span className="text-secondary">/ {event.capacity}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-primary">
+                        <UserCheck className="h-4 w-4 text-accent-success" />
+                        <span>{event.checkins}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getApprovalBadge(event.venue_approval_status)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(event.status)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
       ) : (
         <div className="space-y-4">
           {/* Live Events Section */}

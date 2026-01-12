@@ -3,7 +3,7 @@
    Source: Google AI Studio (index.tsx)
    ========================================================= */
 
-/* ---------- BASE COLORS ---------- */
+/* ---------- BASE COLORS (DARK MODE - DEFAULT) ---------- */
 :root {
     /* --- BACKGROUND SURFACES --- */
     --bg-void: #050505;        /* App background (The Void) */
@@ -48,4 +48,39 @@
     --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
     --duration-fast: 150ms;
     --duration-normal: 250ms;
+  }
+
+/* ---------- LIGHT MODE OVERRIDES ---------- */
+[data-theme="light"] {
+    /* --- BACKGROUND SURFACES --- */
+    --bg-void: #FFFFFF;        /* Pure white background */
+    --bg-glass: #F9FAFB;       /* Light gray cards / panels */
+    --bg-raised: #F3F4F6;      /* Slightly darker for dropdowns / modals */
+    --bg-active: #E5E7EB;      /* Light gray for hover / active states */
+  
+    /* --- ACCENTS (same as dark mode) --- */
+    --accent-primary: #A855F7;     /* Neural Purple */
+    --accent-secondary: #3B82F6;   /* Digital Blue */
+    --accent-success: #10B981;     /* Signal Green */
+    --accent-warning: #F59E0B;     /* Alert Amber */
+    --accent-error: #EF4444;       /* Critical Red */
+  
+    /* --- TEXT --- */
+    --text-primary: #111827;   /* Dark gray - almost black */
+    --text-secondary: #374151; /* Medium gray */
+    --text-muted: #6B7280;     /* Light gray */
+    --text-inverse: #FFFFFF;   /* White text on dark surfaces */
+  
+    /* --- BORDERS --- */
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --border-highlight: rgba(168, 85, 247, 0.4);
+  
+    /* --- SHADOWS (LIGHTER FOR LIGHT MODE) --- */
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --shadow-glass: inset 0 0 0 1px var(--border-subtle);
+  
+    /* --- GLASS EFFECT --- */
+    --glass-blur: 18px;
+    --glass-noise-opacity: 0.02; /* Reduced opacity for light mode */
   }

@@ -43,6 +43,9 @@ export async function GET(request: Request) {
         venue_approval_at,
         venue_rejection_reason,
         cover_image_url,
+        flier_url,
+        owner_user_id,
+        closed_at,
         created_at,
         organizer:organizers(id, name, email)
       `)
@@ -101,11 +104,41 @@ export async function GET(request: Request) {
       }
     });
 
-    // 3. Build final response
+    // 3. Batch fetch payout information for owned events
+    const payoutsPending: Record<string, number> = {};
+    const payoutsPaid: Record<string, number> = {};
+    
+    // Only fetch payouts for events that have an owner_user_id
+    const ownedEventIds = events.filter(e => e.owner_user_id).map(e => e.id);
+    if (ownedEventIds.length > 0) {
+      const { data: payoutsResult } = await serviceSupabase
+        .from("payout_lines")
+        .select(`
+          payment_status,
+          payout_runs!inner(event_id)
+        `)
+        .in("payout_runs.event_id", ownedEventIds);
+
+      // Count payouts per event by status
+      (payoutsResult || []).forEach((payout: any) => {
+        const eventId = payout.payout_runs?.event_id;
+        if (eventId) {
+          if (payout.payment_status === "paid" || payout.payment_status === "confirmed") {
+            payoutsPaid[eventId] = (payoutsPaid[eventId] || 0) + 1;
+          } else {
+            payoutsPending[eventId] = (payoutsPending[eventId] || 0) + 1;
+          }
+        }
+      });
+    }
+
+    // 4. Build final response
     const eventsWithCounts = events.map((event) => ({
       ...event,
       registrations: registrationsByEvent.get(event.id) || 0,
       checkins: checkinsByEvent.get(event.id) || 0,
+      payouts_pending: payoutsPending[event.id] || 0,
+      payouts_paid: payoutsPaid[event.id] || 0,
     }));
 
     return NextResponse.json({ events: eventsWithCounts });

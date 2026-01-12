@@ -81,7 +81,7 @@ To disable demo mode and use real DOKU:
 
 After enabling and redeploying:
 
-1. Go to a venue's payment settings: `/app/venue/settings?venueId=XXX` → Payments tab
+1. Go to a venue's settings: `/app/venue/settings?venueId=XXX` → Finance tab
 2. Click **"Test Connection"** for DOKU
 3. Should see: "DEMO MODE: Connected to simulated DOKU..."
 4. Create a table booking with deposit

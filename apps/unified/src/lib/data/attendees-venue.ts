@@ -5,6 +5,7 @@ import { maskEmail, maskPhone } from "./mask-pii";
 export interface VenueAttendee {
   id: string;
   name: string;
+  surname?: string | null;
   email: string | null;
   phone: string;
   user_id: string | null;
@@ -67,7 +68,7 @@ export async function getVenueAttendees(
   // Get attendees
   let query = supabase
     .from("attendees")
-    .select("id, name, email, phone, user_id, created_at")
+    .select("id, name, surname, email, phone, user_id, created_at")
     .in("id", attendeeIds);
 
   // Apply filters
@@ -139,6 +140,7 @@ export async function getVenueAttendees(
     const attendeeData: VenueAttendee = {
       id: attendee.id,
       name: attendee.name,
+      surname: attendee.surname || null,
       email: maskEmail(attendee.email),
       phone: maskPhone(attendee.phone) || "",
       user_id: attendee.user_id,

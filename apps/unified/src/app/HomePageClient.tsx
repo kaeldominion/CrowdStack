@@ -54,6 +54,12 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
 
   useEffect(() => {
     setMounted(true);
+    
+    // Force dark mode on landing page (logged out users)
+    const root = document.documentElement;
+    root.setAttribute("data-theme", "dark");
+    root.classList.add("dark");
+    root.classList.remove("light");
   }, []);
 
   // Check if user is already logged in and redirect to /me (non-blocking)
@@ -141,8 +147,11 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               className="object-cover"
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/60" />
-            <div className="absolute inset-0 bg-gradient-to-t from-void via-transparent to-void/50" />
+            {/* Dark overlay - stronger in light mode for text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-r from-void/95 via-void/90 to-void/70 dark:from-void dark:via-void/90 dark:to-void/60" />
+            <div className="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-void/60 dark:from-void dark:via-transparent dark:to-void/50" />
+            {/* Additional dark overlay for light mode to ensure white text is readable */}
+            <div className="absolute inset-0 bg-black/40 dark:hidden" />
           </motion.div>
         </motion.div>
         
@@ -157,14 +166,14 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
             <div className="text-center lg:text-left">
               {/* Badge */}
               <div className="mb-6 inline-block">
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/20 dark:border-white/20 text-white dark:text-white text-[10px] font-bold uppercase tracking-widest">
                   <Sparkles className="h-3 w-3" />
                   FOR ATTENDEES
             </span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter text-white leading-[0.9] mb-6">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tighter text-white dark:text-white leading-[0.9] mb-6 drop-shadow-2xl">
                 DISCOVER.
                 <br />
                 <span className="bg-gradient-to-r from-accent-secondary to-accent-primary bg-clip-text text-transparent">
@@ -175,7 +184,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               </h1>
 
               {/* Subheadline */}
-              <p className="text-lg sm:text-xl text-white/80 max-w-lg mx-auto lg:mx-0 mb-8">
+              <p className="text-lg sm:text-xl text-white/90 dark:text-white/80 max-w-lg mx-auto lg:mx-0 mb-8 drop-shadow-lg">
                 One profile. Instant QR check-in. No apps, no printed tickets, no waiting in line.
               </p>
 
@@ -189,7 +198,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
                   </button>
                 </Link>
                 <Link href="/for-business">
-                  <button className="px-8 py-4 text-sm font-semibold uppercase tracking-wider text-white bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl transition-all duration-300 hover:bg-white/20 hover:scale-105">
+                  <button className="px-8 py-4 text-sm font-semibold uppercase tracking-wider text-white dark:text-white bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/30 rounded-xl transition-all duration-300 hover:bg-white/20 dark:hover:bg-white/20 hover:scale-105">
                     FOR BUSINESS
                   </button>
                 </Link>
@@ -203,8 +212,8 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
                   { value: "200+", label: "EVENTS" },
                 ].map((stat) => (
                   <div key={stat.label} className="text-center">
-                    <div className="text-2xl sm:text-3xl font-black text-white">{stat.value}</div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/60">{stat.label}</div>
+                    <div className="text-2xl sm:text-3xl font-black text-white dark:text-white drop-shadow-lg">{stat.value}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-white/70 dark:text-white/60 drop-shadow">{stat.label}</div>
                       </div>
                       ))}
                     </div>
@@ -226,15 +235,15 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex items-center font-mono text-[11px] font-bold uppercase tracking-widest">
                   <span className="text-accent-primary px-6">BETA</span>
-                  <span className="text-white/30">•</span>
-                  <span className="text-white/70 px-6">TESTING IN SHANGHAI, BALI, DUBAI</span>
-                  <span className="text-white/30">•</span>
-                  <span className="text-white px-6">50K+ GUESTS CHECKED IN</span>
-                  <span className="text-white/30">•</span>
-                  <span className="text-white/70 px-6">&lt;2S AVG CHECK-IN</span>
-                  <span className="text-white/30">•</span>
-                  <span className="text-white px-6">200+ EVENTS HOSTED</span>
-                  <span className="text-white/30">•</span>
+                  <span className="text-primary/30">•</span>
+                  <span className="text-primary/70 px-6">TESTING IN SHANGHAI, BALI, DUBAI</span>
+                  <span className="text-primary/30">•</span>
+                  <span className="text-primary px-6">50K+ GUESTS CHECKED IN</span>
+                  <span className="text-primary/30">•</span>
+                  <span className="text-primary/70 px-6">&lt;2S AVG CHECK-IN</span>
+                  <span className="text-primary/30">•</span>
+                  <span className="text-primary px-6">200+ EVENTS HOSTED</span>
+                  <span className="text-primary/30">•</span>
                   <Link href="/for-business" className="mx-6">
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent-primary/20 hover:bg-accent-primary/30 border border-accent-primary/50 rounded-full text-accent-primary hover:text-white transition-all duration-200">
                       FOR VENUES & ORGANIZERS
@@ -249,8 +258,8 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 hidden lg:flex">
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-1">
-            <div className="w-1.5 h-3 bg-white/60 rounded-full animate-bounce" />
+          <div className="w-6 h-10 rounded-full border-2 border-white/40 dark:border-white/30 flex items-start justify-center p-1 backdrop-blur-sm bg-white/5 dark:bg-white/5">
+            <div className="w-1.5 h-3 bg-white/80 dark:bg-white/60 rounded-full animate-bounce" />
           </div>
         </div>
       </section>
@@ -486,10 +495,10 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
       </section>
 
       {/* For Business Section */}
-      <section className="py-20 relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/10 via-void to-accent-secondary/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
+      <section className="py-20 relative overflow-hidden bg-raised/50">
+        {/* Background gradient - theme-aware */}
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/10 via-void to-accent-secondary/10 dark:from-accent-primary/10 dark:via-void dark:to-accent-secondary/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent dark:from-purple-900/20" />
         
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
@@ -502,11 +511,11 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-accent-primary/20 to-accent-secondary/20 border border-accent-primary/30 mb-6">
               <span className="text-yellow-400">🏢</span>
-              <span className="text-sm font-semibold text-white">For Venues, Organizers & Promoters</span>
+              <span className="text-sm font-semibold text-primary">For Venues, Organizers & Promoters</span>
         </div>
 
             {/* Heading */}
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight">
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-primary mb-6 leading-tight">
               Run events with{" "}
               <span className="bg-gradient-to-r from-accent-primary via-purple-400 to-accent-secondary bg-clip-text text-transparent">
                 data, not guesswork
@@ -514,7 +523,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
             </h2>
             
             {/* Description */}
-            <p className="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10">
+            <p className="text-lg sm:text-xl text-secondary max-w-2xl mx-auto mb-10">
               The complete operating system for modern events. Track attendance, manage door lists, handle payouts, and grow your audience—all in one place.
             </p>
             
@@ -526,9 +535,9 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
                 { icon: "💰", text: "Automated payouts" },
                 { icon: "📱", text: "No app required" },
               ].map((feature) => (
-                <div key={feature.text} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                <div key={feature.text} className="flex items-center gap-2 px-4 py-2 rounded-full bg-active border border-border-subtle">
                   <span>{feature.icon}</span>
-                  <span className="text-sm text-white/80">{feature.text}</span>
+                  <span className="text-sm text-primary">{feature.text}</span>
                 </div>
               ))}
             </div>
@@ -547,7 +556,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               </Link>
               <Link href="/contact">
                 <motion.button
-                  className="px-8 py-4 text-base font-semibold uppercase tracking-wider text-white bg-white/10 border border-white/20 rounded-xl transition-all duration-300 hover:bg-white/20 flex items-center gap-2"
+                  className="px-8 py-4 text-base font-semibold uppercase tracking-wider text-primary bg-active border border-border-subtle rounded-xl transition-all duration-300 hover:bg-raised flex items-center gap-2"
                   whileHover={{ scale: 1.02 }}
                 >
                   Book a Demo
