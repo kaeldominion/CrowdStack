@@ -46,7 +46,7 @@ export default function AdminDiagnosticsPage() {
           <h1 className="text-2xl font-bold">Database Diagnostics</h1>
         </div>
 
-        <Card padding="lg">
+        <Card className="p-6">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Entity Type</label>
