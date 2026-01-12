@@ -607,6 +607,50 @@ export default function VenueTableBookingsPage() {
               </div>
             )}
 
+            {/* Deposit Payment Action */}
+            <div className="bg-gray-800/50 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-white">Deposit Payment</span>
+                </div>
+                {selectedBooking.deposit_received ? (
+                  <Badge color="green" size="sm">Paid</Badge>
+                ) : (
+                  <Badge color="amber" size="sm">Unpaid</Badge>
+                )}
+              </div>
+              {selectedBooking.deposit_required && (
+                <p className="text-xs text-gray-400 mb-2">
+                  Amount: {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
+                </p>
+              )}
+              <Button
+                size="sm"
+                onClick={handleDepositToggle}
+                disabled={updatingDeposit || actionLoading !== null}
+                className={`w-full ${
+                  selectedBooking.deposit_received
+                    ? "bg-gray-600 hover:bg-gray-500"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                {updatingDeposit ? (
+                  <InlineSpinner />
+                ) : selectedBooking.deposit_received ? (
+                  <>
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Mark as Unpaid
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Mark Deposit Paid
+                  </>
+                )}
+              </Button>
+            </div>
+
             {/* Contact Actions */}
             <div className="flex gap-2">
               <a
@@ -649,35 +693,15 @@ export default function VenueTableBookingsPage() {
                   <span className="text-white">{currencySymbol}{selectedBooking.minimum_spend.toLocaleString()}</span>
                 </div>
               )}
-              {selectedBooking.deposit_required && (
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">Deposit</span>
-                    <span className={selectedBooking.deposit_received ? "text-green-400" : "text-amber-400"}>
-                      {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
-                      {selectedBooking.deposit_received ? " (Paid)" : " (Pending)"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="deposit-received-table-bookings"
-                        checked={selectedBooking.deposit_received || false}
-                        onChange={handleDepositToggle}
-                        disabled={updatingDeposit || actionLoading !== null}
-                        className="rounded bg-gray-700 border-gray-600 text-purple-500 focus:ring-purple-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <label htmlFor="deposit-received-table-bookings" className="text-xs text-white cursor-pointer">
-                        Mark as Paid
-                      </label>
-                    </div>
-                    {updatingDeposit && (
-                      <InlineSpinner className="h-3 w-3" />
-                    )}
-                  </div>
+              {selectedBooking.deposit_required ? (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Deposit</span>
+                  <span className={selectedBooking.deposit_received ? "text-green-400" : "text-amber-400"}>
+                    {currencySymbol}{selectedBooking.deposit_required.toLocaleString()}
+                    {selectedBooking.deposit_received ? " (Paid)" : " (Pending)"}
+                  </span>
                 </div>
-              )}
+              ) : null}
               {selectedBooking.actual_spend && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Actual Spend</span>
