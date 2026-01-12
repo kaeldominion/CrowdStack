@@ -227,7 +227,7 @@ export function MobileScrollExperience({
         )}
         {/* Gradient overlay - darkens as you scroll */}
         <div 
-          className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black"
+          className="absolute inset-0 bg-gradient-to-b from-void/30 via-transparent to-void"
           style={{
             opacity: 0.6 + scrollProgress * 0.4
           }}
@@ -276,7 +276,7 @@ export function MobileScrollExperience({
         <div className="relative">
           {/* Dark overlay for pull-up content - 5% transparent (95% opaque) */}
           <div 
-            className="absolute inset-0 bg-black pointer-events-none"
+            className="absolute inset-0 bg-void pointer-events-none"
             style={{
               opacity: 0.95
             }}
