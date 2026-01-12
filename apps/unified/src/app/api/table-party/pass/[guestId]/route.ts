@@ -188,7 +188,6 @@ export async function GET(
       console.error("[Pass API] Booking not found:", {
         booking_id: guest.booking_id,
         error: bookingError,
-        statusData,
       });
       return NextResponse.json(
         { error: "Booking not found" },

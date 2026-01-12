@@ -281,18 +281,16 @@ export default function JoinTablePage() {
         onSubmit={handleSignupSubmit}
         isLoading={loading}
         redirectUrl={`/join-table/${inviteToken}`}
-        onEmailVerified={() => {}}
+        onEmailVerified={async () => false}
         eventSlug={partyData.event.slug}
         existingProfile={existingProfile}
         registrationCount={0}
         eventName={partyData.event.name}
         eventDetails={{
-          name: partyData.event.name,
-          venue: partyData.event.venue,
-          start_time: partyData.event.start_time,
-          end_time: partyData.event.end_time,
-          flier_url: partyData.event.flier_url,
-          show_photo_email_notice: partyData.event.show_photo_email_notice,
+          venueName: partyData.event.venue?.name || null,
+          startTime: partyData.event.start_time || null,
+          registrationCount: 0,
+          flierUrl: partyData.event.flier_url || null,
         }}
       />
     );

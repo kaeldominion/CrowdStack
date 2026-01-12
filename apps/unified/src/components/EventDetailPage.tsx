@@ -1128,20 +1128,21 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  const loadPromoterRequests = async () => {
-    try {
-      const response = await fetch(`/api/events/${eventId}/promoter-requests`);
-      if (response.ok) {
-        const data = await response.json();
-        setPromoterRequests(data.requests || []);
-      } else {
-        const errorData = await response.text();
-        console.error("Failed to load promoter requests:", response.status, errorData);
-      }
-    } catch (error) {
-      console.error("Failed to load promoter requests:", error);
-    }
-  };
+  // Promoter requests feature has been removed
+  // const loadPromoterRequests = async () => {
+  //   try {
+  //     const response = await fetch(`/api/events/${eventId}/promoter-requests`);
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setPromoterRequests(data.requests || []);
+  //     } else {
+  //       const errorData = await response.text();
+  //       console.error("Failed to load promoter requests:", response.status, errorData);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error loading promoter requests:", error);
+  //   }
+  // };
 
 
   const handleRemovePromoter = async (eventPromoterId: string) => {

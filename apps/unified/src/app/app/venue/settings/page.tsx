@@ -1290,9 +1290,9 @@ function TemplateFormModal({
   const [useTieredBonuses, setUseTieredBonuses] = useState(template?.bonus_tiers && template.bonus_tiers.length > 0);
   const [bonusTiers, setBonusTiers] = useState<BonusTier[]>(template?.bonus_tiers || []);
   const [isDefault, setIsDefault] = useState(template?.is_default || false);
-  const [tableCommissionType, setTableCommissionType] = useState<string>(template?.table_commission_type || "");
-  const [tableCommissionRate, setTableCommissionRate] = useState(template?.table_commission_rate?.toString() || "");
-  const [tableCommissionFlatFee, setTableCommissionFlatFee] = useState(template?.table_commission_flat_fee?.toString() || "");
+  const [tableCommissionType, setTableCommissionType] = useState<string>((template as any)?.table_commission_type || "");
+  const [tableCommissionRate, setTableCommissionRate] = useState((template as any)?.table_commission_rate?.toString() || "");
+  const [tableCommissionFlatFee, setTableCommissionFlatFee] = useState((template as any)?.table_commission_flat_fee?.toString() || "");
 
   const CURRENCIES_LIST = [
     { value: "IDR", label: "IDR - Indonesian Rupiah" },

@@ -513,7 +513,7 @@ export async function POST(
         guest.guest_email,
         attendee.id,
         {
-          guest_name: updateName,
+          guest_name: attendee.name,
           event_name: event.name,
           event_date: eventDate,
           table_name: booking.table?.name || "Table",
@@ -533,7 +533,7 @@ export async function POST(
         null,
         {
           host_name: booking.guest_name,
-          guest_name: updateName,
+          guest_name: attendee.name,
           event_name: event.name,
           table_name: booking.table?.name || "Table",
         },
