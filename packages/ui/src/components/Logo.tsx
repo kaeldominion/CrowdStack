@@ -444,7 +444,7 @@ export function Logo({
             <img 
               src="/logos/crowdstack-wordmark-light-standard-transparent.png" 
               alt="CrowdStack" 
-              className={`${triSize.text} h-auto object-contain dark:hidden`}
+              className={`${triSize.icon} w-auto object-contain dark:hidden`}
             />
             <span className={`font-black tracking-tighter ${triSize.text} text-primary hidden dark:inline`}>
               CROWDSTACK<span className="text-accent-primary">.</span>
