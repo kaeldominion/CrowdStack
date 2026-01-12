@@ -55,16 +55,21 @@ export async function GET(request: NextRequest) {
 
     // Get all email logs for these events
     // Query by venue_id in metadata (new enhanced metadata) or by event_id
+    // Build OR conditions: match any event_id OR venue_id
+    const orConditions: string[] = [];
+    
+    // Add conditions for each event_id
+    eventIds.forEach((eventId) => {
+      orConditions.push(`metadata->>event_id.eq.${eventId}`);
+    });
+    
+    // Add condition for venue_id
+    orConditions.push(`metadata->>venue_id.eq.${venueId}`);
+    
     const { data: emailLogs, error } = await serviceSupabase
       .from("email_send_logs")
       .select("*")
-      .or(
-        eventIds
-          .map((eventId) => `metadata->>event_id.eq.${eventId}`)
-          .join(",") +
-          (eventIds.length > 0 ? "," : "") +
-          `metadata->>venue_id.eq.${venueId}`
-      )
+      .or(orConditions.join(","))
       .order("created_at", { ascending: false });
 
     if (error) {
