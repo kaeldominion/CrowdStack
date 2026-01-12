@@ -56,6 +56,10 @@ export default function VenueSettingsPage() {
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<PromoterPayoutTemplate | null>(null);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
+  
+  // Image upload state
+  const [uploadingImage, setUploadingImage] = useState<"logo" | "cover" | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   // Load selected venue from cookie/client-side and sync URL
   useEffect(() => {
@@ -378,10 +382,6 @@ export default function VenueSettingsPage() {
       alert(error.message || "Failed to delete template");
     }
   };
-
-  // Image upload state
-  const [uploadingImage, setUploadingImage] = useState<"logo" | "cover" | null>(null);
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   const handleImageUpload = async (type: "logo" | "cover", file: File) => {
     if (!data) return;
@@ -1186,7 +1186,81 @@ export default function VenueSettingsPage() {
                             <Star className="h-3 w-3" />
                             Hero
                           </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Template Form Modal */}
+      {showTemplateForm && (
+        <TemplateFormModal
+          template={editingTemplate}
+          onSave={async () => {
+            await loadTemplates();
+            setShowTemplateForm(false);
+            setEditingTemplate(null);
+          }}
+          onCancel={() => {
+            setShowTemplateForm(false);
+            setEditingTemplate(null);
+          }}
+        />
       )}
+
+      {/* Preview Modal */}
+      {data && (
+        <Modal
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          title="Preview Public Venue Page"
+          size="xl"
+        >
+          <div className="max-h-[80vh] overflow-y-auto bg-void">
+            <div className="space-y-6">
+              {/* Preview Header */}
+              {data.venue.cover_image_url && (
+                <div className="relative h-48 w-full overflow-hidden border-2 border-border">
+                  <Image
+                    src={data.venue.cover_image_url}
+                    alt={data.venue.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <div className="p-6">
+                <h2 className="text-2xl font-bold text-white mb-2">{data.venue.name}</h2>
+                {data.venue.description && (
+                  <p className="text-white/80 mb-4">{data.venue.description}</p>
+                )}
+                {data.venue.address && (
+                  <div className="flex items-center gap-2 text-white/60 mb-4">
+                    <MapPin className="h-4 w-4" />
+                    <span>{data.venue.address}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={() => { if (deleteConfirm) handleDeleteImage(deleteConfirm.id); }}
+        title="Delete Image"
+        message={`Are you sure you want to delete ${deleteConfirm?.caption || "this image"}? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
@@ -1871,166 +1945,3 @@ function TemplateFormModal({
         </TabsContent>
       </Tabs>
 
-      {/* Template Form Modal */}
-      {showTemplateForm && (
-        <TemplateFormModal
-          template={editingTemplate}
-          onSave={async () => {
-            await loadTemplates();
-            setShowTemplateForm(false);
-            setEditingTemplate(null);
-          }}
-          onCancel={() => {
-            setShowTemplateForm(false);
-            setEditingTemplate(null);
-          }}
-        />
-      )}
-
-      {/* Preview Modal */}
-      {data && (
-        <Modal
-          isOpen={showPreview}
-          onClose={() => setShowPreview(false)}
-          title="Preview Public Venue Page"
-          size="xl"
-        >
-          <div className="max-h-[80vh] overflow-y-auto bg-void">
-            <div className="space-y-6">
-              {/* Preview Header */}
-              {data.venue.cover_image_url && (
-                <div className="relative h-48 w-full overflow-hidden border-2 border-border">
-                  <Image
-                    src={data.venue.cover_image_url}
-                    alt={data.venue.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-col md:flex-row gap-4">
-                {data.venue.logo_url && (
-                  <div className="relative h-24 w-24 flex-shrink-0 border-2 border-border">
-                    <Image
-                      src={data.venue.logo_url}
-                      alt={`${data.venue.name} logo`}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h1
-                    className="text-3xl font-bold tracking-tight text-primary"
-                  >
-                    {data.venue.name || "Venue Name"}
-                  </h1>
-                  {data.venue.tagline && (
-                    <p className="text-lg text-secondary mt-2">{data.venue.tagline}</p>
-                  )}
-                  {data.venue.description && (
-                    <p className="text-secondary mt-3 leading-relaxed">{data.venue.description}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Location Preview */}
-              {data.venue.google_maps_url && (
-                <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-primary mb-2">Location</h3>
-                  <a
-                    href={data.venue.google_maps_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline text-sm break-all"
-                  >
-                    {data.venue.google_maps_url}
-                  </a>
-                </div>
-              )}
-
-              {/* Tags Preview */}
-              {data.tags.length > 0 && (
-                <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-primary mb-3">Vibe</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {data.tags.map((tag) => (
-                      <Badge key={tag.id} variant="default" size="sm">
-                        {tag.tag_value}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Policies Preview */}
-              {(data.venue.dress_code || data.venue.age_restriction) && (
-                <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-primary mb-3">Policies</h3>
-                  <div className="space-y-2 text-sm">
-                    {data.venue.dress_code && (
-                      <div>
-                        <span className="font-medium text-secondary">Dress Code: </span>
-                        <span className="text-primary">{data.venue.dress_code}</span>
-                      </div>
-                    )}
-                    {data.venue.age_restriction && (
-                      <div>
-                        <span className="font-medium text-secondary">Age: </span>
-                        <span className="text-primary">{data.venue.age_restriction}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Gallery Preview */}
-              {data.gallery.length > 0 && (
-                <div className="border-2 border-border p-4">
-                  <h3 className="font-semibold text-primary mb-3">Gallery</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {data.gallery.slice(0, 6).map((image) => {
-                      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-                      const supabaseProjectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
-                      const imageUrl = image.storage_path.startsWith("http")
-                        ? image.storage_path
-                        : supabaseProjectRef
-                        ? `https://${supabaseProjectRef}.supabase.co/storage/v1/object/public/venue-images/${image.storage_path}`
-                        : image.storage_path;
-                      return (
-                        <div key={image.id} className="relative aspect-square border-2 border-border">
-                          <Image
-                            src={imageUrl}
-                            alt={image.caption || "Gallery image"}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center text-sm text-secondary pt-4 border-t border-border">
-                <p>This is a preview. Changes are not saved until you click "Save" in each tab.</p>
-              </div>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Delete Image Confirmation Modal */}
-      <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => { if (deleteConfirm) handleDeleteImage(deleteConfirm.id); }}
-        title="Delete Image"
-        message={`Are you sure you want to delete ${deleteConfirm?.caption || "this image"}? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="danger"
-      />
-    </div>
-  );
-}
