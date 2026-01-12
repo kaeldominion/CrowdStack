@@ -25,6 +25,7 @@ interface Event {
   payouts_paid: number;
   flier_url: string | null;
   cover_image_url: string | null;
+  capacity: number | null;
   venue: any | null;
   organizer: any | null;
 }
@@ -122,7 +123,8 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
     }
   };
 
-  const getApprovalBadge = (status: string) => {
+  const getApprovalBadge = (status: string | null) => {
+    if (!status) return null;
     switch (status) {
       case "pending":
         return (

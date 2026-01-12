@@ -11,7 +11,7 @@ interface EarningsChartProps {
 
 // Memoized to prevent re-renders when parent state changes but data hasn't
 export const EarningsChart = memo(function EarningsChart({ data, height = 200 }: EarningsChartProps) {
-  const theme = useThemeSafe();
+  const { theme } = useThemeSafe();
   const isLight = theme === "light";
   
   // Theme-aware colors

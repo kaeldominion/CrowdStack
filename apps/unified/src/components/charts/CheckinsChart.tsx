@@ -9,7 +9,7 @@ interface CheckinsChartProps {
 }
 
 export function CheckinsChart({ data, height = 200 }: CheckinsChartProps) {
-  const theme = useThemeSafe();
+  const { theme } = useThemeSafe();
   const isLight = theme === "light";
   
   // Theme-aware colors

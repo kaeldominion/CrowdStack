@@ -475,12 +475,23 @@ export default function VenueEventsPage() {
           </Card>
         ) : (
           <EventsCalendarView
-            events={filteredEvents}
+            events={filteredEvents.map(e => ({
+              id: e.id,
+              name: e.name,
+              slug: e.slug,
+              start_time: e.start_time,
+              end_time: e.end_time,
+              status: e.status,
+              venue_approval_status: e.venue_approval_status,
+              flier_url: e.flier_url,
+              cover_image_url: e.cover_image_url,
+              registrations: e.registrations,
+              checkins: e.checkins,
+              organizer: e.organizer,
+            }))}
             getStatusBadge={(status, event) => {
-              if (event) {
-                return getStatusBadge(event.status, event);
-              }
-              return null;
+              const fullEvent = filteredEvents.find(e => e.id === event?.id);
+              return fullEvent ? getStatusBadge(status, fullEvent) : null;
             }}
             getApprovalBadge={getApprovalBadge}
             onEventClick={(eventId) => router.push(`/app/venue/events/${eventId}`)}

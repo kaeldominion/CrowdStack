@@ -11,7 +11,7 @@ interface RegistrationChartProps {
 
 // Memoized to prevent re-renders when parent state changes but data hasn't
 export const RegistrationChart = memo(function RegistrationChart({ data, height = 200 }: RegistrationChartProps) {
-  const theme = useThemeSafe();
+  const { theme } = useThemeSafe();
   const isLight = theme === "light";
   
   // Theme-aware colors
