@@ -54,6 +54,9 @@ interface TableBooking {
   promoter_id: string | null;
   created_at: string;
   updated_at: string;
+  // Guest counts from table_party_guests
+  guests_joined?: number;
+  guests_checked_in?: number;
   event: {
     id: string;
     name: string;
@@ -66,6 +69,7 @@ interface TableBooking {
   table: {
     id: string;
     name: string;
+    capacity?: number;
     zone: {
       id: string;
       name: string;
@@ -457,7 +461,7 @@ export default function VenueTableBookingsPage() {
                   <th className="text-left py-2 px-3 font-medium text-gray-400">Guest</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-400">Table</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-400">Event</th>
-                  <th className="text-center py-2 px-3 font-medium text-gray-400">Party</th>
+                  <th className="text-center py-2 px-3 font-medium text-gray-400">Guests</th>
                   <th className="text-left py-2 px-3 font-medium text-gray-400">Status</th>
                   <th className="text-right py-2 px-3 font-medium text-gray-400">Min Spend</th>
                   <th className="text-center py-2 px-3 font-medium text-gray-400">Deposit</th>
@@ -486,7 +490,14 @@ export default function VenueTableBookingsPage() {
                       <div className="text-gray-500">{formatDate(booking.event.start_time)}</div>
                     </td>
                     <td className="py-2 px-3 text-center">
-                      <span className="text-white">{booking.party_size}</span>
+                      <span className="text-white">
+                        {booking.guests_joined || 0}/{booking.table?.capacity || booking.party_size}
+                      </span>
+                      {(booking.guests_checked_in || 0) > 0 && (
+                        <span className="text-green-400 text-[10px] ml-1">
+                          ({booking.guests_checked_in} in)
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 px-3">
                       {getStatusBadge(booking.status, booking)}
@@ -684,8 +695,13 @@ export default function VenueTableBookingsPage() {
                 <span className="text-white">{formatDate(selectedBooking.event.start_time)} at {formatTime(selectedBooking.event.start_time)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Party Size</span>
-                <span className="text-white">{selectedBooking.party_size} guests</span>
+                <span className="text-gray-400">Guests</span>
+                <span className="text-white">
+                  {selectedBooking.guests_joined || 0}/{selectedBooking.table?.capacity || selectedBooking.party_size} registered
+                  {(selectedBooking.guests_checked_in || 0) > 0 && (
+                    <span className="text-green-400 ml-1">• {selectedBooking.guests_checked_in} checked in</span>
+                  )}
+                </span>
               </div>
               {selectedBooking.minimum_spend && (
                 <div className="flex justify-between">
@@ -744,7 +760,7 @@ export default function VenueTableBookingsPage() {
                   Party Guests
                 </h3>
                 <span className="text-xs text-gray-400">
-                  {joinedGuestsCount}/{selectedBooking.party_size} joined • {checkedInCount} checked in
+                  {joinedGuestsCount}/{selectedBooking.table?.capacity || selectedBooking.party_size} joined • {checkedInCount} checked in
                 </span>
               </div>
 

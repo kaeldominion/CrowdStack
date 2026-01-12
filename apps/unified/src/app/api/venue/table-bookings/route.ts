@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
         table:venue_tables(
           id,
           name,
+          capacity,
           zone:table_zones(id, name)
         ),
         promoter:promoters(id, name, slug)
@@ -214,6 +215,34 @@ export async function GET(request: NextRequest) {
           status: statusMap.get(b.id) || b.status, // Use authoritative status
         }));
       }
+
+      // Fetch party guest counts for all bookings
+      const { data: partyGuests } = await serviceSupabase
+        .from("table_party_guests")
+        .select("booking_id, status, checked_in")
+        .in("booking_id", bookingIds);
+
+      // Build counts map: { booking_id: { joined: X, checked_in: Y } }
+      const guestCountsMap = new Map<string, { joined: number; checked_in: number }>();
+      (partyGuests || []).forEach((guest) => {
+        if (!guestCountsMap.has(guest.booking_id)) {
+          guestCountsMap.set(guest.booking_id, { joined: 0, checked_in: 0 });
+        }
+        const counts = guestCountsMap.get(guest.booking_id)!;
+        if (guest.status === "joined") {
+          counts.joined++;
+          if (guest.checked_in) {
+            counts.checked_in++;
+          }
+        }
+      });
+
+      // Add guest counts to each booking
+      bookingsWithAuthoritativeStatus = bookingsWithAuthoritativeStatus.map(b => ({
+        ...b,
+        guests_joined: guestCountsMap.get(b.id)?.joined || 0,
+        guests_checked_in: guestCountsMap.get(b.id)?.checked_in || 0,
+      }));
     }
 
     // Get summary counts using event IDs (all non-archived bookings)
