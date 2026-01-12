@@ -168,6 +168,19 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
     staff_notes: "",
   });
 
+  // Attendee search state for reassignment
+  const [attendeeSearchQuery, setAttendeeSearchQuery] = useState("");
+  const [attendeeSearchResults, setAttendeeSearchResults] = useState<
+    Array<{ id: string; name: string; email: string; phone: string; has_account: boolean }>
+  >([]);
+  const [searchingAttendees, setSearchingAttendees] = useState(false);
+  const [selectedAttendee, setSelectedAttendee] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+  } | null>(null);
+
   useEffect(() => {
     fetchBookings();
   }, [eventId, statusFilter]);
@@ -363,6 +376,54 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
     await updateBooking({ actual_spend: spend });
   };
 
+  // Search for attendees by email
+  const searchAttendees = async (query: string) => {
+    if (query.length < 3) {
+      setAttendeeSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearchingAttendees(true);
+      const response = await fetch(`/api/venue/search-attendees?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setAttendeeSearchResults(data.attendees || []);
+      }
+    } catch (err) {
+      console.error("Failed to search attendees:", err);
+    } finally {
+      setSearchingAttendees(false);
+    }
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (attendeeSearchQuery.length >= 3) {
+        searchAttendees(attendeeSearchQuery);
+      } else {
+        setAttendeeSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [attendeeSearchQuery]);
+
+  // Handle selecting an attendee from search results
+  const selectAttendee = (attendee: { id: string; name: string; email: string; phone: string }) => {
+    setSelectedAttendee(attendee);
+    setReassignForm((prev) => ({
+      ...prev,
+      guest_name: attendee.name,
+      guest_email: attendee.email,
+      guest_whatsapp: attendee.phone || "",
+    }));
+    setAttendeeSearchQuery("");
+    setAttendeeSearchResults([]);
+  };
+
   // Handle opening the reassign modal
   const openReassignModal = (booking: TableBooking) => {
     setReassignBookingId(booking.id);
@@ -375,14 +436,22 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
       special_requests: "",
       staff_notes: `Reassigned from ${booking.guest_name} (no-show)`,
     });
+    // Reset search state
+    setAttendeeSearchQuery("");
+    setAttendeeSearchResults([]);
+    setSelectedAttendee(null);
     setShowReassignModal(true);
   };
 
   // Handle table reassignment
   const handleReassign = async () => {
     if (!reassignBookingId) return;
-    if (!reassignForm.guest_name || !reassignForm.guest_email || !reassignForm.guest_whatsapp) {
-      alert("Please fill in all required fields");
+    if (!selectedAttendee) {
+      alert("Please search and select an existing account");
+      return;
+    }
+    if (!reassignForm.guest_whatsapp) {
+      alert("Please ensure the selected account has a phone number, or update their profile first");
       return;
     }
 
@@ -1165,6 +1234,9 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
         onClose={() => {
           setShowReassignModal(false);
           setReassignBookingId(null);
+          setSelectedAttendee(null);
+          setAttendeeSearchQuery("");
+          setAttendeeSearchResults([]);
         }}
         title={`Reassign ${reassignTableName}`}
         size="md"
@@ -1177,37 +1249,83 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
           </div>
 
           <div className="space-y-4">
+            {/* Attendee Search */}
             <div className="space-y-2">
-              <label className="text-sm text-gray-300">Guest Name *</label>
-              <input
-                type="text"
-                value={reassignForm.guest_name}
-                onChange={(e) => setReassignForm({ ...reassignForm, guest_name: e.target.value })}
-                placeholder="New guest name"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-              />
-            </div>
+              <label className="text-sm text-gray-300">Search Guest by Email *</label>
+              {!selectedAttendee ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={attendeeSearchQuery}
+                    onChange={(e) => setAttendeeSearchQuery(e.target.value)}
+                    placeholder="Type email to search existing accounts..."
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
+                    autoFocus
+                  />
+                  {searchingAttendees && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <InlineSpinner />
+                    </div>
+                  )}
 
-            <div className="space-y-2">
-              <label className="text-sm text-gray-300">Email *</label>
-              <input
-                type="email"
-                value={reassignForm.guest_email}
-                onChange={(e) => setReassignForm({ ...reassignForm, guest_email: e.target.value })}
-                placeholder="guest@email.com"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-              />
-            </div>
+                  {/* Search Results Dropdown */}
+                  {attendeeSearchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {attendeeSearchResults.map((attendee) => (
+                        <button
+                          key={attendee.id}
+                          onClick={() => selectAttendee(attendee)}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-700 border-b border-gray-700 last:border-b-0"
+                        >
+                          <div className="text-white font-medium">{attendee.name}</div>
+                          <div className="text-sm text-gray-400">{attendee.email}</div>
+                          {attendee.phone && (
+                            <div className="text-xs text-gray-500">{attendee.phone}</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-            <div className="space-y-2">
-              <label className="text-sm text-gray-300">WhatsApp *</label>
-              <input
-                type="tel"
-                value={reassignForm.guest_whatsapp}
-                onChange={(e) => setReassignForm({ ...reassignForm, guest_whatsapp: e.target.value })}
-                placeholder="+1234567890"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-              />
+                  {/* No results message */}
+                  {attendeeSearchQuery.length >= 3 && !searchingAttendees && attendeeSearchResults.length === 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg p-3 text-center">
+                      <p className="text-gray-400 text-sm">No accounts found with that email</p>
+                      <p className="text-gray-500 text-xs mt-1">Only existing accounts can be assigned</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Selected Attendee Display */
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-white font-medium">{selectedAttendee.name}</div>
+                      <div className="text-sm text-gray-400">{selectedAttendee.email}</div>
+                      {selectedAttendee.phone && (
+                        <div className="text-xs text-gray-500">{selectedAttendee.phone}</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedAttendee(null);
+                        setReassignForm((prev) => ({
+                          ...prev,
+                          guest_name: "",
+                          guest_email: "",
+                          guest_whatsapp: "",
+                        }));
+                      }}
+                      className="text-gray-400 hover:text-white p-1"
+                    >
+                      <XCircle className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-gray-500">
+                Search by email to find an existing account. Tables can only be reassigned to registered users.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1240,11 +1358,17 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
               onClick={() => {
                 setShowReassignModal(false);
                 setReassignBookingId(null);
+                setSelectedAttendee(null);
+                setAttendeeSearchQuery("");
+                setAttendeeSearchResults([]);
               }}
             >
               Cancel
             </Button>
-            <Button onClick={handleReassign} disabled={reassigning}>
+            <Button
+              onClick={handleReassign}
+              disabled={reassigning || !selectedAttendee}
+            >
               {reassigning ? (
                 <>
                   <InlineSpinner />
