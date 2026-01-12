@@ -35,9 +35,26 @@ export async function GET(request: Request) {
       has_check_in,
     });
 
-    return NextResponse.json({ attendees, organizerId });
+    return NextResponse.json(
+      { attendees, organizerId },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to fetch attendees" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch attendees" },
+      { 
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    );
   }
 }
 

@@ -5,28 +5,21 @@ import { createServiceRoleClient } from "../supabase/server";
 import type { UserRole, UserRoleRecord } from "../types";
 import * as Sentry from "@sentry/nextjs";
 
+const IMPERSONATION_COOKIE = "crowdstack_impersonation";
+
 /**
- * Get all roles for the current authenticated user
+ * Get the effective user ID (either authenticated user or impersonated user if impersonation is active)
  */
-export async function getUserRoles(): Promise<UserRole[]> {
+async function getEffectiveUserId(): Promise<{ userId: string; isImpersonating: boolean } | null> {
   const supabase = await createClient();
-  let user = null;
+  let authenticatedUser = null;
 
   // First try standard Supabase auth
-  const { data: { user: supabaseUser }, error: getUserError } = await supabase.auth.getUser();
-  user = supabaseUser;
-  
-  if (process.env.NODE_ENV === "development") {
-    console.log("[getUserRoles] Standard Supabase auth result:", {
-      hasUser: !!user,
-      userEmail: user?.email,
-      userId: user?.id,
-      error: getUserError?.message || null,
-    });
-  }
+  const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+  authenticatedUser = supabaseUser;
 
   // If that fails, try getting user from custom localhost cookie
-  if (!user) {
+  if (!authenticatedUser) {
     try {
       const { cookies } = await import("next/headers");
       const cookieStore = await cookies();
@@ -41,22 +34,54 @@ export async function getUserRoles(): Promise<UserRole[]> {
         if (parsed.user && parsed.expires_at) {
           const now = Math.floor(Date.now() / 1000);
           if (parsed.expires_at > now) {
-            user = parsed.user;
-            if (process.env.NODE_ENV === "development") {
-              console.log("[getUserRoles] Got user from custom cookie:", user.email);
-            }
+            authenticatedUser = parsed.user;
           }
         }
       }
     } catch (e) {
       // Custom cookie parsing failed
-      if (process.env.NODE_ENV === "development") {
-        console.log("[getUserRoles] Custom cookie parsing failed:", e);
-      }
     }
   }
 
-  if (!user) {
+  if (!authenticatedUser) {
+    return null;
+  }
+
+  // Check for impersonation cookie
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const impersonationCookie = cookieStore.get(IMPERSONATION_COOKIE);
+
+    if (impersonationCookie) {
+      try {
+        const impersonationData = JSON.parse(impersonationCookie.value);
+        if (impersonationData.targetUserId && impersonationData.adminUserId === authenticatedUser.id) {
+          // Only allow impersonation if the authenticated user is the admin who started it
+          if (process.env.NODE_ENV === "development") {
+            console.log("[getEffectiveUserId] Impersonation active, using target user:", impersonationData.targetUserId);
+          }
+          return { userId: impersonationData.targetUserId, isImpersonating: true };
+        }
+      } catch (e) {
+        // Invalid cookie data, ignore
+      }
+    }
+  } catch (e) {
+    // Cookie check failed, ignore
+  }
+
+  // No impersonation, use authenticated user
+  return { userId: authenticatedUser.id, isImpersonating: false };
+}
+
+/**
+ * Get all roles for the current authenticated user (or impersonated user if impersonation is active)
+ */
+export async function getUserRoles(): Promise<UserRole[]> {
+  const effectiveUser = await getEffectiveUserId();
+  
+  if (!effectiveUser) {
     if (process.env.NODE_ENV === "development") {
       console.log("[getUserRoles] No user found, returning empty roles");
     }
@@ -65,8 +90,8 @@ export async function getUserRoles(): Promise<UserRole[]> {
 
   if (process.env.NODE_ENV === "development") {
     console.log("[getUserRoles] Looking up roles for user:", {
-      userId: user.id,
-      email: user.email,
+      userId: effectiveUser.userId,
+      isImpersonating: effectiveUser.isImpersonating,
     });
   }
 
@@ -74,13 +99,13 @@ export async function getUserRoles(): Promise<UserRole[]> {
   try {
     const serviceSupabase = createServiceRoleClient();
     if (process.env.NODE_ENV === "development") {
-      console.log("[getUserRoles] Querying user_roles table for user_id:", user.id);
+      console.log("[getUserRoles] Querying user_roles table for user_id:", effectiveUser.userId);
     }
     
     const { data, error } = await serviceSupabase
       .from("user_roles")
       .select("role, user_id")
-      .eq("user_id", user.id);
+      .eq("user_id", effectiveUser.userId);
 
     if (process.env.NODE_ENV === "development") {
       console.log("[getUserRoles] Query result:", {
@@ -96,7 +121,7 @@ export async function getUserRoles(): Promise<UserRole[]> {
       if (process.env.NODE_ENV === "production") {
         Sentry.captureException(error, {
           tags: { component: "getUserRoles" },
-          extra: { userId: user.id, errorMessage: error.message },
+          extra: { userId: effectiveUser.userId, errorMessage: error.message },
         });
       } else {
         console.error("[getUserRoles] Failed to get roles:", error.message);

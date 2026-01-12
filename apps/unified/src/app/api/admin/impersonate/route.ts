@@ -10,7 +10,8 @@ const IMPERSONATION_LOG_TABLE = "impersonation_logs";
 export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceRoleClient();
+    const { createClient } = await import("@crowdstack/shared/supabase/server");
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -19,8 +20,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is superadmin
-    const { data: roles } = await supabase
+    // Check if user is superadmin using service role client for role lookup
+    const serviceSupabase = createServiceRoleClient();
+    const { data: roles } = await serviceSupabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id);
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // Log the impersonation
     try {
-      await supabase.from(IMPERSONATION_LOG_TABLE).insert({
+      await serviceSupabase.from(IMPERSONATION_LOG_TABLE).insert({
         admin_user_id: user.id,
         target_user_id: userId,
         target_email: targetUserData.user.email,

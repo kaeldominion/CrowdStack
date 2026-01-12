@@ -53,7 +53,14 @@ export async function getOrganizerAttendees(
     `)
     .in("event_id", eventIds);
 
-  const attendeeIds = Array.from(new Set(registrations?.map((r) => r.attendee_id) || []));
+  // Filter registrations by event_id if specified
+  let filteredRegistrations = registrations || [];
+  if (filters.event_id) {
+    filteredRegistrations = filteredRegistrations.filter((r) => r.event_id === filters.event_id);
+  }
+
+  // Get unique attendee IDs (filter out nulls)
+  const attendeeIds = Array.from(new Set(filteredRegistrations.map((r) => r.attendee_id).filter(Boolean) as string[]));
 
   if (attendeeIds.length === 0) {
     return [];
@@ -65,15 +72,11 @@ export async function getOrganizerAttendees(
     .select("id, name, email, phone, created_at")
     .in("id", attendeeIds);
 
-  // Apply filters
+  // Apply search filter
   if (filters.search) {
     query = query.or(
       `name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`
     );
-  }
-
-  if (filters.event_id) {
-    query = query.eq("registrations.event_id", filters.event_id);
   }
 
   const { data, error } = await query;
@@ -111,7 +114,7 @@ export async function getOrganizerAttendees(
   const attendeesMap = new Map<string, OrganizerAttendee>();
 
   data?.forEach((attendee) => {
-    const attendeeRegs = registrations?.filter((r) => r.attendee_id === attendee.id) || [];
+    const attendeeRegs = filteredRegistrations.filter((r) => r.attendee_id === attendee.id) || [];
     const checkins = attendeeRegs.filter((r) => r.checkins && r.checkins.length > 0);
 
     const eventTimes = attendeeRegs

@@ -25,7 +25,14 @@ export default function OrganizerAttendeesPage() {
 
   const loadAttendees = async () => {
     try {
-      const response = await fetch("/api/organizer/attendees");
+      // Add cache busting timestamp to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`/api/organizer/attendees?_t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (!response.ok) throw new Error("Failed to load attendees");
       const data = await response.json();
       setAttendees(data.attendees || data);

@@ -43,18 +43,50 @@ export default function PromoterProfilePage() {
 
       // Add cache busting by using a timestamp query parameter
       // This ensures we always get fresh data
-      const { data: promoter, error } = await supabase
+      // Check both user_id (new way) and created_by (legacy) for compatibility
+      let { data: promoter, error } = await supabase
         .from("promoters")
         .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
-        .eq("created_by", user.id)
+        .eq("user_id", user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      // Fallback to created_by if user_id doesn't match
+      if (error && error.code === 'PGRST116') {
+        const { data: promoterByCreator, error: creatorError } = await supabase
+          .from("promoters")
+          .select("id, name, email, phone, slug, bio, profile_image_url, instagram_handle, whatsapp_number, is_public")
+          .eq("created_by", user.id)
+          .single();
+        
+        if (creatorError && creatorError.code !== 'PGRST116') {
+          throw creatorError;
+        }
+        
+        promoter = promoterByCreator;
+      } else if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (promoter) {
         setProfile(promoter);
+      } else {
+        // No profile found - try to create one via API
+        try {
+          const ensureResponse = await fetch("/api/promoter/profile/ensure", {
+            method: "POST",
+            cache: 'no-store',
+          });
+          
+          if (ensureResponse.ok) {
+            const ensureData = await ensureResponse.json();
+            if (ensureData.promoter) {
+              setProfile(ensureData.promoter);
+            }
+          }
+        } catch (ensureError) {
+          console.error("Error ensuring promoter profile:", ensureError);
+          // Don't throw - we'll show "Profile not found" message
+        }
       }
     } catch (error) {
       console.error("Error loading profile:", error);
