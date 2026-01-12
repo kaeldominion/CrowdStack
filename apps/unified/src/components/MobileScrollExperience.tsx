@@ -256,13 +256,13 @@ export function MobileScrollExperience({
             )}
             
             {/* Event Name - right padding forces wrap to two lines, feels left-aligned */}
-            <h1 className="font-sans font-black uppercase tracking-tighter leading-[0.9] text-5xl sm:text-6xl text-primary drop-shadow-lg mb-3 pr-16 sm:pr-24">
+            <h1 className="font-sans font-black uppercase tracking-tighter leading-[0.9] text-5xl sm:text-6xl text-white drop-shadow-lg mb-3 pr-16 sm:pr-24">
               {eventName}
             </h1>
             
             {/* Venue */}
             {(venueName || venueCity) && (
-              <div className="flex items-center gap-2 text-secondary">
+              <div className="flex items-center gap-2 text-white drop-shadow-md">
                 <MapPin className="h-4 w-4" />
                 <span className="font-mono text-xs tracking-wide">
                   {venueName}{venueCity && `, ${venueCity}`}
