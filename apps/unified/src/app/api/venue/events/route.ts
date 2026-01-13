@@ -144,16 +144,19 @@ export async function GET(request: Request) {
       tableBookingsByEvent.set(booking.event_id, current + 1);
     });
 
-    // 5. Batch fetch feedback count
+    // 5. Batch fetch feedback and calculate average rating (PULSE)
     const { data: allFeedback } = await serviceSupabase
       .from("event_feedback")
-      .select("event_id")
+      .select("event_id, rating")
       .in("event_id", eventIds);
 
-    const feedbackByEvent = new Map<string, number>();
+    const feedbackByEvent = new Map<string, { count: number; totalRating: number }>();
     (allFeedback || []).forEach((feedback) => {
-      const current = feedbackByEvent.get(feedback.event_id) || 0;
-      feedbackByEvent.set(feedback.event_id, current + 1);
+      const current = feedbackByEvent.get(feedback.event_id) || { count: 0, totalRating: 0 };
+      feedbackByEvent.set(feedback.event_id, {
+        count: current.count + 1,
+        totalRating: current.totalRating + feedback.rating,
+      });
     });
 
     // 6. Build final response
@@ -164,7 +167,10 @@ export async function GET(request: Request) {
       payouts_pending: payoutsPending[event.id] || 0,
       payouts_paid: payoutsPaid[event.id] || 0,
       table_bookings: tableBookingsByEvent.get(event.id) || 0,
-      feedback_count: feedbackByEvent.get(event.id) || 0,
+      feedback_count: feedbackByEvent.get(event.id)?.count || 0,
+      pulse_rating: feedbackByEvent.get(event.id) 
+        ? Number((feedbackByEvent.get(event.id)!.totalRating / feedbackByEvent.get(event.id)!.count).toFixed(1))
+        : null,
     }));
 
     return NextResponse.json({ events: eventsWithCounts });

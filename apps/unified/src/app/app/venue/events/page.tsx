@@ -60,6 +60,7 @@ interface Event {
   payouts_paid: number;
   table_bookings: number;
   feedback_count: number;
+  pulse_rating: number | null;
   organizer: {
     id: string;
     name: string;
@@ -530,7 +531,7 @@ export default function VenueEventsPage() {
                   <TableHead>Date</TableHead>
                   <TableHead>Reg/Check</TableHead>
                   <TableHead>Tables</TableHead>
-                  <TableHead>Feedback</TableHead>
+                  <TableHead>PULSE</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -607,10 +608,15 @@ export default function VenueEventsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-sm font-mono text-[var(--text-primary)]">
-                        <MessageSquare className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-                        <span>{event.feedback_count || 0}</span>
-                      </div>
+                      {event.pulse_rating !== null ? (
+                        <div className="flex items-center gap-1.5 text-sm font-mono text-[var(--text-primary)]">
+                          <span className="text-[var(--accent-primary)] font-bold">{event.pulse_rating}</span>
+                          <span className="text-[var(--text-muted)]">⭐</span>
+                          <span className="text-[var(--text-muted)] text-xs">({event.feedback_count})</span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-[var(--text-muted)]">—</div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
