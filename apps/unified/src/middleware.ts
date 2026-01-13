@@ -49,6 +49,13 @@ export async function middleware(request: NextRequest) {
     "/door/invite/", // Door staff invite pages (viewing only, accepting requires auth)
   ];
 
+  // Cacheable routes - skip session refresh to enable ISR caching
+  // These routes serve the same content to all users, session refresh would
+  // mark responses as dynamic and prevent caching
+  const cacheablePatterns = [
+    "/e/", // Event pages - high traffic, must be cached
+  ];
+
   // Check if route is public
   const isPublicRoute = publicRoutes.some((route) => pathname === route) ||
     publicPatterns.some((pattern) => pathname.startsWith(pattern)) ||
@@ -58,7 +65,16 @@ export async function middleware(request: NextRequest) {
     if (process.env.NODE_ENV === "development") {
       console.log("[Middleware] Public route, allowing:", pathname);
     }
-    // Still refresh session for public routes
+
+    // Check if this is a cacheable route - skip session refresh to enable ISR
+    const isCacheableRoute = cacheablePatterns.some((pattern) => pathname.startsWith(pattern));
+    if (isCacheableRoute) {
+      // For cacheable routes, just pass through without any response modification
+      // This allows Next.js ISR to properly cache the page
+      return NextResponse.next();
+    }
+
+    // For other public routes, still refresh session
     return refreshSession(request);
   }
 
