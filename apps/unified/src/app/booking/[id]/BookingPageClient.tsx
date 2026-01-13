@@ -19,6 +19,8 @@ import {
   UserPlus,
   RefreshCw,
   Share2,
+  Trash2,
+  X,
 } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
@@ -79,6 +81,7 @@ export interface BookingData {
     total_joined: number;
     party_size: number;
   } | null;
+  isHost: boolean; // Whether current user is the table host
   currency: string;
   currencySymbol: string;
 }
@@ -96,6 +99,8 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
   const [creatingCheckout, setCreatingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [removingGuest, setRemovingGuest] = useState<string | null>(null); // Guest ID being removed
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null); // Guest ID to confirm removal
 
   // Server-side refresh - navigates to force a full server re-render
   const handleRefresh = () => {
@@ -111,6 +116,41 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
       await navigator.clipboard.writeText(data.party.invite_url);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const removeGuest = async (guestId: string) => {
+    try {
+      setRemovingGuest(guestId);
+      
+      const response = await fetch(`/api/booking/${bookingId}/guests`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guest_id: guestId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to remove guest");
+      }
+
+      // Update local state to remove the guest
+      setData(prev => ({
+        ...prev,
+        party: prev.party ? {
+          ...prev.party,
+          guests: prev.party.guests.filter(g => g.id !== guestId),
+          total_joined: prev.party.total_joined - 1,
+        } : null,
+      }));
+      
+      setConfirmRemove(null);
+    } catch (err: any) {
+      console.error("Error removing guest:", err);
+      alert(err.message || "Failed to remove guest");
+    } finally {
+      setRemovingGuest(null);
     }
   };
 
@@ -455,14 +495,50 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
                               <span className="text-xs text-secondary truncate block">{guest.email}</span>
                             )}
                           </div>
-                          <Badge
-                            color={guest.status === "joined" ? "green" : guest.status === "invited" ? "amber" : "slate"}
-                            variant="outline"
-                            size="sm"
-                            className="ml-2"
-                          >
-                            {guest.status === "joined" ? "Confirmed" : guest.status}
-                          </Badge>
+                          <div className="flex items-center gap-2 ml-2">
+                            <Badge
+                              color={guest.status === "joined" ? "green" : guest.status === "invited" ? "amber" : "slate"}
+                              variant="outline"
+                              size="sm"
+                            >
+                              {guest.status === "joined" ? "Confirmed" : guest.status}
+                            </Badge>
+                            
+                            {/* Remove button - only visible to host */}
+                            {data.isHost && (
+                              confirmRemove === guest.id ? (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => removeGuest(guest.id)}
+                                    disabled={removingGuest === guest.id}
+                                    className="p-1.5 rounded-lg bg-accent-error/20 text-accent-error hover:bg-accent-error/30 transition-colors disabled:opacity-50"
+                                    title="Confirm remove"
+                                  >
+                                    {removingGuest === guest.id ? (
+                                      <InlineSpinner className="w-3 h-3" />
+                                    ) : (
+                                      <Check className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmRemove(null)}
+                                    className="p-1.5 rounded-lg bg-raised text-secondary hover:bg-active transition-colors"
+                                    title="Cancel"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmRemove(guest.id)}
+                                  className="p-1.5 rounded-lg text-secondary hover:text-accent-error hover:bg-accent-error/10 transition-colors"
+                                  title="Remove guest"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
 import { BookingPageClient, BookingData } from "./BookingPageClient";
@@ -21,7 +21,12 @@ interface BookingPageProps {
  * This mirrors the /me page pattern which is known to work correctly
  */
 async function getBookingData(bookingId: string): Promise<BookingData | null> {
+  const supabase = await createClient();
   const serviceSupabase = createServiceRoleClient();
+  
+  // Get current user to check if they're the host
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserEmail = user?.email?.toLowerCase();
 
   // CRITICAL: Direct query for status fields to avoid PostgREST field collision
   // (events table also has a status column that can interfere)
@@ -397,6 +402,8 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
       manual_payment_instructions: manualPaymentInstructions,
     },
     party: partyData,
+    // Check if current user is the host (matches booking email)
+    isHost: currentUserEmail ? booking.guest_email?.toLowerCase() === currentUserEmail : false,
     currency,
     currencySymbol,
   };

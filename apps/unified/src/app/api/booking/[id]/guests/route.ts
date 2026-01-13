@@ -385,3 +385,169 @@ async function sendInviteAndRespond(
     message: successMessage,
   });
 }
+
+/**
+ * DELETE /api/booking/[id]/guests
+ * Remove a guest from the table party (host only)
+ * Body: { guest_id: string }
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const bookingId = params.id;
+    const supabase = await createClient();
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !user.email) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    const userEmail = user.email.toLowerCase();
+
+    // Get booking details
+    const { data: booking, error: bookingError } = await serviceSupabase
+      .from("table_bookings")
+      .select(`
+        id,
+        guest_email,
+        guest_name,
+        event:events(
+          id,
+          name,
+          start_time,
+          timezone,
+          venue:venues(id, name)
+        )
+      `)
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    // Verify user is the host
+    const isHost = booking.guest_email?.toLowerCase() === userEmail;
+    if (!isHost) {
+      // Also check if user is the host guest record
+      const { data: hostGuest } = await serviceSupabase
+        .from("table_party_guests")
+        .select("id, guest_email")
+        .eq("booking_id", bookingId)
+        .eq("is_host", true)
+        .single();
+
+      if (!hostGuest || hostGuest.guest_email?.toLowerCase() !== userEmail) {
+        return NextResponse.json(
+          { error: "Only the table host can remove guests" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Get guest_id from request body
+    const body = await request.json();
+    const guestId = body.guest_id;
+
+    if (!guestId) {
+      return NextResponse.json(
+        { error: "Guest ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get the guest to be removed
+    const { data: guest, error: guestError } = await serviceSupabase
+      .from("table_party_guests")
+      .select("id, guest_name, guest_email, is_host, status, attendee_id")
+      .eq("id", guestId)
+      .eq("booking_id", bookingId)
+      .single();
+
+    if (guestError || !guest) {
+      return NextResponse.json({ error: "Guest not found" }, { status: 404 });
+    }
+
+    // Cannot remove the host
+    if (guest.is_host) {
+      return NextResponse.json(
+        { error: "Cannot remove the table host" },
+        { status: 400 }
+      );
+    }
+
+    // Update guest status to "removed"
+    const { error: updateError } = await serviceSupabase
+      .from("table_party_guests")
+      .update({
+        status: "removed",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", guestId);
+
+    if (updateError) {
+      console.error("Error removing guest:", updateError);
+      return NextResponse.json(
+        { error: "Failed to remove guest" },
+        { status: 500 }
+      );
+    }
+
+    // Also cancel their event registration if they have one
+    if (guest.attendee_id) {
+      const event = booking.event as unknown as EventWithVenue;
+      if (event?.id) {
+        await serviceSupabase
+          .from("registrations")
+          .update({ status: "cancelled" })
+          .eq("attendee_id", guest.attendee_id)
+          .eq("event_id", event.id);
+      }
+    }
+
+    // Send email notification to removed guest
+    if (guest.guest_email) {
+      try {
+        const { sendTemplateEmail } = await import("@crowdstack/shared/email/template-renderer");
+        const event = booking.event as unknown as EventWithVenue;
+        const venue = event?.venue as { name: string } | null;
+
+        await sendTemplateEmail(
+          "table_party_guest_removed",
+          guest.guest_email,
+          guest.attendee_id || null,
+          {
+            guest_name: guest.guest_name || "Guest",
+            event_name: event?.name || "the event",
+            host_name: booking.guest_name || "The host",
+            venue_name: venue?.name || "",
+          },
+          {
+            event_id: event?.id,
+            booking_id: bookingId,
+          }
+        );
+      } catch (emailError) {
+        console.error("Failed to send removal notification email:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `${guest.guest_name || "Guest"} has been removed from the table`,
+    });
+  } catch (error: any) {
+    console.error("Error in guests DELETE:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to remove guest" },
+      { status: 500 }
+    );
+  }
+}
