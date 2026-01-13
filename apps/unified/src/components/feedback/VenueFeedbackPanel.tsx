@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, Badge, Button, LoadingSpinner, useToast, Select } from "@crowdstack/ui";
-import { Star, TrendingUp, AlertCircle, MessageSquare, Send, CheckCircle2, XCircle } from "lucide-react";
+import { Star, TrendingUp, AlertCircle, MessageSquare, Send, CheckCircle2, XCircle, RotateCcw, StickyNote } from "lucide-react";
 
 interface FeedbackItem {
   id: string;
@@ -582,23 +582,36 @@ function FeedbackItemCard({
           )}
         </div>
 
-        <div className="flex flex-col gap-2 ml-4">
-          <Button
-            size="sm"
-            variant={item.resolved_at ? "secondary" : "primary"}
+        <div className="flex flex-col gap-1.5 ml-2">
+          <button
+            className={`p-2 rounded-lg transition-colors ${
+              item.resolved_at 
+                ? "bg-[var(--bg-raised)] hover:bg-[var(--bg-glass)] text-[var(--text-muted)]" 
+                : "bg-[var(--accent-success)]/10 hover:bg-[var(--accent-success)]/20 text-[var(--accent-success)]"
+            } disabled:opacity-50`}
             onClick={handleMarkResolved}
             disabled={saving}
-            loading={saving}
+            title={item.resolved_at ? "Mark as unresolved" : "Mark as resolved"}
           >
-            {item.resolved_at ? "Mark Unresolved" : "Mark Resolved"}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
+            {saving ? (
+              <LoadingSpinner size="sm" />
+            ) : item.resolved_at ? (
+              <RotateCcw className="h-4 w-4" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            className={`p-2 rounded-lg transition-colors ${
+              showNotes 
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]" 
+                : "bg-[var(--bg-raised)] hover:bg-[var(--bg-glass)] text-[var(--text-muted)]"
+            }`}
             onClick={() => setShowNotes(!showNotes)}
+            title={showNotes ? "Cancel" : item.internal_notes ? "Edit notes" : "Add notes"}
           >
-            {showNotes ? "Cancel" : item.internal_notes ? "Edit Notes" : "Add Notes"}
-          </Button>
+            <StickyNote className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

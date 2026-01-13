@@ -55,7 +55,7 @@ export async function getVenueAttendees(
       attendee_id,
       event_id,
       registered_at,
-      checkins(id, checked_in_at)
+      checkins(id, checked_in_at, undo_at)
     `)
     .in("event_id", eventIds);
 
@@ -130,7 +130,11 @@ export async function getVenueAttendees(
   data?.forEach((attendee) => {
     const flags = flagsMap.get(attendee.id) || { strikes: 0, banned: false };
     const attendeeRegs = registrations?.filter((r) => r.attendee_id === attendee.id) || [];
-    const checkins = attendeeRegs.filter((r) => r.checkins && r.checkins.length > 0);
+    const checkins = attendeeRegs.filter((r) => {
+      if (!r.checkins || !Array.isArray(r.checkins)) return false;
+      // Filter out undone check-ins
+      return r.checkins.some((c: any) => !c.undo_at);
+    });
 
     const eventTimes = attendeeRegs
       .map((r) => eventsMap.get(r.event_id)?.start_time)
@@ -210,7 +214,7 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
         start_time,
         venue_id
       ),
-      checkins(id, checked_in_at, checked_in_by)
+      checkins!checkins_registration_id_fkey(id, checked_in_at, checked_in_by, undo_at)
     `)
     .eq("attendee_id", attendeeId)
     .eq("event.venue_id", venueId)
@@ -338,6 +342,108 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
     }
   }
 
+  // Get notes history for this attendee, scoped to this venue
+  let notesHistory: any[] = [];
+  if (registrationIds.length > 0) {
+    const { data: notes } = await supabase
+      .from("registration_notes_history")
+      .select(`
+        id,
+        note_text,
+        created_at,
+        created_by,
+        registration_id,
+        registrations!inner(
+          event_id,
+          events!inner(id, name, start_time)
+        ),
+        created_by_user:created_by
+      `)
+      .in("registration_id", registrationIds)
+      .eq("venue_id", venueId)
+      .order("created_at", { ascending: false });
+
+    if (notes) {
+      // Get user names for note creators from attendees table
+      const userIds = [...new Set(notes.map((n) => n.created_by).filter(Boolean))];
+      const userMap = new Map<string, { name: string; email: string | null }>();
+      
+      if (userIds.length > 0) {
+        const { data: attendees } = await supabase
+          .from("attendees")
+          .select("user_id, name, surname, email")
+          .in("user_id", userIds)
+          .not("user_id", "is", null);
+        
+        attendees?.forEach((a) => {
+          const fullName = a.surname ? `${a.name || ""} ${a.surname}`.trim() : (a.name || "Unknown");
+          userMap.set(a.user_id!, { name: fullName, email: a.email });
+        });
+      }
+
+      notesHistory = notes.map((note) => {
+        const reg = Array.isArray(note.registrations) ? note.registrations[0] : note.registrations;
+        const eventData = reg?.events;
+        const event = Array.isArray(eventData) ? eventData[0] : eventData;
+        const creator = userMap.get(note.created_by) || { name: "Unknown", email: null };
+        
+        return {
+          id: note.id,
+          note_text: note.note_text,
+          created_at: note.created_at,
+          created_by: note.created_by,
+          created_by_name: creator.name,
+          created_by_email: creator.email,
+          registration_id: note.registration_id,
+          event_id: event?.id || null,
+          event_name: event?.name || "Unknown Event",
+        };
+      });
+    }
+  }
+
+  // Get table bookings for this attendee at this venue's events
+  let tableBookings: any[] = [];
+  if (venueEventIds.length > 0) {
+    const { data: bookings } = await supabase
+      .from("table_bookings")
+      .select(`
+        id,
+        guest_name,
+        party_size,
+        status,
+        minimum_spend,
+        deposit_amount,
+        created_at,
+        events!inner(id, name, start_time),
+        venue_tables!inner(name, capacity)
+      `)
+      .eq("attendee_id", attendeeId)
+      .in("event_id", venueEventIds)
+      .order("created_at", { ascending: false });
+
+    if (bookings) {
+      tableBookings = bookings.map((booking) => {
+        const event = Array.isArray(booking.events) ? booking.events[0] : booking.events;
+        const table = Array.isArray(booking.venue_tables) ? booking.venue_tables[0] : booking.venue_tables;
+        return {
+          id: booking.id,
+          guest_name: booking.guest_name,
+          party_size: booking.party_size,
+          status: booking.status,
+          minimum_spend: booking.minimum_spend,
+          deposit_amount: booking.deposit_amount,
+          created_at: booking.created_at,
+          event_id: event?.id || null,
+          event_name: event?.name || "Unknown Event",
+          event_date: event?.start_time || null,
+          table_name: table?.name || "Unknown Table",
+          table_capacity: table?.capacity || 0,
+        };
+      });
+    }
+  }
+
   return {
     attendee: attendee ? {
       ...attendee,
@@ -357,6 +463,8 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
     },
     feedback: feedbackHistory,
     checkins: checkinHistory,
+    tableBookings: tableBookings,
+    notesHistory: notesHistory,
   };
 }
 

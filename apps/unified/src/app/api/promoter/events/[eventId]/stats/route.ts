@@ -205,15 +205,15 @@ export async function GET(
       }
     }
 
-    // Get event capacity (don't fail if this errors)
+    // Get event guestlist capacity (don't fail if this errors)
     let capacity: number | null = null;
     try {
       const { data: eventData } = await serviceClient
         .from("events")
-        .select("capacity")
+        .select("max_guestlist_size")
         .eq("id", params.eventId)
         .single();
-      capacity = eventData?.capacity || null;
+      capacity = eventData?.max_guestlist_size || null;
     } catch (e) {
       console.error("Error fetching event capacity:", e);
     }

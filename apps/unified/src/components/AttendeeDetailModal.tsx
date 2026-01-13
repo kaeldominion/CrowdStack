@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Badge, LoadingSpinner, Button, VipStatus, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown, Star, TrendingUp, History, MessageSquare } from "lucide-react";
+import { Modal, Badge, LoadingSpinner, Button, VipStatus, Tabs, TabsList, TabsTrigger, TabsContent, VipBadge } from "@crowdstack/ui";
+import { InlineEditField } from "@/components/inline/InlineEditField";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown, Star, TrendingUp, History, MessageSquare, TableIcon, Users, Sparkles, StickyNote } from "lucide-react";
 import Link from "next/link";
 
 interface AttendeeDetailModalProps {
@@ -10,6 +11,23 @@ interface AttendeeDetailModalProps {
   onClose: () => void;
   attendeeId: string;
   role: "organizer" | "venue" | "promoter";
+  // Action handlers (optional - for mobile view)
+  eventId?: string;
+  registrationId?: string;
+  canEditNotes?: boolean;
+  canToggleEventVip?: boolean;
+  canToggleVenueVip?: boolean;
+  canToggleOrganizerVip?: boolean;
+  onSaveNotes?: (registrationId: string, notes: string) => Promise<void>;
+  onToggleEventVip?: (registrationId: string, isCurrentlyVip?: boolean) => Promise<void>;
+  onToggleVenueVip?: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
+  onToggleOrganizerVip?: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
+  togglingVip?: string | null;
+  attendeeNotes?: string;
+  isEventVip?: boolean;
+  isVenueVip?: boolean;
+  isOrganizerVip?: boolean;
+  isGlobalVip?: boolean;
 }
 
 interface EventRegistration {
@@ -52,6 +70,33 @@ interface CheckInItem {
   event_date?: string | null;
 }
 
+interface TableBookingItem {
+  id: string;
+  guest_name: string;
+  party_size: number;
+  status: string;
+  minimum_spend?: number | null;
+  deposit_amount?: number | null;
+  created_at: string;
+  event_id?: string | null;
+  event_name: string;
+  event_date?: string | null;
+  table_name: string;
+  table_capacity: number;
+}
+
+interface NoteItem {
+  id: string;
+  note_text: string;
+  created_at: string;
+  created_by: string;
+  created_by_name: string;
+  created_by_email?: string | null;
+  registration_id: string;
+  event_id?: string | null;
+  event_name: string;
+}
+
 interface AttendeeDetails {
   attendee: {
     id: string;
@@ -86,6 +131,8 @@ interface AttendeeDetails {
   } | null;
   feedback?: FeedbackItem[];
   checkins?: CheckInItem[];
+  tableBookings?: TableBookingItem[];
+  notesHistory?: NoteItem[];
 }
 
 export function AttendeeDetailModal({
@@ -93,6 +140,22 @@ export function AttendeeDetailModal({
   onClose,
   attendeeId,
   role,
+  eventId,
+  registrationId,
+  canEditNotes = false,
+  canToggleEventVip = false,
+  canToggleVenueVip = false,
+  canToggleOrganizerVip = false,
+  onSaveNotes,
+  onToggleEventVip,
+  onToggleVenueVip,
+  onToggleOrganizerVip,
+  togglingVip = null,
+  attendeeNotes = "",
+  isEventVip = false,
+  isVenueVip = false,
+  isOrganizerVip = false,
+  isGlobalVip = false,
 }: AttendeeDetailModalProps) {
   const [details, setDetails] = useState<AttendeeDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,52 +258,52 @@ export function AttendeeDetailModal({
         <div className="space-y-6">
           {/* Attendee Info */}
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className={`h-16 w-16 rounded-full flex items-center justify-center ${
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className={`h-14 w-14 sm:h-16 sm:w-16 rounded-full flex items-center justify-center flex-shrink-0 ${
                 details.attendee.is_global_vip 
                   ? "bg-gradient-to-br from-amber-400/30 to-yellow-500/30 ring-2 ring-amber-400/50" 
                   : "bg-accent-secondary/20"
               }`}>
                 {details.attendee.is_global_vip ? (
-                  <Crown className="h-8 w-8 text-amber-400" />
+                  <Crown className="h-6 w-6 sm:h-8 sm:w-8 text-amber-400" />
                 ) : (
-                  <User className="h-8 w-8 text-primary" />
+                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                 )}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-primary">{details.attendee.name}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-2xl font-bold text-primary truncate">
+                  {details.attendee.name}
+                </h2>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <VipStatus 
                     isGlobalVip={details.vip?.isGlobalVip || details.attendee.is_global_vip}
                     isVenueVip={details.vip?.isVenueVip}
                     isOrganizerVip={details.vip?.isOrganizerVip}
                     venueName={details.vip?.venueName}
                     organizerName={details.vip?.organizerName}
-                    size="md"
+                    size="sm"
                   />
-                </div>
-                <div className="flex items-center gap-2 mt-1">
                   {details.attendee.user_id && (
-                    <Badge variant="success">Linked Account</Badge>
+                    <Badge variant="success" size="sm">Linked Account</Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
               {details.attendee.email && (
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-secondary" />
-                  <span className="text-primary">{details.attendee.email}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail className="h-4 w-4 text-secondary flex-shrink-0" />
+                  <span className="text-sm text-primary truncate">{details.attendee.email}</span>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-secondary" />
-                <span className="text-primary">{details.attendee.phone}</span>
+                <Phone className="h-4 w-4 text-secondary flex-shrink-0" />
+                <span className="text-sm text-primary">{details.attendee.phone}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-secondary" />
-                <span className="text-sm text-secondary">
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <Calendar className="h-4 w-4 text-secondary flex-shrink-0" />
+                <span className="text-xs text-secondary">
                   Joined {formatDate(details.attendee.created_at)}
                 </span>
               </div>
@@ -248,23 +311,23 @@ export function AttendeeDetailModal({
 
             {/* XP Points */}
             {details.xp && (
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-subtle">
-                <div className="p-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-accent-secondary" />
-                    <span className="text-xs text-secondary font-medium">Total XP</span>
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-4 border-t border-border-subtle">
+                <div className="p-2 sm:p-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent-secondary" />
+                    <span className="text-[10px] sm:text-xs text-secondary font-medium">Total XP</span>
                   </div>
-                  <p className="text-xl font-bold text-primary">{details.xp.total.toLocaleString()}</p>
+                  <p className="text-lg sm:text-xl font-bold text-primary">{details.xp.total.toLocaleString()}</p>
                 </div>
                 {(details.xp.at_venue !== undefined || details.xp.at_organizer !== undefined) && (
-                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Star className="h-4 w-4 text-accent-primary" />
-                      <span className="text-xs text-secondary font-medium">
-                        {role === "venue" ? "At Venue" : "At Organizer"}
+                  <div className="p-2 sm:p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                      <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent-primary" />
+                      <span className="text-[10px] sm:text-xs text-secondary font-medium">
+                        {role === "venue" ? "At Venue" : "With You"}
                       </span>
                     </div>
-                    <p className="text-xl font-bold text-primary">
+                    <p className="text-lg sm:text-xl font-bold text-primary">
                       {(details.xp.at_venue || details.xp.at_organizer || 0).toLocaleString()}
                     </p>
                   </div>
@@ -272,6 +335,93 @@ export function AttendeeDetailModal({
               </div>
             )}
           </div>
+
+          {/* Action Buttons (Mobile/Quick Actions) */}
+          {(canEditNotes || canToggleEventVip || canToggleVenueVip || canToggleOrganizerVip) && registrationId && (
+            <div className="border-t border-border-subtle pt-4 space-y-3">
+              <h3 className="section-header !mb-3">Quick Actions</h3>
+              
+              {/* Notes Editor */}
+              {canEditNotes && onSaveNotes && (
+                <div>
+                  <label className="text-xs text-secondary mb-1.5 block">Notes</label>
+                  <InlineEditField
+                    value={attendeeNotes}
+                    onSave={(notes) => onSaveNotes(registrationId, notes)}
+                    placeholder="Add note..."
+                  />
+                </div>
+              )}
+
+              {/* VIP Toggle Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                {canToggleEventVip && onToggleEventVip && (
+                  <button
+                    onClick={() => onToggleEventVip(registrationId, isEventVip)}
+                    disabled={togglingVip === registrationId}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                      isEventVip
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-[var(--bg-raised)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:text-emerald-400"
+                    }`}
+                  >
+                    {togglingVip === registrationId ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <VipBadge level="event" variant="icon" size="sm" iconOnly />
+                    )}
+                    <span className="text-sm font-medium">
+                      {isEventVip ? "Event VIP" : "Mark Event VIP"}
+                    </span>
+                  </button>
+                )}
+                
+                {canToggleVenueVip && onToggleVenueVip && (
+                  <button
+                    onClick={() => onToggleVenueVip(attendeeId, isVenueVip)}
+                    disabled={(togglingVip === attendeeId) || isGlobalVip}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                      isVenueVip
+                        ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30"
+                        : "bg-[var(--bg-raised)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:text-[var(--accent-primary)]"
+                    } ${isGlobalVip ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={isGlobalVip ? "Cannot override Global VIP" : ""}
+                  >
+                    {togglingVip === attendeeId ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <Star className={`h-4 w-4 ${isVenueVip ? "fill-current" : ""}`} />
+                    )}
+                    <span className="text-sm font-medium">
+                      {isVenueVip ? "Venue VIP" : "Mark Venue VIP"}
+                    </span>
+                  </button>
+                )}
+                
+                {canToggleOrganizerVip && onToggleOrganizerVip && (
+                  <button
+                    onClick={() => onToggleOrganizerVip(attendeeId, isOrganizerVip)}
+                    disabled={(togglingVip === attendeeId) || isGlobalVip}
+                    className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                      isOrganizerVip
+                        ? "bg-[var(--accent-secondary)]/20 text-[var(--accent-secondary)] border border-[var(--accent-secondary)]/30"
+                        : "bg-[var(--bg-raised)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:text-[var(--accent-secondary)]"
+                    } ${isGlobalVip ? "opacity-50 cursor-not-allowed" : ""}`}
+                    title={isGlobalVip ? "Cannot override Global VIP" : ""}
+                  >
+                    {togglingVip === attendeeId ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <Sparkles className={`h-4 w-4 ${isOrganizerVip ? "fill-current" : ""}`} />
+                    )}
+                    <span className="text-sm font-medium">
+                      {isOrganizerVip ? "Organizer VIP" : "Mark Organizer VIP"}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Flags/Warnings (Venue only) */}
           {role === "venue" && details.flags && (
@@ -291,19 +441,34 @@ export function AttendeeDetailModal({
 
           {/* Comprehensive History Tabs */}
           <div className="border-t border-border pt-4">
+            <h3 className="section-header !mb-3">History</h3>
             <Tabs defaultValue="events">
-              <TabsList>
-                <TabsTrigger value="events">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Events ({getEventsList().length})
+              <TabsList className="flex-wrap gap-1">
+                <TabsTrigger value="events" className="text-xs sm:text-sm">
+                  <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Events</span>
+                  <span className="sm:hidden">Events</span>
+                  <span className="ml-1">({getEventsList().length})</span>
                 </TabsTrigger>
-                <TabsTrigger value="checkins">
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Check-ins ({details.checkins?.length || 0})
+                {(role === "venue" || role === "organizer") && (
+                  <TabsTrigger value="bookings" className="text-xs sm:text-sm">
+                    <TableIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Bookings</span>
+                    <span className="sm:hidden">Tables</span>
+                    <span className="ml-1">({details.tableBookings?.length || 0})</span>
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="feedback" className="text-xs sm:text-sm">
+                  <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Feedback</span>
+                  <span className="sm:hidden">FB</span>
+                  <span className="ml-1">({details.feedback?.length || 0})</span>
                 </TabsTrigger>
-                <TabsTrigger value="feedback">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Feedback ({details.feedback?.length || 0})
+                <TabsTrigger value="notes" className="text-xs sm:text-sm">
+                  <StickyNote className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Notes</span>
+                  <span className="sm:hidden">Notes</span>
+                  <span className="ml-1">({details.notesHistory?.length || 0})</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -312,117 +477,213 @@ export function AttendeeDetailModal({
                   <p className="text-secondary text-sm py-4">No events found</p>
                 ) : (
                   <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
-                    {getEventsList().map((reg: any) => {
-                      const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
-                      if (!event) return null;
-
-                      const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
-
+                    {(() => {
+                      const eventsList = getEventsList();
+                      const totalEvents = eventsList.length;
+                      const checkedInEvents = eventsList.filter((reg: any) => {
+                        const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
+                        if (!event) return false;
+                        
+                        // Check if there's a valid (not undone) check-in in the registration's checkins array
+                        const validCheckins = reg.checkins && Array.isArray(reg.checkins) 
+                          ? reg.checkins.filter((c: any) => !c.undo_at)
+                          : [];
+                        const hasCheckinInReg = validCheckins.length > 0;
+                        
+                        // Also check the separate checkins array for this event
+                        const hasCheckinInHistory = details.checkins?.some(
+                          (c: CheckInItem) => c.event_id === event.id
+                        );
+                        
+                        return hasCheckinInReg || hasCheckinInHistory;
+                      }).length;
+                      const checkInRate = totalEvents > 0 ? Math.round((checkedInEvents / totalEvents) * 100) : 0;
+                      
                       return (
-                        <div
-                          key={reg.id}
-                          className="p-4 rounded-lg border border-border bg-glass/50"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-semibold text-primary">{event.name}</h4>
-                                {role === "promoter" && reg.type === "referral" && (
-                                  <Badge variant="primary" className="text-xs">Your Referral</Badge>
-                                )}
-                                {role === "promoter" && reg.type === "upcoming" && (
-                                  <Badge variant="default" className="text-xs">Upcoming</Badge>
-                                )}
+                        <>
+                          {/* Check-in Rate Summary */}
+                          <div className="p-3 rounded-lg border border-border-subtle bg-raised mb-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-primary">Check-in Rate</p>
+                                <p className="text-xs text-secondary mt-0.5">
+                                  {checkedInEvents} of {totalEvents} events
+                                </p>
                               </div>
-                              <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {formatDate(event.start_time)}
-                                </div>
-                                {event.venue && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {event.venue.name}
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                  Registered: {formatDate(reg.registered_at)}
-                                </div>
+                              <div className="text-2xl font-bold text-primary">
+                                {checkInRate}%
                               </div>
-                            </div>
-                            <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
-                              {checkin ? (
-                                <div className="flex items-center gap-1 text-success">
-                                  <CheckCircle2 className="h-5 w-5" />
-                                  <span className="text-sm font-medium">Checked In</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 text-secondary">
-                                  <XCircle className="h-5 w-5" />
-                                  <span className="text-sm">Not Checked In</span>
-                                </div>
-                              )}
-                              {/* Remove Registration Button (organizer and venue only) */}
-                              {(role === "organizer" || role === "venue") && (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => handleRemoveRegistration(reg.id)}
-                                    disabled={removingRegistrationId === reg.id}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                                  >
-                                    {removingRegistrationId === reg.id ? (
-                                      <>
-                                        <LoadingSpinner size="sm" className="mr-1" />
-                                        Removing...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Trash2 className="h-3 w-3 mr-1" />
-                                        Remove
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                              )}
                             </div>
                           </div>
-                        </div>
+                          
+                          {/* Events List */}
+                          {eventsList.map((reg: any) => {
+                            const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
+                            if (!event) return null;
+
+                            // Check if there's a check-in in the registration's checkins array (filter out undone check-ins)
+                            const validCheckins = reg.checkins && Array.isArray(reg.checkins) 
+                              ? reg.checkins.filter((c: any) => !c.undo_at)
+                              : [];
+                            const checkinInReg = validCheckins.length > 0 ? validCheckins[0] : null;
+                            
+                            // Also check the separate checkins array for this event
+                            const checkinInHistory = details.checkins?.find(
+                              (c: CheckInItem) => c.event_id === event.id
+                            );
+                            
+                            const checkin = checkinInReg || checkinInHistory;
+
+                            return (
+                              <div
+                                key={reg.id}
+                                className="p-4 rounded-lg border border-border bg-glass/50"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <h4 className="font-semibold text-primary">{event.name}</h4>
+                                      {role === "promoter" && reg.type === "referral" && (
+                                        <Badge variant="primary" className="text-xs">Your Referral</Badge>
+                                      )}
+                                      {role === "promoter" && reg.type === "upcoming" && (
+                                        <Badge variant="default" className="text-xs">Upcoming</Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {formatDate(event.start_time)}
+                                      </div>
+                                      {event.venue && (
+                                        <div className="flex items-center gap-1">
+                                          <MapPin className="h-3 w-3" />
+                                          {event.venue.name}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-1">
+                                        Registered: {formatDate(reg.registered_at)}
+                                      </div>
+                                      {checkin && (
+                                        <div className="flex items-center gap-1">
+                                          <CheckCircle2 className="h-3 w-3 text-success" />
+                                          Checked in: {formatDate(checkin.checked_in_at || (checkinInHistory?.checked_in_at || ""))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
+                                    {checkin ? (
+                                      <div className="flex items-center gap-1 text-success">
+                                        <CheckCircle2 className="h-5 w-5" />
+                                        <span className="text-sm font-medium">Checked In</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1 text-secondary">
+                                        <XCircle className="h-5 w-5" />
+                                        <span className="text-sm">Not Checked In</span>
+                                      </div>
+                                    )}
+                                    {/* Remove Registration Button (organizer and venue only) */}
+                                    {(role === "organizer" || role === "venue") && (
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          onClick={() => handleRemoveRegistration(reg.id)}
+                                          disabled={removingRegistrationId === reg.id}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                        >
+                                          {removingRegistrationId === reg.id ? (
+                                            <>
+                                              <LoadingSpinner size="sm" className="mr-1" />
+                                              Removing...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Trash2 className="h-3 w-3 mr-1" />
+                                              Remove
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
                       );
-                    })}
+                    })()}
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="checkins">
-                {!details.checkins || details.checkins.length === 0 ? (
-                  <p className="text-secondary text-sm py-4">No check-ins found</p>
-                ) : (
-                  <div className="space-y-2 max-h-96 overflow-y-auto mt-4">
-                    {details.checkins.map((checkin) => (
-                      <div key={checkin.id} className="p-3 rounded-lg border border-border-subtle bg-raised">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium text-primary">{checkin.event_name}</p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-secondary">
-                              <span>{formatDate(checkin.checked_in_at)}</span>
-                              {checkin.event_date && (
-                                <span>• Event: {new Date(checkin.event_date).toLocaleDateString()}</span>
-                              )}
+              {/* Table Bookings Tab (Venue and Organizer) */}
+              {(role === "venue" || role === "organizer") && (
+                <TabsContent value="bookings">
+                  {!details.tableBookings || details.tableBookings.length === 0 ? (
+                    <p className="text-secondary text-sm py-4">No table bookings found</p>
+                  ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
+                      {details.tableBookings.map((booking) => (
+                        <div key={booking.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-medium text-primary">{booking.event_name}</p>
+                              <p className="text-sm text-secondary">{booking.table_name}</p>
                             </div>
+                            <Badge
+                              variant={
+                                booking.status === "confirmed"
+                                  ? "success"
+                                  : booking.status === "pending"
+                                  ? "warning"
+                                  : booking.status === "cancelled"
+                                  ? "error"
+                                  : "default"
+                              }
+                              className="text-xs"
+                            >
+                              {booking.status}
+                            </Badge>
                           </div>
-                          {checkin.event_id && (
-                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${checkin.event_id}`}>
-                              <Button variant="ghost" size="sm">View</Button>
-                            </Link>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              Party of {booking.party_size}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {booking.event_date
+                                ? new Date(booking.event_date).toLocaleDateString()
+                                : "Unknown date"}
+                            </div>
+                            {booking.minimum_spend && (
+                              <div className="text-xs">
+                                Min Spend: {booking.minimum_spend.toLocaleString()}
+                              </div>
+                            )}
+                            {booking.deposit_amount && (
+                              <div className="text-xs">
+                                Deposit: {booking.deposit_amount.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                          {booking.event_id && (
+                            <div className="mt-2">
+                              <Link href={`/app/${role}/events/${booking.event_id}`}>
+                                <Button variant="ghost" size="sm">View Event</Button>
+                              </Link>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
 
               <TabsContent value="feedback">
                 {!details.feedback || details.feedback.length === 0 ? (
@@ -478,6 +739,44 @@ export function AttendeeDetailModal({
                         {feedback.event_id && (
                           <div className="mt-2">
                             <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${feedback.event_id}`}>
+                              <Button variant="ghost" size="sm">View Event</Button>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="notes">
+                {!details.notesHistory || details.notesHistory.length === 0 ? (
+                  <p className="text-secondary text-sm py-4">No notes found</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
+                    {details.notesHistory.map((note) => (
+                      <div key={note.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-primary mb-1">{note.event_name}</p>
+                            <p className="text-sm text-secondary whitespace-pre-wrap">{note.note_text}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-subtle">
+                          <div className="flex items-center gap-2 text-xs text-secondary">
+                            <User className="h-3 w-3" />
+                            <span>{note.created_by_name}</span>
+                            {note.created_by_email && (
+                              <span className="text-[10px] opacity-75">({note.created_by_email})</span>
+                            )}
+                          </div>
+                          <span className="text-xs text-secondary">
+                            {formatDate(note.created_at)}
+                          </span>
+                        </div>
+                        {note.event_id && (
+                          <div className="mt-2">
+                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${note.event_id}`}>
                               <Button variant="ghost" size="sm">View Event</Button>
                             </Link>
                           </div>

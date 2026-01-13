@@ -181,7 +181,7 @@ interface EventData {
   closeout_notes?: string | null;
   total_revenue?: number | null;
   organizer?: { id: string; name: string; email: string | null };
-  venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null };
+  venue?: { id: string; name: string; slug?: string | null; address: string | null; city: string | null; capacity?: number | null };
   event_promoters?: Array<{
     id: string;
     promoter: { id: string; name: string; email: string | null } | null;
@@ -800,11 +800,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     }
   };
 
-  // Toggle event VIP status for a registration (promoter only)
+  // Toggle event VIP status for a registration (works for venue, organizer, promoter, admin)
   const handleToggleEventVip = async (registrationId: string, isCurrentlyVip?: boolean) => {
     setTogglingVip(registrationId);
     try {
-      const response = await fetch(`/api/promoter/registrations/${registrationId}/vip`, {
+      const response = await fetch(`/api/events/${eventId}/registrations/${registrationId}/vip`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -1470,7 +1470,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (!event) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-primary mb-2">Event Not Found</h2>
+        <h2 className="section-header">Event Not Found</h2>
         <p className="text-secondary mb-4">This event doesn't exist or you don't have access.</p>
         <Link href={config.backUrl}>
           <Button variant="secondary">Back to Events</Button>
@@ -1539,11 +1539,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           </div>
 
           {/* Event Title with Status Badges on the right */}
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-primary">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+            <h1 className="page-title truncate">
               {event.name}
             </h1>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
               {/* Owner Badge - show for venue role to distinguish organizer vs venue events */}
               {config.role === "venue" && event.organizer && (
                 <Badge color="blue" variant="outline" size="sm" title={`Organized by ${event.organizer.name}`}>
@@ -1695,11 +1695,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         </div>
       </div>
 
-      {/* Event Lifecycle Stepper - Show for organizers and admins */}
-      {(config.role === "organizer" || config.role === "admin") && (
+      {/* Event Lifecycle Stepper - Show for venue, organizers and admins */}
+      {(config.role === "venue" || config.role === "organizer" || config.role === "admin") && (
         <Card className="overflow-x-auto">
           <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+            <span className="label-mono">
               Event Lifecycle
             </span>
           </div>
@@ -1814,7 +1814,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-secondary uppercase tracking-wide">My Referrals</p>
+                    <p className="label-mono">My Referrals</p>
                     <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       {stats.referrals || 0}
                     </p>
@@ -1832,7 +1832,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-secondary uppercase tracking-wide">My Check-ins</p>
+                    <p className="label-mono">My Check-ins</p>
                     <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       {stats.checkins || 0}
                     </p>
@@ -1850,7 +1850,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-secondary uppercase tracking-wide">Leaderboard</p>
+                    <p className="label-mono">Leaderboard</p>
                     <p className="text-3xl font-bold tracking-tighter text-primary mt-1">
                       #{stats.leaderboard_position || "-"}
                     </p>
@@ -1869,7 +1869,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Overall Event Stats */}
               <Card>
                 <div className="space-y-2">
-                  <p className="text-xs text-secondary uppercase tracking-wide">Event Overall</p>
+                  <p className="label-mono">Event Overall</p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
                       <p className="text-lg font-bold text-primary">{stats.event_total_registrations || 0}</p>
@@ -1887,9 +1887,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <>
               <Card>
                 <div className="space-y-2">
-                  <div className="text-sm text-secondary">Registrations</div>
+                  <div className="label-mono">Registrations</div>
                   <div className="text-3xl font-bold text-primary">
-                    {stats.total_registrations || 0}
+                    {stats.capacity 
+                      ? `${stats.total_registrations || 0}/${stats.capacity}`
+                      : stats.total_registrations || 0
+                    }
                   </div>
                   {stats.recent_registrations_24h !== undefined && (
                     <div className="text-xs text-secondary flex items-center gap-1">
@@ -1901,7 +1904,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
               <Card>
                 <div className="space-y-2">
-                  <div className="text-sm text-secondary">Check-ins</div>
+                  <div className="label-mono">Check-ins</div>
                   <div className="text-3xl font-bold text-primary">
                     {stats.total_check_ins || 0}
                   </div>
@@ -1913,25 +1916,36 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   )}
                 </div>
               </Card>
-              {stats.capacity !== undefined && (
+              <Card>
+                <div className="space-y-2">
+                  <div className="label-mono">Pending Check-ins</div>
+                  <div className="text-3xl font-bold text-[var(--accent-warning)]">
+                    {Math.max(0, (stats.total_registrations || 0) - (stats.total_check_ins || 0))}
+                  </div>
+                  {stats.total_registrations && stats.total_registrations > 0 && (
+                    <div className="text-xs text-secondary">
+                      Not yet checked in
+                    </div>
+                  )}
+                </div>
+              </Card>
+              {event.venue?.capacity && (
                 <Card>
                   <div className="space-y-2">
-                    <div className="text-sm text-secondary">Capacity</div>
+                    <div className="label-mono">Venue Capacity</div>
                     <div className="text-3xl font-bold text-primary">
-                      {stats.capacity ? `${stats.capacity_remaining}/${stats.capacity}` : "Unlimited"}
+                      {event.venue.capacity.toLocaleString()}
                     </div>
-                    {stats.capacity && (
-                      <div className="text-xs text-secondary">
-                        {stats.capacity_percentage}% full
-                      </div>
-                    )}
+                    <div className="text-xs text-secondary">
+                      Maximum capacity
+                    </div>
                   </div>
                 </Card>
               )}
               {event.event_promoters && (
                 <Card>
                   <div className="space-y-2">
-                    <div className="text-sm text-secondary">Promoters</div>
+                    <div className="label-mono">Promoters</div>
                     <div className="text-3xl font-bold text-primary">
                       {event.event_promoters.length}
                     </div>
@@ -1983,7 +1997,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 
                 {/* Details Grid - Compact */}
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-primary mb-3">Event Details</h2>
+                  <h2 className="section-header">Event Details</h2>
                   
                   {/* Compact Info Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm">
@@ -2074,7 +2088,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Share className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-semibold text-primary">Share Event</h2>
+                      <h2 className="section-header !mb-0">Share Event</h2>
                     </div>
                     <a
                       href={`/e/${event.slug}`}
@@ -2175,7 +2189,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
               {/* Activity Chart - For all roles */}
               <Card>
-                <h3 className="text-lg font-semibold text-primary mb-4">
+                <h3 className="section-header">
                   {config.role === "promoter" ? "Your Referral Activity" : "Event Activity"}
                 </h3>
                 {chartData.length > 0 ? (
@@ -2209,7 +2223,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             {/* Promoter Performance Chart (for organizer/venue only) */}
             {config.role !== "promoter" && config.canViewStats && stats?.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
               <Card>
-                <h3 className="text-lg font-semibold text-primary mb-4">
+                <h3 className="section-header">
                   Promoter Performance
                 </h3>
                 <ResponsiveContainer width="100%" height={200}>
@@ -2262,7 +2276,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Assigned Promoters */}
               <Card>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-primary">Assigned Promoters</h2>
+                  <h2 className="section-header !mb-0">Assigned Promoters</h2>
                   <div className="flex gap-2">
                     {effectivePermissions.canManagePromoters && (
                       <Button variant="primary" onClick={() => setShowPromoterModal(true)}>
@@ -2354,7 +2368,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <TabsContent value="media" className="space-y-6">
               <Card>
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-primary">Event Media</h2>
+                  <h2 className="section-header !mb-0">Event Media</h2>
                   
                   {/* Flyer Section */}
                   {event.flier_url ? (
@@ -2458,7 +2472,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-primary">Photo Album</h2>
+                    <h2 className="section-header !mb-0">Photo Album</h2>
                     <div className="flex items-center gap-2">
                       {/* Publish Button */}
                       {(config.role === "organizer" || config.role === "admin" || config.role === "venue") && album && album.status !== "published" && photos.length > 0 && (
@@ -2616,8 +2630,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {/* Leaderboard Tab */}
           <TabsContent value="leaderboard" className="space-y-4">
               <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="section-header !mb-0 flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-warning" />
                     Promoter Leaderboard
                   </h2>
@@ -2704,7 +2718,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
           {effectivePermissions.canViewSettings && (
             <TabsContent value="settings" className="space-y-4">
               <Card>
-                <h2 className="text-xl font-semibold text-primary mb-4">Event Settings</h2>
+                <h2 className="section-header">Event Settings</h2>
                 <div className="space-y-4">
                   {event.promoter_access_type && (
                     <div>
@@ -2737,7 +2751,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Music Tags */}
               {effectivePermissions.canEdit && (
                 <Card>
-                  <h2 className="text-xl font-semibold text-primary mb-4">Music Genres</h2>
+                  <h2 className="section-header">Music Genres</h2>
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
                       {VENUE_EVENT_GENRES.map((genre) => {
@@ -2769,7 +2783,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               {/* Ownership Transfer - visible to event owners, superadmins, or admin role pages */}
               {(effectivePermissions.isOwner || effectivePermissions.isSuperadmin || config.role === "admin") && (
                 <Card>
-                  <h2 className="text-xl font-semibold text-primary mb-4">Event Ownership</h2>
+                  <h2 className="section-header">Event Ownership</h2>
                   <div className="space-y-4">
                     {event.owner_user_id ? (
                       // Event has an owner
@@ -2830,7 +2844,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-primary">Table Booking Mode</h3>
+                    <h3 className="section-header !mb-0">Table Booking Mode</h3>
                     <p className="text-sm text-secondary mt-1">
                       Control how guests can request table bookings for this event.
                     </p>
@@ -2885,7 +2899,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <Card>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-semibold text-primary">Table Availability</h2>
+                    <h2 className="section-header !mb-0">Table Availability</h2>
                     <p className="text-sm text-secondary mt-1">
                       Configure which tables are available for this event and set per-event pricing overrides.
                     </p>
@@ -3123,7 +3137,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             <TabsContent value="bookings" className="space-y-4">
               <Card>
                 <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-primary">Table Bookings</h2>
+                  <h2 className="section-header !mb-0">Table Bookings</h2>
                   <p className="text-sm text-secondary mt-1">
                     Manage table booking requests for this event.
                   </p>
@@ -3144,7 +3158,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         // No tabs - show simple layout (for promoter or minimal views)
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-primary mb-4">Event Details</h3>
+            <h3 className="section-header">Event Details</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <Calendar className="h-5 w-5 text-primary mt-0.5" />
@@ -3172,15 +3186,24 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 <div className="flex items-start gap-3">
                   <Users className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-primary">Capacity</p>
-                    <p className="text-sm text-secondary">{event.max_guestlist_size} guestlist spots</p>
+                    <p className="font-medium text-primary">Guestlist Limit</p>
+                    <p className="text-sm text-secondary">{event.max_guestlist_size} spots</p>
+                  </div>
+                </div>
+              )}
+              {event.venue?.capacity && (
+                <div className="flex items-start gap-3">
+                  <Users className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary">Venue Capacity</p>
+                    <p className="text-sm text-secondary">{event.venue.capacity.toLocaleString()} max</p>
                   </div>
                 </div>
               )}
             </div>
           </Card>
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-primary mb-4">Description</h3>
+            <h3 className="section-header">Description</h3>
             <p className="text-secondary whitespace-pre-wrap">
               {event.description || "No description provided."}
             </p>
@@ -4162,7 +4185,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <Surface variant="void" className="max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-primary">
+              <h3 className="section-header !mb-0">
                 Your Referral QR Code
               </h3>
               <button

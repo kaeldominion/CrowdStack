@@ -88,7 +88,51 @@ export async function PATCH(
       return NextResponse.json({ error: "Notes cannot exceed 500 characters" }, { status: 400 });
     }
 
-    // Update notes
+    // Determine organization scope based on who is making the note
+    const userVenueId = await getUserVenueId();
+    const userOrganizerId = await getUserOrganizerId();
+    
+    let noteVenueId: string | null = null;
+    let noteOrganizerId: string | null = null;
+
+    if (userVenueId && event.venue_id === userVenueId) {
+      // User is from the venue, scope note to venue
+      noteVenueId = event.venue_id;
+    } else if (userOrganizerId && event.organizer_id === userOrganizerId) {
+      // User is from the organizer, scope note to organizer
+      noteOrganizerId = event.organizer_id;
+    } else if (userIsSuperadmin) {
+      // Superadmin defaults to organizer if available, otherwise venue
+      if (event.organizer_id) {
+        noteOrganizerId = event.organizer_id;
+      } else if (event.venue_id) {
+        noteVenueId = event.venue_id;
+      }
+    }
+
+    if (!noteVenueId && !noteOrganizerId) {
+      return NextResponse.json({ error: "Unable to determine organization scope" }, { status: 400 });
+    }
+
+    // If notes is not empty, create a history entry
+    if (notes && notes.trim().length > 0) {
+      const { error: historyError } = await serviceSupabase
+        .from("registration_notes_history")
+        .insert({
+          registration_id: registrationId,
+          note_text: notes.trim(),
+          created_by: user.id,
+          venue_id: noteVenueId,
+          organizer_id: noteOrganizerId,
+        });
+
+      if (historyError) {
+        console.error("Error creating note history:", historyError);
+        return NextResponse.json({ error: "Failed to save note" }, { status: 500 });
+      }
+    }
+
+    // Also update the legacy notes field for backward compatibility
     const { error: updateError } = await serviceSupabase
       .from("registrations")
       .update({ notes: notes || null })

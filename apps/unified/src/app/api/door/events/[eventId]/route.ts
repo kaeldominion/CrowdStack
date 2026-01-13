@@ -64,7 +64,7 @@ export async function GET(
         flier_url,
         venue_id,
         organizer_id,
-        venue:venues(id, name, address, city),
+        venue:venues(id, name, address, city, capacity),
         organizer:organizers(id, name, email, created_by)
       `)
       .eq("id", eventId)

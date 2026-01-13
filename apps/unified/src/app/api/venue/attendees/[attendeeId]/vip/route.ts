@@ -34,15 +34,7 @@ export async function POST(
       return NextResponse.json({ error: "venueId is required" }, { status: 400 });
     }
 
-    // Check if user is a venue admin for this venue
-    const { data: venueUser, error: venueUserError } = await serviceSupabase
-      .from("venue_users")
-      .select("venue_id")
-      .eq("user_id", user.id)
-      .eq("venue_id", venueId)
-      .single();
-
-    // Check if user is superadmin
+    // Check if user is superadmin first
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
@@ -50,7 +42,36 @@ export async function POST(
 
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin") || false;
 
-    if (venueUserError && !isSuperadmin) {
+    // Check if user is a venue admin for this venue
+    const hasVenueAdminRole = userRoles?.some((r) => r.role === "venue_admin") || false;
+    
+    if (!isSuperadmin && !hasVenueAdminRole) {
+      console.error("[Venue VIP POST] Permission denied - no venue_admin role:", {
+        userId: user.id,
+        venueId,
+        isSuperadmin,
+        hasVenueAdminRole,
+      });
+      return NextResponse.json(
+        { error: "You don't have permission to manage VIPs for this venue" },
+        { status: 403 }
+      );
+    }
+
+    // Verify user is associated with this venue
+    const { data: venueUsers } = await serviceSupabase
+      .from("venue_users")
+      .select("venue_id")
+      .eq("user_id", user.id)
+      .eq("venue_id", venueId)
+      .limit(1);
+
+    if ((!venueUsers || venueUsers.length === 0) && !isSuperadmin) {
+      console.error("[Venue VIP POST] Permission denied - not associated with venue:", {
+        userId: user.id,
+        venueId,
+        isSuperadmin,
+      });
       return NextResponse.json(
         { error: "You don't have permission to manage VIPs for this venue" },
         { status: 403 }
@@ -132,15 +153,7 @@ export async function DELETE(
       return NextResponse.json({ error: "venueId is required" }, { status: 400 });
     }
 
-    // Check if user is a venue admin for this venue
-    const { data: venueUser, error: venueUserError } = await serviceSupabase
-      .from("venue_users")
-      .select("venue_id")
-      .eq("user_id", user.id)
-      .eq("venue_id", venueId)
-      .single();
-
-    // Check if user is superadmin
+    // Check if user is superadmin first
     const { data: userRoles } = await serviceSupabase
       .from("user_roles")
       .select("role")
@@ -148,7 +161,36 @@ export async function DELETE(
 
     const isSuperadmin = userRoles?.some((r) => r.role === "superadmin") || false;
 
-    if (venueUserError && !isSuperadmin) {
+    // Check if user is a venue admin for this venue
+    const hasVenueAdminRole = userRoles?.some((r) => r.role === "venue_admin") || false;
+    
+    if (!isSuperadmin && !hasVenueAdminRole) {
+      console.error("[Venue VIP DELETE] Permission denied - no venue_admin role:", {
+        userId: user.id,
+        venueId,
+        isSuperadmin,
+        hasVenueAdminRole,
+      });
+      return NextResponse.json(
+        { error: "You don't have permission to manage VIPs for this venue" },
+        { status: 403 }
+      );
+    }
+
+    // Verify user is associated with this venue
+    const { data: venueUsers } = await serviceSupabase
+      .from("venue_users")
+      .select("venue_id")
+      .eq("user_id", user.id)
+      .eq("venue_id", venueId)
+      .limit(1);
+
+    if ((!venueUsers || venueUsers.length === 0) && !isSuperadmin) {
+      console.error("[Venue VIP DELETE] Permission denied - not associated with venue:", {
+        userId: user.id,
+        venueId,
+        isSuperadmin,
+      });
       return NextResponse.json(
         { error: "You don't have permission to manage VIPs for this venue" },
         { status: 403 }

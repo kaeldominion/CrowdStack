@@ -30,10 +30,10 @@ export async function GET(
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Get event for capacity
+    // Get event for guestlist capacity
     const { data: event } = await serviceSupabase
       .from("events")
-      .select("capacity")
+      .select("max_guestlist_size")
       .eq("id", params.eventId)
       .single();
 
@@ -183,10 +183,10 @@ export async function GET(
     return NextResponse.json({
       total_registrations: registrationCount || 0,
       total_check_ins: checkinCount || 0,
-      capacity: event?.capacity || null,
-      capacity_remaining: event?.capacity ? (event.capacity - (checkinCount || 0)) : null,
-      capacity_percentage: event?.capacity
-        ? Math.round(((checkinCount || 0) / event.capacity) * 100)
+      capacity: event?.max_guestlist_size || null,
+      capacity_remaining: event?.max_guestlist_size ? (event.max_guestlist_size - (registrationCount || 0)) : null,
+      capacity_percentage: event?.max_guestlist_size
+        ? Math.round(((registrationCount || 0) / event.max_guestlist_size) * 100)
         : null,
       recent_registrations_24h: recentRegistrations || 0,
       promoter_breakdown: validPromoterBreakdown,
