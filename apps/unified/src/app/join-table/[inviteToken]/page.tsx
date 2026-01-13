@@ -8,14 +8,14 @@
  */
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { LoadingSpinner, Badge } from "@crowdstack/ui";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
-import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper } from "lucide-react";
 
 interface PartyData {
   is_open_invite: boolean; // If true, anyone with the link can join
@@ -70,14 +70,12 @@ interface PartyData {
 export default function JoinTablePage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const inviteToken = params.inviteToken as string;
-  const magicLinkError = searchParams.get("magic_link_error");
 
   const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSignup, setShowSignup] = useState(false);
+  const [showTypeformJoin, setShowTypeformJoin] = useState(false); // Show TypeformSignup for unauthenticated join
   const [readyToJoin, setReadyToJoin] = useState(false); // User is logged in with profile, ready to join
   const [joiningParty, setJoiningParty] = useState(false); // Loading state for join action
   const [success, setSuccess] = useState(false);
@@ -85,9 +83,6 @@ export default function JoinTablePage() {
   const [bookingId, setBookingId] = useState<string | null>(null); // For link to booking page
   const [qrToken, setQrToken] = useState<string>("");
   const [error, setError] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [sendingMagicLink, setSendingMagicLink] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [existingProfile, setExistingProfile] = useState<{
     name?: string | null;
     surname?: string | null;
@@ -114,10 +109,6 @@ export default function JoinTablePage() {
         if (partyResponse?.ok) {
           const data = await partyResponse.json();
           setPartyData(data);
-          // Pre-fill email input with invited email (only for specific invites, not open invites)
-          if (!data.is_open_invite && data.guest.email) {
-            setEmailInput(data.guest.email);
-          }
         } else if (partyResponse) {
           const errorData = await partyResponse.json();
           setError(errorData.error || "Failed to load invitation");
@@ -128,7 +119,6 @@ export default function JoinTablePage() {
         const user = authResult.data?.user;
 
         if (user && user.email) {
-          setAuthenticated(true);
           setUserEmail(user.email);
 
           // Check if attendee profile exists
@@ -192,8 +182,7 @@ export default function JoinTablePage() {
             setShowSignup(true);
           }
         } else {
-          // Not authenticated - will show login prompt
-          setAuthenticated(false);
+          // Not authenticated - will show invitation UI with join button
         }
       } catch (err: any) {
         console.error("Error initializing page:", err);
@@ -207,46 +196,6 @@ export default function JoinTablePage() {
       initializePage();
     }
   }, [inviteToken]);
-
-  const handleMagicLink = async () => {
-    const email = emailInput.trim();
-    if (!email || !email.includes("@")) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
-    // For specific guest invites (not open invites), verify email matches
-    if (partyData && !partyData.is_open_invite && email.toLowerCase() !== partyData.guest.email.toLowerCase()) {
-      setError("This invitation was sent to a different email address. Please use the email that received the invitation.");
-      return;
-    }
-
-    setSendingMagicLink(true);
-    setError("");
-
-    try {
-      const supabase = createBrowserClient();
-      const redirectUrl = new URL(window.location.origin);
-      redirectUrl.pathname = `/join-table/${inviteToken}`;
-
-      const { error: magicError } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          emailRedirectTo: redirectUrl.toString(),
-        },
-      });
-
-      if (magicError) {
-        throw magicError;
-      }
-
-      setMagicLinkSent(true);
-    } catch (err: any) {
-      setError(err.message || "Failed to send magic link");
-    } finally {
-      setSendingMagicLink(false);
-    }
-  };
 
   // Handle joining the party when user clicks "Join Table" button
   const handleJoinParty = async () => {
@@ -486,7 +435,7 @@ export default function JoinTablePage() {
     );
   }
 
-  // Signup form state
+  // Signup form state (for authenticated users without a profile)
   if (showSignup && partyData) {
     return (
       <TypeformSignup
@@ -496,6 +445,28 @@ export default function JoinTablePage() {
         onEmailVerified={async () => false}
         eventSlug={partyData.event.slug}
         existingProfile={existingProfile}
+        registrationCount={0}
+        eventName={partyData.event.name}
+        eventDetails={{
+          venueName: partyData.venue.name || null,
+          startTime: partyData.event.start_time || null,
+          registrationCount: 0,
+          flierUrl: partyData.event.flier_url || partyData.event.cover_image || null,
+        }}
+      />
+    );
+  }
+
+  // Typeform join flow (for unauthenticated users who clicked "Join Table")
+  if (showTypeformJoin && partyData) {
+    return (
+      <TypeformSignup
+        onSubmit={handleSignupSubmit}
+        isLoading={loading}
+        redirectUrl={`/join-table/${inviteToken}`}
+        onEmailVerified={async () => false}
+        eventSlug={partyData.event.slug}
+        existingProfile={null}
         registrationCount={0}
         eventName={partyData.event.name}
         eventDetails={{
@@ -674,15 +645,6 @@ export default function JoinTablePage() {
                   </div>
                 )}
 
-                {/* Magic Link Error */}
-                {magicLinkError && (
-                  <div className="mb-4 p-3 rounded-lg bg-accent-error/10 border border-accent-error/30 text-accent-error text-sm">
-                    {magicLinkError === "expired" 
-                      ? "Magic link expired. Please request a new one." 
-                      : "Error with magic link. Please try again."}
-                  </div>
-                )}
-
                 {/* Ready to Join - User is logged in with profile */}
                 {readyToJoin ? (
                   <div className="space-y-4">
@@ -712,65 +674,18 @@ export default function JoinTablePage() {
                       )}
                     </button>
                   </div>
-                ) : magicLinkSent ? (
-                  <div className="text-center py-4">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-accent-success/20 flex items-center justify-center">
-                      <Check className="w-6 h-6 text-accent-success" />
-                    </div>
-                    <p className="text-primary font-medium mb-1">Check your email!</p>
-                    <p className="text-secondary text-sm mb-4">
-                      We sent a magic link to <strong>{emailInput}</strong>
-                    </p>
-                    <p className="text-secondary text-xs">
-                      Click the link in your email to continue. Make sure to open it in the same browser.
-                    </p>
-                    <button
-                      onClick={() => setMagicLinkSent(false)}
-                      className="mt-4 text-accent-primary text-sm hover:underline"
-                    >
-                      Didn&apos;t receive it? Try again
-                    </button>
-                  </div>
                 ) : (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-primary mb-2">
-                        Verify your email to join
-                      </label>
-                      <input
-                        type="email"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="Enter your email"
-                        className="w-full px-4 py-3 bg-raised border border-border-subtle rounded-xl text-primary placeholder-secondary focus:outline-none focus:border-accent-primary transition-colors"
-                        disabled={sendingMagicLink}
-                        onKeyDown={(e) => e.key === "Enter" && handleMagicLink()}
-                      />
-                      {/* Only show email warning for specific guest invites, not open invites */}
-                      {!partyData.is_open_invite && partyData.guest.email && emailInput.toLowerCase() !== partyData.guest.email.toLowerCase() && (
-                        <p className="mt-2 text-xs text-accent-warning">
-                          This invitation was sent to: <strong>{partyData.guest.email}</strong>
-                        </p>
-                      )}
-                    </div>
-
                     <button
-                      onClick={handleMagicLink}
-                      disabled={sendingMagicLink || !emailInput}
-                      className="w-full px-4 py-3 bg-accent-primary text-white rounded-xl font-semibold hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      onClick={() => setShowTypeformJoin(true)}
+                      className="w-full px-4 py-3 bg-accent-primary text-white rounded-xl font-semibold hover:bg-accent-primary/90 transition-colors flex items-center justify-center gap-2"
                     >
-                      {sendingMagicLink ? (
-                        <>
-                          <LoadingSpinner className="w-4 h-4" />
-                          Sending...
-                        </>
-                      ) : (
-                        "Continue with Email"
-                      )}
+                      <PartyPopper className="w-5 h-5" />
+                      Join This Table
                     </button>
 
                     <p className="text-center text-secondary text-xs">
-                      We&apos;ll send you a secure link to verify your email and join the party
+                      Quick signup to get your QR pass
                     </p>
                   </div>
                 )}

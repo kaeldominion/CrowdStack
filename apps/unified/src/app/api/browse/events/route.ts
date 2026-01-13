@@ -95,10 +95,8 @@ export async function GET(request: NextRequest) {
           name,
           city,
           state,
-          country,
-          venue_tags(tag_type, tag_value)
+          country
         ),
-        event_tags(tag_type, tag_value),
         event_lineups(
           djs(
             id,
@@ -174,8 +172,7 @@ export async function GET(request: NextRequest) {
     // We'll filter after fetching if search is provided
 
     // Execute query - get more results if we need to filter by search or genre
-    // PERFORMANCE: Reduced multiplier from 3x to 2x since genre filtering now uses included tags
-    const fetchLimit = (search || genre) ? limit * 2 : limit; // Get more if we need to filter
+    const fetchLimit = (search || genre) ? limit * 3 : limit; // Get more if we need to filter
     
     // If featured=true, skip the main query and go straight to fallback logic
     // This avoids issues if is_featured column doesn't exist yet
@@ -258,10 +255,8 @@ export async function GET(request: NextRequest) {
             name,
             city,
             state,
-            country,
-            venue_tags(tag_type, tag_value)
+            country
           ),
-          event_tags(tag_type, tag_value),
           event_lineups(
             djs(
               id,
@@ -306,28 +301,36 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply genre filter (if specified, filter by event tags OR venue tags)
-    // PERFORMANCE: Uses tags already included in main query - no extra database queries needed
-    // Uses genre mapping: if user searches "Tech House", it maps to "House" and finds events/venues with "House" tag
+    // Uses separate queries to fetch tags only when genre filtering is needed
     if (genre && events && events.length > 0) {
       // Map the search genre to venue/event genre (e.g., "Tech House" → "House")
       const venueEventGenre = getVenueEventGenre(genre) || genre;
 
-      // Filter events using already-fetched tags (no additional queries)
-      events = events.filter((e: any) => {
-        // Check event tags
-        const eventTags = e.event_tags || [];
-        const hasEventTag = eventTags.some(
-          (t: any) => t.tag_type === "music" && t.tag_value === venueEventGenre
-        );
-        if (hasEventTag) return true;
+      // Fetch tags for all events in batch
+      const eventIds = events.map((e: any) => e.id);
+      const venueIds = events.map((e: any) => e.venue?.id).filter(Boolean);
 
-        // Check venue tags
-        const venueTags = e.venue?.venue_tags || [];
-        const hasVenueTag = venueTags.some(
-          (t: any) => t.tag_type === "music" && t.tag_value === venueEventGenre
-        );
-        return hasVenueTag;
-      });
+      const [eventTagsResult, venueTagsResult] = await Promise.all([
+        supabase
+          .from("event_tags")
+          .select("event_id, tag_type, tag_value")
+          .in("event_id", eventIds)
+          .eq("tag_type", "music")
+          .eq("tag_value", venueEventGenre),
+        supabase
+          .from("venue_tags")
+          .select("venue_id, tag_type, tag_value")
+          .in("venue_id", venueIds)
+          .eq("tag_type", "music")
+          .eq("tag_value", venueEventGenre),
+      ]);
+
+      const matchingEventIds = new Set(eventTagsResult.data?.map((t: any) => t.event_id) || []);
+      const matchingVenueIds = new Set(venueTagsResult.data?.map((t: any) => t.venue_id) || []);
+
+      events = events.filter((e: any) =>
+        matchingEventIds.has(e.id) || matchingVenueIds.has(e.venue?.id)
+      );
     }
 
     // Total count is now included in the main query via { count: 'exact' }
