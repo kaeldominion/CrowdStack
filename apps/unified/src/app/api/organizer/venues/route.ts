@@ -22,7 +22,7 @@ export async function GET() {
     const serviceSupabase = createServiceRoleClient();
     const { data: venues, error } = await serviceSupabase
       .from("venues")
-      .select("id, name")
+      .select("id, name, capacity")
       .order("name", { ascending: true });
 
     if (error) {

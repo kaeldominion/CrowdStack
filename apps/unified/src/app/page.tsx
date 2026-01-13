@@ -26,7 +26,7 @@ async function getFeaturedEvents() {
         cover_image_url,
         start_time,
         end_time,
-        capacity,
+        max_guestlist_size,
         venue:venues!inner(
           id,
           name,
@@ -38,7 +38,8 @@ async function getFeaturedEvents() {
       .eq("status", "published")
       .in("venue_approval_status", ["approved", "not_required"])
       .gte("start_time", twelveHoursAgo.toISOString())
-      .or("registration_type.is.null,registration_type.eq.guestlist")
+      .eq("has_guestlist", true)
+      .eq("is_public", true)
       .order("start_time", { ascending: true })
       .limit(6);
 
@@ -78,8 +79,8 @@ async function getFeaturedEvents() {
       const dateStr = isToday ? "TONIGHT" : `${day} ${dayNum} ${month}`;
       
       const regCount = registrationCounts[event.id] || 0;
-      const spotsLeft = event.capacity 
-        ? Math.max(event.capacity - regCount, 0)
+      const spotsLeft = event.max_guestlist_size 
+        ? Math.max(event.max_guestlist_size - regCount, 0)
         : null;
       
       return {
@@ -92,7 +93,7 @@ async function getFeaturedEvents() {
         city: event.venue?.city || "",
         image: event.flier_url || event.cover_image_url || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&h=800&fit=crop",
         spotsLeft: spotsLeft || 0,
-        capacity: event.capacity || 0,
+        capacity: event.max_guestlist_size || 0,
       };
     });
   } catch (error) {

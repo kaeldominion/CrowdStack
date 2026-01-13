@@ -21,13 +21,15 @@ export default function NewEventPage() {
     venue_id: "",
     start_time: "",
     end_time: "",
-    capacity: "",
+    max_guestlist_size: "",
     timezone: getLocalTimezone(),
     promoter_access_type: "public" as "public" | "invite_only",
     self_promote: true,
     selected_promoters: [] as string[],
     show_photo_email_notice: false,
-    registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
+    has_guestlist: true,
+    ticket_sale_mode: "none" as "none" | "external" | "internal",
+    is_public: true,
     external_ticket_url: "",
     music_tags: [] as string[],
   });
@@ -148,8 +150,16 @@ export default function NewEventPage() {
     }
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate max_guestlist_size when guestlist is enabled
+    if (formData.has_guestlist && !formData.max_guestlist_size) {
+      alert("Max guestlist size is required when guestlist registration is enabled");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -160,13 +170,15 @@ export default function NewEventPage() {
         venue_id: formData.venue_id || undefined,
         start_time: new Date(formData.start_time).toISOString(),
         end_time: formData.end_time ? new Date(formData.end_time).toISOString() : undefined,
-        capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
+        max_guestlist_size: formData.max_guestlist_size ? parseInt(formData.max_guestlist_size) : undefined,
         timezone: formData.timezone,
         promoter_access_type: formData.promoter_access_type,
         self_promote: formData.self_promote,
         show_photo_email_notice: formData.show_photo_email_notice,
-        registration_type: formData.registration_type,
-        external_ticket_url: formData.registration_type === "external_link" ? formData.external_ticket_url : undefined,
+        has_guestlist: formData.has_guestlist,
+        ticket_sale_mode: formData.ticket_sale_mode,
+        is_public: formData.is_public,
+        external_ticket_url: formData.ticket_sale_mode === "external" ? formData.external_ticket_url : undefined,
       };
 
       // Add promoters if selected
@@ -395,42 +407,78 @@ export default function NewEventPage() {
             </div>
 
             <Input
-              label="Capacity (Optional)"
+              label={formData.has_guestlist ? "Max Guestlist Size (Required)" : "Max Guestlist Size (Optional)"}
               type="number"
-              value={formData.capacity}
-              onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+              required={formData.has_guestlist}
+              value={formData.max_guestlist_size}
+              onChange={(e) => setFormData({ ...formData, max_guestlist_size: e.target.value })}
               placeholder="500"
+              helperText={formData.has_guestlist 
+                ? "Maximum number of guestlist registrations allowed for this event" 
+                : "Maximum number of guestlist registrations. Leave empty if this event has no limit."}
             />
           </div>
 
-          {/* Registration Type */}
+          {/* Registration Settings */}
           <div className="space-y-4 border-t border-border pt-6">
             <h3 className="text-lg font-semibold text-primary">Registration Settings</h3>
             
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">Registration Type</label>
-              <select
-                value={formData.registration_type}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    registration_type: e.target.value as "guestlist" | "display_only" | "external_link",
-                  })
-                }
-                className="w-full rounded-md bg-void border border-border px-3 py-2 text-sm text-primary"
-              >
-                <option value="guestlist">Guestlist - Attendees register through CrowdStack</option>
-                <option value="display_only">Display Only - Show event info, no registration</option>
-                <option value="external_link">External Tickets - Link to external ticketing (RA, Eventbrite, etc.)</option>
-              </select>
-              <p className="mt-1 text-xs text-secondary">
-                {formData.registration_type === "guestlist" && "Attendees can register directly through CrowdStack with QR check-in."}
-                {formData.registration_type === "display_only" && "Event will be visible but no registration button will be shown."}
-                {formData.registration_type === "external_link" && "A \"Get Tickets\" button will link to your external ticketing page."}
-              </p>
+            {/* Guestlist Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Enable Guestlist Registration</label>
+                <p className="text-xs text-secondary">Attendees can register directly through CrowdStack with QR check-in</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.has_guestlist}
+                onChange={(e) => setFormData({ ...formData, has_guestlist: e.target.checked })}
+                className="w-5 h-5 rounded border-border text-accent-primary focus:ring-accent-primary"
+              />
             </div>
 
-            {formData.registration_type === "external_link" && (
+            {/* Ticket Sales Mode */}
+            <div>
+              <label className="block text-sm font-medium text-primary mb-2">Ticket Sales</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="ticket_sale_mode"
+                    value="none"
+                    checked={formData.ticket_sale_mode === "none"}
+                    onChange={(e) => setFormData({ ...formData, ticket_sale_mode: e.target.value as "none" | "external" | "internal" })}
+                    className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                  />
+                  <span className="text-sm text-primary">None - No ticket sales</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="ticket_sale_mode"
+                    value="external"
+                    checked={formData.ticket_sale_mode === "external"}
+                    onChange={(e) => setFormData({ ...formData, ticket_sale_mode: e.target.value as "none" | "external" | "internal" })}
+                    className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                  />
+                  <span className="text-sm text-primary">External - Link to external ticketing (RA, Eventbrite, etc.)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer opacity-50">
+                  <input
+                    type="radio"
+                    name="ticket_sale_mode"
+                    value="internal"
+                    checked={formData.ticket_sale_mode === "internal"}
+                    onChange={(e) => setFormData({ ...formData, ticket_sale_mode: e.target.value as "none" | "external" | "internal" })}
+                    disabled
+                    className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                  />
+                  <span className="text-sm text-primary">Internal - CrowdStack ticketing (coming soon)</span>
+                </label>
+              </div>
+            </div>
+
+            {formData.ticket_sale_mode === "external" && (
               <Input
                 label="External Ticket URL"
                 type="url"
@@ -441,6 +489,20 @@ export default function NewEventPage() {
                 helperText="Full URL to your external ticketing page"
               />
             )}
+
+            {/* Public Event Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1">Public Event</label>
+                <p className="text-xs text-secondary">Event will be visible in public listings</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.is_public}
+                onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+                className="w-5 h-5 rounded border-border text-accent-primary focus:ring-accent-primary"
+              />
+            </div>
           </div>
 
           {/* Flier Upload */}

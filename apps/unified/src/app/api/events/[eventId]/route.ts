@@ -38,7 +38,7 @@ export async function GET(
       .select(`
         *,
         organizer:organizers(id, name, email),
-        venue:venues(id, name, slug, address, city),
+        venue:venues(id, name, slug, address, city, capacity),
         event_promoters(
           id,
           promoter:promoters(id, name, email),
@@ -186,6 +186,26 @@ export async function PATCH(
             { status: 400 }
           );
         }
+      }
+    }
+
+    // Validate max_guestlist_size when guestlist is enabled
+    if (body.has_guestlist !== false) {
+      // Check current event state if has_guestlist is not being changed
+      const { data: currentEvent } = await serviceSupabase
+        .from("events")
+        .select("has_guestlist, max_guestlist_size")
+        .eq("id", params.eventId)
+        .single();
+      
+      const willHaveGuestlist = body.has_guestlist !== undefined ? body.has_guestlist : (currentEvent?.has_guestlist ?? true);
+      const newMaxGuestlistSize = body.max_guestlist_size !== undefined ? (body.max_guestlist_size ? parseInt(body.max_guestlist_size) : null) : currentEvent?.max_guestlist_size;
+      
+      if (willHaveGuestlist && !newMaxGuestlistSize) {
+        return NextResponse.json(
+          { error: "Max guestlist size is required when guestlist registration is enabled" },
+          { status: 400 }
+        );
       }
     }
 

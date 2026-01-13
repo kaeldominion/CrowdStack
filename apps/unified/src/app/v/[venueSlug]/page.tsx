@@ -29,11 +29,14 @@ interface VenueEvent {
   end_time: string | null;
   cover_image_url: string | null;
   flier_url: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   registration_count: number;
   organizer: { id: string; name: string } | null;
   requires_approval?: boolean;
-  registration_type?: "guestlist" | "display_only" | "external_link";
+  registration_type?: "guestlist" | "display_only" | "external_link"; // Deprecated, kept for backward compatibility
+  has_guestlist?: boolean;
+  ticket_sale_mode?: "none" | "external" | "internal";
+  is_public?: boolean;
   external_ticket_url?: string | null;
 }
 
@@ -87,8 +90,10 @@ async function getVenue(slug: string) {
         end_time,
         cover_image_url,
         flier_url,
-        capacity,
-        registration_type,
+        max_guestlist_size,
+        has_guestlist,
+        ticket_sale_mode,
+        is_public,
         external_ticket_url,
         organizer:organizers(id, name)
       `)
@@ -145,11 +150,13 @@ async function getVenue(slug: string) {
         end_time: event.end_time,
         cover_image_url: event.cover_image_url,
         flier_url: event.flier_url,
-        capacity: event.capacity,
+        max_guestlist_size: event.max_guestlist_size,
         registration_count: registrationCounts[event.id] || 0,
         organizer: event.organizer,
         requires_approval: false,
-        registration_type: event.registration_type || "guestlist",
+        has_guestlist: event.has_guestlist ?? true,
+        ticket_sale_mode: event.ticket_sale_mode || "none",
+        is_public: event.is_public ?? true,
       };
 
       if (isLive) {

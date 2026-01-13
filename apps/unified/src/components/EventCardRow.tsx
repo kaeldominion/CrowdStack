@@ -24,14 +24,17 @@ interface EventCardRowProps {
     end_time?: string | null;
     flier_url?: string | null;
     cover_image_url?: string | null;
-    capacity?: number | null;
+    max_guestlist_size?: number | null;
     registration_count?: number;
     venue?: {
       name: string;
       city?: string | null;
     } | null;
     /** Registration type: guestlist, display_only, or external_link */
-    registration_type?: "guestlist" | "display_only" | "external_link";
+    registration_type?: "guestlist" | "display_only" | "external_link"; // Deprecated, kept for backward compatibility
+    has_guestlist?: boolean;
+    ticket_sale_mode?: "none" | "external" | "internal";
+    is_public?: boolean;
     /** External ticket URL for external_link type */
     external_ticket_url?: string | null;
   };
@@ -72,7 +75,7 @@ export const EventCardRow = memo(function EventCardRow({
   const { prefetchEvent } = usePrefetch();
   const heroImage = event.flier_url || event.cover_image_url;
   const isAttending = !!registration;
-  const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
+  const spotsLeft = event.max_guestlist_size ? event.max_guestlist_size - (event.registration_count || 0) : null;
 
   // Memoize formatted date and time to avoid recalculation on re-renders
   const formattedDateTime = useMemo(() => {
@@ -125,7 +128,7 @@ export const EventCardRow = memo(function EventCardRow({
       );
     }
     // External ticket events - show "EXTERNAL" badge
-    if (event.registration_type === "external_link") {
+    if (event.ticket_sale_mode === "external" && event.external_ticket_url) {
       return (
         <Badge color="blue" variant="solid" size="sm" className="!text-[10px] !font-bold flex items-center gap-1">
           <ExternalLink className="h-2.5 w-2.5" />
@@ -227,13 +230,13 @@ export const EventCardRow = memo(function EventCardRow({
                     <Check className="h-3 w-3" />
                     View Entry
                   </button>
-                ) : isGuestlistClosed ? (
+                ) : isGuestlistClosed && event.has_guestlist ? (
                   <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
                     Guestlist Closed
                   </span>
-                ) : event.registration_type === "external_link" ? (
+                ) : event.ticket_sale_mode === "external" && event.external_ticket_url ? (
                   <a
-                    href={event.external_ticket_url || "#"}
+                    href={event.external_ticket_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
@@ -242,7 +245,7 @@ export const EventCardRow = memo(function EventCardRow({
                     Get Tickets
                     <ExternalLink className="h-3 w-3" />
                   </a>
-                ) : (
+                ) : event.has_guestlist ? (
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -253,7 +256,7 @@ export const EventCardRow = memo(function EventCardRow({
                   >
                     Join Guestlist
                   </button>
-                )}
+                ) : null}
                 <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                   <ShareButton
                     title={event.name}
@@ -282,11 +285,11 @@ export const EventCardRow = memo(function EventCardRow({
                   )}
                 </div>
                 {/* Progress bar */}
-                {spotsLeft !== null && event.capacity && event.capacity > 0 && (
+                {spotsLeft !== null && event.max_guestlist_size && event.max_guestlist_size > 0 && (
                   <div className="w-24 h-1.5 bg-raised rounded-full overflow-hidden">
                     <div 
                       className="h-full rounded-full transition-all bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary"
-                      style={{ width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` }}
+                      style={{ width: `${Math.min(((event.registration_count || 0) / event.max_guestlist_size) * 100, 100)}%` }}
                     />
                   </div>
                 )}

@@ -53,6 +53,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Validate max_guestlist_size when guestlist is enabled
+    if (body.has_guestlist !== false && !body.max_guestlist_size) {
+      return NextResponse.json(
+        { error: "Max guestlist size is required when guestlist registration is enabled" },
+        { status: 400 }
+      );
+    }
+
     // Get or create organizer
     // If no organizer specified, use the venue's house organizer (create if needed)
     let organizerId: string;
@@ -202,13 +210,15 @@ export async function POST(request: NextRequest) {
         owner_user_id: userId, // User who creates the event is the owner
         start_time: body.start_time,
         end_time: body.end_time || null,
-        capacity: body.capacity || null,
+        max_guestlist_size: body.has_guestlist !== false ? (body.max_guestlist_size ? parseInt(body.max_guestlist_size) : null) : null,
         timezone: body.timezone || "America/New_York",
         status: "draft",
         promoter_access_type: "public", // Default for venue-created events
         show_photo_email_notice: body.show_photo_email_notice || false,
-        registration_type: body.registration_type || "guestlist",
-        external_ticket_url: body.external_ticket_url || null,
+        has_guestlist: body.has_guestlist ?? true,
+        ticket_sale_mode: body.ticket_sale_mode || "none",
+        is_public: body.is_public ?? true,
+        external_ticket_url: body.ticket_sale_mode === "external" ? (body.external_ticket_url || null) : null,
         flier_url: body.flier_url || null,
       })
       .select()

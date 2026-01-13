@@ -392,7 +392,7 @@ export interface Event {
   start_time: string;
   end_time: string | null;
   status: EventStatus;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   flier_url: string | null;
   cover_image_url: string | null;
   timezone: string | null;
@@ -752,7 +752,7 @@ export interface CheckinResponse {
 
 export type PromoterAccessType = "public" | "invite_only";
 
-export type RegistrationType = "guestlist" | "display_only" | "external_link";
+export type TicketSaleMode = "none" | "external" | "internal";
 
 export interface CreateEventRequest {
   name: string;
@@ -762,13 +762,15 @@ export interface CreateEventRequest {
   organizer_id?: string;
   start_time: string;
   end_time?: string;
-  capacity?: number;
+  max_guestlist_size?: number;
   cover_image_url?: string;
   timezone?: string;
   promoter_access_type?: PromoterAccessType;
   self_promote?: boolean;
   show_photo_email_notice?: boolean;
-  registration_type?: RegistrationType;
+  has_guestlist?: boolean;
+  ticket_sale_mode?: TicketSaleMode;
+  is_public?: boolean;
   external_ticket_url?: string;
   promoters?: Array<{
     promoter_id: string;

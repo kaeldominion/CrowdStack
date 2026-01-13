@@ -70,8 +70,10 @@ export async function GET(
         end_time,
         cover_image_url,
         flier_url,
-        capacity,
-        registration_type,
+        max_guestlist_size,
+        has_guestlist,
+        ticket_sale_mode,
+        is_public,
         external_ticket_url,
         organizer:organizers(id, name)
       `)

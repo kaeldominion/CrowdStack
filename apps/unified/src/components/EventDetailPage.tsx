@@ -154,7 +154,7 @@ interface EventData {
   status: string;
   start_time: string;
   end_time: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   flier_url: string | null;
   flier_video_url: string | null;
   timezone: string | null;
@@ -168,7 +168,10 @@ interface EventData {
   venue_rejection_reason?: string | null;
   show_photo_email_notice?: boolean;
   is_featured?: boolean;
-  registration_type?: string | null;
+  registration_type?: string | null; // Deprecated, kept for backward compatibility
+  has_guestlist?: boolean | null;
+  ticket_sale_mode?: "none" | "external" | "internal" | null;
+  is_public?: boolean | null;
   external_ticket_url?: string | null;
   table_booking_mode?: "disabled" | "promoter_only" | "direct" | null;
   created_at: string;
@@ -421,14 +424,16 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
     important_info: "",
     start_time: "",
     end_time: "",
-    capacity: "",
+    max_guestlist_size: "",
     status: "",
     organizer_id: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
     mobile_style: "flip" as "flip" | "scroll",
     reason: "",
     show_photo_email_notice: false,
-    registration_type: "guestlist" as "guestlist" | "display_only" | "external_link",
+    has_guestlist: true,
+    ticket_sale_mode: "none" as "none" | "external" | "internal",
+    is_public: true,
     external_ticket_url: "",
   });
 
@@ -698,14 +703,17 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             important_info: data.event.important_info || "",
             start_time: data.event.start_time?.slice(0, 16) || "",
             end_time: data.event.end_time?.slice(0, 16) || "",
-            capacity: data.event.capacity?.toString() || "",
+            max_guestlist_size: data.event.max_guestlist_size?.toString() || "",
             status: data.event.status || "",
             organizer_id: data.event.organizer_id || "",
             timezone: data.event.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York",
             mobile_style: data.event.mobile_style || "flip",
             reason: "",
             show_photo_email_notice: Boolean(data.event.show_photo_email_notice),
-            registration_type: (data.event.registration_type as "guestlist" | "display_only" | "external_link") || "guestlist",
+            has_guestlist: data.event.has_guestlist ?? (data.event.registration_type === "guestlist" || !data.event.registration_type ? true : false),
+            ticket_sale_mode: (data.event.ticket_sale_mode as "none" | "external" | "internal") || 
+              (data.event.registration_type === "external_link" ? "external" : "none"),
+            is_public: data.event.is_public ?? (data.event.registration_type === "display_only" ? false : true),
             external_ticket_url: data.event.external_ticket_url || "",
           });
         }
@@ -718,6 +726,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       setLoading(false);
     }
   };
+
 
   const loadStats = async () => {
     if (!config.statsApiEndpoint) {
@@ -949,7 +958,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         updates.end_time = editForm.end_time ? new Date(editForm.end_time).toISOString() : null;
       }
       
-      if (editForm.capacity !== (event.capacity?.toString() || "")) updates.capacity = editForm.capacity ? parseInt(editForm.capacity) : null;
+      if (editForm.max_guestlist_size !== (event.max_guestlist_size?.toString() || "")) updates.max_guestlist_size = editForm.max_guestlist_size ? parseInt(editForm.max_guestlist_size) : null;
       if (editForm.status !== event.status) updates.status = editForm.status;
       if (editForm.organizer_id !== event.organizer_id) updates.organizer_id = editForm.organizer_id;
       if (editForm.timezone !== (event.timezone || "")) updates.timezone = editForm.timezone || "America/New_York";
@@ -961,14 +970,29 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         updates.show_photo_email_notice = editForm.show_photo_email_notice;
       }
 
-      // Registration type and external ticket URL
-      const eventRegistrationType = (event as EventData).registration_type || "guestlist";
+      // Feature flags and external ticket URL
+      const eventHasGuestlist = (event as EventData).has_guestlist ?? true;
+      const eventTicketSaleMode = (event as EventData).ticket_sale_mode || "none";
+      const eventIsPublic = (event as EventData).is_public ?? true;
       const eventExternalTicketUrl = (event as EventData).external_ticket_url || "";
-      if (editForm.registration_type !== eventRegistrationType) {
-        updates.registration_type = editForm.registration_type;
+      
+      if (editForm.has_guestlist !== eventHasGuestlist) {
+        updates.has_guestlist = editForm.has_guestlist;
+      }
+      if (editForm.ticket_sale_mode !== eventTicketSaleMode) {
+        updates.ticket_sale_mode = editForm.ticket_sale_mode;
+      }
+      if (editForm.is_public !== eventIsPublic) {
+        updates.is_public = editForm.is_public;
       }
       if (editForm.external_ticket_url !== eventExternalTicketUrl) {
         updates.external_ticket_url = editForm.external_ticket_url || null;
+      }
+
+      // Validate max_guestlist_size when guestlist is enabled
+      if (editForm.has_guestlist && !editForm.max_guestlist_size) {
+        toast.error("Max guestlist size is required when guestlist registration is enabled");
+        return;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -3160,12 +3184,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   </div>
                 </div>
               )}
-              {event.capacity && (
+              {event.max_guestlist_size && (
                 <div className="flex items-start gap-3">
                   <Users className="h-5 w-5 text-primary mt-0.5" />
                   <div>
                     <p className="font-medium text-primary">Capacity</p>
-                    <p className="text-sm text-secondary">{event.capacity} attendees</p>
+                    <p className="text-sm text-secondary">{event.max_guestlist_size} guestlist spots</p>
                   </div>
                 </div>
               )}
@@ -3343,11 +3367,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Input
-                label="Capacity"
+                label={editForm.has_guestlist ? "Max Guestlist Size (Required)" : "Max Guestlist Size"}
                 type="number"
-                value={editForm.capacity}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, capacity: e.target.value }))}
+                required={editForm.has_guestlist}
+                value={editForm.max_guestlist_size}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, max_guestlist_size: e.target.value }))}
                 placeholder="Leave empty for unlimited"
+                helperText={editForm.has_guestlist 
+                  ? "Maximum number of guestlist registrations allowed for this event" 
+                  : "Maximum number of guestlist registrations. Leave empty if this event has no limit."}
               />
               {(config.role === "venue" || config.role === "admin") && (
                 <Select
@@ -3394,34 +3422,66 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               <p className="text-xs text-secondary mt-1">Timezone for event times</p>
             </div>
 
-            {/* Registration Type */}
+            {/* Registration Settings */}
             <div className="space-y-4 border-t border-border pt-6">
               <h3 className="text-sm font-semibold text-primary">Registration Settings</h3>
               
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">Registration Type</label>
-                <select
-                  value={editForm.registration_type}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      registration_type: e.target.value as "guestlist" | "display_only" | "external_link",
-                    }))
-                  }
-                  className="w-full rounded-xl bg-raised border border-border-subtle px-4 py-3 text-sm text-primary focus:outline-none focus:border-accent-primary/50 focus:ring-2 focus:ring-accent-primary/20"
-                >
-                  <option value="guestlist">Guestlist - Attendees register through CrowdStack</option>
-                  <option value="display_only">Display Only - Show event info, no registration</option>
-                  <option value="external_link">External Tickets - Link to external ticketing (RA, Eventbrite, etc.)</option>
-                </select>
-                <p className="mt-1.5 text-xs text-secondary">
-                  {editForm.registration_type === "guestlist" && "Attendees can register directly through CrowdStack with QR check-in."}
-                  {editForm.registration_type === "display_only" && "Event will be visible but no registration button will be shown."}
-                  {editForm.registration_type === "external_link" && "A \"Get Tickets\" button will link to your external ticketing page."}
-                </p>
+              {/* Guestlist Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-1">Enable Guestlist Registration</label>
+                  <p className="text-xs text-secondary">Attendees can register directly through CrowdStack with QR check-in</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.has_guestlist}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, has_guestlist: e.target.checked }))}
+                  className="w-5 h-5 rounded border-border text-accent-primary focus:ring-accent-primary"
+                />
               </div>
 
-              {editForm.registration_type === "external_link" && (
+              {/* Ticket Sales Mode */}
+              <div>
+                <label className="block text-sm font-medium text-primary mb-2">Ticket Sales</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="ticket_sale_mode"
+                      value="none"
+                      checked={editForm.ticket_sale_mode === "none"}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, ticket_sale_mode: e.target.value as "none" | "external" | "internal" }))}
+                      className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                    />
+                    <span className="text-sm text-primary">None - No ticket sales</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="ticket_sale_mode"
+                      value="external"
+                      checked={editForm.ticket_sale_mode === "external"}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, ticket_sale_mode: e.target.value as "none" | "external" | "internal" }))}
+                      className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                    />
+                    <span className="text-sm text-primary">External - Link to external ticketing (RA, Eventbrite, etc.)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer opacity-50">
+                    <input
+                      type="radio"
+                      name="ticket_sale_mode"
+                      value="internal"
+                      checked={editForm.ticket_sale_mode === "internal"}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, ticket_sale_mode: e.target.value as "none" | "external" | "internal" }))}
+                      disabled
+                      className="w-4 h-4 text-accent-primary focus:ring-accent-primary"
+                    />
+                    <span className="text-sm text-primary">Internal - CrowdStack ticketing (coming soon)</span>
+                  </label>
+                </div>
+              </div>
+
+              {editForm.ticket_sale_mode === "external" && (
                 <Input
                   label="External Ticket URL"
                   type="url"
@@ -3432,6 +3492,20 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                   helperText="Full URL to your external ticketing page"
                 />
               )}
+
+              {/* Public Event Toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-1">Public Event</label>
+                  <p className="text-xs text-secondary">Event will be visible in public listings</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={editForm.is_public}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, is_public: e.target.checked }))}
+                  className="w-5 h-5 rounded border-border text-accent-primary focus:ring-accent-primary"
+                />
+              </div>
             </div>
             
             {config.role === "venue" && (

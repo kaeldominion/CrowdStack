@@ -31,7 +31,7 @@ export async function GET(
         description,
         start_time,
         end_time,
-        capacity,
+        max_guestlist_size,
         status,
         venue_approval_status,
         venue_rejection_reason,
@@ -45,7 +45,7 @@ export async function GET(
         owner_user_id,
         table_booking_mode,
         organizer:organizers(id, name, email),
-        venue:venues(id, name, slug, address, city),
+        venue:venues(id, name, slug, address, city, capacity),
         event_promoters(
           id,
           promoter:promoters(id, name, email),

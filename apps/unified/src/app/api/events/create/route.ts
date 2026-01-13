@@ -222,6 +222,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate max_guestlist_size when guestlist is enabled
+    const maxGuestlistSize = body.max_guestlist_size ? parseInt(body.max_guestlist_size) : null;
+    if (body.has_guestlist !== false && !maxGuestlistSize) {
+      return NextResponse.json(
+        { error: "Max guestlist size is required when guestlist registration is enabled" },
+        { status: 400 }
+      );
+    }
+
     // Create event
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
@@ -234,7 +243,7 @@ export async function POST(request: NextRequest) {
         owner_user_id: userId, // User who creates the event is the owner
         start_time: body.start_time,
         end_time: body.end_time || null,
-        capacity: body.capacity || null,
+        max_guestlist_size: maxGuestlistSize,
         cover_image_url: body.cover_image_url || null,
         timezone: body.timezone || "America/New_York",
         status: "draft",
@@ -242,8 +251,10 @@ export async function POST(request: NextRequest) {
         venue_approval_status: venueApprovalStatus,
         venue_approval_at: autoApproved ? new Date().toISOString() : null,
         show_photo_email_notice: body.show_photo_email_notice || false,
-        registration_type: body.registration_type || "guestlist",
-        external_ticket_url: body.external_ticket_url || null,
+        has_guestlist: body.has_guestlist ?? true,
+        ticket_sale_mode: body.ticket_sale_mode || "none",
+        is_public: body.is_public ?? true,
+        external_ticket_url: body.ticket_sale_mode === "external" ? (body.external_ticket_url || null) : null,
       })
       .select()
       .single();

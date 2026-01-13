@@ -21,12 +21,18 @@ interface AttendeeEventCardProps {
       name: string;
       city?: string | null;
     } | null;
-    /** Event capacity */
-    capacity?: number | null;
+    /** Event max guestlist size */
+    max_guestlist_size?: number | null;
     /** Number of registrations */
     registration_count?: number;
-    /** Registration type: guestlist, display_only, or external_link */
+    /** Registration type: guestlist, display_only, or external_link - Deprecated, kept for backward compatibility */
     registration_type?: "guestlist" | "display_only" | "external_link";
+    /** Enable guestlist registration */
+    has_guestlist?: boolean;
+    /** Ticket sale mode: none, external, or internal */
+    ticket_sale_mode?: "none" | "external" | "internal";
+    /** Public event visibility */
+    is_public?: boolean;
     /** External ticket URL for external_link type */
     external_ticket_url?: string | null;
   };
@@ -80,8 +86,8 @@ export function AttendeeEventCard({
   const hasCheckedIn = registration?.checkins && registration.checkins.length > 0;
   const isLive = variant === "live";
   const registrationCount = event.registration_count || 0;
-  const capacity = event.capacity || 0;
-  const spotsLeft = capacity > 0 ? Math.max(capacity - registrationCount, 0) : null;
+  const maxGuestlistSize = event.max_guestlist_size || 0;
+  const spotsLeft = maxGuestlistSize > 0 ? Math.max(maxGuestlistSize - registrationCount, 0) : null;
 
   // Format date
   const formatEventDate = (dateStr: string) => {
@@ -180,10 +186,10 @@ export function AttendeeEventCard({
       return { text: "CLOSED", color: "amber" as const, showDot: false };
     }
     // Show registration type badges
-    if (event.registration_type === "display_only") {
+    if (!event.has_guestlist && event.ticket_sale_mode !== "external") {
       return { text: "INFO", color: "slate" as const, showDot: false, icon: Eye };
     }
-    if (event.registration_type === "external_link") {
+    if (event.ticket_sale_mode === "external" && event.external_ticket_url) {
       return { text: "EXTERNAL", color: "blue" as const, showDot: false, icon: ExternalLink };
     }
     if (badgeText) {
@@ -422,7 +428,7 @@ export function AttendeeEventCard({
             )}
             
             {/* Registration count & spots left - only for guestlist events */}
-            {event.registration_type !== "external_link" && event.registration_type !== "display_only" && capacity > 0 && (
+            {event.has_guestlist && maxGuestlistSize > 0 && (
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-secondary">
                   {registrationCount} registered
@@ -455,12 +461,12 @@ export function AttendeeEventCard({
                 )}
                 
                 {!isAttending && !registration && (
-                  event.registration_type === "external_link" ? (
+                  event.ticket_sale_mode === "external" && event.external_ticket_url ? (
                     <span className="flex items-center gap-1.5 text-xs text-blue-400">
                       <ExternalLink className="h-3 w-3" />
                       <span className="font-semibold">External Tickets</span>
                     </span>
-                  ) : event.registration_type === "display_only" ? (
+                  ) : !event.has_guestlist && event.ticket_sale_mode !== "external" ? (
                     <span className="flex items-center gap-1.5 text-xs text-muted">
                       <Eye className="h-3 w-3" />
                       <span>Info Only</span>
@@ -513,13 +519,13 @@ export function AttendeeEventCard({
                 <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
                   Event Ended
                 </span>
-              ) : isGuestlistClosed ? (
+              ) : isGuestlistClosed && event.has_guestlist ? (
                 <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
                   Guestlist Closed
                 </span>
-              ) : event.registration_type === "external_link" ? (
+              ) : event.ticket_sale_mode === "external" && event.external_ticket_url ? (
                 <a
-                  href={event.external_ticket_url || "#"}
+                  href={event.external_ticket_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
@@ -528,12 +534,12 @@ export function AttendeeEventCard({
                   Get Tickets
                   <ExternalLink className="h-3 w-3" />
                 </a>
-              ) : event.registration_type === "display_only" ? (
+              ) : !event.has_guestlist && event.ticket_sale_mode !== "external" ? (
                 <span className="flex-1 flex items-center justify-center gap-1.5 bg-raised text-muted font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
                   <Eye className="h-3 w-3" />
                   Info Only
                 </span>
-              ) : (
+              ) : event.has_guestlist ? (
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -544,7 +550,7 @@ export function AttendeeEventCard({
                 >
                   Join Guestlist
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

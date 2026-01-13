@@ -80,7 +80,7 @@ export function EventPageContent({
   const [showCancelModal, setShowCancelModal] = useState(false);
   
   const dateInfo = formatEventDate(startDate);
-  const spotsLeft = event.capacity ? event.capacity - (event.registration_count || 0) : null;
+  const spotsLeft = event.max_guestlist_size ? event.max_guestlist_size - (event.registration_count || 0) : null;
   const isPast = !isUpcoming && !isLive;
   
   // Check if user is already registered
@@ -226,7 +226,7 @@ export function EventPageContent({
         </div>
             
             {/* Right: Spots Left + Progress Bar (only for guestlist events) */}
-            {event.registration_type !== "external_link" && event.registration_type !== "display_only" && event.capacity && spotsLeft !== null && (
+            {event.has_guestlist && event.max_guestlist_size && spotsLeft !== null && (
               <div className="flex-1 max-w-32">
                 <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-accent-primary text-right mb-1">
                   {spotsLeft} Left
@@ -235,14 +235,14 @@ export function EventPageContent({
                   <div 
                     className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all"
                     style={{ 
-                      width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
+                      width: `${Math.min(((event.registration_count || 0) / event.max_guestlist_size) * 100, 100)}%` 
                     }}
                   />
                 </div>
               </div>
             )}
             {/* External Ticket Badge (mobile) */}
-            {event.registration_type === "external_link" && (
+            {event.ticket_sale_mode === "external" && event.external_ticket_url && (
               <Badge color="blue" variant="solid" className="font-mono uppercase">
                 <ExternalLink className="h-3 w-3 mr-1" />
                 External Tickets
@@ -252,67 +252,75 @@ export function EventPageContent({
           
           {/* CTA Button Row - handles different registration types */}
           <div className="flex items-center gap-3">
-            {event.registration_type === "display_only" ? (
-              /* Display only - info message */
+            {!event.has_guestlist && event.ticket_sale_mode !== "external" ? (
+              /* No registration options - info message */
               <div className="flex-1 py-3 px-4 rounded-xl bg-raised/50 border border-border-subtle text-center">
                 <p className="text-sm text-muted">
                   <Eye className="h-4 w-4 inline mr-2" />
                   Event info only – no registration
                 </p>
               </div>
-            ) : event.registration_type === "external_link" ? (
-              /* External link */
-              isPast ? (
-                <Button 
-                  variant="secondary"
-                  size="lg"
-                  disabled
-                  className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
-                >
-                  <Ticket className="h-4 w-4 mr-2" />
-                  Event Ended
-                </Button>
-              ) : (
-                <a href={event.external_ticket_url} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <Button 
-                    variant="primary"
-                    size="lg"
-                    className="w-full font-mono uppercase tracking-wider"
-                  >
-                    <Ticket className="h-4 w-4 mr-2" />
-                    Get Tickets
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
-                </a>
-              )
-            ) : isPast ? (
-              <Button 
-                variant="secondary"
-                size="lg"
-                disabled
-                className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
-              >
-                <Ticket className="h-4 w-4 mr-2" />
-                Guestlist Closed
-              </Button>
             ) : (
-              /* Guestlist - default */
               <>
-                <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="flex-1">
-                  <Button 
-                    variant={isRegistered ? "secondary" : "primary"}
-                    size="lg"
-                    className={`w-full font-mono uppercase tracking-wider ${
-                      isRegistered 
-                        ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
-                        : ""
-                    }`}
-                  >
-                    <Ticket className="h-4 w-4 mr-2" />
-                    {isRegistered ? "View Entry Pass" : "Join Guestlist"}
-                  </Button>
-                </Link>
-                {isRegistered && (
+                {/* Guestlist Button */}
+                {event.has_guestlist && (
+                  isPast ? (
+                    <Button 
+                      variant="secondary"
+                      size="lg"
+                      disabled
+                      className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
+                    >
+                      <Ticket className="h-4 w-4 mr-2" />
+                      Guestlist Closed
+                    </Button>
+                  ) : (
+                    <Link href={isRegistered ? getPassUrl() : getRegisterUrl()} className="flex-1">
+                      <Button 
+                        variant={isRegistered ? "secondary" : "primary"}
+                        size="lg"
+                        className={`w-full font-mono uppercase tracking-wider ${
+                          isRegistered 
+                            ? "bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30" 
+                            : ""
+                        }`}
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        {isRegistered ? "View Entry Pass" : "Join Guestlist"}
+                      </Button>
+                    </Link>
+                  )
+                )}
+                
+                {/* External Tickets Button */}
+                {event.ticket_sale_mode === "external" && event.external_ticket_url && (
+                  isPast ? (
+                    <Button 
+                      variant="secondary"
+                      size="lg"
+                      disabled
+                      className="flex-1 font-mono uppercase tracking-wider opacity-60 cursor-not-allowed"
+                    >
+                      <Ticket className="h-4 w-4 mr-2" />
+                      Event Ended
+                    </Button>
+                  ) : (
+                    <a href={event.external_ticket_url} target="_blank" rel="noopener noreferrer" className="flex-1">
+                      <Button 
+                        variant="primary"
+                        size="lg"
+                        className="w-full font-mono uppercase tracking-wider"
+                      >
+                        <Ticket className="h-4 w-4 mr-2" />
+                        Get Tickets
+                        <ExternalLink className="h-4 w-4 ml-2" />
+                      </Button>
+                    </a>
+                  )
+                )}
+                
+                {/* Cancel Registration Button (only if registered) */}
+                {isRegistered && event.has_guestlist && (
                   <button 
                     className="w-12 h-12 rounded-xl bg-raised border border-border-subtle flex items-center justify-center text-muted hover:text-accent-error hover:border-accent-error/50 transition-colors disabled:opacity-50"
                     aria-label="Cancel registration"
@@ -482,7 +490,7 @@ export function EventPageContent({
               )}
               
               {/* Registration Stats - only for guestlist events */}
-              {event.registration_type !== "external_link" && event.registration_type !== "display_only" && (
+              {event.has_guestlist && (
                 <Card className="mt-6">
                   <div className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -540,12 +548,12 @@ export function EventPageContent({
                       </p>
                     )}
                     {/* Progress bar */}
-                    {event.capacity && (
+                    {event.max_guestlist_size && (
                       <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] rounded-full transition-all duration-500"
                           style={{ 
-                            width: `${Math.min(((event.registration_count || 0) / event.capacity) * 100, 100)}%` 
+                            width: `${Math.min(((event.registration_count || 0) / event.max_guestlist_size) * 100, 100)}%` 
                           }}
                         />
                       </div>
@@ -555,7 +563,7 @@ export function EventPageContent({
               )}
               
               {/* External Ticket Card - for external ticket events */}
-              {event.registration_type === "external_link" && (
+              {event.ticket_sale_mode === "external" && event.external_ticket_url && (
                 <Card className="mt-6">
                   <div className="p-4 text-center space-y-3">
                     <div className="flex items-center justify-center gap-2">
@@ -581,14 +589,14 @@ export function EventPageContent({
                 {dateInfo.month} {dateInfo.day}
               </Badge>
               {/* External Ticket Badge */}
-              {event.registration_type === "external_link" && (
+              {event.ticket_sale_mode === "external" && event.external_ticket_url && (
                 <Badge color="blue" variant="solid" className="font-mono uppercase flex items-center gap-1">
                   <ExternalLink className="h-3 w-3" />
                   External Tickets
                 </Badge>
               )}
               {/* Spots Left Badge - only for guestlist events */}
-              {event.registration_type !== "external_link" && event.registration_type !== "display_only" && spotsLeft !== null && spotsLeft <= 50 && (
+              {event.has_guestlist && spotsLeft !== null && spotsLeft <= 50 && (
                 <Badge color="green" variant="solid" className="font-mono uppercase">
                   Only {spotsLeft} Spots Left
                 </Badge>
@@ -666,9 +674,9 @@ export function EventPageContent({
           {/* Right Column - Actions */}
           <div className="lg:col-span-3">
             <div className="sticky top-24 space-y-4">
-              {/* Registration Card - handles guestlist, display_only, and external_link types */}
-              {event.registration_type === "display_only" ? (
-                /* Display Only - No registration */
+              {/* Registration Card - handles guestlist, external tickets, and no registration */}
+              {!event.has_guestlist && event.ticket_sale_mode !== "external" ? (
+                /* No registration options - Display Only */
                 <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
                   <div className="p-4">
                     <div className="flex items-center justify-between">
@@ -688,7 +696,7 @@ export function EventPageContent({
                     </p>
                   </div>
                 </div>
-              ) : event.registration_type === "external_link" ? (
+              ) : event.ticket_sale_mode === "external" && event.external_ticket_url ? (
                 /* External Link - Redirect to external ticketing */
                 <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
                   <div className="p-4">
@@ -742,7 +750,7 @@ export function EventPageContent({
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : event.has_guestlist ? (
                 /* Guestlist - Default CrowdStack registration */
                 <div className="rounded-[var(--radius-xl)] bg-[var(--bg-glass)]/90 border border-[var(--border-subtle)] backdrop-blur-xl shadow-[var(--shadow-soft)] overflow-hidden">
                   <div className="p-4">
@@ -807,7 +815,7 @@ export function EventPageContent({
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
               
               {/* Actions Row */}
               <div className="flex gap-2">

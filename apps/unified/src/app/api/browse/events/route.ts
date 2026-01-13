@@ -84,8 +84,10 @@ export async function GET(request: NextRequest) {
         start_time,
         end_time,
         venue_approval_status,
-        capacity,
-        registration_type,
+        max_guestlist_size,
+        has_guestlist,
+        ticket_sale_mode,
+        is_public,
         external_ticket_url,
         venue:venues!inner(
           id,
@@ -241,8 +243,10 @@ export async function GET(request: NextRequest) {
           start_time,
           end_time,
           venue_approval_status,
-          capacity,
-          registration_type,
+          max_guestlist_size,
+          has_guestlist,
+          ticket_sale_mode,
+          is_public,
           external_ticket_url,
           venue:venues!inner(
             id,
@@ -262,7 +266,8 @@ export async function GET(request: NextRequest) {
         .eq("status", "published")
         .in("venue_approval_status", ["approved", "not_required"])
         .gte("start_time", twelveHoursAgo.toISOString())
-        .or("registration_type.is.null,registration_type.eq.guestlist")
+        .eq("has_guestlist", true)
+        .eq("is_public", true)
         .order("start_time", { ascending: true })
         .limit(limit);
 

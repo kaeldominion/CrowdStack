@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             start_time,
             end_time,
             status,
-            capacity,
+            max_guestlist_size,
             venue:venues(id, name)
           `)
           .eq("organizer_id", organizerId)
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
             start_time: event.start_time,
             end_time: event.end_time,
             status: event.status,
-            capacity: event.capacity,
+            max_guestlist_size: event.max_guestlist_size,
             venue: Array.isArray(event.venue) ? event.venue[0] : event.venue,
             registrations: regs,
             checkins: checkins,

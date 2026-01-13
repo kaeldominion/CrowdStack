@@ -28,7 +28,10 @@ interface Event {
   capacity?: number | null;
   registration_count: number;
   requires_approval?: boolean;
-  registration_type?: "guestlist" | "display_only" | "external_link";
+  registration_type?: "guestlist" | "display_only" | "external_link"; // Deprecated, kept for backward compatibility
+  has_guestlist?: boolean;
+  ticket_sale_mode?: "none" | "external" | "internal";
+  is_public?: boolean;
   external_ticket_url?: string | null;
   organizer?: { id: string; name: string } | null;
   venue?: { name: string; city?: string | null } | null;
@@ -119,7 +122,7 @@ export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, ve
                       end_time: event.end_time,
                       cover_image_url: event.cover_image_url,
                       flier_url: event.flier_url,
-                      capacity: event.capacity ?? null,
+                      max_guestlist_size: event.max_guestlist_size ?? null,
                       registration_count: event.registration_count,
                     }}
                   />

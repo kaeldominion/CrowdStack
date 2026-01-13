@@ -37,7 +37,7 @@ export async function GET(request: Request) {
         description,
         start_time,
         end_time,
-        capacity,
+        max_guestlist_size,
         status,
         venue_approval_status,
         venue_approval_at,

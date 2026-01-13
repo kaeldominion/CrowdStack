@@ -57,7 +57,7 @@ export async function GET(
         description,
         start_time,
         end_time,
-        capacity,
+        max_guestlist_size,
         status,
         flier_url,
         flier_video_url,

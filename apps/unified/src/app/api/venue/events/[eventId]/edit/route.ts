@@ -9,7 +9,7 @@ const VENUE_EDITABLE_FIELDS = [
   "description",
   "start_time",
   "end_time",
-  "capacity",
+  "max_guestlist_size",
   "status",
   "show_photo_email_notice",
   "flier_url",
@@ -45,7 +45,7 @@ export async function PUT(
     // Get the event
     const { data: event, error: eventError } = await serviceSupabase
       .from("events")
-      .select("*, venue:venues(id, name), organizer:organizers(id, name)")
+      .select("*, venue:venues(id, name, capacity), organizer:organizers(id, name)")
       .eq("id", eventId)
       .single();
 
@@ -92,6 +92,17 @@ export async function PUT(
       return NextResponse.json(
         { error: "You don't have permission to edit events at this venue" },
         { status: 403 }
+      );
+    }
+
+    // Validate max_guestlist_size when guestlist is enabled
+    const currentHasGuestlist = event.has_guestlist ?? true;
+    const newMaxGuestlistSize = updates.max_guestlist_size !== undefined ? (updates.max_guestlist_size ? parseInt(updates.max_guestlist_size) : null) : event.max_guestlist_size;
+    
+    if (currentHasGuestlist && !newMaxGuestlistSize) {
+      return NextResponse.json(
+        { error: "Max guestlist size is required when guestlist registration is enabled" },
+        { status: 400 }
       );
     }
 
