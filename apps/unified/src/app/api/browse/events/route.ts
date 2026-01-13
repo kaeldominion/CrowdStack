@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     // Build base query - optimized to avoid N+1 queries
     // Removed registrations(count) relation - will fetch counts in batch if needed
+    // PERFORMANCE: Include event_tags in main query to enable database-level genre filtering
     let query = supabase
       .from("events")
       .select(`
@@ -94,8 +95,10 @@ export async function GET(request: NextRequest) {
           name,
           city,
           state,
-          country
+          country,
+          venue_tags(tag_type, tag_value)
         ),
+        event_tags(tag_type, tag_value),
         event_lineups(
           djs(
             id,
@@ -170,8 +173,9 @@ export async function GET(request: NextRequest) {
     // Apply search filter - need to handle separately due to join limitations
     // We'll filter after fetching if search is provided
 
-    // Execute query - get more results if we need to filter by search
-    const fetchLimit = search ? limit * 3 : limit; // Get more if we need to filter
+    // Execute query - get more results if we need to filter by search or genre
+    // PERFORMANCE: Reduced multiplier from 3x to 2x since genre filtering now uses included tags
+    const fetchLimit = (search || genre) ? limit * 2 : limit; // Get more if we need to filter
     
     // If featured=true, skip the main query and go straight to fallback logic
     // This avoids issues if is_featured column doesn't exist yet
@@ -232,6 +236,7 @@ export async function GET(request: NextRequest) {
       const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
       
       // Build fallback query - optimized without registrations relation
+      // PERFORMANCE: Include tags to enable client-side genre filtering without extra queries
       const { data: fallbackEvents, error: fallbackError, count: fallbackCount } = await supabase
         .from("events")
         .select(`
@@ -253,8 +258,10 @@ export async function GET(request: NextRequest) {
             name,
             city,
             state,
-            country
+            country,
+            venue_tags(tag_type, tag_value)
           ),
+          event_tags(tag_type, tag_value),
           event_lineups(
             djs(
               id,
@@ -299,46 +306,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply genre filter (if specified, filter by event tags OR venue tags)
+    // PERFORMANCE: Uses tags already included in main query - no extra database queries needed
     // Uses genre mapping: if user searches "Tech House", it maps to "House" and finds events/venues with "House" tag
     if (genre && events && events.length > 0) {
-      const eventIds = events.map((e) => e.id);
-      
       // Map the search genre to venue/event genre (e.g., "Tech House" → "House")
       const venueEventGenre = getVenueEventGenre(genre) || genre;
-      
-      // Get events with matching genre tag
-      const { data: taggedEvents } = await supabase
-        .from("event_tags")
-        .select("event_id")
-        .in("event_id", eventIds)
-        .eq("tag_type", "music")
-        .eq("tag_value", venueEventGenre);
 
-      const matchingEventIds = new Set(taggedEvents?.map((t) => t.event_id) || []);
+      // Filter events using already-fetched tags (no additional queries)
+      events = events.filter((e: any) => {
+        // Check event tags
+        const eventTags = e.event_tags || [];
+        const hasEventTag = eventTags.some(
+          (t: any) => t.tag_type === "music" && t.tag_value === venueEventGenre
+        );
+        if (hasEventTag) return true;
 
-      // Get venues for these events
-      const venueIds = events
-        .map((e) => (e.venue as any)?.id)
-        .filter(Boolean) as string[];
-
-      // Get venues with matching genre tag
-      let matchingVenueIds = new Set<string>();
-      if (venueIds.length > 0) {
-        const { data: taggedVenues } = await supabase
-          .from("venue_tags")
-          .select("venue_id")
-          .in("venue_id", venueIds)
-          .eq("tag_type", "music")
-          .eq("tag_value", venueEventGenre);
-
-        matchingVenueIds = new Set(taggedVenues?.map((t) => t.venue_id) || []);
-      }
-
-      // Filter events to only those with matching event tags OR venue tags
-      events = events.filter((e) => {
-        const eventId = e.id;
-        const venueId = (e.venue as any)?.id;
-        return matchingEventIds.has(eventId) || (venueId && matchingVenueIds.has(venueId));
+        // Check venue tags
+        const venueTags = e.venue?.venue_tags || [];
+        const hasVenueTag = venueTags.some(
+          (t: any) => t.tag_type === "music" && t.tag_value === venueEventGenre
+        );
+        return hasVenueTag;
       });
     }
 

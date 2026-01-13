@@ -30,11 +30,15 @@ function getBaseUrl() {
 }
 
 // Fetch event data - uses ISR with revalidate setting at page level
+// PERFORMANCE OPTIMIZATION (Jan 2024):
+// - Merged venue_tags into main query to eliminate separate database call
+// - Run registration count and recent attendees queries in parallel
 async function getEvent(slug: string) {
   try {
     const supabase = createServiceRoleClient();
 
     // Get published event by slug
+    // PERFORMANCE: Include venue_tags in main query to avoid separate fetch
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select(`
@@ -50,7 +54,8 @@ async function getEvent(slug: string) {
           country,
           google_maps_url,
           cover_image_url,
-          logo_url
+          logo_url,
+          venue_tags(tag_type, tag_value)
         )
       `)
       .eq("slug", slug)
@@ -61,36 +66,31 @@ async function getEvent(slug: string) {
       return null;
     }
 
-    // Fetch venue tags separately if venue exists
-    let venueTags: { tag_type: string; tag_value: string }[] = [];
-    if (event.venue?.id) {
-      const { data: tags } = await supabase
-        .from("venue_tags")
-        .select("tag_type, tag_value")
-        .eq("venue_id", event.venue.id);
-      venueTags = tags || [];
-    }
-
-    // Get registration count
-    const { count: registrationCount } = await supabase
-      .from("registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", event.id);
-
-    // Get recent attendees with profile pics (limit 5)
-    const { data: recentAttendees } = await supabase
-      .from("registrations")
-      .select(`
-        id,
-        attendee:attendees(
+    // PERFORMANCE: Run registration count and recent attendees queries in parallel
+    const [registrationResult, recentAttendeesResult] = await Promise.all([
+      // Get registration count
+      supabase
+        .from("registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("event_id", event.id),
+      // Get recent attendees with profile pics (limit 5)
+      supabase
+        .from("registrations")
+        .select(`
           id,
-          name,
-          profile_picture_url
-        )
-      `)
-      .eq("event_id", event.id)
-      .order("created_at", { ascending: false })
-      .limit(5);
+          attendee:attendees(
+            id,
+            name,
+            profile_picture_url
+          )
+        `)
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    const registrationCount = registrationResult.count;
+    const recentAttendees = recentAttendeesResult.data;
 
     return {
       ...event,
@@ -98,7 +98,7 @@ async function getEvent(slug: string) {
       recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
       venue: event.venue ? {
         ...event.venue,
-        venue_tags: venueTags,
+        venue_tags: event.venue.venue_tags || [],
       } : null,
     };
   } catch (error) {

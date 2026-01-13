@@ -1,23 +1,24 @@
 -- Migration: Add table party guest removed email template
 -- Purpose: Notify guests when they are removed from a table party by the host
+-- Fixed: Using correct column names for email_templates table
 
 INSERT INTO public.email_templates (
   slug,
-  name,
-  description,
+  trigger,
   category,
+  target_roles,
   subject,
   html_body,
-  available_variables,
-  preview_variables,
-  is_system,
+  text_body,
+  variables,
+  enabled,
   created_at,
   updated_at
 ) VALUES (
   'table_party_guest_removed',
-  'Table Party - Guest Removed',
-  'Sent to a guest when they are removed from a table party by the host',
-  'table_booking',
+  'table_party.guest_removed',
+  'guest',
+  ARRAY['guest'],
   'Your table reservation has been updated',
   '<!DOCTYPE html>
 <html>
@@ -31,7 +32,7 @@ INSERT INTO public.email_templates (
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 500px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1)); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 24px; overflow: hidden;">
-          
+
           <!-- Logo -->
           <tr>
             <td align="center" style="padding: 32px 24px 16px 24px;">
@@ -42,12 +43,12 @@ INSERT INTO public.email_templates (
           <!-- Main Content -->
           <tr>
             <td style="padding: 16px 32px 32px 32px;">
-              
+
               <!-- Greeting -->
               <p style="margin: 0 0 24px 0; font-size: 18px; color: #f8fafc; text-align: center;">
                 Hi {{guest_name}},
               </p>
-              
+
               <!-- Message -->
               <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px;">
                 <p style="margin: 0; font-size: 15px; color: #94a3b8; line-height: 1.6; text-align: center;">
@@ -91,19 +92,29 @@ INSERT INTO public.email_templates (
   </table>
 </body>
 </html>',
-  ARRAY['guest_name', 'event_name', 'host_name', 'venue_name'],
-  '{"guest_name": "Alex", "event_name": "Friday Night Party", "host_name": "Jordan", "venue_name": "The Rooftop"}',
+  'Hi {{guest_name}},
+
+We''re writing to let you know that {{host_name}} has updated the guest list for their table at {{event_name}}.
+
+Unfortunately, your spot on the table has been removed.
+
+Venue: {{venue_name}}
+
+If you believe this was a mistake, please contact the table host directly.
+
+- The CrowdStack Team',
+  '{"guest_name": "string", "event_name": "string", "host_name": "string", "venue_name": "string"}'::jsonb,
   true,
   NOW(),
   NOW()
 )
 ON CONFLICT (slug) DO UPDATE SET
-  name = EXCLUDED.name,
-  description = EXCLUDED.description,
+  trigger = EXCLUDED.trigger,
+  category = EXCLUDED.category,
   subject = EXCLUDED.subject,
   html_body = EXCLUDED.html_body,
-  available_variables = EXCLUDED.available_variables,
-  preview_variables = EXCLUDED.preview_variables,
+  text_body = EXCLUDED.text_body,
+  variables = EXCLUDED.variables,
   updated_at = NOW();
 
 COMMENT ON TABLE public.email_templates IS 'Email templates for the platform - updated with table_party_guest_removed template';
