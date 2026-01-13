@@ -361,6 +361,29 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
     }
   }
 
+  // Check if current user is the host
+  const isHost = currentUserEmail ? booking.guest_email?.toLowerCase() === currentUserEmail : false;
+  
+  // Check if current user is a guest on this table (joined the party but not the host)
+  let isGuest = false;
+  if (currentUserEmail && !isHost && partyData?.guests) {
+    isGuest = partyData.guests.some(g => g.email?.toLowerCase() === currentUserEmail);
+  }
+  // Also check by user ID in the table_party_guests directly
+  if (!isGuest && !isHost && user) {
+    const { data: userAsGuest } = await serviceSupabase
+      .from("table_party_guests")
+      .select("id, status")
+      .eq("booking_id", bookingId)
+      .eq("is_host", false)
+      .or(`guest_email.ilike.${currentUserEmail}`)
+      .limit(1);
+    
+    if (userAsGuest && userAsGuest.length > 0 && userAsGuest[0].status === "joined") {
+      isGuest = true;
+    }
+  }
+
   return {
     booking: {
       id: booking.id,
@@ -402,8 +425,8 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
       manual_payment_instructions: manualPaymentInstructions,
     },
     party: partyData,
-    // Check if current user is the host (matches booking email)
-    isHost: currentUserEmail ? booking.guest_email?.toLowerCase() === currentUserEmail : false,
+    isHost,
+    isGuest,
     currency,
     currencySymbol,
   };

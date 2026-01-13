@@ -82,6 +82,7 @@ export interface BookingData {
     party_size: number;
   } | null;
   isHost: boolean; // Whether current user is the table host
+  isGuest: boolean; // Whether current user is a guest on the table (not host)
   currency: string;
   currencySymbol: string;
 }
@@ -251,41 +252,50 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
             </Button>
           </div>
 
-          <h1 className="text-2xl font-bold text-primary mb-2">Your Table Booking</h1>
+          <h1 className="text-2xl font-bold text-primary mb-2">
+            {data.isHost ? "Your Table Booking" : "Your Table Party"}
+          </h1>
           <p className="text-secondary">{event.name}</p>
+          {!data.isHost && data.isGuest && (
+            <p className="text-xs text-accent-primary mt-1">
+              You&apos;re a guest on {booking.guest_name}&apos;s table
+            </p>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 pb-12 space-y-4">
-        {/* Status Card */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-secondary">
-              Booking Status
-            </h2>
-            <Badge color={currentStatus.color} variant="solid" size="sm">
-              {currentStatus.label}
-            </Badge>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted text-xs uppercase tracking-wide mb-1">Confirmation #</p>
-              <p className="text-primary font-mono">{booking.id.split("-")[0].toUpperCase()}</p>
+        {/* Status Card - Host only */}
+        {data.isHost && (
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-secondary">
+                Booking Status
+              </h2>
+              <Badge color={currentStatus.color} variant="solid" size="sm">
+                {currentStatus.label}
+              </Badge>
             </div>
-            <div>
-              <p className="text-muted text-xs uppercase tracking-wide mb-1">Payment</p>
-              <div className="flex items-center gap-1.5">
-                <PaymentIcon className="h-3.5 w-3.5 text-secondary" />
-                <span className="text-primary text-sm">{currentPaymentStatus.label}</span>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted text-xs uppercase tracking-wide mb-1">Confirmation #</p>
+                <p className="text-primary font-mono">{booking.id.split("-")[0].toUpperCase()}</p>
+              </div>
+              <div>
+                <p className="text-muted text-xs uppercase tracking-wide mb-1">Payment</p>
+                <div className="flex items-center gap-1.5">
+                  <PaymentIcon className="h-3.5 w-3.5 text-secondary" />
+                  <span className="text-primary text-sm">{currentPaymentStatus.label}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Payment Card - Show if deposit pending and DOKU enabled */}
-        {showPaymentButton && (
+        {/* Payment Card - Host only, show if deposit pending and DOKU enabled */}
+        {data.isHost && showPaymentButton && (
           <Card>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-raised border border-border-subtle">
@@ -335,8 +345,9 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
           </Card>
         )}
 
-        {/* Manual Payment Instructions - Show if deposit pending, DOKU not enabled, but manual payment enabled */}
-        {booking.payment_status === "pending" &&
+        {/* Manual Payment Instructions - Host only, show if deposit pending, DOKU not enabled, but manual payment enabled */}
+        {data.isHost &&
+          booking.payment_status === "pending" &&
           booking.deposit_required &&
           booking.deposit_required > 0 &&
           !payment?.doku_enabled &&
@@ -392,39 +403,41 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
           )}
 
         {/* Confirmed Booking - Party Section */}
-        {(booking.status === "confirmed" || booking.payment_status === "paid") && party && (
+        {(booking.status === "confirmed" || booking.payment_status === "paid" || data.isGuest) && party && (
           <>
-            {/* Your Pass */}
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-accent-success/10 border border-accent-success/20">
-                  <QrCode className="h-5 w-5 text-accent-success" />
+            {/* Your Pass - Host only (guests get their pass from join confirmation) */}
+            {data.isHost && (
+              <Card>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-accent-success/10 border border-accent-success/20">
+                    <QrCode className="h-5 w-5 text-accent-success" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-primary">Your Entry Pass</h2>
+                    <p className="text-xs text-secondary">Show this QR code at the door</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-primary">Entry Pass</h2>
-                  <p className="text-xs text-secondary">Show this QR code at the door</p>
-                </div>
-              </div>
 
-              {party.host ? (
-                <Link href={party.host.pass_url}>
-                  <Button className="w-full">
-                    <QrCode className="h-4 w-4 mr-2" />
-                    View Your Entry Pass
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              ) : (
-                <div className="text-center p-4 rounded-lg bg-raised border border-border-subtle">
-                  <p className="text-sm text-secondary">
-                    Your entry pass is being generated... Please refresh the page.
-                  </p>
-                </div>
-              )}
-            </Card>
+                {party.host ? (
+                  <Link href={party.host.pass_url}>
+                    <Button className="w-full">
+                      <QrCode className="h-4 w-4 mr-2" />
+                      View Your Entry Pass
+                      <ExternalLink className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <div className="text-center p-4 rounded-lg bg-raised border border-border-subtle">
+                    <p className="text-sm text-secondary">
+                      Your entry pass is being generated... Please refresh the page.
+                    </p>
+                  </div>
+                )}
+              </Card>
+            )}
 
-            {/* Invite Friends */}
-            {booking.party_size > 1 && (
+            {/* Invite Friends - Host only */}
+            {data.isHost && booking.party_size > 1 && (
               <Card>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
@@ -477,77 +490,107 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
                   </div>
                 )}
 
-                {/* Guest List */}
-                <div className="border-t border-border-subtle pt-4 mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs text-muted uppercase tracking-wide">Your party</p>
+              </Card>
+            )}
+
+            {/* Guest List - Visible to all (host and guests) */}
+            {booking.party_size > 1 && (
+              <Card>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+                    <Users className="h-5 w-5 text-accent-secondary" />
                   </div>
-                  {party.guests.length > 0 ? (
-                    <div className="space-y-2">
-                      {party.guests.map((guest) => (
-                        <div
-                          key={guest.id}
-                          className="flex items-center justify-between py-2 px-3 bg-raised rounded-lg border border-border-subtle"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm text-primary block truncate">{guest.name || guest.email}</span>
-                            {guest.email && guest.name && (
-                              <span className="text-xs text-secondary truncate block">{guest.email}</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 ml-2">
-                            <Badge
-                              color={guest.status === "joined" ? "green" : guest.status === "invited" ? "amber" : "slate"}
-                              variant="outline"
-                              size="sm"
-                            >
-                              {guest.status === "joined" ? "Confirmed" : guest.status}
-                            </Badge>
-                            
-                            {/* Remove button - only visible to host */}
-                            {data.isHost && (
-                              confirmRemove === guest.id ? (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => removeGuest(guest.id)}
-                                    disabled={removingGuest === guest.id}
-                                    className="p-1.5 rounded-lg bg-accent-error/20 text-accent-error hover:bg-accent-error/30 transition-colors disabled:opacity-50"
-                                    title="Confirm remove"
-                                  >
-                                    {removingGuest === guest.id ? (
-                                      <InlineSpinner className="w-3 h-3" />
-                                    ) : (
-                                      <Check className="w-3 h-3" />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => setConfirmRemove(null)}
-                                    className="p-1.5 rounded-lg bg-raised text-secondary hover:bg-active transition-colors"
-                                    title="Cancel"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setConfirmRemove(guest.id)}
-                                  className="p-1.5 rounded-lg text-secondary hover:text-accent-error hover:bg-accent-error/10 transition-colors"
-                                  title="Remove guest"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-sm text-secondary">
-                      No guests added yet. Invite friends to join your party!
-                    </div>
-                  )}
+                  <div>
+                    <h2 className="text-sm font-semibold text-primary">Table Party</h2>
+                    <p className="text-xs text-secondary">
+                      {party.total_joined} of {party.party_size} spots filled
+                    </p>
+                  </div>
                 </div>
+                
+                {/* Host info */}
+                {party.host && (
+                  <div className="flex items-center justify-between py-2 px-3 mb-2 bg-accent-primary/5 rounded-lg border border-accent-primary/20">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-primary block truncate">{booking.guest_name}</span>
+                      <span className="text-xs text-accent-primary">Host</span>
+                    </div>
+                    <Badge color="purple" variant="outline" size="sm">
+                      Host
+                    </Badge>
+                  </div>
+                )}
+                
+                {/* Guest list */}
+                {party.guests.length > 0 ? (
+                  <div className="space-y-2">
+                    {party.guests.map((guest) => (
+                      <div
+                        key={guest.id}
+                        className="flex items-center justify-between py-2 px-3 bg-raised rounded-lg border border-border-subtle"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-primary block truncate">{guest.name || guest.email}</span>
+                          {guest.email && guest.name && (
+                            <span className="text-xs text-secondary truncate block">{guest.email}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 ml-2">
+                          <Badge
+                            color={guest.status === "joined" ? "green" : guest.status === "invited" ? "amber" : "slate"}
+                            variant="outline"
+                            size="sm"
+                          >
+                            {guest.status === "joined" ? "Confirmed" : guest.status}
+                          </Badge>
+                          
+                          {/* Remove button - only visible to host */}
+                          {data.isHost && (
+                            confirmRemove === guest.id ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => removeGuest(guest.id)}
+                                  disabled={removingGuest === guest.id}
+                                  className="p-1.5 rounded-lg bg-accent-error/20 text-accent-error hover:bg-accent-error/30 transition-colors disabled:opacity-50"
+                                  title="Confirm remove"
+                                >
+                                  {removingGuest === guest.id ? (
+                                    <InlineSpinner className="w-3 h-3" />
+                                  ) : (
+                                    <Check className="w-3 h-3" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setConfirmRemove(null)}
+                                  className="p-1.5 rounded-lg bg-raised text-secondary hover:bg-active transition-colors"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmRemove(guest.id)}
+                                className="p-1.5 rounded-lg text-secondary hover:text-accent-error hover:bg-accent-error/10 transition-colors"
+                                title="Remove guest"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !data.isHost ? (
+                  <div className="text-center py-4 text-sm text-secondary">
+                    No other guests have joined yet.
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-secondary">
+                    No guests added yet. Share the invite link above!
+                  </div>
+                )}
               </Card>
             )}
           </>
