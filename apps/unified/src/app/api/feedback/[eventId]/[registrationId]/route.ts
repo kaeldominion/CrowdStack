@@ -62,6 +62,8 @@ export async function GET(
         name,
         description,
         start_time,
+        flier_url,
+        cover_image_url,
         venue:venues(id, name)
       `)
       .eq("id", params.eventId)
@@ -91,6 +93,7 @@ export async function GET(
         name: event.name,
         description: event.description,
         start_time: event.start_time,
+        flier_url: event.flier_url || event.cover_image_url || null,
         venue: venue
           ? {
               id: venue.id,

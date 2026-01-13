@@ -10,6 +10,7 @@ interface Event {
   name: string;
   description?: string;
   start_time?: string;
+  flier_url?: string | null;
   venue?: {
     id: string;
     name: string;
@@ -228,12 +229,24 @@ export default function FeedbackPage() {
             )}
           </div>
 
+          {/* Event Flier */}
+          {event?.flier_url && step === "rating" && (
+            <div className="mb-6 flex justify-center">
+              <img
+                src={event.flier_url}
+                alt={event.name}
+                className="max-w-[200px] max-h-[200px] rounded-lg object-cover border border-border-subtle"
+              />
+            </div>
+          )}
+
           {/* Step 1: Star Rating */}
           {step === "rating" && (
             <div className="space-y-6">
-              <p className="text-center text-lg text-secondary mb-8">
-                Thanks for attending! How would you rate your experience?
-              </p>
+              <div className="text-center text-lg text-secondary mb-8">
+                <p>Thanks for attending!</p>
+                <p>How would you rate your experience?</p>
+              </div>
               <div className="flex justify-center gap-1 md:gap-2 mb-8">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
