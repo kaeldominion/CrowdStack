@@ -25,6 +25,7 @@ interface EventWithVenue {
   start_time: string;
   timezone: string | null;
   cover_image_url: string | null;
+  flier_url: string | null;
   venue: {
     id: string;
     name: string;
@@ -112,6 +113,7 @@ export async function GET(
           start_time,
           timezone,
           cover_image_url,
+          flier_url,
           venue:venues(id, name, address, city)
         )
       `)
@@ -133,15 +135,51 @@ export async function GET(
     const now = new Date();
     const isPastEvent = eventStartTime && eventStartTime < now;
 
-    // Check party capacity
+    // Get all guests with their details (including who has joined)
     const { data: allGuests } = await serviceSupabase
       .from("table_party_guests")
-      .select("id, status")
-      .eq("booking_id", guest.booking_id);
+      .select(`
+        id,
+        guest_name,
+        guest_email,
+        status,
+        is_host,
+        joined_at,
+        attendee:attendees(
+          id,
+          name,
+          surname,
+          instagram_handle
+        )
+      `)
+      .eq("booking_id", guest.booking_id)
+      .order("is_host", { ascending: false })
+      .order("joined_at", { ascending: true, nullsFirst: false });
 
-    const joinedCount = (allGuests || []).filter(g => g.status === "joined").length;
+    const joinedGuests = (allGuests || []).filter(g => g.status === "joined");
+    const joinedCount = joinedGuests.length;
     const isPartyFull = joinedCount >= booking.party_size;
     const spotsRemaining = Math.max(0, booking.party_size - joinedCount);
+    
+    // Build guest list for display (mask emails for privacy)
+    const guestList = joinedGuests.map(g => {
+      // Supabase returns nested relations as arrays when using select
+      const attendeeData = g.attendee as unknown;
+      const attendee = (Array.isArray(attendeeData) ? attendeeData[0] : attendeeData) as { id: string; name: string; surname?: string | null; instagram_handle?: string | null } | null;
+      return {
+        id: g.id,
+        name: attendee?.name || g.guest_name || "Guest",
+        initial: (attendee?.name || g.guest_name || "G").charAt(0).toUpperCase(),
+        is_host: g.is_host,
+        instagram: attendee?.instagram_handle || null,
+        joined_at: g.joined_at,
+      };
+    });
+    
+    // Find the host
+    const hostGuest = (allGuests || []).find(g => g.is_host);
+    const hostAttendeeData = hostGuest?.attendee as unknown;
+    const hostAttendee = (Array.isArray(hostAttendeeData) ? hostAttendeeData[0] : hostAttendeeData) as { name: string; surname?: string | null } | null;
 
     // Format event date
     const eventTimezone = event.timezone || "UTC";
@@ -162,7 +200,7 @@ export async function GET(
         })
       : "TBA";
 
-    // Build response with guest status info
+    // Build response with guest status info and guest list
     return NextResponse.json({
       guest: {
         id: guest.id,
@@ -172,6 +210,10 @@ export async function GET(
         is_host: guest.is_host,
         has_joined: guest.status === "joined",
         checked_in: guest.checked_in,
+      },
+      host: {
+        name: hostAttendee?.name || booking.guest_name,
+        initial: (hostAttendee?.name || booking.guest_name || "H").charAt(0).toUpperCase(),
       },
       booking: {
         id: booking.id,
@@ -183,6 +225,7 @@ export async function GET(
         table_name: booking.table?.name || "Table",
         zone_name: booking.table?.zone?.name || "General",
       },
+      guests: guestList,
       event: {
         id: event.id,
         name: event.name,
@@ -191,6 +234,7 @@ export async function GET(
         time: eventTime,
         start_time: event.start_time,
         cover_image: event.cover_image_url,
+        flier_url: event.flier_url,
         is_past: isPastEvent,
       },
       venue: {
