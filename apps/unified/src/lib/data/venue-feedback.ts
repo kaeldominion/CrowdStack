@@ -10,6 +10,7 @@ export interface FeedbackItem {
   categories: string[];
   free_text?: string | null;
   submitted_at: string;
+  attendee_id?: string | null;
   attendee_name?: string | null;
   event_id?: string;
   event_name?: string;
@@ -175,6 +176,7 @@ export async function getEventFeedback(
       categories,
       free_text: f.free_text,
       submitted_at: f.submitted_at,
+      attendee_id: f.attendee_id || null,
       attendee_name: attendee?.name || null,
       resolved_at: f.resolved_at || null,
       internal_notes: f.internal_notes || null,
@@ -327,6 +329,7 @@ export async function getVenueFeedbackStats(): Promise<VenueFeedbackStats | null
       categories,
       free_text: f.free_text,
       submitted_at: f.submitted_at,
+      attendee_id: f.attendee_id || null,
       attendee_name: attendee?.name || null,
       event_id: f.event_id,
       event_name: event?.name || null,

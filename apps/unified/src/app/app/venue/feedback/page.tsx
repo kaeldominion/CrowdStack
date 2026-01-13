@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent, Select } from "@crowdstack/ui";
-import { Star, MessageSquare, TrendingUp, AlertCircle, CheckCircle2, XCircle, Send } from "lucide-react";
+import { Card, Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent, Select, Modal } from "@crowdstack/ui";
+import { Star, MessageSquare, TrendingUp, AlertCircle, CheckCircle2, XCircle, Send, Mail, Phone, Calendar, User, History } from "lucide-react";
 import Link from "next/link";
 
 interface FeedbackItem {
@@ -13,6 +13,7 @@ interface FeedbackItem {
   categories: string[];
   free_text?: string | null;
   submitted_at: string;
+  attendee_id?: string | null;
   attendee_name?: string | null;
   event_id: string;
   event_name: string;
@@ -62,6 +63,9 @@ export default function VenueFeedbackPage() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingAttendees, setLoadingAttendees] = useState(false);
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
+  const [attendeeDetails, setAttendeeDetails] = useState<any>(null);
+  const [loadingAttendeeDetails, setLoadingAttendeeDetails] = useState(false);
   const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
@@ -173,6 +177,27 @@ export default function VenueFeedbackPage() {
       setSelectedRegistrationId("");
     }
   }, [selectedEventId]);
+
+  const loadAttendeeDetails = async (attendeeId: string) => {
+    setLoadingAttendeeDetails(true);
+    try {
+      const response = await fetch(`/api/venue/feedback/attendee/${attendeeId}`);
+      if (!response.ok) throw new Error("Failed to load attendee details");
+      const data = await response.json();
+      setAttendeeDetails(data);
+    } catch (error) {
+      console.error("Error loading attendee details:", error);
+      toastError("Failed to load attendee details", "Error");
+    } finally {
+      setLoadingAttendeeDetails(false);
+    }
+  };
+
+  const handleAttendeeClick = (attendeeId: string | null | undefined) => {
+    if (!attendeeId) return;
+    setSelectedAttendeeId(attendeeId);
+    loadAttendeeDetails(attendeeId);
+  };
 
   if (loading) {
     return (
@@ -446,22 +471,218 @@ export default function VenueFeedbackPage() {
                   key={item.id}
                   item={item}
                   onUpdate={loadFeedback}
+                  onAttendeeClick={handleAttendeeClick}
                 />
               ))}
             </div>
           )}
         </div>
       </Card>
+
+      {/* Attendee Detail Modal */}
+      <Modal
+        isOpen={!!selectedAttendeeId}
+        onClose={() => {
+          setSelectedAttendeeId(null);
+          setAttendeeDetails(null);
+        }}
+        title="Attendee Details"
+        size="lg"
+      >
+        {loadingAttendeeDetails ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="md" />
+          </div>
+        ) : attendeeDetails ? (
+          <div className="space-y-6">
+            {/* Contact Info */}
+            <div>
+              <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Contact Information
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-secondary mb-1">Name</p>
+                  <p className="text-sm font-medium text-primary">{attendeeDetails.attendee.full_name}</p>
+                </div>
+                {attendeeDetails.attendee.email && (
+                  <div>
+                    <p className="text-xs text-secondary mb-1 flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      Email
+                    </p>
+                    <a
+                      href={`mailto:${attendeeDetails.attendee.email}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {attendeeDetails.attendee.email}
+                    </a>
+                  </div>
+                )}
+                {attendeeDetails.attendee.whatsapp && (
+                  <div>
+                    <p className="text-xs text-secondary mb-1 flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      WhatsApp
+                    </p>
+                    <a
+                      href={`https://wa.me/${attendeeDetails.attendee.whatsapp.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      {attendeeDetails.attendee.whatsapp}
+                    </a>
+                  </div>
+                )}
+                {!attendeeDetails.attendee.email && !attendeeDetails.attendee.whatsapp && (
+                  <p className="text-sm text-secondary">No contact information available</p>
+                )}
+              </div>
+            </div>
+
+            {/* History Tabs */}
+            <div>
+              <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                <History className="h-5 w-5" />
+                History at This Venue
+              </h3>
+              <Tabs defaultValue="registrations">
+                <TabsList>
+                  <TabsTrigger value="registrations">
+                    Registrations ({attendeeDetails.registrations.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="feedback">
+                    Feedback ({attendeeDetails.feedback.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="checkins">
+                    Check-ins ({attendeeDetails.checkins.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="registrations">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {attendeeDetails.registrations.length === 0 ? (
+                      <p className="text-sm text-secondary text-center py-4">No registrations</p>
+                    ) : (
+                      attendeeDetails.registrations.map((reg: any) => (
+                        <div key={reg.id} className="p-3 border border-border-subtle rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-primary">{reg.event_name}</p>
+                              <p className="text-xs text-secondary">
+                                {reg.event_date ? new Date(reg.event_date).toLocaleDateString() : "Date TBD"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {reg.checked_in ? (
+                                <Badge variant="success" className="text-[10px]">Checked In</Badge>
+                              ) : (
+                                <Badge variant="default" className="text-[10px]">Not Checked In</Badge>
+                              )}
+                              <Link href={`/app/venue/events/${reg.event_id}`}>
+                                <Button variant="ghost" size="sm">View</Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="feedback">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {attendeeDetails.feedback.length === 0 ? (
+                      <p className="text-sm text-secondary text-center py-4">No feedback submitted</p>
+                    ) : (
+                      attendeeDetails.feedback.map((fb: any) => (
+                        <div key={fb.id} className="p-3 border border-border-subtle rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`h-3 w-3 ${
+                                        star <= fb.rating
+                                          ? "text-yellow-400 fill-yellow-400"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <Badge variant={fb.feedback_type === "positive" ? "success" : "warning"} className="text-[10px]">
+                                  {fb.feedback_type}
+                                </Badge>
+                                {fb.resolved_at && (
+                                  <Badge variant="success" className="text-[10px]">Resolved</Badge>
+                                )}
+                              </div>
+                              <p className="text-sm font-medium text-primary">{fb.event_name}</p>
+                              {fb.comment && (
+                                <p className="text-xs text-secondary mt-1">{fb.comment}</p>
+                              )}
+                              <p className="text-xs text-secondary mt-1">
+                                {new Date(fb.submitted_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Link href={`/app/venue/events/${fb.event_id}`}>
+                              <Button variant="ghost" size="sm">View</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="checkins">
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {attendeeDetails.checkins.length === 0 ? (
+                      <p className="text-sm text-secondary text-center py-4">No check-ins recorded</p>
+                    ) : (
+                      attendeeDetails.checkins.map((checkin: any) => (
+                        <div key={checkin.id} className="p-3 border border-border-subtle rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-primary">{checkin.event_name}</p>
+                              <p className="text-xs text-secondary">
+                                {new Date(checkin.checked_in_at).toLocaleString()}
+                              </p>
+                            </div>
+                            <Link href={`/app/venue/events/${checkin.event_id}`}>
+                              <Button variant="ghost" size="sm">View</Button>
+                            </Link>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-secondary">
+            <p>Failed to load attendee details</p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
 
 function FeedbackItemCard({ 
   item, 
-  onUpdate 
+  onUpdate,
+  onAttendeeClick
 }: { 
   item: FeedbackItem; 
   onUpdate: () => void;
+  onAttendeeClick: (attendeeId: string | null | undefined) => void;
 }) {
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(item.internal_notes || "");
@@ -551,9 +772,12 @@ function FeedbackItemCard({
               </Badge>
             )}
             {item.attendee_name && (
-              <span className="text-sm text-secondary">
-                from {item.attendee_name}
-              </span>
+              <button
+                onClick={() => onAttendeeClick(item.attendee_id)}
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                {item.attendee_name}
+              </button>
             )}
             <Link 
               href={`/app/venue/events/${item.event_id}`}
