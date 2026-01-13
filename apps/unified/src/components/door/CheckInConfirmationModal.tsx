@@ -230,50 +230,61 @@ export function CheckInConfirmationModal({
           {/* Feedback History */}
           {data.feedback_history.length > 0 && (
             <div className="border-t border-border-subtle pt-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-2">
                 <MessageSquare className="h-4 w-4 text-secondary" />
-                <h3 className="font-semibold text-primary">Recent Feedback</h3>
-                <Badge variant="default" className="text-xs">
+                <h3 className="font-semibold text-primary text-sm">Recent Feedback</h3>
+                <Badge variant="default" className="text-[10px]">
                   {data.feedback_history.length}
                 </Badge>
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
                 {data.feedback_history.map((feedback) => (
                   <div
                     key={feedback.id}
-                    className="p-3 rounded-lg border border-border-subtle bg-raised"
+                    className="flex items-center gap-2 p-2 rounded border border-border-subtle bg-raised text-xs"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-3 w-3 ${
-                              star <= feedback.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                        <Badge
-                          variant={feedback.feedback_type === "positive" ? "success" : "warning"}
-                          className="text-xs ml-2"
-                        >
-                          {feedback.feedback_type}
-                        </Badge>
-                      </div>
-                      <span className="text-xs text-secondary">
-                        {new Date(feedback.submitted_at).toLocaleDateString()}
-                      </span>
+                    {/* Stars */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-2.5 w-2.5 ${
+                            star <= feedback.rating
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
                     </div>
-                    <p className="text-xs font-medium text-primary mb-0.5">
+                    {/* Type Badge */}
+                    <Badge
+                      variant={feedback.feedback_type === "positive" ? "success" : "warning"}
+                      className="text-[9px] px-1.5 py-0 flex-shrink-0"
+                    >
+                      {feedback.feedback_type}
+                    </Badge>
+                    {/* Event Name */}
+                    <span className="font-medium text-primary truncate flex-1 min-w-0">
                       {feedback.event_name}
-                    </p>
-                    {feedback.comment && (
-                      <p className="text-xs text-secondary line-clamp-2">
+                    </span>
+                    {/* Comment (if short) */}
+                    {feedback.comment && feedback.comment.length < 40 && (
+                      <span className="text-secondary truncate max-w-[120px]">
                         "{feedback.comment}"
-                      </p>
+                      </span>
                     )}
+                    {/* Date */}
+                    <span className="text-[10px] text-secondary font-mono flex-shrink-0">
+                      {feedback.event_date
+                        ? new Date(feedback.event_date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : new Date(feedback.submitted_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                    </span>
                   </div>
                 ))}
               </div>
