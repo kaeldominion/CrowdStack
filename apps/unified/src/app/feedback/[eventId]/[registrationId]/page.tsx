@@ -214,7 +214,7 @@ export default function FeedbackPage() {
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-xl md:text-2xl font-bold mb-2 whitespace-nowrap">
               {step === "rating" && "How was your experience?"}
               {step === "positive" && "Glad you enjoyed it!"}
               {step === "negative" && "Thanks for being honest"}
