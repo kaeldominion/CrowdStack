@@ -159,30 +159,73 @@ function AuthCallbackContent() {
           : `; path=/; SameSite=Lax`;
         document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
 
-        // Determine redirect destination based on roles
+        // Determine redirect destination based on profiles (priority: venue > organizer > promoter > dj > attendee)
         const user = data.session.user;
         let targetPath = redirectParam || "/me";
 
-        if (user) {
+        if (user && !redirectParam) {
+          // First check for special roles (superadmin, door_staff)
           const { data: roles } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", user.id);
 
-          if (roles && roles.length > 0) {
-            const roleNames = roles.map((r: any) => r.role);
+          const roleNames = roles?.map((r: any) => r.role) || [];
 
-            if (roleNames.includes("superadmin")) {
-              targetPath = "/admin";
-            } else if (roleNames.includes("door_staff")) {
-              targetPath = "/door";
-            } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
-              // All B2B roles go to unified workspace
-              targetPath = "/app";
+          if (roleNames.includes("superadmin")) {
+            targetPath = "/admin";
+          } else if (roleNames.includes("door_staff")) {
+            targetPath = "/door";
+          } else {
+            // Check profiles in priority order: venue > organizer > promoter > dj
+            // 1. Check for venue profile
+            const { data: venueAccess } = await supabase
+              .from("venue_users")
+              .select("id")
+              .eq("user_id", user.id)
+              .limit(1);
+
+            if (venueAccess && venueAccess.length > 0) {
+              targetPath = "/app/venue";
+            } else {
+              // 2. Check for organizer profile
+              const { data: organizerAccess } = await supabase
+                .from("organizer_users")
+                .select("id")
+                .eq("user_id", user.id)
+                .limit(1);
+
+              if (organizerAccess && organizerAccess.length > 0) {
+                targetPath = "/app/organizer";
+              } else {
+                // 3. Check for promoter profile
+                const { data: promoterProfile } = await supabase
+                  .from("promoters")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .limit(1);
+
+                if (promoterProfile && promoterProfile.length > 0) {
+                  targetPath = "/app/promoter";
+                } else {
+                  // 4. Check for DJ profile
+                  const { data: djProfile } = await supabase
+                    .from("djs")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .limit(1);
+
+                  if (djProfile && djProfile.length > 0) {
+                    targetPath = "/app/dj";
+                  }
+                  // else: default to /me (attendee)
+                }
+              }
             }
           }
         }
 
+        // Override with redirect param if it's an app/admin/door path
         if (redirectParam && (redirectParam.startsWith("/app") || redirectParam.startsWith("/admin") || redirectParam.startsWith("/door"))) {
           targetPath = redirectParam;
         }

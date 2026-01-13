@@ -275,9 +275,102 @@ function LoginContent() {
         return;
       }
       
-      // Skip client-side roles check - let server middleware handle role-based redirects
-      // This avoids race conditions where the new Supabase client doesn't have the session yet
-      // The /me page will check roles and redirect B2B users appropriately
+      // Check user profiles for redirect (priority: venue > organizer > promoter > dj > attendee)
+      const supabase = createBrowserClient();
+      const user = session.user;
+      
+      if (user && !redirect) {
+        try {
+          // First check for special roles (superadmin, door_staff)
+          const { data: roles } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", user.id);
+
+          const roleNames = roles?.map((r: any) => r.role) || [];
+          
+          if (roleNames.includes("superadmin")) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting superadmin to /admin");
+            }
+            window.location.href = "/admin";
+            return;
+          } else if (roleNames.includes("door_staff")) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting door_staff to /door");
+            }
+            window.location.href = "/door";
+            return;
+          }
+          
+          // Check profiles in priority order: venue > organizer > promoter > dj
+          // 1. Check for venue profile
+          const { data: venueAccess } = await supabase
+            .from("venue_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (venueAccess && venueAccess.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting venue user to /app/venue");
+            }
+            window.location.href = "/app/venue";
+            return;
+          }
+          
+          // 2. Check for organizer profile
+          const { data: organizerAccess } = await supabase
+            .from("organizer_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (organizerAccess && organizerAccess.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting organizer user to /app/organizer");
+            }
+            window.location.href = "/app/organizer";
+            return;
+          }
+          
+          // 3. Check for promoter profile
+          const { data: promoterProfile } = await supabase
+            .from("promoters")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (promoterProfile && promoterProfile.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting promoter to /app/promoter");
+            }
+            window.location.href = "/app/promoter";
+            return;
+          }
+          
+          // 4. Check for DJ profile
+          const { data: djProfile } = await supabase
+            .from("djs")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (djProfile && djProfile.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting DJ to /app/dj");
+            }
+            window.location.href = "/app/dj";
+            return;
+          }
+        } catch (profileErr: any) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[Login] Error checking profiles:", profileErr.message);
+          }
+        }
+      }
+      
+      // Default: attendee goes to /me
       const finalRedirect = redirect || "/me";
       if (process.env.NODE_ENV === "development") {
         console.log("[Login] Redirecting to:", finalRedirect);
@@ -437,52 +530,110 @@ function LoginContent() {
         return;
       }
       
-      // Check user roles for automatic app redirect (B2B users)
+      // Check user profiles for automatic app redirect (priority: venue > organizer > promoter > dj > attendee)
       const user = data.user;
       if (user) {
         try {
+          // First check for special roles (superadmin, door_staff)
           const { data: roles, error: rolesError } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", user.id);
 
-          // If query fails, log but don't block login - user will go to default /me
           if (rolesError) {
             if (process.env.NODE_ENV === "development") {
               console.warn("[Login] Could not fetch user roles:", rolesError.message);
             }
-          } else if (roles && roles.length > 0) {
-            const roleNames = roles.map((r: any) => r.role);
-            
-            // B2B roles go to app
-            if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || 
-                roleNames.includes("promoter") || roleNames.includes("door_staff") ||
-                roleNames.includes("superadmin")) {
-              
-              // Determine target path based on role
-              let targetPath = "/admin";
-              if (roleNames.includes("superadmin")) {
-                targetPath = "/admin";
-              } else if (roleNames.includes("door_staff")) {
-                targetPath = "/door";
-              } else if (roleNames.includes("venue_admin") || roleNames.includes("event_organizer") || roleNames.includes("promoter")) {
-                // All B2B roles go to unified workspace
-                targetPath = "/app";
-              }
-              
-              if (process.env.NODE_ENV === "development") {
-                console.log("[Login] Redirecting B2B user to:", targetPath);
-              }
-              // Small delay to ensure cookies are fully set before redirect
-              await new Promise(resolve => setTimeout(resolve, 300));
-              window.location.href = targetPath;
-              return;
-            }
           }
-        } catch (rolesErr: any) {
-          // If roles check fails, continue to default redirect (/me)
+          
+          const roleNames = roles?.map((r: any) => r.role) || [];
+          
+          if (roleNames.includes("superadmin")) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting superadmin to /admin");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/admin";
+            return;
+          } else if (roleNames.includes("door_staff")) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting door_staff to /door");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/door";
+            return;
+          }
+          
+          // Check profiles in priority order: venue > organizer > promoter > dj
+          // 1. Check for venue profile
+          const { data: venueAccess } = await supabase
+            .from("venue_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (venueAccess && venueAccess.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting venue user to /app/venue");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/app/venue";
+            return;
+          }
+          
+          // 2. Check for organizer profile
+          const { data: organizerAccess } = await supabase
+            .from("organizer_users")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (organizerAccess && organizerAccess.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting organizer user to /app/organizer");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/app/organizer";
+            return;
+          }
+          
+          // 3. Check for promoter profile
+          const { data: promoterProfile } = await supabase
+            .from("promoters")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (promoterProfile && promoterProfile.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting promoter to /app/promoter");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/app/promoter";
+            return;
+          }
+          
+          // 4. Check for DJ profile
+          const { data: djProfile } = await supabase
+            .from("djs")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (djProfile && djProfile.length > 0) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Login] Redirecting DJ to /app/dj");
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+            window.location.href = "/app/dj";
+            return;
+          }
+          
+          // Default: attendee goes to /me (handled by final redirect below)
+        } catch (profileErr: any) {
+          // If profile check fails, continue to default redirect (/me)
           if (process.env.NODE_ENV === "development") {
-            console.warn("[Login] Error checking user roles, redirecting to default:", rolesErr.message);
+            console.warn("[Login] Error checking user profiles, redirecting to default:", profileErr.message);
           }
         }
       }

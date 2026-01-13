@@ -75,31 +75,69 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Get user and check role
+  // Get user and check profiles (priority: venue > organizer > promoter > dj > attendee)
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Check if user has B2B roles
   let targetPath = "/me";
   
   if (user) {
+    // First check for special roles (superadmin, door_staff)
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id);
 
-    if (roles && roles.length > 0) {
-      const roleNames = roles.map((r: any) => r.role);
-      
-      if (roleNames.includes("superadmin")) {
-        targetPath = "/admin";
-      } else if (roleNames.includes("venue_admin")) {
+    const roleNames = roles?.map((r: any) => r.role) || [];
+    
+    if (roleNames.includes("superadmin")) {
+      targetPath = "/admin";
+    } else if (roleNames.includes("door_staff")) {
+      targetPath = "/door";
+    } else {
+      // Check profiles in priority order: venue > organizer > promoter > dj
+      // 1. Check for venue profile
+      const { data: venueAccess } = await supabase
+        .from("venue_users")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+
+      if (venueAccess && venueAccess.length > 0) {
         targetPath = "/app/venue";
-      } else if (roleNames.includes("event_organizer")) {
-        targetPath = "/app/organizer";
-      } else if (roleNames.includes("promoter")) {
-        targetPath = "/app/promoter";
-      } else if (roleNames.includes("door_staff")) {
-        targetPath = "/door";
+      } else {
+        // 2. Check for organizer profile
+        const { data: organizerAccess } = await supabase
+          .from("organizer_users")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (organizerAccess && organizerAccess.length > 0) {
+          targetPath = "/app/organizer";
+        } else {
+          // 3. Check for promoter profile
+          const { data: promoterProfile } = await supabase
+            .from("promoters")
+            .select("id")
+            .eq("user_id", user.id)
+            .limit(1);
+
+          if (promoterProfile && promoterProfile.length > 0) {
+            targetPath = "/app/promoter";
+          } else {
+            // 4. Check for DJ profile
+            const { data: djProfile } = await supabase
+              .from("djs")
+              .select("id")
+              .eq("user_id", user.id)
+              .limit(1);
+
+            if (djProfile && djProfile.length > 0) {
+              targetPath = "/app/dj";
+            }
+            // else: default to /me (attendee)
+          }
+        }
       }
     }
   }
