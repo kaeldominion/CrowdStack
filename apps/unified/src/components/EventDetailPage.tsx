@@ -605,7 +605,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         webUrl = origin;
       }
     }
-    return `${webUrl}/e/${event.slug}/register?ref=${refCode}`;
+    // Link to event public page (not directly to registration)
+    // The ref param will be preserved when users click Register on the event page
+    return `${webUrl}/e/${event.slug}?ref=${refCode}`;
   };
 
   // Generate QR code URL (deprecated - using BeautifiedQRCode component instead)
