@@ -10,11 +10,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { LoadingSpinner, Badge } from "@crowdstack/ui";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
-import { RegistrationSuccess } from "@/components/RegistrationSuccess";
-import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper } from "lucide-react";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
+import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper, ArrowRight } from "lucide-react";
 
 interface PartyData {
   is_open_invite: boolean; // If true, anyone with the link can join
@@ -77,8 +78,11 @@ export default function JoinTablePage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showSignup, setShowSignup] = useState(false);
+  const [readyToJoin, setReadyToJoin] = useState(false); // User is logged in with profile, ready to join
+  const [joiningParty, setJoiningParty] = useState(false); // Loading state for join action
   const [success, setSuccess] = useState(false);
   const [guestId, setGuestId] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null); // For link to booking page
   const [qrToken, setQrToken] = useState<string>("");
   const [error, setError] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -135,7 +139,7 @@ export default function JoinTablePage() {
             .maybeSingle();
 
           if (attendee) {
-            // Profile exists - try to auto-join
+            // Profile exists - check if already joined this party
             setExistingProfile({
               name: attendee.name,
               surname: attendee.surname,
@@ -145,24 +149,43 @@ export default function JoinTablePage() {
               instagram_handle: attendee.instagram_handle,
             });
 
-            // Try to join this party
-            const joinCheck = await fetch(`/api/table-party/join/${inviteToken}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({}),
-            });
-
-            if (joinCheck.ok) {
-              const joinData = await joinCheck.json();
-              setSuccess(true);
-              setGuestId(joinData.guest_id);
-              setQrToken(joinData.qr_token || "");
-            } else {
-              const joinError = await joinCheck.json();
-              // If error is about email mismatch, show it
-              if (joinError.error) {
-                setError(joinError.error);
+            // Check if user has already joined this party (check guest status)
+            // The partyData.guest will tell us if this specific invite token is joined
+            // But for open invites, we need to check if user already has a guest entry
+            const partyDataResponse = await fetch(`/api/table-party/join/${inviteToken}`);
+            if (partyDataResponse.ok) {
+              const freshPartyData = await partyDataResponse.json();
+              setPartyData(freshPartyData);
+              
+              // Check if THIS user already joined (by checking if any guest matches their email)
+              const userAlreadyJoined = freshPartyData.guests?.some(
+                (g: { name: string }) => g.name === attendee.name
+              ) || freshPartyData.guest?.has_joined;
+              
+              if (userAlreadyJoined && freshPartyData.guest?.has_joined) {
+                // Already joined - show success with their QR
+                // Need to get their QR token - do a POST which will return already_joined
+                const joinCheck = await fetch(`/api/table-party/join/${inviteToken}`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({}),
+                });
+                if (joinCheck.ok) {
+                  const joinData = await joinCheck.json();
+                  if (joinData.already_joined) {
+                    setSuccess(true);
+                    setGuestId(joinData.guest_id);
+                    setBookingId(freshPartyData.booking?.id || null);
+                    setQrToken(joinData.qr_token || "");
+                  }
+                }
+              } else {
+                // Not joined yet - show table details with Join button
+                setReadyToJoin(true);
               }
+            } else {
+              // Couldn't fetch party data, show join button anyway
+              setReadyToJoin(true);
             }
           } else {
             // No profile - show signup form
@@ -225,6 +248,37 @@ export default function JoinTablePage() {
     }
   };
 
+  // Handle joining the party when user clicks "Join Table" button
+  const handleJoinParty = async () => {
+    setJoiningParty(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/table-party/join/${inviteToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to join party");
+      }
+
+      setSuccess(true);
+      setGuestId(result.guest_id);
+      setBookingId(partyData?.booking?.id || null);
+      setQrToken(result.qr_token || "");
+      setReadyToJoin(false);
+    } catch (err: any) {
+      console.error("Error joining party:", err);
+      setError(err.message || "Failed to join party");
+    } finally {
+      setJoiningParty(false);
+    }
+  };
+
   const handleSignupSubmit = async (signupData: SignupData) => {
     setLoading(true);
     setError("");
@@ -246,6 +300,7 @@ export default function JoinTablePage() {
 
       setSuccess(true);
       setGuestId(result.guest_id);
+      setBookingId(partyData?.booking?.id || null);
       setQrToken(result.qr_token || "");
       setShowSignup(false);
     } catch (err: any) {
@@ -289,22 +344,145 @@ export default function JoinTablePage() {
     );
   }
 
-  // Success state - show QR pass
+  // Success state - show table party confirmation with QR and link to manage
   if (success && guestId && partyData) {
+    const imageUrl = partyData.event.flier_url || partyData.event.cover_image;
+    
     return (
-      <RegistrationSuccess
-        eventName={partyData.event.name}
-        eventSlug={partyData.event.slug}
-        venueName={partyData.venue.name || null}
-        venueSlug={null}
-        startTime={partyData.event.start_time || null}
-        endTime={null}
-        qrToken={qrToken}
-        flierUrl={partyData.event.flier_url || partyData.event.cover_image || null}
-        venueAddress={partyData.venue.address || null}
-        showPhotoEmailNotice={false}
-        tablePartyGuestId={guestId}
-      />
+      <div className="min-h-screen bg-void">
+        {/* Hero Section */}
+        <div className="relative">
+          {imageUrl ? (
+            <div className="relative h-48 sm:h-64 w-full overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt={partyData.event.name}
+                fill
+                className="object-cover object-top"
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-transparent" />
+            </div>
+          ) : (
+            <div className="h-24 sm:h-32 bg-gradient-to-b from-accent-success/20 to-void" />
+          )}
+          
+          {/* Success Badge */}
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
+            <div className="flex items-center gap-2 px-4 py-2 bg-accent-success rounded-full shadow-lg">
+              <Check className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold text-sm">You&apos;re on the list!</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-lg mx-auto px-4 pt-12 pb-8">
+          {/* Event Name */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary text-center mb-2">
+            {partyData.event.name}
+          </h1>
+          
+          <p className="text-secondary text-center mb-6">
+            You&apos;ve joined {partyData.host.name}&apos;s table party
+          </p>
+
+          {/* Table Details Card */}
+          <div className="glass-panel p-4 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20">
+                <Users className="w-6 h-6 text-accent-primary" />
+              </div>
+              <div>
+                <p className="text-primary font-semibold text-lg">{partyData.booking.table_name}</p>
+                {partyData.booking.zone_name !== "General" && (
+                  <p className="text-secondary text-sm">{partyData.booking.zone_name}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="label-mono text-xs mb-1">EVENT DATE</p>
+                <p className="text-primary">{partyData.event.date}</p>
+              </div>
+              <div>
+                <p className="label-mono text-xs mb-1">TIME</p>
+                <p className="text-primary">{partyData.event.time}</p>
+              </div>
+              <div>
+                <p className="label-mono text-xs mb-1">VENUE</p>
+                <p className="text-primary">{partyData.venue.name}</p>
+              </div>
+              <div>
+                <p className="label-mono text-xs mb-1">PARTY SIZE</p>
+                <p className="text-primary">{partyData.booking.joined_count + 1}/{partyData.booking.party_size} guests</p>
+              </div>
+            </div>
+          </div>
+
+          {/* QR Code */}
+          {qrToken && (
+            <div className="glass-panel p-6 mb-6">
+              <p className="label-mono text-xs text-center mb-4">YOUR ENTRY PASS</p>
+              <div className="flex justify-center mb-4 p-4 bg-white rounded-xl">
+                <BeautifiedQRCode url={`${window.location.origin}/e/${partyData.event.slug}/pass?token=${qrToken}`} size={200} />
+              </div>
+              <p className="text-secondary text-xs text-center">
+                Show this QR code at the door for entry
+              </p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="space-y-3">
+            {bookingId && (
+              <Link
+                href={`/booking/${bookingId}`}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-accent-primary text-white rounded-xl font-semibold hover:bg-accent-primary/90 transition-colors"
+              >
+                <Users className="w-5 h-5" />
+                View Table & Friends
+              </Link>
+            )}
+            
+            <Link
+              href={`/e/${partyData.event.slug}`}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-raised text-primary rounded-xl font-medium border border-border-subtle hover:border-border-strong transition-colors"
+            >
+              View Event Details
+            </Link>
+          </div>
+
+          {/* Who's Coming */}
+          {partyData.guests.length > 0 && (
+            <div className="mt-6 glass-panel p-4">
+              <p className="label-mono text-xs mb-3">WHO&apos;S COMING</p>
+              <div className="flex flex-wrap gap-2">
+                {partyData.guests.map((guest) => (
+                  <div
+                    key={guest.id}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+                      guest.is_host
+                        ? "bg-accent-primary/10 border border-accent-primary/30 text-accent-primary"
+                        : "bg-raised border border-border-subtle text-primary"
+                    }`}
+                  >
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                      guest.is_host
+                        ? "bg-accent-primary text-white"
+                        : "bg-raised text-secondary border border-border-subtle"
+                    }`}>
+                      {guest.is_host ? <Crown className="w-3 h-3" /> : guest.initial}
+                    </div>
+                    <span>{guest.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 
@@ -505,8 +683,36 @@ export default function JoinTablePage() {
                   </div>
                 )}
 
-                {/* Magic Link Sent Success */}
-                {magicLinkSent ? (
+                {/* Ready to Join - User is logged in with profile */}
+                {readyToJoin ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-accent-success/10 border border-accent-success/30">
+                      <Check className="w-5 h-5 text-accent-success flex-shrink-0" />
+                      <div>
+                        <p className="text-primary text-sm font-medium">You&apos;re signed in as {userEmail}</p>
+                        <p className="text-secondary text-xs">Ready to join the party!</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleJoinParty}
+                      disabled={joiningParty}
+                      className="w-full px-4 py-3 bg-accent-primary text-white rounded-xl font-semibold hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {joiningParty ? (
+                        <>
+                          <LoadingSpinner className="w-4 h-4" />
+                          Joining...
+                        </>
+                      ) : (
+                        <>
+                          <PartyPopper className="w-5 h-5" />
+                          Join This Table
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : magicLinkSent ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-accent-success/20 flex items-center justify-center">
                       <Check className="w-6 h-6 text-accent-success" />
