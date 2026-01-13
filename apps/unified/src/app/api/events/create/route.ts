@@ -223,7 +223,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate max_guestlist_size when guestlist is enabled
-    const maxGuestlistSize = body.max_guestlist_size ? parseInt(body.max_guestlist_size) : null;
+    const maxGuestlistSize = body.max_guestlist_size 
+      ? (typeof body.max_guestlist_size === 'number' 
+          ? body.max_guestlist_size 
+          : parseInt(String(body.max_guestlist_size)))
+      : null;
     if (body.has_guestlist !== false && !maxGuestlistSize) {
       return NextResponse.json(
         { error: "Max guestlist size is required when guestlist registration is enabled" },
