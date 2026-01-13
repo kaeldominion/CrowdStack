@@ -593,46 +593,68 @@ export default function VenueFeedbackPage() {
                 </TabsContent>
 
                 <TabsContent value="feedback">
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
                     {attendeeDetails.feedback.length === 0 ? (
                       <p className="text-sm text-secondary text-center py-4">No feedback submitted</p>
                     ) : (
                       attendeeDetails.feedback.map((fb: any) => (
-                        <div key={fb.id} className="p-3 border border-border-subtle rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="flex items-center gap-1">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                      key={star}
-                                      className={`h-3 w-3 ${
-                                        star <= fb.rating
-                                          ? "text-yellow-400 fill-yellow-400"
-                                          : "text-gray-300"
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                                <Badge variant={fb.feedback_type === "positive" ? "success" : "warning"} className="text-[10px]">
-                                  {fb.feedback_type}
-                                </Badge>
-                                {fb.resolved_at && (
-                                  <Badge variant="success" className="text-[10px]">Resolved</Badge>
-                                )}
-                              </div>
-                              <p className="text-sm font-medium text-primary">{fb.event_name}</p>
-                              {fb.comment && (
-                                <p className="text-xs text-secondary mt-1">{fb.comment}</p>
-                              )}
-                              <p className="text-xs text-secondary mt-1">
-                                {new Date(fb.submitted_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <Link href={`/app/venue/events/${fb.event_id}`}>
-                              <Button variant="ghost" size="sm">View</Button>
-                            </Link>
+                        <div key={fb.id} className="flex items-center gap-2 p-2 rounded border border-border-subtle bg-raised text-xs">
+                          {/* Stars */}
+                          <div className="flex items-center gap-0.5 flex-shrink-0">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-2.5 w-2.5 ${
+                                  star <= fb.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
                           </div>
+                          {/* Type Badge */}
+                          <Badge
+                            variant={fb.feedback_type === "positive" ? "success" : "warning"}
+                            className="text-[9px] px-1.5 py-0 flex-shrink-0"
+                          >
+                            {fb.feedback_type}
+                          </Badge>
+                          {/* Resolved Badge */}
+                          {fb.resolved_at && (
+                            <Badge variant="success" className="text-[9px] px-1.5 py-0 flex-shrink-0">
+                              Resolved
+                            </Badge>
+                          )}
+                          {/* Event Name */}
+                          <span className="font-medium text-primary truncate flex-1 min-w-0">
+                            {fb.event_name}
+                          </span>
+                          {/* Comment (if short) */}
+                          {fb.comment && fb.comment.length < 40 && (
+                            <span className="text-secondary truncate max-w-[120px]">
+                              "{fb.comment}"
+                            </span>
+                          )}
+                          {/* Date */}
+                          <span className="text-[10px] text-secondary font-mono flex-shrink-0">
+                            {fb.event_date
+                              ? new Date(fb.event_date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })
+                              : new Date(fb.submitted_at).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                          </span>
+                          {/* View Button */}
+                          {fb.event_id && (
+                            <Link href={`/app/venue/events/${fb.event_id}`}>
+                              <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2 flex-shrink-0">
+                                View
+                              </Button>
+                            </Link>
+                          )}
                         </div>
                       ))
                     )}
