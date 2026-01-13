@@ -86,22 +86,85 @@ export function LoadingSpinner({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.15 }}
     >
-      {/* Animated tricolor logo - theme-aware using PNG images */}
+      {/* Animated tricolor logo - SVG with pulsing chevrons */}
       <div className="relative" style={{ width: iconSize, height: iconSize }}>
-        {/* Light mode: inverted tricolor icon */}
-        <motion.div
-          className="dark:hidden"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          style={{ width: iconSize, height: iconSize }}
-        >
-          <img 
-            src="/logos/crowdstack-icon-tricolor-inverted-on-transparent.png" 
-            alt="CrowdStack" 
+        {/* Light mode: SVG with black top chevron */}
+        <div className="dark:hidden" style={{ width: iconSize, height: iconSize }}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
             style={{ width: iconSize, height: iconSize }}
-            className="object-contain"
-          />
-        </motion.div>
+          >
+            <defs>
+              <linearGradient id="loadingPurpleGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#A855F7"/>
+                <stop offset="100%" stopColor="#C084FC"/>
+              </linearGradient>
+              <linearGradient id="loadingBlueGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3B82F6"/>
+                <stop offset="100%" stopColor="#60A5FA"/>
+              </linearGradient>
+            </defs>
+            
+            {/* Top layer (black) - pulsing */}
+            <motion.path
+              d="M12 2L2 7L12 12L22 7L12 2Z"
+              fill="none"
+              stroke="#000000"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              animate={{
+                opacity: [0.6, 1, 0.6],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0,
+              }}
+            />
+            
+            {/* Middle layer (purple) - pulsing */}
+            <motion.path
+              d="M2 12L12 17L22 12"
+              stroke="url(#loadingPurpleGradientLight)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              animate={{
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.15,
+              }}
+            />
+            
+            {/* Bottom layer (blue) - pulsing with delay */}
+            <motion.path
+              d="M2 17L12 22L22 17"
+              stroke="url(#loadingBlueGradientLight)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              animate={{
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.3,
+              }}
+            />
+          </svg>
+        </div>
         {/* Dark mode: SVG animated tricolor logo */}
         <div className="hidden dark:block" style={{ width: iconSize, height: iconSize }}>
           <svg
