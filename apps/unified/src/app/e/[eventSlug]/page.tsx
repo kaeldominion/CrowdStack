@@ -30,9 +30,6 @@ function getBaseUrl() {
 }
 
 // Fetch event data - uses ISR with revalidate setting at page level
-// PERFORMANCE OPTIMIZATION (Jan 2024):
-// - Merged venue_tags into main query to eliminate separate database call
-// - Run registration count and recent attendees queries in parallel
 async function getEvent(slug: string) {
   try {
     const supabase = createServiceRoleClient();
@@ -64,36 +61,45 @@ async function getEvent(slug: string) {
       return null;
     }
 
-    // PERFORMANCE: Run registration count and recent attendees queries in parallel
-    const [registrationResult, recentAttendeesResult] = await Promise.all([
-      // Get registration count
-      supabase
-        .from("registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("event_id", event.id),
-      // Get recent attendees with profile pics (limit 5)
-      supabase
-        .from("registrations")
-        .select(`
-          id,
-          attendee:attendees(
-            id,
-            name,
-            profile_picture_url
-          )
-        `)
-        .eq("event_id", event.id)
-        .order("created_at", { ascending: false })
-        .limit(5),
-    ]);
+    // Fetch venue tags separately if venue exists
+    let venueTags: { tag_type: string; tag_value: string }[] = [];
+    if (event.venue?.id) {
+      const { data: tags } = await supabase
+        .from("venue_tags")
+        .select("tag_type, tag_value")
+        .eq("venue_id", event.venue.id);
+      venueTags = tags || [];
+    }
 
-    const registrationCount = registrationResult.count;
-    const recentAttendees = recentAttendeesResult.data;
+    // Get registration count
+    const { count: registrationCount } = await supabase
+      .from("registrations")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", event.id);
+
+    // Get recent attendees with profile pics (limit 5)
+    const { data: recentAttendees } = await supabase
+      .from("registrations")
+      .select(`
+        id,
+        attendee:attendees(
+          id,
+          name,
+          profile_picture_url
+        )
+      `)
+      .eq("event_id", event.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
     return {
       ...event,
       registration_count: registrationCount || 0,
       recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
+      venue: event.venue ? {
+        ...event.venue,
+        venue_tags: venueTags,
+      } : null,
     };
   } catch (error) {
     console.error("Failed to fetch event:", error);
