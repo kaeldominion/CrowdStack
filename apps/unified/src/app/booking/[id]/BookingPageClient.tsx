@@ -18,7 +18,9 @@ import {
   Copy,
   UserPlus,
   RefreshCw,
+  Share2,
 } from "lucide-react";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 export interface BookingData {
   booking: {
@@ -398,7 +400,15 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
 
                 {party.invite_url ? (
                   <div className="mb-4">
-                    <p className="text-xs text-muted uppercase tracking-wide mb-2">Share this link</p>
+                    {/* QR Code for easy scanning */}
+                    <div className="flex justify-center mb-4 p-4 bg-white rounded-xl">
+                      <BeautifiedQRCode url={party.invite_url} size={180} />
+                    </div>
+                    
+                    <p className="text-xs text-muted uppercase tracking-wide mb-2 flex items-center gap-2">
+                      <Share2 className="h-3 w-3" />
+                      Share this link
+                    </p>
                     <div className="flex gap-2">
                       <div className="flex-1 bg-raised rounded-lg px-3 py-2.5 text-sm text-secondary truncate border border-border-subtle font-mono">
                         {party.invite_url}
@@ -415,6 +425,9 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
                         )}
                       </Button>
                     </div>
+                    <p className="text-xs text-secondary mt-2 text-center">
+                      Friends can scan this QR code or use the link to join your table
+                    </p>
                   </div>
                 ) : (
                   <div className="p-4 rounded-lg bg-raised border border-border-subtle">

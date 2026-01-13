@@ -202,6 +202,9 @@ export async function GET(
 
     // Build response with guest status info and guest list
     return NextResponse.json({
+      // If this is the host's invite token, anyone can join (open invite)
+      // If this is a specific guest's token, only that email can join
+      is_open_invite: guest.is_host,
       guest: {
         id: guest.id,
         name: guest.guest_name,
@@ -277,48 +280,28 @@ export async function POST(
     const body: JoinPartyRequest = await request.json().catch(() => ({}));
     const serviceSupabase = createServiceRoleClient();
 
-    // Find the guest by invite token
-    const { data: guest, error: guestError } = await serviceSupabase
+    // Find the guest/invite by token
+    const { data: inviteGuest, error: guestError } = await serviceSupabase
       .from("table_party_guests")
       .select("*")
       .eq("invite_token", inviteToken)
       .single();
 
-    if (guestError || !guest) {
+    if (guestError || !inviteGuest) {
       return NextResponse.json(
         { error: "Invalid or expired invitation" },
         { status: 404 }
       );
     }
 
-    // VERIFY EMAIL MATCHES INVITATION
-    if (user.email.toLowerCase() !== guest.guest_email.toLowerCase()) {
-      return NextResponse.json(
-        { error: "This invitation was sent to a different email address. Please use the email that received the invitation." },
-        { status: 403 }
-      );
-    }
+    const bookingId = inviteGuest.booking_id;
+    const isHostInvite = inviteGuest.is_host;
 
-    // Check if invite is still valid
-    if (guest.status === "removed") {
-      return NextResponse.json(
-        { error: "This invitation has been revoked" },
-        { status: 400 }
-      );
-    }
-
-    if (guest.status === "declined") {
-      return NextResponse.json(
-        { error: "This invitation was declined" },
-        { status: 400 }
-      );
-    }
-
-    // Get booking to check event_id (needed for registration lookup)
+    // Get booking to check event_id and party details
     const { data: bookingForEvent, error: bookingForEventError } = await serviceSupabase
       .from("table_bookings")
-      .select("event_id")
-      .eq("id", guest.booking_id)
+      .select("event_id, party_size")
+      .eq("id", bookingId)
       .single();
 
     if (bookingForEventError || !bookingForEvent) {
@@ -328,42 +311,101 @@ export async function POST(
       );
     }
 
-    // If already joined, return success
-    if (guest.status === "joined" && guest.attendee_id) {
-      // Get registration to return QR token
-      const { data: registration } = await serviceSupabase
-        .from("registrations")
-        .select("id, event_id, attendee_id")
-        .eq("attendee_id", guest.attendee_id)
-        .eq("event_id", bookingForEvent.event_id)
-        .single();
+    // Check if THIS USER has already joined this party (by email or attendee)
+    const { data: existingGuestForUser } = await serviceSupabase
+      .from("table_party_guests")
+      .select("*")
+      .eq("booking_id", bookingId)
+      .or(`guest_email.ilike.${user.email}`)
+      .single();
 
-      let qrToken = null;
-      if (registration) {
-        qrToken = generateQRPassToken(
-          registration.id,
-          registration.event_id,
-          registration.attendee_id
+    // Also check by attendee_id if user has an attendee record
+    const { data: userAttendee } = await serviceSupabase
+      .from("attendees")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    let existingGuest = existingGuestForUser;
+    if (!existingGuest && userAttendee) {
+      const { data: guestByAttendee } = await serviceSupabase
+        .from("table_party_guests")
+        .select("*")
+        .eq("booking_id", bookingId)
+        .eq("attendee_id", userAttendee.id)
+        .single();
+      existingGuest = guestByAttendee;
+    }
+
+    // If user already has a guest entry for this party
+    if (existingGuest) {
+      if (existingGuest.status === "joined" && existingGuest.attendee_id) {
+        // Already joined - return their QR
+        const { data: registration } = await serviceSupabase
+          .from("registrations")
+          .select("id, event_id, attendee_id")
+          .eq("attendee_id", existingGuest.attendee_id)
+          .eq("event_id", bookingForEvent.event_id)
+          .single();
+
+        let qrToken = null;
+        if (registration) {
+          qrToken = generateQRPassToken(
+            registration.id,
+            registration.event_id,
+            registration.attendee_id
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          already_joined: true,
+          guest_id: existingGuest.id,
+          qr_token: qrToken,
+          message: "You've already joined this party",
+        });
+      }
+
+      if (existingGuest.status === "removed") {
+        return NextResponse.json(
+          { error: "Your invitation has been revoked" },
+          { status: 400 }
         );
       }
 
-      return NextResponse.json({
-        success: true,
-        already_joined: true,
-        guest_id: guest.id,
-        qr_token: qrToken,
-        message: "You've already joined this party",
-      });
+      if (existingGuest.status === "declined") {
+        return NextResponse.json(
+          { error: "You previously declined this invitation" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // For non-host invites, verify the email matches (specific person invite)
+    // For host invites, anyone with the link can join
+    let guest = existingGuest;
+    if (!isHostInvite && !existingGuest) {
+      // This is a specific person's invite token - verify email
+      if (user.email.toLowerCase() !== inviteGuest.guest_email.toLowerCase()) {
+        return NextResponse.json(
+          { error: "This invitation was sent to a different email address. Please use the email that received the invitation." },
+          { status: 403 }
+        );
+      }
+      guest = inviteGuest;
+    } else if (!existingGuest) {
+      // Host invite - user doesn't have an entry yet, will create one below
+      guest = null;
     }
 
     // Check if party is full before allowing join
     const { data: partyGuests } = await serviceSupabase
       .from("table_party_guests")
       .select("id, status")
-      .eq("booking_id", guest.booking_id)
+      .eq("booking_id", bookingId)
       .in("status", ["joined"]);
 
-    // Get booking to check party_size and get event details
+    // Get booking with full details
     const { data: bookingData, error: bookingError } = await serviceSupabase
       .from("table_bookings")
       .select(`
@@ -371,6 +413,7 @@ export async function POST(
         event_id,
         party_size,
         guest_name,
+        guest_email,
         table:venue_tables(id, name),
         event:events(
           id,
@@ -380,7 +423,7 @@ export async function POST(
           venue:venues(id, name)
         )
       `)
-      .eq("id", guest.booking_id)
+      .eq("id", bookingId)
       .single();
 
     if (bookingError || !bookingData) {
@@ -402,6 +445,31 @@ export async function POST(
 
     const booking = bookingData as unknown as BookingWithTable;
     const event = booking.event as EventWithVenue;
+
+    // If no guest entry exists (new user joining via host invite), create one
+    if (!guest) {
+      const { data: newGuest, error: newGuestError } = await serviceSupabase
+        .from("table_party_guests")
+        .insert({
+          booking_id: bookingId,
+          guest_name: body.name || user.email.split("@")[0],
+          guest_email: user.email.toLowerCase(),
+          guest_phone: body.whatsapp || body.phone || null,
+          is_host: false,
+          status: "invited", // Will be updated to "joined" below
+        })
+        .select()
+        .single();
+
+      if (newGuestError) {
+        console.error("Error creating guest entry:", newGuestError);
+        return NextResponse.json(
+          { error: "Failed to create guest entry" },
+          { status: 500 }
+        );
+      }
+      guest = newGuest;
+    }
 
     // Get or create attendee (same logic as event registration)
     let attendee;

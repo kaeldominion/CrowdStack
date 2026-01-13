@@ -17,6 +17,7 @@ import { RegistrationSuccess } from "@/components/RegistrationSuccess";
 import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper } from "lucide-react";
 
 interface PartyData {
+  is_open_invite: boolean; // If true, anyone with the link can join
   guest: {
     id: string;
     name: string;
@@ -109,8 +110,10 @@ export default function JoinTablePage() {
         if (partyResponse?.ok) {
           const data = await partyResponse.json();
           setPartyData(data);
-          // Pre-fill email input with invited email
-          setEmailInput(data.guest.email || "");
+          // Pre-fill email input with invited email (only for specific invites, not open invites)
+          if (!data.is_open_invite && data.guest.email) {
+            setEmailInput(data.guest.email);
+          }
         } else if (partyResponse) {
           const errorData = await partyResponse.json();
           setError(errorData.error || "Failed to load invitation");
@@ -189,8 +192,8 @@ export default function JoinTablePage() {
       return;
     }
 
-    // Verify email matches invitation
-    if (partyData && email.toLowerCase() !== partyData.guest.email.toLowerCase()) {
+    // For specific guest invites (not open invites), verify email matches
+    if (partyData && !partyData.is_open_invite && email.toLowerCase() !== partyData.guest.email.toLowerCase()) {
       setError("This invitation was sent to a different email address. Please use the email that received the invitation.");
       return;
     }
@@ -537,7 +540,8 @@ export default function JoinTablePage() {
                         disabled={sendingMagicLink}
                         onKeyDown={(e) => e.key === "Enter" && handleMagicLink()}
                       />
-                      {partyData.guest.email && emailInput.toLowerCase() !== partyData.guest.email.toLowerCase() && (
+                      {/* Only show email warning for specific guest invites, not open invites */}
+                      {!partyData.is_open_invite && partyData.guest.email && emailInput.toLowerCase() !== partyData.guest.email.toLowerCase() && (
                         <p className="mt-2 text-xs text-accent-warning">
                           This invitation was sent to: <strong>{partyData.guest.email}</strong>
                         </p>
