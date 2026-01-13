@@ -13,7 +13,6 @@ import { createBrowserClient } from "@crowdstack/shared";
 import { DJProfileSelector } from "@/components/DJProfileSelector";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
-import { VenueFinanceSection } from "@/components/venue/VenueFinanceSection";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
@@ -740,10 +739,6 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             </BentoCard>
           </Link>
 
-          {/* Finance Section */}
-          <BentoCard span={4}>
-            <VenueFinanceSection />
-          </BentoCard>
         </section>
       )}
 
