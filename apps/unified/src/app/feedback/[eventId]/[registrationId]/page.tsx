@@ -159,7 +159,7 @@ export default function FeedbackPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -167,7 +167,7 @@ export default function FeedbackPage() {
 
   if (error && !event) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
         <Card className="max-w-md w-full">
           <div className="p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
@@ -181,8 +181,8 @@ export default function FeedbackPage() {
 
   if (hasSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-        <Card className="max-w-md w-full">
+      <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 overflow-y-auto">
+        <Card className="max-w-md w-full my-8">
           <div className="p-8 text-center">
             <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Thank You!</h1>
@@ -208,8 +208,8 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-      <Card className="max-w-2xl w-full">
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 overflow-y-auto">
+      <Card className="max-w-2xl w-full my-8">
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
@@ -219,10 +219,12 @@ export default function FeedbackPage() {
               {step === "negative" && "Thanks for being honest"}
             </h1>
             {event && (
-              <p className="text-secondary">
-                {event.name}
-                {event.venue && ` at ${event.venue.name}`}
-              </p>
+              <div className="text-secondary">
+                <p className="font-medium">{event.name}</p>
+                {event.venue && (
+                  <p className="text-sm mt-1">{event.venue.name}</p>
+                )}
+              </div>
             )}
           </div>
 
