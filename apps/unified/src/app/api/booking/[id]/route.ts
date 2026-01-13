@@ -3,7 +3,11 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
 
+// CRITICAL: Force dynamic rendering and disable all caching
+// This ensures fresh data is always fetched from the database
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 /**
  * GET /api/booking/[id]

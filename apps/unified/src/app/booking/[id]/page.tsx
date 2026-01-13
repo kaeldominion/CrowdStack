@@ -1,240 +1,326 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
+import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getCurrencySymbol } from "@/lib/constants/currencies";
+import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
+import { BookingPageClient, BookingData } from "./BookingPageClient";
 import Link from "next/link";
-import { Button, InlineSpinner, Card, Badge, Modal, Input } from "@crowdstack/ui";
-import {
-  Calendar,
-  MapPin,
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  Clock,
-  CreditCard,
-  ExternalLink,
-  Users,
-  Wallet,
-  QrCode,
-  Copy,
-  UserPlus,
-  Mail,
-  X,
-  Trash2,
-  RefreshCw,
-} from "lucide-react";
+import { Button } from "@crowdstack/ui";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 
-interface BookingData {
-  booking: {
-    id: string;
-    status: string;
-    payment_status: string;
-    guest_name: string;
-    guest_email: string;
-    party_size: number;
-    deposit_required: number | null;
-    minimum_spend: number | null;
-    special_requests: string | null;
-    created_at: string;
-  };
-  event: {
-    id: string;
-    name: string;
-    slug: string;
-    start_time: string;
-    timezone: string | null;
-    cover_image: string | null;
-  };
-  venue: {
-    id: string;
-    name: string;
-    address: string | null;
-    city: string | null;
-  };
-  table: {
-    id: string;
-    name: string;
-    zone_name: string | null;
-  };
-  payment: {
-    payment_url: string | null;
-    expires_at: string | null;
-    doku_enabled: boolean;
-    manual_payment_enabled: boolean;
-    manual_payment_instructions: string;
-  } | null;
-  party: {
-    host: {
-      id: string;
-      name: string;
-      pass_url: string;
-      checked_in: boolean;
-    } | null;
-    guests: Array<{
-      id: string;
-      name: string;
-      email: string;
-      status: string;
-      checked_in: boolean;
-    }>;
-    invite_url: string | null;
-    total_joined: number;
-    party_size: number;
-  } | null;
-  currency: string;
-  currencySymbol: string;
+// CRITICAL: Force dynamic rendering - this page MUST always fetch fresh data
+// This prevents any Next.js static/dynamic caching
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface BookingPageProps {
+  params: { id: string };
 }
 
-export default function BookingStatusPage() {
-  const params = useParams();
-  const bookingId = params.id as string;
+/**
+ * Fetch booking data directly from Supabase (server-side)
+ * This mirrors the /me page pattern which is known to work correctly
+ */
+async function getBookingData(bookingId: string): Promise<BookingData | null> {
+  const serviceSupabase = createServiceRoleClient();
 
-  const [data, setData] = useState<BookingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [creatingCheckout, setCreatingCheckout] = useState(false);
-  const [showAddGuestModal, setShowAddGuestModal] = useState(false);
-  const [addingGuest, setAddingGuest] = useState(false);
-  const [addGuestError, setAddGuestError] = useState<string | null>(null);
-  const [guestForm, setGuestForm] = useState({
-    guest_name: "",
-    guest_email: "",
-    guest_phone: "",
-  });
+  // CRITICAL: Direct query for status fields to avoid PostgREST field collision
+  // (events table also has a status column that can interfere)
+  const { data: directBooking, error: directError } = await serviceSupabase
+    .from("table_bookings")
+    .select("id, status, payment_status, updated_at")
+    .eq("id", bookingId)
+    .single();
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchBookingStatus();
-    }
-  }, [bookingId]);
-
-  const fetchBookingStatus = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Add cache-busting to ensure fresh data - use timestamp and random to prevent any caching
-      const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(7);
-      const response = await fetch(`/api/booking/${bookingId}?t=${timestamp}&r=${random}`, {
-        cache: 'no-store',
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate, proxy-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-      });
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to load booking");
-      }
-
-      // Debug logging to see what we received
-      console.log('[Booking Page] Received booking data:', {
-        bookingId: result.booking?.id,
-        status: result.booking?.status,
-        payment_status: result.booking?.payment_status,
-      });
-
-      setData(result);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
-
-  const copyInviteLink = async () => {
-    if (data?.party?.invite_url) {
-      await navigator.clipboard.writeText(data.party.invite_url);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    }
-  };
-
-  const handleAddGuest = async () => {
-    if (!guestForm.guest_name || !guestForm.guest_email) {
-      setAddGuestError("Name and email are required");
-      return;
-    }
-
-    try {
-      setAddingGuest(true);
-      setAddGuestError(null);
-
-      const response = await fetch(`/api/booking/${bookingId}/guests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          guest_name: guestForm.guest_name,
-          guest_email: guestForm.guest_email,
-          guest_phone: guestForm.guest_phone || undefined,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to add guest");
-      }
-
-      // Reset form and close modal
-      setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-      setShowAddGuestModal(false);
-
-      // Refresh booking data to show new guest
-      await fetchBookingStatus();
-    } catch (err: any) {
-      setAddGuestError(err.message);
-    } finally {
-      setAddingGuest(false);
-    }
-  };
-
-  const createCheckout = async () => {
-    try {
-      setCreatingCheckout(true);
-      setCheckoutError(null);
-
-      const response = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booking_id: bookingId }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to create payment session");
-      }
-
-      // Redirect to payment URL
-      if (result.payment_url) {
-        window.location.href = result.payment_url;
-      }
-    } catch (err: any) {
-      setCheckoutError(err.message);
-      setCreatingCheckout(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-void flex items-center justify-center">
-        <div className="text-center">
-          <InlineSpinner className="mx-auto h-8 w-8" />
-          <p className="mt-4 text-secondary">Loading booking details...</p>
-        </div>
-      </div>
-    );
+  if (directError || !directBooking) {
+    console.error(`[Booking Page] Booking not found: ${bookingId}`, directError);
+    return null;
   }
 
-  if (error || !data) {
+  // Store authoritative status values from direct query
+  const authoritativeStatus = directBooking.status;
+  const authoritativePaymentStatus = directBooking.payment_status;
+
+  console.log(`[Booking Page] Fetched status for ${bookingId}:`, {
+    status: authoritativeStatus,
+    payment_status: authoritativePaymentStatus,
+    updated_at: directBooking.updated_at,
+  });
+
+  // Get booking with related data (without status fields to avoid collision)
+  const { data: booking, error: bookingError } = await serviceSupabase
+    .from("table_bookings")
+    .select(`
+      id,
+      guest_name,
+      guest_email,
+      guest_whatsapp,
+      party_size,
+      deposit_required,
+      minimum_spend,
+      special_requests,
+      created_at,
+      payment_transaction_id,
+      event:events(
+        id,
+        name,
+        slug,
+        start_time,
+        timezone,
+        cover_image_url,
+        currency,
+        venue_id,
+        venue:venues(
+          id,
+          name,
+          slug,
+          address,
+          city,
+          state,
+          country,
+          currency
+        )
+      ),
+      table:venue_tables(
+        id,
+        name,
+        zone:table_zones(
+          id,
+          name
+        )
+      )
+    `)
+    .eq("id", bookingId)
+    .single();
+
+  if (bookingError || !booking) {
+    console.error("[Booking Page] Error fetching booking relations:", bookingError);
+    return null;
+  }
+
+  // Type assertions for nested data
+  const event = booking.event as any;
+  const table = booking.table as any;
+  const venue = event?.venue;
+
+  // Get payment transaction if exists
+  let paymentInfo = null;
+  if (booking.payment_transaction_id) {
+    const { data: transaction } = await serviceSupabase
+      .from("payment_transactions")
+      .select("id, status, doku_payment_url, expires_at")
+      .eq("id", booking.payment_transaction_id)
+      .single();
+
+    if (transaction) {
+      paymentInfo = {
+        transaction_id: transaction.id,
+        status: transaction.status,
+        payment_url: transaction.doku_payment_url,
+        expires_at: transaction.expires_at,
+      };
+    }
+  }
+
+  // Check if DOKU is enabled and get manual payment info
+  let dokuEnabled = false;
+  let manualPaymentEnabled = false;
+  let manualPaymentInstructions = "";
+  if (venue?.id) {
+    const { data: paymentSettings } = await serviceSupabase
+      .from("venue_payment_settings")
+      .select("doku_enabled, manual_payment_enabled, manual_payment_instructions")
+      .eq("venue_id", venue.id)
+      .single();
+
+    dokuEnabled = paymentSettings?.doku_enabled ?? false;
+    manualPaymentEnabled = paymentSettings?.manual_payment_enabled ?? false;
+    manualPaymentInstructions = paymentSettings?.manual_payment_instructions || "";
+  }
+
+  // Determine currency
+  const currency = event?.currency || venue?.currency || "IDR";
+  const currencySymbol = getCurrencySymbol(currency);
+
+  // For confirmed/paid bookings, fetch/create party data
+  let partyData = null;
+  if (authoritativeStatus === "confirmed" || authoritativePaymentStatus === "paid") {
+    // Get existing party guests
+    const { data: partyGuests } = await serviceSupabase
+      .from("table_party_guests")
+      .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in")
+      .eq("booking_id", bookingId)
+      .order("is_host", { ascending: false })
+      .order("created_at", { ascending: true });
+
+    // Check if host guest record exists
+    let hostGuest = partyGuests?.find(g => g.is_host);
+
+    // If no host record, create one or upgrade existing guest to host
+    if (!hostGuest) {
+      // First check if there's already a guest with the host's email
+      const existingGuest = partyGuests?.find(
+        g => g.guest_email?.toLowerCase() === booking.guest_email?.toLowerCase()
+      );
+
+      if (existingGuest) {
+        // Upgrade existing guest to host
+        const { error: upgradeError } = await serviceSupabase
+          .from("table_party_guests")
+          .update({
+            is_host: true,
+            status: "joined",
+            joined_at: existingGuest.status !== "joined" ? new Date().toISOString() : undefined,
+          })
+          .eq("id", existingGuest.id);
+
+        if (!upgradeError) {
+          // Generate QR token if missing
+          if (!existingGuest.qr_token) {
+            const qrToken = generateTablePartyToken(existingGuest.id, bookingId, event?.id);
+            await serviceSupabase
+              .from("table_party_guests")
+              .update({ qr_token: qrToken })
+              .eq("id", existingGuest.id);
+            existingGuest.qr_token = qrToken;
+          }
+          existingGuest.is_host = true;
+          hostGuest = existingGuest;
+        }
+      } else {
+        // Create new host guest record
+        const { data: newHostGuest, error: hostError } = await serviceSupabase
+          .from("table_party_guests")
+          .insert({
+            booking_id: bookingId,
+            guest_name: booking.guest_name,
+            guest_email: booking.guest_email,
+            guest_phone: booking.guest_whatsapp,
+            is_host: true,
+            status: "joined",
+            joined_at: new Date().toISOString(),
+          })
+          .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in")
+          .single();
+
+        if (!hostError && newHostGuest) {
+          // Generate QR token for host
+          const qrToken = generateTablePartyToken(
+            newHostGuest.id,
+            bookingId,
+            event?.id
+          );
+
+          // Update with QR token
+          await serviceSupabase
+            .from("table_party_guests")
+            .update({ qr_token: qrToken })
+            .eq("id", newHostGuest.id);
+
+          hostGuest = { ...newHostGuest, qr_token: qrToken };
+        }
+      }
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+
+    partyData = {
+      host: hostGuest ? {
+        id: hostGuest.id,
+        name: hostGuest.guest_name,
+        pass_url: `${baseUrl}/table-pass/${hostGuest.id}`,
+        checked_in: hostGuest.checked_in,
+      } : null,
+      guests: (partyGuests || []).filter(g => !g.is_host).map(g => ({
+        id: g.id,
+        name: g.guest_name,
+        email: g.guest_email,
+        status: g.status,
+        checked_in: g.checked_in,
+      })),
+      invite_url: hostGuest ? `${baseUrl}/join-table/${hostGuest.invite_token}` : null,
+      total_joined: (partyGuests || []).filter(g => g.status === "joined").length,
+      party_size: booking.party_size,
+    };
+  }
+
+  // Look up attendee to get full name (first + last)
+  let guestFullName = booking.guest_name;
+  if (booking.guest_email) {
+    const { data: attendee } = await serviceSupabase
+      .from("attendees")
+      .select("name, surname")
+      .eq("email", booking.guest_email)
+      .single();
+    
+    if (attendee && attendee.name) {
+      guestFullName = attendee.surname 
+        ? `${attendee.name} ${attendee.surname}`
+        : attendee.name;
+    }
+  }
+
+  return {
+    booking: {
+      id: booking.id,
+      // CRITICAL: Use authoritative status from direct query
+      status: authoritativeStatus,
+      payment_status: authoritativePaymentStatus || "not_required",
+      guest_name: guestFullName,
+      guest_email: booking.guest_email,
+      party_size: booking.party_size,
+      deposit_required: booking.deposit_required,
+      minimum_spend: booking.minimum_spend,
+      special_requests: booking.special_requests,
+      created_at: booking.created_at,
+    },
+    event: {
+      id: event?.id,
+      name: event?.name,
+      slug: event?.slug,
+      start_time: event?.start_time,
+      timezone: event?.timezone,
+      cover_image: event?.cover_image_url,
+    },
+    venue: {
+      id: venue?.id,
+      name: venue?.name,
+      address: venue?.address,
+      city: venue?.city,
+    },
+    table: {
+      id: table?.id,
+      name: table?.name,
+      zone_name: table?.zone?.name,
+    },
+    payment: {
+      payment_url: paymentInfo?.payment_url || null,
+      expires_at: paymentInfo?.expires_at || null,
+      doku_enabled: dokuEnabled,
+      manual_payment_enabled: manualPaymentEnabled,
+      manual_payment_instructions: manualPaymentInstructions,
+    },
+    party: partyData,
+    currency,
+    currencySymbol,
+  };
+}
+
+/**
+ * Booking details page - Server Component
+ * 
+ * This fetches data directly from Supabase on EVERY request (no caching).
+ * This pattern is proven to work correctly (same as /me page).
+ */
+export default async function BookingPage({ params }: BookingPageProps) {
+  const bookingId = params.id;
+
+  if (!bookingId) {
+    notFound();
+  }
+
+  const data = await getBookingData(bookingId);
+
+  if (!data) {
     return (
       <div className="min-h-screen bg-void flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -242,7 +328,7 @@ export default function BookingStatusPage() {
             <AlertCircle className="h-8 w-8 text-accent-error" />
           </div>
           <h1 className="text-xl font-bold text-primary mb-2">Booking Not Found</h1>
-          <p className="text-secondary mb-6">{error || "This booking could not be found."}</p>
+          <p className="text-secondary mb-6">This booking could not be found or may have been cancelled.</p>
           <Link href="/">
             <Button variant="secondary">
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -254,512 +340,6 @@ export default function BookingStatusPage() {
     );
   }
 
-  const { booking, event, venue, table, payment, party, currencySymbol } = data;
-  const eventDate = new Date(event.start_time);
-
-  // Status badge config
-  const statusConfig: Record<string, { color: "green" | "amber" | "red" | "blue" | "slate"; label: string }> = {
-    pending: { color: "amber", label: "Pending" },
-    confirmed: { color: "green", label: "Confirmed" },
-    cancelled: { color: "red", label: "Cancelled" },
-    completed: { color: "blue", label: "Completed" },
-    no_show: { color: "slate", label: "No Show" },
-  };
-
-  const paymentStatusConfig: Record<string, { color: "green" | "amber" | "slate" | "blue" | "purple"; label: string; icon: any }> = {
-    not_required: { color: "slate", label: "No Deposit Required", icon: Check },
-    pending: { color: "amber", label: "Payment Pending", icon: Clock },
-    paid: { color: "green", label: "Paid", icon: Check },
-    refunded: { color: "blue", label: "Refunded", icon: CreditCard },
-    waived: { color: "purple", label: "Waived", icon: Check },
-  };
-
-  // If payment is paid, show as confirmed (even if status is still pending)
-  // This handles cases where venue marks deposit as received but status hasn't been updated yet
-  const effectiveStatus = booking.payment_status === "paid" && booking.status === "pending" 
-    ? "confirmed" 
-    : booking.status;
-  const currentStatus = statusConfig[effectiveStatus] || statusConfig.pending;
-  const currentPaymentStatus = paymentStatusConfig[booking.payment_status] || paymentStatusConfig.pending;
-  const PaymentIcon = currentPaymentStatus.icon;
-
-  const showPaymentButton =
-    booking.payment_status === "pending" &&
-    booking.deposit_required &&
-    booking.deposit_required > 0 &&
-    payment?.doku_enabled;
-
-  return (
-    <div className="min-h-screen bg-void">
-      {/* Header */}
-      <div className="relative">
-        {event.cover_image && (
-          <div className="absolute inset-0 h-48 overflow-hidden">
-            <img
-              src={event.cover_image}
-              alt={event.name}
-              className="w-full h-full object-cover opacity-20"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/80 to-void" />
-          </div>
-        )}
-
-        <div className="relative max-w-2xl mx-auto px-4 pt-8 pb-4">
-          <div className="flex items-center justify-between mb-6">
-            <Link
-              href={`/e/${event.slug}`}
-              className="inline-flex items-center text-sm text-secondary hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              View event
-            </Link>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={fetchBookingStatus}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
-          </div>
-
-          <h1 className="text-2xl font-bold text-primary mb-2">Your Table Booking</h1>
-          <p className="text-secondary">{event.name}</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 pb-12 space-y-4">
-        {/* Status Card */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-secondary">
-              Booking Status
-            </h2>
-            <Badge color={currentStatus.color} variant="solid" size="sm">
-              {currentStatus.label}
-            </Badge>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted text-xs uppercase tracking-wide mb-1">Confirmation #</p>
-              <p className="text-primary font-mono">{booking.id.split("-")[0].toUpperCase()}</p>
-            </div>
-            <div>
-              <p className="text-muted text-xs uppercase tracking-wide mb-1">Payment</p>
-              <div className="flex items-center gap-1.5">
-                <PaymentIcon className="h-3.5 w-3.5 text-secondary" />
-                <span className="text-primary text-sm">{currentPaymentStatus.label}</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Payment Card - Show if deposit pending and DOKU enabled */}
-        {showPaymentButton && (
-          <Card>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-raised border border-border-subtle">
-                <Wallet className="h-5 w-5 text-accent-primary" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-primary">Deposit Required</h2>
-                <p className="text-xs text-secondary">Pay now to confirm your booking</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-raised border border-border-subtle">
-              <span className="text-secondary text-sm">Amount</span>
-              <span className="text-xl font-bold text-primary">
-                {currencySymbol}{booking.deposit_required?.toLocaleString()}
-              </span>
-            </div>
-
-            {checkoutError && (
-              <div className="mb-4 p-3 rounded-lg bg-raised border border-accent-error/30 text-accent-error text-sm">
-                {checkoutError}
-              </div>
-            )}
-
-            <Button
-              onClick={createCheckout}
-              disabled={creatingCheckout}
-              className="w-full"
-            >
-              {creatingCheckout ? (
-                <>
-                  <InlineSpinner className="h-4 w-4 mr-2" />
-                  Creating payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Pay Deposit Now
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </>
-              )}
-            </Button>
-
-            <p className="mt-3 text-xs text-muted text-center">
-              You'll be redirected to DOKU's secure payment page
-            </p>
-          </Card>
-        )}
-
-        {/* Manual Payment Instructions - Show if deposit pending, DOKU not enabled, but manual payment enabled */}
-        {booking.payment_status === "pending" &&
-          booking.deposit_required &&
-          booking.deposit_required > 0 &&
-          !payment?.doku_enabled &&
-          payment?.manual_payment_enabled && (
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-raised border border-border-subtle">
-                  <Wallet className="h-5 w-5 text-accent-primary" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-primary">Deposit Required</h2>
-                  <p className="text-xs text-secondary">Complete payment to confirm your booking</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-raised border border-border-subtle">
-                <span className="text-secondary text-sm">Amount</span>
-                <span className="text-xl font-bold text-primary">
-                  {currencySymbol}{booking.deposit_required?.toLocaleString()}
-                </span>
-              </div>
-
-              {payment.manual_payment_instructions ? (
-                <div className="mb-4 p-4 rounded-lg bg-raised border border-border-subtle">
-                  <p className="text-xs text-muted uppercase tracking-wide mb-2">Payment Instructions</p>
-                  <div className="text-sm text-secondary whitespace-pre-wrap">
-                    {payment.manual_payment_instructions}
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-border-subtle">
-                    <p className="text-xs text-muted">
-                      <strong className="text-primary">Important:</strong> Include your booking reference{" "}
-                      <span className="font-mono text-accent-primary">
-                        {booking.id.split("-")[0].toUpperCase()}
-                      </span>{" "}
-                      in your payment description.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-4 p-4 rounded-lg bg-raised border border-border-subtle">
-                  <p className="text-sm text-secondary">
-                    Please contact the venue directly to complete your deposit payment.
-                  </p>
-                </div>
-              )}
-
-              <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                <p className="text-xs text-secondary">
-                  After making your payment, the venue will confirm your booking. You'll receive an email confirmation once your payment is verified.
-                </p>
-              </div>
-            </Card>
-          )}
-
-        {/* Confirmed Booking - Party Section */}
-        {(booking.status === "confirmed" || booking.payment_status === "paid") && party && (
-          <>
-            {/* Your Pass */}
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-accent-success/10 border border-accent-success/20">
-                  <QrCode className="h-5 w-5 text-accent-success" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-primary">Entry Pass</h2>
-                  <p className="text-xs text-secondary">Show this QR code at the door</p>
-                </div>
-              </div>
-
-              {party.host ? (
-                <Link href={party.host.pass_url}>
-                  <Button className="w-full">
-                    <QrCode className="h-4 w-4 mr-2" />
-                    View Your Entry Pass
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              ) : (
-                <div className="text-center p-4 rounded-lg bg-raised border border-border-subtle">
-                  <p className="text-sm text-secondary">
-                    Your entry pass is being generated... Please refresh the page.
-                  </p>
-                </div>
-              )}
-            </Card>
-
-            {/* Invite Friends */}
-            {booking.party_size > 1 && (
-              <Card>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                    <UserPlus className="h-5 w-5 text-accent-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-primary">Invite Your Party</h2>
-                    <p className="text-xs text-secondary">
-                      {party.total_joined} of {party.party_size} spots filled
-                    </p>
-                  </div>
-                </div>
-
-                {party.invite_url ? (
-                  <div className="mb-4">
-                    <p className="text-xs text-muted uppercase tracking-wide mb-2">Share this link</p>
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-raised rounded-lg px-3 py-2.5 text-sm text-secondary truncate border border-border-subtle font-mono">
-                        {party.invite_url}
-                      </div>
-                      <Button
-                        variant="secondary"
-                        onClick={copyInviteLink}
-                        className="shrink-0"
-                      >
-                        {copiedLink ? (
-                          <Check className="h-4 w-4 text-accent-success" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-lg bg-raised border border-border-subtle">
-                    <p className="text-sm text-secondary text-center">
-                      Invite link is being generated... Please refresh the page.
-                    </p>
-                  </div>
-                )}
-
-                {/* Guest List */}
-                <div className="border-t border-border-subtle pt-4 mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs text-muted uppercase tracking-wide">Your party</p>
-                    {party.total_joined < party.party_size && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowAddGuestModal(true)}
-                      >
-                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                        Add Guest
-                      </Button>
-                    )}
-                  </div>
-                  {party.guests.length > 0 ? (
-                    <div className="space-y-2">
-                      {party.guests.map((guest) => (
-                        <div
-                          key={guest.id}
-                          className="flex items-center justify-between py-2 px-3 bg-raised rounded-lg border border-border-subtle"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm text-primary block truncate">{guest.name || guest.email}</span>
-                            {guest.email && guest.name && (
-                              <span className="text-xs text-secondary truncate block">{guest.email}</span>
-                            )}
-                          </div>
-                          <Badge
-                            color={guest.status === "joined" ? "green" : guest.status === "invited" ? "amber" : "slate"}
-                            variant="outline"
-                            size="sm"
-                            className="ml-2"
-                          >
-                            {guest.status === "joined" ? "Confirmed" : guest.status}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-sm text-secondary">
-                      No guests added yet. Invite friends to join your party!
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-          </>
-        )}
-
-        {/* Booking Details */}
-        <Card>
-          <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-secondary mb-4">
-            Booking Details
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-4 w-4 text-muted mt-0.5" />
-              <div>
-                <p className="text-sm text-primary font-medium">
-                  {eventDate.toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </p>
-                <p className="text-xs text-secondary">
-                  {eventDate.toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <MapPin className="h-4 w-4 text-muted mt-0.5" />
-              <div>
-                <p className="text-sm text-primary font-medium">{venue.name}</p>
-                {venue.address && (
-                  <p className="text-xs text-secondary">{venue.address}</p>
-                )}
-                {venue.city && (
-                  <p className="text-xs text-secondary">{venue.city}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Users className="h-4 w-4 text-muted mt-0.5" />
-              <div>
-                <p className="text-sm text-primary font-medium">
-                  {table.name}
-                  {table.zone_name && (
-                    <span className="text-secondary"> · {table.zone_name}</span>
-                  )}
-                </p>
-                <p className="text-xs text-secondary">
-                  {booking.party_size} {booking.party_size === 1 ? "guest" : "guests"}
-                </p>
-              </div>
-            </div>
-
-            {booking.minimum_spend && booking.minimum_spend > 0 && (
-              <div className="pt-3 border-t border-border-subtle">
-                <p className="text-xs text-secondary">
-                  Minimum spend: <span className="text-primary font-medium">{currencySymbol}{booking.minimum_spend.toLocaleString()}</span>
-                </p>
-              </div>
-            )}
-
-            {booking.special_requests && (
-              <div className="pt-3 border-t border-border-subtle">
-                <p className="text-xs text-muted uppercase tracking-wide mb-1">Special Requests</p>
-                <p className="text-sm text-secondary">{booking.special_requests}</p>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Guest Info */}
-        <Card>
-          <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-secondary mb-4">
-            Guest Information
-          </h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted">Name</span>
-              <span className="text-primary">{booking.guest_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">Email</span>
-              <span className="text-primary">{booking.guest_email}</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Help Text */}
-        <p className="text-center text-xs text-muted pt-4">
-          Questions about your booking?{" "}
-          <a href={`mailto:support@crowdstack.com`} className="text-accent-secondary hover:underline">
-            Contact support
-          </a>
-        </p>
-      </div>
-
-      {/* Add Guest Modal */}
-      <Modal
-        isOpen={showAddGuestModal}
-        onClose={() => {
-          setShowAddGuestModal(false);
-          setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-          setAddGuestError(null);
-        }}
-        title="Add Guest to Your Party"
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setShowAddGuestModal(false);
-                setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-                setAddGuestError(null);
-              }}
-              disabled={addingGuest}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddGuest}
-              loading={addingGuest}
-              disabled={!guestForm.guest_name || !guestForm.guest_email}
-            >
-              Add Guest
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            Add a guest to your table booking. After adding, you can share the join link with them. The link works for both new and existing users.
-          </p>
-
-          {addGuestError && (
-            <div className="p-3 rounded-lg bg-raised border border-accent-error/30 text-accent-error text-sm">
-              {addGuestError}
-            </div>
-          )}
-
-          <Input
-            label="Guest Name"
-            type="text"
-            value={guestForm.guest_name}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_name: e.target.value })}
-            placeholder="John Doe"
-            required
-          />
-
-          <Input
-            label="Guest Email"
-            type="email"
-            value={guestForm.guest_email}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_email: e.target.value })}
-            placeholder="john@example.com"
-            required
-          />
-
-          <Input
-            label="Phone Number (Optional)"
-            type="tel"
-            value={guestForm.guest_phone}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_phone: e.target.value })}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-      </Modal>
-    </div>
-  );
+  // Pass fresh data to client component
+  return <BookingPageClient initialData={data} />;
 }
