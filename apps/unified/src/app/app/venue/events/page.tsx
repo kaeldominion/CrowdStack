@@ -46,7 +46,7 @@ interface Event {
   description: string | null;
   start_time: string;
   end_time: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   status: string;
   venue_approval_status: string | null;
   venue_approval_at: string | null;
@@ -595,8 +595,8 @@ export default function VenueEventsPage() {
                         <span>{event.checkins}</span>
                         <span className="text-[var(--text-muted)]">/</span>
                         <span>{event.registrations}</span>
-                        {event.capacity && (
-                          <span className="text-[var(--text-muted)] text-xs"> / {event.capacity}</span>
+                        {event.max_guestlist_size && (
+                          <span className="text-[var(--text-muted)] text-xs"> / {event.max_guestlist_size}</span>
                         )}
                       </div>
                     </TableCell>
