@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
 import { ReferralTracker } from "@/components/ReferralTracker";
@@ -29,8 +30,8 @@ function getBaseUrl() {
   return "http://localhost:3000";
 }
 
-// Fetch event data - uses ISR with revalidate setting at page level
-async function getEvent(slug: string) {
+// Fetch event data - wrapped with unstable_cache for proper ISR caching
+async function getEventData(slug: string) {
   try {
     const supabase = createServiceRoleClient();
 
@@ -107,12 +108,24 @@ async function getEvent(slug: string) {
   }
 }
 
+// Cache the event data fetching - enables proper ISR caching
+// Key is per-event-slug, revalidates every 30 seconds to keep data fresh
+// Registration counts and attendee lists will be up to 30s stale, which is acceptable
+// for display purposes. Real-time registration status is handled client-side.
+function getCachedEvent(slug: string) {
+  return unstable_cache(
+    () => getEventData(slug),
+    ['event-page', slug],
+    { revalidate: 30, tags: ['events', `event-${slug}`] }
+  )();
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: { eventSlug: string };
 }): Promise<Metadata> {
-  const event = await getEvent(params.eventSlug);
+  const event = await getCachedEvent(params.eventSlug);
 
   if (!event) {
     return {
@@ -179,7 +192,7 @@ export default async function EventPage({
 }: {
   params: { eventSlug: string };
 }) {
-  const event = await getEvent(params.eventSlug);
+  const event = await getCachedEvent(params.eventSlug);
 
   if (!event) {
     notFound();
