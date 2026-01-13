@@ -29,7 +29,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
- import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
+import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
 interface VipStatus {
   isVip: boolean;
@@ -153,6 +154,9 @@ export default function DoorScannerPage() {
   // Attendee profile modal
   const [selectedAttendee, setSelectedAttendee] = useState<AttendeeProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [showAttendeeDetailModal, setShowAttendeeDetailModal] = useState(false);
+  const [selectedAttendeeIdForModal, setSelectedAttendeeIdForModal] = useState<string | null>(null);
+  const [doorRole, setDoorRole] = useState<"venue" | "organizer">("venue");
 
   // Load event info and stats
   useEffect(() => {
@@ -203,6 +207,13 @@ export default function DoorScannerPage() {
         return;
       }
       
+      // Determine role based on event (venue or organizer)
+      if (data.event.venue_id) {
+        setDoorRole("venue");
+      } else if (data.event.organizer_id) {
+        setDoorRole("organizer");
+      }
+
       setEventInfo({
         id: data.event.id,
         name: data.event.name,
@@ -801,6 +812,23 @@ export default function DoorScannerPage() {
                   </div>
                 </div>
               )}
+              {/* View Full Profile Button */}
+              {lastCheckIn.attendee_id && (
+                <div className="mt-4 pt-4 border-t border-border-subtle">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedAttendeeIdForModal(lastCheckIn.attendee_id!);
+                      setShowAttendeeDetailModal(true);
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    View Full Profile
+                  </Button>
+                </div>
+              )}
               {/* VIP Acknowledgement Button */}
               {lastCheckIn.vipStatus?.isVip && showVipAcknowledge && (
                 <div className="mt-4 pt-4 border-t border-amber-500/30">
@@ -956,22 +984,36 @@ export default function DoorScannerPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {!result.checked_in ? (
+                        <div className="flex items-center gap-2">
+                          {!result.checked_in ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={(e) => {
+                                e?.stopPropagation();
+                                handleCheckIn(result.registration_id);
+                              }}
+                            >
+                              Check In
+                            </Button>
+                          ) : (
+                            <span className="text-sm text-muted">
+                              {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
+                            </span>
+                          )}
                           <Button
-                            variant="primary"
+                            variant="secondary"
                             size="sm"
                             onClick={(e) => {
                               e?.stopPropagation();
-                              handleCheckIn(result.registration_id);
+                              setSelectedAttendeeIdForModal(result.attendee_id);
+                              setShowAttendeeDetailModal(true);
                             }}
                           >
-                            Check In
+                            <User className="h-3 w-3 mr-1" />
+                            Profile
                           </Button>
-                        ) : (
-                          <span className="text-sm text-muted">
-                            {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
-                          </span>
-                        )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -1271,6 +1313,19 @@ export default function DoorScannerPage() {
           </div>
         ) : null}
       </Modal>
+
+      {/* Attendee Detail Modal */}
+      {selectedAttendeeIdForModal && (
+        <AttendeeDetailModal
+          isOpen={showAttendeeDetailModal}
+          onClose={() => {
+            setShowAttendeeDetailModal(false);
+            setSelectedAttendeeIdForModal(null);
+          }}
+          attendeeId={selectedAttendeeIdForModal}
+          role={doorRole}
+        />
+      )}
     </div>
   );
 }

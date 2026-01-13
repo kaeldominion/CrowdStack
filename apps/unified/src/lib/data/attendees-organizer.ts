@@ -164,6 +164,14 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
     return null;
   }
 
+  // Get all events for this organizer
+  const { data: organizerEvents } = await supabase
+    .from("events")
+    .select("id")
+    .eq("organizer_id", organizerId);
+
+  const organizerEventIds = organizerEvents?.map((e) => e.id) || [];
+
   const { data: registrations } = await supabase
     .from("registrations")
     .select(`
@@ -179,7 +187,122 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
       checkins(id, checked_in_at, checked_in_by)
     `)
     .eq("attendee_id", attendeeId)
-    .eq("event.organizer_id", organizerId);
+    .eq("event.organizer_id", organizerId)
+    .order("registered_at", { ascending: false });
+
+  // Get VIP status
+  const { data: organizerVip } = await supabase
+    .from("organizer_vips")
+    .select("reason")
+    .eq("attendee_id", attendeeId)
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
+
+  // Get XP points (total and for this organizer's events)
+  let xpTotal = 0;
+  let xpAtOrganizer = 0;
+  if (attendee.user_id) {
+    // Get total XP
+    const { data: xpLedger } = await supabase
+      .from("xp_ledger")
+      .select("amount")
+      .eq("user_id", attendee.user_id);
+
+    xpTotal = xpLedger?.reduce((sum, entry) => sum + (entry.amount || 0), 0) || 0;
+
+    // Get XP from this organizer's events
+    if (organizerEventIds.length > 0) {
+      const { data: organizerXp } = await supabase
+        .from("xp_ledger")
+        .select("amount")
+        .eq("user_id", attendee.user_id)
+        .in("event_id", organizerEventIds);
+
+      xpAtOrganizer = organizerXp?.reduce((sum, entry) => sum + (entry.amount || 0), 0) || 0;
+    }
+  }
+
+  // Get feedback history for this organizer's events
+  let feedbackHistory: any[] = [];
+  if (organizerEventIds.length > 0) {
+    const { data: feedback } = await supabase
+      .from("event_feedback")
+      .select(`
+        id,
+        rating,
+        feedback_type,
+        comment,
+        categories,
+        free_text,
+        submitted_at,
+        resolved_at,
+        events!inner(id, name, start_time)
+      `)
+      .eq("attendee_id", attendeeId)
+      .in("event_id", organizerEventIds)
+      .order("submitted_at", { ascending: false });
+
+    if (feedback) {
+      feedbackHistory = feedback.map((fb) => {
+        const event = Array.isArray(fb.events) ? fb.events[0] : fb.events;
+        let categories: string[] = [];
+        if (fb.categories) {
+          try {
+            categories = typeof fb.categories === "string" ? JSON.parse(fb.categories) : fb.categories;
+          } catch {
+            categories = [];
+          }
+        }
+        return {
+          id: fb.id,
+          rating: fb.rating,
+          feedback_type: fb.feedback_type,
+          comment: fb.comment,
+          categories,
+          free_text: fb.free_text,
+          submitted_at: fb.submitted_at,
+          resolved_at: fb.resolved_at,
+          event_id: event?.id || null,
+          event_name: event?.name || "Unknown Event",
+          event_date: event?.start_time || null,
+        };
+      });
+    }
+  }
+
+  // Get comprehensive check-in history
+  const registrationIds = registrations?.map((r) => r.id) || [];
+  let checkinHistory: any[] = [];
+  if (registrationIds.length > 0) {
+    const { data: checkins } = await supabase
+      .from("checkins")
+      .select(`
+        id,
+        checked_in_at,
+        checked_in_by,
+        registrations!inner(
+          event_id,
+          events!inner(id, name, start_time)
+        )
+      `)
+      .in("registration_id", registrationIds)
+      .order("checked_in_at", { ascending: false });
+
+    if (checkins) {
+      checkinHistory = checkins.map((checkin) => {
+        const reg = Array.isArray(checkin.registrations) ? checkin.registrations[0] : checkin.registrations;
+        const event = reg && Array.isArray(reg.events) ? reg.events[0] : reg?.events;
+        return {
+          id: checkin.id,
+          checked_in_at: checkin.checked_in_at,
+          checked_in_by: checkin.checked_in_by,
+          event_id: event?.id || null,
+          event_name: event?.name || "Unknown Event",
+          event_date: event?.start_time || null,
+        };
+      });
+    }
+  }
 
   return {
     attendee: attendee ? {
@@ -188,6 +311,17 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
       phone: maskPhone(attendee.phone) || attendee.phone,
     } : null,
     events: registrations || [],
+    vip: {
+      isGlobalVip: attendee.is_global_vip || false,
+      isOrganizerVip: !!organizerVip,
+      organizerVipReason: organizerVip?.reason || null,
+    },
+    xp: {
+      total: xpTotal,
+      at_organizer: xpAtOrganizer,
+    },
+    feedback: feedbackHistory,
+    checkins: checkinHistory,
   };
 }
 

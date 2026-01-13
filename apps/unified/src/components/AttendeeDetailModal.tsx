@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Modal, Badge, LoadingSpinner, Button, VipStatus } from "@crowdstack/ui";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown } from "lucide-react";
+import { Modal, Badge, LoadingSpinner, Button, VipStatus, Tabs, TabsList, TabsTrigger, TabsContent } from "@crowdstack/ui";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown, Star, TrendingUp, History, MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 interface AttendeeDetailModalProps {
   isOpen: boolean;
@@ -28,6 +29,29 @@ interface EventRegistration {
   }>;
 }
 
+interface FeedbackItem {
+  id: string;
+  rating: number;
+  feedback_type: "positive" | "negative";
+  comment?: string | null;
+  categories?: string[];
+  free_text?: string | null;
+  submitted_at: string;
+  resolved_at?: string | null;
+  event_id?: string | null;
+  event_name: string;
+  event_date?: string | null;
+}
+
+interface CheckInItem {
+  id: string;
+  checked_in_at: string;
+  checked_in_by?: string | null;
+  event_id?: string | null;
+  event_name: string;
+  event_date?: string | null;
+}
+
 interface AttendeeDetails {
   attendee: {
     id: string;
@@ -48,11 +72,20 @@ interface AttendeeDetails {
   } | null;
   vip?: {
     isGlobalVip: boolean;
-    isVenueVip: boolean;
-    isOrganizerVip: boolean;
+    isVenueVip?: boolean;
+    isOrganizerVip?: boolean;
+    venueVipReason?: string | null;
+    organizerVipReason?: string | null;
     venueName?: string;
     organizerName?: string;
   } | null;
+  xp?: {
+    total: number;
+    at_venue?: number;
+    at_organizer?: number;
+  } | null;
+  feedback?: FeedbackItem[];
+  checkins?: CheckInItem[];
 }
 
 export function AttendeeDetailModal({
@@ -212,6 +245,32 @@ export function AttendeeDetailModal({
                 </span>
               </div>
             </div>
+
+            {/* XP Points */}
+            {details.xp && (
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-subtle">
+                <div className="p-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="h-4 w-4 text-accent-secondary" />
+                    <span className="text-xs text-secondary font-medium">Total XP</span>
+                  </div>
+                  <p className="text-xl font-bold text-primary">{details.xp.total.toLocaleString()}</p>
+                </div>
+                {(details.xp.at_venue !== undefined || details.xp.at_organizer !== undefined) && (
+                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Star className="h-4 w-4 text-accent-primary" />
+                      <span className="text-xs text-secondary font-medium">
+                        {role === "venue" ? "At Venue" : "At Organizer"}
+                      </span>
+                    </div>
+                    <p className="text-xl font-bold text-primary">
+                      {(details.xp.at_venue || details.xp.at_organizer || 0).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Flags/Warnings (Venue only) */}
@@ -230,97 +289,205 @@ export function AttendeeDetailModal({
             </div>
           )}
 
-          {/* Event History */}
+          {/* Comprehensive History Tabs */}
           <div className="border-t border-border pt-4">
-            <h3 className="text-lg font-semibold text-primary mb-4">
-              {role === "promoter" ? "Event History" : "Events"} ({getEventsList().length})
-            </h3>
+            <Tabs defaultValue="events">
+              <TabsList>
+                <TabsTrigger value="events">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Events ({getEventsList().length})
+                </TabsTrigger>
+                <TabsTrigger value="checkins">
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Check-ins ({details.checkins?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger value="feedback">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Feedback ({details.feedback?.length || 0})
+                </TabsTrigger>
+              </TabsList>
 
-            {getEventsList().length === 0 ? (
-              <p className="text-secondary text-sm">No events found</p>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {getEventsList().map((reg: any) => {
-                  const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
-                  if (!event) return null;
+              <TabsContent value="events">
+                {getEventsList().length === 0 ? (
+                  <p className="text-secondary text-sm py-4">No events found</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
+                    {getEventsList().map((reg: any) => {
+                      const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
+                      if (!event) return null;
 
-                  const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
+                      const checkin = reg.checkins && reg.checkins.length > 0 ? reg.checkins[0] : null;
 
-                  return (
-                    <div
-                      key={reg.id}
-                      className="p-4 rounded-lg border border-border bg-glass/50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-primary">{event.name}</h4>
-                            {role === "promoter" && reg.type === "referral" && (
-                              <Badge variant="primary" className="text-xs">Your Referral</Badge>
-                            )}
-                            {role === "promoter" && reg.type === "upcoming" && (
-                              <Badge variant="default" className="text-xs">Upcoming</Badge>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(event.start_time)}
-                            </div>
-                            {event.venue && (
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {event.venue.name}
+                      return (
+                        <div
+                          key={reg.id}
+                          className="p-4 rounded-lg border border-border bg-glass/50"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-semibold text-primary">{event.name}</h4>
+                                {role === "promoter" && reg.type === "referral" && (
+                                  <Badge variant="primary" className="text-xs">Your Referral</Badge>
+                                )}
+                                {role === "promoter" && reg.type === "upcoming" && (
+                                  <Badge variant="default" className="text-xs">Upcoming</Badge>
+                                )}
                               </div>
-                            )}
-                            <div className="flex items-center gap-1">
-                              Registered: {formatDate(reg.registered_at)}
+                              <div className="flex flex-wrap items-center gap-4 text-sm text-secondary">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {formatDate(event.start_time)}
+                                </div>
+                                {event.venue && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {event.venue.name}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1">
+                                  Registered: {formatDate(reg.registered_at)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
+                              {checkin ? (
+                                <div className="flex items-center gap-1 text-success">
+                                  <CheckCircle2 className="h-5 w-5" />
+                                  <span className="text-sm font-medium">Checked In</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-secondary">
+                                  <XCircle className="h-5 w-5" />
+                                  <span className="text-sm">Not Checked In</span>
+                                </div>
+                              )}
+                              {/* Remove Registration Button (organizer and venue only) */}
+                              {(role === "organizer" || role === "venue") && (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleRemoveRegistration(reg.id)}
+                                    disabled={removingRegistrationId === reg.id}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                  >
+                                    {removingRegistrationId === reg.id ? (
+                                      <>
+                                        <LoadingSpinner size="sm" className="mr-1" />
+                                        Removing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Remove
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 ml-4 flex flex-col items-end gap-2">
-                          {checkin ? (
-                            <div className="flex items-center gap-1 text-success">
-                              <CheckCircle2 className="h-5 w-5" />
-                              <span className="text-sm font-medium">Checked In</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-secondary">
-                              <XCircle className="h-5 w-5" />
-                              <span className="text-sm">Not Checked In</span>
-                            </div>
-                          )}
-                          {/* Remove Registration Button (organizer and venue only) */}
-                          {(role === "organizer" || role === "venue") && (
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleRemoveRegistration(reg.id)}
-                                disabled={removingRegistrationId === reg.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                              >
-                              {removingRegistrationId === reg.id ? (
-                                <>
-                                  <LoadingSpinner size="sm" className="mr-1" />
-                                  Removing...
-                                </>
-                              ) : (
-                                <>
-                                  <Trash2 className="h-3 w-3 mr-1" />
-                                  Remove
-                                </>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="checkins">
+                {!details.checkins || details.checkins.length === 0 ? (
+                  <p className="text-secondary text-sm py-4">No check-ins found</p>
+                ) : (
+                  <div className="space-y-2 max-h-96 overflow-y-auto mt-4">
+                    {details.checkins.map((checkin) => (
+                      <div key={checkin.id} className="p-3 rounded-lg border border-border-subtle bg-raised">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-primary">{checkin.event_name}</p>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-secondary">
+                              <span>{formatDate(checkin.checked_in_at)}</span>
+                              {checkin.event_date && (
+                                <span>• Event: {new Date(checkin.event_date).toLocaleDateString()}</span>
                               )}
-                              </Button>
                             </div>
+                          </div>
+                          {checkin.event_id && (
+                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${checkin.event_id}`}>
+                              <Button variant="ghost" size="sm">View</Button>
+                            </Link>
                           )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="feedback">
+                {!details.feedback || details.feedback.length === 0 ? (
+                  <p className="text-secondary text-sm py-4">No feedback submitted</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
+                    {details.feedback.map((feedback) => (
+                      <div key={feedback.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-4 w-4 ${
+                                    star <= feedback.rating
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <Badge
+                              variant={feedback.feedback_type === "positive" ? "success" : "warning"}
+                              className="text-xs"
+                            >
+                              {feedback.feedback_type}
+                            </Badge>
+                            {feedback.resolved_at && (
+                              <Badge variant="success" className="text-xs">Resolved</Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-secondary">
+                            {new Date(feedback.submitted_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="font-medium text-primary mb-1">{feedback.event_name}</p>
+                        {feedback.comment && (
+                          <p className="text-sm text-secondary mb-2">"{feedback.comment}"</p>
+                        )}
+                        {feedback.free_text && (
+                          <p className="text-sm text-secondary mb-2">{feedback.free_text}</p>
+                        )}
+                        {feedback.categories && feedback.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {feedback.categories.map((cat) => (
+                              <Badge key={cat} variant="outline" size="sm" className="text-xs">
+                                {cat.replace(/_/g, " ")}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {feedback.event_id && (
+                          <div className="mt-2">
+                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${feedback.event_id}`}>
+                              <Button variant="ghost" size="sm">View Event</Button>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       ) : null}
