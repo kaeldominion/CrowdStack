@@ -62,12 +62,33 @@ async function getUserData() {
   const attendee = attendeeResult.data;
   const attendeeId = attendee?.id;
 
+  // Fetch XP data directly from ledger (more reliable than RPC)
+  const xpLedgerResult = await serviceSupabase
+    .from("xp_ledger")
+    .select("amount")
+    .eq("user_id", user.id);
+
+  let totalXpFromLedger = 0;
+  if (xpLedgerResult.data && xpLedgerResult.data.length > 0) {
+    totalXpFromLedger = xpLedgerResult.data.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+  } else if (attendeeId) {
+    // Fallback: try old schema with attendee_id
+    const oldSchemaResult = await serviceSupabase
+      .from("xp_ledger")
+      .select("amount")
+      .eq("attendee_id", attendeeId);
+    if (oldSchemaResult.data) {
+      totalXpFromLedger = oldSchemaResult.data.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+    }
+  }
+
+  // Calculate level from XP
+  const levelResult = await serviceSupabase
+    .rpc("calculate_level", { total_xp: totalXpFromLedger })
+    .maybeSingle();
+
   // Fetch all other data in parallel (now that we have attendee ID)
-  const [xpResult, registrationsResult, favoritesResult, followingResult, tableBookingsResult] = await Promise.all([
-    // XP data
-    serviceSupabase
-      .rpc("get_user_xp_summary", { p_user_id: user.id })
-      .maybeSingle(),
+  const [registrationsResult, favoritesResult, followingResult, tableBookingsResult] = await Promise.all([
 
     // Registrations with event and venue data (only if we have attendee ID)
     attendeeId
@@ -172,24 +193,40 @@ async function getUserData() {
   const registrations = (registrationsResult.data || []) as unknown as Registration[];
 
   // Process XP data
-  let totalXp = 0;
+  const totalXp = totalXpFromLedger;
   let xpProgressData: XpProgressData | null = null;
-  
-  if (xpResult.data) {
-    const xpData = xpResult.data as {
-      total_xp?: number;
+
+  if (levelResult.data) {
+    const levelData = levelResult.data as {
       level?: number;
       xp_in_level?: number;
       xp_for_next_level?: number;
       progress_pct?: number;
     };
-    totalXp = xpData.total_xp || 0;
     xpProgressData = {
-      total_xp: xpData.total_xp || 0,
-      level: xpData.level || 1,
-      xp_in_level: xpData.xp_in_level || 0,
-      xp_for_next_level: xpData.xp_for_next_level || 100,
-      progress_pct: xpData.progress_pct || 0,
+      total_xp: totalXp,
+      level: levelData.level || 1,
+      xp_in_level: levelData.xp_in_level || 0,
+      xp_for_next_level: levelData.xp_for_next_level || 100,
+      progress_pct: Number(levelData.progress_pct) || 0,
+    };
+  } else {
+    // Fallback level calculation if RPC fails
+    const fallbackLevel = totalXp >= 100000 ? 10 :
+                         totalXp >= 50000 ? 9 :
+                         totalXp >= 35000 ? 8 :
+                         totalXp >= 20000 ? 7 :
+                         totalXp >= 10000 ? 6 :
+                         totalXp >= 2500 ? 5 :
+                         totalXp >= 1000 ? 4 :
+                         totalXp >= 500 ? 3 :
+                         totalXp >= 250 ? 2 : 1;
+    xpProgressData = {
+      total_xp: totalXp,
+      level: fallbackLevel,
+      xp_in_level: totalXp,
+      xp_for_next_level: 100,
+      progress_pct: 0,
     };
   }
 

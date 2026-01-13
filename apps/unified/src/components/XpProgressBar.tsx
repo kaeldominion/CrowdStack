@@ -67,51 +67,30 @@ export function XpProgressBar({
 
   return (
     <Card padding="none" className={className}>
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-4 py-3 space-y-2">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
-              Experience Points
-            </span>
-            {showLevelLabel && (
-              <p className="text-sm font-medium text-primary">
-                Level {level} of 10
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white font-bold text-sm">
+              {level}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-primary">Level {level}</p>
+              <p className="text-xs text-secondary">
+                {isMaxLevel ? "Max level" : `${xp_for_next_level.toLocaleString()} XP to Level ${level + 1}`}
               </p>
-            )}
+            </div>
           </div>
-          <div className="text-right">
-            <p className="font-mono text-xl font-bold text-accent-primary">
-              {total_xp.toLocaleString()} XP
-            </p>
-            {!isMaxLevel && (
-              <p className="text-xs text-secondary mt-0.5">
-                {xp_for_next_level.toLocaleString()} to next level
-              </p>
-            )}
-          </div>
+          <p className="font-mono text-lg font-bold text-accent-primary">
+            {total_xp.toLocaleString()} XP
+          </p>
         </div>
 
         {/* Progress Bar */}
-        <div className="space-y-1">
-          <div className="h-3 bg-raised rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all duration-500 ease-out"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-          {!isMaxLevel && (
-            <div className="flex items-center justify-between text-xs text-secondary">
-              <span>
-                {xp_in_level.toLocaleString()} / {(total_xp + xp_for_next_level).toLocaleString()} XP
-              </span>
-              <span>{progressPercentage.toFixed(1)}%</span>
-            </div>
-          )}
-          {isMaxLevel && (
-            <p className="text-xs text-secondary text-center">
-              Maximum level reached! 🎉
-            </p>
-          )}
+        <div className="h-2 bg-raised rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all duration-500 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
         </div>
       </div>
     </Card>

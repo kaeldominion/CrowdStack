@@ -252,9 +252,13 @@ export default function JoinTablePage() {
       setBookingId(partyData?.booking?.id || null);
       setQrToken(result.qr_token || "");
       setShowSignup(false);
+      setShowTypeformJoin(false);
     } catch (err: any) {
       console.error("Error joining party:", err);
       setError(err.message || "Failed to join party");
+      // Close TypeformSignup on error so user can see the error message
+      setShowSignup(false);
+      setShowTypeformJoin(false);
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,6 @@ import { EventCardRow } from "@/components/EventCardRow";
 import { VenueCard } from "@/components/venue/VenueCard";
 import { DJCard } from "@/components/dj/DJCard";
 import { XpProgressBar, type XpProgressData } from "@/components/XpProgressBar";
-import { ActivityLog } from "@/components/ActivityLog";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 
 interface Registration {
@@ -80,7 +79,7 @@ interface TableBooking {
   } | null;
 }
 
-type TabId = "events" | "djs" | "venues" | "history" | "activity" | "tables";
+type TabId = "events" | "djs" | "venues" | "history" | "tables";
 type MobileEventsTab = "upcoming" | "past" | "djs" | "venues" | "tables";
 
 interface MePageClientProps {
@@ -502,41 +501,35 @@ export function MePageClient({
               <div className="max-w-4xl overflow-visible">
                 {/* Tab Navigation */}
                 <nav className="flex gap-6 border-b border-border-subtle mb-6">
-                  <button 
+                  <button
                     onClick={() => setActiveTab("events")}
                     className={`tab-label ${activeTab === "events" ? "tab-label-active" : "tab-label-inactive"}`}
                   >
                     My Events
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab("djs")}
-                    className={`tab-label ${activeTab === "djs" ? "tab-label-active" : "tab-label-inactive"}`}
-                  >
-                    DJs
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab("venues")}
-                    className={`tab-label ${activeTab === "venues" ? "tab-label-active" : "tab-label-inactive"}`}
-                  >
-                    Venues
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab("history")}
-                    className={`tab-label ${activeTab === "history" ? "tab-label-active" : "tab-label-inactive"}`}
-                  >
-                    History
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("activity")}
-                    className={`tab-label ${activeTab === "activity" ? "tab-label-active" : "tab-label-inactive"}`}
-                  >
-                    Activity
                   </button>
                   <button
                     onClick={() => setActiveTab("tables")}
                     className={`tab-label ${activeTab === "tables" ? "tab-label-active" : "tab-label-inactive"}`}
                   >
                     Tables
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("djs")}
+                    className={`tab-label ${activeTab === "djs" ? "tab-label-active" : "tab-label-inactive"}`}
+                  >
+                    DJs
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("venues")}
+                    className={`tab-label ${activeTab === "venues" ? "tab-label-active" : "tab-label-inactive"}`}
+                  >
+                    Venues
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("history")}
+                    className={`tab-label ${activeTab === "history" ? "tab-label-active" : "tab-label-inactive"}`}
+                  >
+                    History
                   </button>
                 </nav>
 
@@ -705,17 +698,6 @@ export function MePageClient({
                         <p className="text-sm text-secondary">Your event history will appear here.</p>
                       </Card>
                     )}
-                  </section>
-                )}
-
-                {/* ACTIVITY Tab */}
-                {activeTab === "activity" && (
-                  <section>
-                    <ActivityLog
-                      title="Your Activity"
-                      showFilters={true}
-                      limit={50}
-                    />
                   </section>
                 )}
 
