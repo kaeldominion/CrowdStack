@@ -55,6 +55,24 @@ export async function GET(
 
     console.log("Event promoters loaded:", event.event_promoters?.length || 0, event.event_promoters);
 
+    // Fetch owner details if event has an owner
+    let owner: { id: string; email: string | null; first_name: string | null; last_name: string | null } | null = null;
+    if (event.owner_user_id) {
+      try {
+        const { data: userData } = await serviceSupabase.auth.admin.getUserById(event.owner_user_id);
+        if (userData?.user) {
+          owner = {
+            id: userData.user.id,
+            email: userData.user.email || null,
+            first_name: userData.user.user_metadata?.first_name || null,
+            last_name: userData.user.user_metadata?.last_name || null,
+          };
+        }
+      } catch (err) {
+        console.error("[Event] Failed to fetch owner details:", err);
+      }
+    }
+
     // Check if user is the organizer or superadmin
     if (!isSuperadmin) {
       // Get organizers this user owns
@@ -79,7 +97,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ event });
+    return NextResponse.json({ event: { ...event, owner } });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to fetch event" },

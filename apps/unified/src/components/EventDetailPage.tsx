@@ -162,6 +162,7 @@ interface EventData {
   organizer_id: string;
   venue_id: string | null;
   owner_user_id: string | null; // The user who owns this event
+  owner?: { id: string; email: string | null; first_name: string | null; last_name: string | null } | null;
   venue_approval_status?: string | null;
   venue_approval_at?: string | null;
   venue_rejection_reason?: string | null;
@@ -2795,8 +2796,15 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                           <div>
                             <p className="text-sm text-secondary">Current Owner</p>
                             <p className="font-medium text-primary">
-                              {effectivePermissions.isOwner ? "You" : "Another user"}
+                              {effectivePermissions.isOwner ? "You" : (
+                                event.owner?.first_name || event.owner?.last_name
+                                  ? `${event.owner?.first_name || ""} ${event.owner?.last_name || ""}`.trim()
+                                  : event.owner?.email || "Unknown user"
+                              )}
                             </p>
+                            {!effectivePermissions.isOwner && event.owner?.email && (event.owner?.first_name || event.owner?.last_name) && (
+                              <p className="text-xs text-secondary">{event.owner.email}</p>
+                            )}
                           </div>
                         </div>
                         <p className="text-sm text-secondary">

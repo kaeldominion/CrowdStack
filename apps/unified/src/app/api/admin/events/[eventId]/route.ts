@@ -95,6 +95,24 @@ export async function GET(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // Fetch owner details if event has an owner
+    let owner: { id: string; email: string | null; first_name: string | null; last_name: string | null } | null = null;
+    if (event.owner_user_id) {
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(event.owner_user_id);
+        if (userData?.user) {
+          owner = {
+            id: userData.user.id,
+            email: userData.user.email || null,
+            first_name: userData.user.user_metadata?.first_name || null,
+            last_name: userData.user.user_metadata?.last_name || null,
+          };
+        }
+      } catch (err) {
+        console.error("[Admin Event] Failed to fetch owner details:", err);
+      }
+    }
+
     // Get registration count
     const { count: registrationsCount } = await supabase
       .from("registrations")
@@ -120,7 +138,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      event,
+      event: { ...event, owner },
       stats: {
         registrations_count: registrationsCount || 0,
         checkins_count: checkinsCount,

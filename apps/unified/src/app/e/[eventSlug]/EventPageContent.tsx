@@ -445,6 +445,8 @@ export function EventPageContent({
           <TableBookingSection
             eventId={event.id}
             eventName={event.name}
+            venueName={event.venue?.name}
+            eventStartTime={event.start_time}
             refCode={searchParams?.get("ref")}
           />
 
@@ -667,6 +669,8 @@ export function EventPageContent({
             <TableBookingSection
               eventId={event.id}
               eventName={event.name}
+              venueName={event.venue?.name}
+              eventStartTime={event.start_time}
               refCode={searchParams?.get("ref")}
             />
           </div>

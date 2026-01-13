@@ -124,7 +124,7 @@ function ResetPasswordContent() {
 
   if (isValidToken === null) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner text="Verifying reset link..." size="md" />
@@ -136,17 +136,17 @@ function ResetPasswordContent() {
 
   if (isValidToken === false) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white">Invalid Reset Link</h1>
-            <p className="mt-2 text-sm text-white/60">
+            <h1 className="text-3xl font-bold text-primary">Invalid Reset Link</h1>
+            <p className="mt-2 text-sm text-secondary">
               This password reset link is invalid or has expired.
             </p>
           </div>
 
           {error && (
-            <div className="rounded-md p-4 bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444] mb-6">
+            <div className="rounded-md p-4 bg-error/10 border border-error/20 text-error mb-6">
               <p className="text-sm">{error}</p>
             </div>
           )}
@@ -161,7 +161,7 @@ function ResetPasswordContent() {
             </Button>
             <Link
               href="/login"
-              className="block text-center text-sm text-[#3B82F6] hover:text-[#3B82F6]/80"
+              className="block text-center text-sm text-accent-primary hover:text-accent-primary/80"
             >
               Back to Login
             </Link>
@@ -173,15 +173,15 @@ function ResetPasswordContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-void flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
         <Card className="w-full max-w-md">
           <div className="text-center space-y-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#10B981]/10">
-              <CheckCircle2 className="h-8 w-8 text-[#10B981]" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Password Reset Successful</h1>
-              <p className="mt-2 text-sm text-white/60">
+              <h1 className="text-3xl font-bold text-primary">Password Reset Successful</h1>
+              <p className="mt-2 text-sm text-secondary">
                 Your password has been reset. Redirecting to login...
               </p>
             </div>
@@ -192,26 +192,26 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <Link
           href="/login"
-          className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-secondary hover:text-primary mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to login
         </Link>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Reset Password</h1>
-          <p className="mt-2 text-sm text-white/60">
+          <h1 className="text-3xl font-bold text-primary">Reset Password</h1>
+          <p className="mt-2 text-sm text-secondary">
             Enter your new password below.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-primary mb-2">
               New Password
             </label>
             <input
@@ -220,14 +220,14 @@ function ResetPasswordContent() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md bg-void border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+              className="w-full rounded-md bg-input border border-default px-3 py-2 text-primary placeholder-tertiary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-colors"
               placeholder="At least 6 characters"
               minLength={6}
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-primary mb-2">
               Confirm New Password
             </label>
             <input
@@ -236,14 +236,14 @@ function ResetPasswordContent() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-md bg-void border border-[#2A2F3A] px-3 py-2 text-white placeholder-white/40 focus:border-[#3B82F6] focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 transition-colors"
+              className="w-full rounded-md bg-input border border-default px-3 py-2 text-primary placeholder-tertiary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/20 transition-colors"
               placeholder="Confirm your password"
               minLength={6}
             />
           </div>
 
           {error && (
-            <div className="rounded-md p-4 bg-[#EF4444]/10 border border-[#EF4444]/20 text-[#EF4444]">
+            <div className="rounded-md p-4 bg-error/10 border border-error/20 text-error">
               <p className="text-sm">{error}</p>
             </div>
           )}
@@ -266,7 +266,7 @@ function ResetPasswordContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen bg-void flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <div className="flex items-center justify-center py-8">
           <LoadingSpinner text="Loading..." size="md" />

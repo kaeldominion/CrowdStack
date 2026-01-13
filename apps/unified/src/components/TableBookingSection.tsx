@@ -49,6 +49,8 @@ interface TableInfo {
 interface TableBookingSectionProps {
   eventId: string;
   eventName: string;
+  venueName?: string;
+  eventStartTime?: string;
   refCode?: string | null;
   linkCode?: string | null;
 }
@@ -60,7 +62,7 @@ interface BookingFormData {
   special_requests: string;
 }
 
-export function TableBookingSection({ eventId, eventName, refCode, linkCode }: TableBookingSectionProps) {
+export function TableBookingSection({ eventId, eventName, venueName, eventStartTime, refCode, linkCode }: TableBookingSectionProps) {
   const [zones, setZones] = useState<TableZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -705,7 +707,28 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
       <Modal
         isOpen={showBookingModal}
         onClose={() => setShowBookingModal(false)}
-        title={bookingSuccess ? "Booking Request Submitted" : `Reserve ${selectedTable?.name}`}
+        title={bookingSuccess ? "Booking Request Submitted" : "Table Reservation"}
+        footer={
+          !bookingSuccess ? (
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setShowBookingModal(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSubmitBooking}
+                disabled={submitting}
+              >
+                {submitting ? <InlineSpinner /> : "Submit Request"}
+              </Button>
+            </div>
+          ) : undefined
+        }
       >
         {bookingSuccess ? (
           <div className="py-4">
@@ -718,6 +741,16 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
 
             {/* Booking Details */}
             <div className="bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg p-4 text-left mb-4">
+              {venueName && (
+                <p className="text-sm text-secondary">
+                  <strong className="text-primary">Venue:</strong> {venueName}
+                </p>
+              )}
+              {eventStartTime && (
+                <p className="text-sm text-secondary">
+                  <strong className="text-primary">Date:</strong> {new Date(eventStartTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              )}
               <p className="text-sm text-secondary">
                 <strong className="text-primary">Table:</strong> {selectedTable?.name}
               </p>
@@ -813,26 +846,38 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
           </div>
         ) : (
           <div className="space-y-4">
-            {selectedTable && (
-              <div className="bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg p-4 mb-4">
-                <p className="font-medium text-primary">{selectedTable.name}</p>
-                <p className="text-sm text-secondary">
-                  {selectedTable.zone.name} • {selectedTable.effective_capacity} guests
-                </p>
-                {selectedTable.effective_minimum_spend && (
-                  <p className="text-sm text-accent-primary mt-1">
-                    Minimum spend: {currencySymbol}
-                    {selectedTable.effective_minimum_spend.toLocaleString()}
+            {/* Event & Table Info Header */}
+            <div className="bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg p-4">
+              {venueName && (
+                <p className="font-semibold text-primary text-lg">{venueName}</p>
+              )}
+              {eventStartTime && (
+                <div className="flex items-center gap-2 text-sm text-secondary mt-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>{new Date(eventStartTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+              )}
+              {selectedTable && (
+                <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                  <p className="font-medium text-primary">{selectedTable.name}</p>
+                  <p className="text-sm text-secondary">
+                    {selectedTable.zone.name} • {selectedTable.effective_capacity} guests
                   </p>
-                )}
-                {selectedTable.effective_deposit && (
-                  <p className="text-sm text-amber-400 mt-1">
-                    Deposit required: {currencySymbol}
-                    {selectedTable.effective_deposit.toLocaleString()}
-                  </p>
-                )}
-              </div>
-            )}
+                  {selectedTable.effective_minimum_spend && (
+                    <p className="text-sm text-accent-primary mt-1">
+                      Minimum spend: {currencySymbol}
+                      {selectedTable.effective_minimum_spend.toLocaleString()}
+                    </p>
+                  )}
+                  {selectedTable.effective_deposit && (
+                    <p className="text-sm text-amber-400 mt-1">
+                      Deposit required: {currencySymbol}
+                      {selectedTable.effective_deposit.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* User profile info - read-only since user is logged in */}
             <div className="bg-[var(--bg-glass)] rounded-lg p-4 border border-[var(--border-subtle)]">
@@ -893,24 +938,6 @@ export function TableBookingSection({ eventId, eventName, refCode, linkCode }: T
                 </p>
               </div>
             )}
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => setShowBookingModal(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleSubmitBooking}
-                disabled={submitting}
-              >
-                {submitting ? <InlineSpinner /> : "Submit Request"}
-              </Button>
-            </div>
           </div>
         )}
       </Modal>

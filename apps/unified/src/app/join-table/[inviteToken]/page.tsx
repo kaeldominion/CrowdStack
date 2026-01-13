@@ -15,7 +15,8 @@ import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { LoadingSpinner, Badge } from "@crowdstack/ui";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
-import { Calendar, MapPin, Users, Crown, Check, User, PartyPopper } from "lucide-react";
+import { Users, Crown, Check, User, PartyPopper } from "lucide-react";
+import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 
 interface PartyData {
   is_open_invite: boolean; // If true, anyone with the link can join
@@ -129,15 +130,24 @@ export default function JoinTablePage() {
             .maybeSingle();
 
           if (attendee) {
-            // Profile exists - check if already joined this party
-            setExistingProfile({
+            // Profile exists - save existing profile data
+            const profileData = {
               name: attendee.name,
               surname: attendee.surname,
               date_of_birth: attendee.date_of_birth,
               gender: attendee.gender as "male" | "female" | null,
               whatsapp: attendee.whatsapp,
               instagram_handle: attendee.instagram_handle,
-            });
+            };
+            setExistingProfile(profileData);
+
+            // Check if profile is COMPLETE (has required fields)
+            const isProfileComplete = !!(
+              attendee.name &&
+              attendee.surname &&
+              attendee.date_of_birth &&
+              attendee.gender
+            );
 
             // Check if user has already joined this party (check guest status)
             // The partyData.guest will tell us if this specific invite token is joined
@@ -146,12 +156,12 @@ export default function JoinTablePage() {
             if (partyDataResponse.ok) {
               const freshPartyData = await partyDataResponse.json();
               setPartyData(freshPartyData);
-              
+
               // Check if THIS user already joined (by checking if any guest matches their email)
               const userAlreadyJoined = freshPartyData.guests?.some(
                 (g: { name: string }) => g.name === attendee.name
               ) || freshPartyData.guest?.has_joined;
-              
+
               if (userAlreadyJoined && freshPartyData.guest?.has_joined) {
                 // Already joined - show success with their QR
                 // Need to get their QR token - do a POST which will return already_joined
@@ -169,13 +179,20 @@ export default function JoinTablePage() {
                     setQrToken(joinData.qr_token || "");
                   }
                 }
-              } else {
-                // Not joined yet - show table details with Join button
+              } else if (isProfileComplete) {
+                // Profile is complete, not joined yet - show table details with direct Join button
                 setReadyToJoin(true);
+              } else {
+                // Profile exists but incomplete - show TypeformSignup to complete it
+                setShowSignup(true);
               }
             } else {
-              // Couldn't fetch party data, show join button anyway
-              setReadyToJoin(true);
+              // Couldn't fetch party data
+              if (isProfileComplete) {
+                setReadyToJoin(true);
+              } else {
+                setShowSignup(true);
+              }
             }
           } else {
             // No profile - show signup form
@@ -486,61 +503,32 @@ export default function JoinTablePage() {
   // Main invitation view
   if (partyData) {
     const imageUrl = partyData.event.flier_url || partyData.event.cover_image;
-    const spotsText = partyData.booking.spots_remaining === 1 
-      ? "1 spot left" 
+    const spotsText = partyData.booking.spots_remaining === 1
+      ? "1 spot left"
       : `${partyData.booking.spots_remaining} spots left`;
 
-    return (
-      <div className="min-h-screen bg-void">
-        {/* Hero Section with Event Image */}
-        <div className="relative">
-          {imageUrl ? (
-            <div className="relative h-64 sm:h-80 w-full overflow-hidden">
-              <Image
-                src={imageUrl}
-                alt={partyData.event.name}
-                fill
-                className="object-cover object-top"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-void via-void/60 to-transparent" />
-            </div>
-          ) : (
-            <div className="h-32 sm:h-48 bg-gradient-to-b from-accent-primary/20 to-void" />
-          )}
-          
-          {/* Floating Party Badge */}
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-2 px-4 py-2 bg-accent-primary rounded-full shadow-lg">
-              <PartyPopper className="w-5 h-5 text-white" />
+    // Parse event date for MobileScrollExperience
+    const eventStartDate = partyData.event.start_time ? new Date(partyData.event.start_time) : undefined;
+
+    // Content that goes inside the scrolling area
+    const inviteContent = (
+      <div className="bg-[var(--bg-void)]/95 rounded-t-3xl">
+        {/* Drag indicator */}
+        <div className="flex justify-center pt-3 pb-3">
+          <div className="w-12 h-1 bg-[var(--border-strong)] rounded-full" />
+        </div>
+
+        <div className="px-5 pb-12 space-y-5">
+          {/* Party Badge */}
+          <div className="flex justify-center">
+            <div className="flex items-center gap-2 px-4 py-2 bg-accent-primary rounded-full">
+              <PartyPopper className="w-4 h-4 text-white" />
               <span className="text-white font-semibold text-sm">Table Party Invite</span>
             </div>
           </div>
-        </div>
-
-        {/* Content */}
-        <div className="max-w-lg mx-auto px-4 pt-12 pb-8">
-          {/* Event Name */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary text-center mb-2">
-            {partyData.event.name}
-          </h1>
-
-          {/* Event Details */}
-          <div className="flex flex-wrap justify-center gap-3 text-sm text-secondary mb-6">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-accent-primary" />
-              <span>{partyData.event.date}</span>
-            </div>
-            {partyData.venue.name && (
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-accent-primary" />
-                <span>{partyData.venue.name}</span>
-              </div>
-            )}
-          </div>
 
           {/* Table Info Card */}
-          <div className="glass-panel p-4 mb-6">
+          <div className="glass-panel p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="label-mono text-xs mb-1">TABLE</p>
@@ -550,7 +538,7 @@ export default function JoinTablePage() {
                 )}
               </div>
               <div className="text-right">
-                <Badge 
+                <Badge
                   variant={partyData.booking.is_full ? "error" : "secondary"}
                   className="mb-1"
                 >
@@ -584,8 +572,8 @@ export default function JoinTablePage() {
                   {partyData.guests.map((guest) => (
                     <div key={guest.id} className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        guest.is_host 
-                          ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white" 
+                        guest.is_host
+                          ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white"
                           : "bg-raised text-secondary border border-border-subtle"
                       }`}>
                         {guest.is_host ? <Crown className="w-4 h-4" /> : guest.initial}
@@ -602,7 +590,7 @@ export default function JoinTablePage() {
                       <Check className="w-4 h-4 text-accent-success flex-shrink-0" />
                     </div>
                   ))}
-                  
+
                   {/* Empty spots */}
                   {Array.from({ length: partyData.booking.spots_remaining }).map((_, i) => (
                     <div key={`empty-${i}`} className="flex items-center gap-3 opacity-40">
@@ -618,7 +606,7 @@ export default function JoinTablePage() {
           </div>
 
           {/* Your Invitation Card */}
-          <div className="glass-panel p-4 mb-6 border-accent-primary/30">
+          <div className="glass-panel p-4 border-accent-primary/30">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
                 <Users className="w-5 h-5 text-accent-primary" />
@@ -701,6 +689,31 @@ export default function JoinTablePage() {
           <p className="text-center text-secondary text-xs">
             Powered by CrowdStack
           </p>
+        </div>
+      </div>
+    );
+
+    // Render with MobileScrollExperience if we have a flier image
+    if (imageUrl) {
+      return (
+        <MobileScrollExperience
+          flierUrl={imageUrl}
+          eventName={partyData.event.name}
+          venueName={partyData.venue.name}
+          venueCity={partyData.venue.city}
+          startDate={eventStartDate}
+        >
+          {inviteContent}
+        </MobileScrollExperience>
+      );
+    }
+
+    // Fallback without MobileScrollExperience if no flier
+    return (
+      <div className="min-h-screen bg-void">
+        <div className="h-32 bg-gradient-to-b from-accent-primary/20 to-void" />
+        <div className="max-w-lg mx-auto px-4 -mt-8">
+          {inviteContent}
         </div>
       </div>
     );

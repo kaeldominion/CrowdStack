@@ -522,7 +522,6 @@ export async function POST(
         attendeeData.phone = body.whatsapp;
         attendeeData.whatsapp = body.whatsapp;
       }
-      attendeeData.source = "table_party_invite";
 
       const { data: created, error: createError } = await serviceSupabase
         .from("attendees")

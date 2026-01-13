@@ -95,6 +95,24 @@ export async function GET(
       );
     }
 
+    // Fetch owner details if event has an owner
+    let owner: { id: string; email: string | null; first_name: string | null; last_name: string | null } | null = null;
+    if (event.owner_user_id) {
+      try {
+        const { data: userData } = await serviceSupabase.auth.admin.getUserById(event.owner_user_id);
+        if (userData?.user) {
+          owner = {
+            id: userData.user.id,
+            email: userData.user.email || null,
+            first_name: userData.user.user_metadata?.first_name || null,
+            last_name: userData.user.user_metadata?.last_name || null,
+          };
+        }
+      } catch (err) {
+        console.error("[Venue Event] Failed to fetch owner details:", err);
+      }
+    }
+
     // Get registration and checkin counts
     const { count: registrations } = await serviceSupabase
       .from("registrations")
@@ -109,6 +127,7 @@ export async function GET(
     return NextResponse.json({
       event: {
         ...event,
+        owner,
         registrations: registrations || 0,
         checkins: checkins || 0,
       },
