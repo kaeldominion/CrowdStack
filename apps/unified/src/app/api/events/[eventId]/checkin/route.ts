@@ -582,6 +582,63 @@ export async function POST(
       }
     }
 
+    // Get feedback history for this attendee at this venue (non-blocking)
+    let feedbackHistory: any[] = [];
+    try {
+      // Get event info to find venue_id
+      const { data: eventInfoForFeedback } = await serviceSupabase
+        .from("events")
+        .select("venue_id")
+        .eq("id", eventId)
+        .single();
+
+      if (eventInfoForFeedback?.venue_id && registration.attendee_id) {
+        // Get all events for this venue
+        const { data: venueEvents } = await serviceSupabase
+          .from("events")
+          .select("id")
+          .eq("venue_id", eventInfoForFeedback.venue_id);
+
+        const venueEventIds = venueEvents?.map((e) => e.id) || [];
+
+        if (venueEventIds.length > 0) {
+          // Get feedback for this attendee at this venue's events
+          const { data: feedback } = await serviceSupabase
+            .from("event_feedback")
+            .select(`
+              id,
+              rating,
+              feedback_type,
+              comment,
+              submitted_at,
+              events!inner(id, name, start_time)
+            `)
+            .eq("attendee_id", registration.attendee_id)
+            .in("event_id", venueEventIds)
+            .order("submitted_at", { ascending: false })
+            .limit(5); // Show last 5 feedback entries
+
+          if (feedback) {
+            feedbackHistory = feedback.map((fb) => {
+              const event = Array.isArray(fb.events) ? fb.events[0] : fb.events;
+              return {
+                id: fb.id,
+                rating: fb.rating,
+                feedback_type: fb.feedback_type,
+                comment: fb.comment,
+                submitted_at: fb.submitted_at,
+                event_name: event?.name || "Unknown Event",
+                event_date: event?.start_time || null,
+              };
+            });
+          }
+        }
+      }
+    } catch (feedbackError) {
+      console.warn(`[Check-in API] Error fetching feedback history:`, feedbackError);
+      // Continue without feedback info - non-critical
+    }
+
     const duration = Date.now() - startTime;
     console.log(`[Check-in API] Request completed in ${duration}ms`);
 
@@ -594,6 +651,7 @@ export async function POST(
       registration_id: registrationId,
       attendee: attendee,
       vip_status: vipStatus,
+      feedback_history: feedbackHistory,
       message: isDuplicate
         ? `${attendeeName} was already checked in`
         : `${attendeeName} checked in successfully`,

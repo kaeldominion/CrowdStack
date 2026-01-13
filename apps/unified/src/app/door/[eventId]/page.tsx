@@ -40,6 +40,16 @@ interface VipStatus {
   vipReasons: string[];
 }
 
+interface FeedbackHistoryItem {
+  id: string;
+  rating: number;
+  feedback_type: "positive" | "negative";
+  comment?: string | null;
+  submitted_at: string;
+  event_name: string;
+  event_date?: string | null;
+}
+
 interface CheckInResult {
   id: string;
   name: string;
@@ -49,6 +59,7 @@ interface CheckInResult {
   attendee_id?: string;
   registration_id?: string;
   vipStatus?: VipStatus;
+  feedback_history?: FeedbackHistoryItem[];
   // Table party fields
   isTableParty?: boolean;
   tableName?: string;
@@ -296,6 +307,7 @@ export default function DoorScannerPage() {
           attendee_id: data.attendee_id,
           registration_id: data.registration_id,
           vipStatus: data.vip_status,
+          feedback_history: data.feedback_history || [],
           // Table party fields
           isTableParty: data.is_table_party || false,
           tableName: data.table_name,
@@ -735,6 +747,60 @@ export default function DoorScannerPage() {
                   </button>
                 )}
               </div>
+              {/* Feedback History */}
+              {lastCheckIn.feedback_history && lastCheckIn.feedback_history.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-border-subtle">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="h-4 w-4 text-yellow-400" />
+                    <p className="text-sm font-semibold text-primary">Venue Feedback History</p>
+                    <Badge variant="default" className="text-[10px]">
+                      {lastCheckIn.feedback_history.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {lastCheckIn.feedback_history.map((feedback) => (
+                      <div key={feedback.id} className="p-2 bg-raised rounded border border-border-subtle">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= feedback.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                            ))}
+                            <Badge
+                              variant={feedback.feedback_type === "positive" ? "success" : "warning"}
+                              className="text-[9px] ml-1"
+                            >
+                              {feedback.feedback_type}
+                            </Badge>
+                          </div>
+                          <span className="text-[10px] text-secondary font-mono">
+                            {feedback.event_date
+                              ? new Date(feedback.event_date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                })
+                              : ""}
+                          </span>
+                        </div>
+                        <p className="text-xs text-secondary font-medium mb-0.5">
+                          {feedback.event_name}
+                        </p>
+                        {feedback.comment && (
+                          <p className="text-xs text-secondary mt-1 line-clamp-2">
+                            "{feedback.comment}"
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {/* VIP Acknowledgement Button */}
               {lastCheckIn.vipStatus?.isVip && showVipAcknowledge && (
                 <div className="mt-4 pt-4 border-t border-amber-500/30">
