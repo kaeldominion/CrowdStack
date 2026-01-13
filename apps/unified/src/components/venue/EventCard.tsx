@@ -24,7 +24,8 @@ interface VenueEvent {
   end_time: string | null;
   cover_image_url: string | null;
   flier_url: string | null;
-  capacity: number | null;
+  capacity?: number | null;
+  max_guestlist_size?: number | null;
   registration_count: number;
 }
 

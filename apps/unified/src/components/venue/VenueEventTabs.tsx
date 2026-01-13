@@ -26,6 +26,7 @@ interface Event {
   cover_image_url: string | null;
   flier_url: string | null;
   capacity?: number | null;
+  max_guestlist_size?: number | null;
   registration_count: number;
   requires_approval?: boolean;
   registration_type?: "guestlist" | "display_only" | "external_link"; // Deprecated, kept for backward compatibility

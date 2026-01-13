@@ -185,7 +185,7 @@ export function EventCardCompact({
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="text-secondary font-medium">
-                  {registrationCount}/{capacity}
+                  {registrationCount}/{maxGuestlistSize}
                 </span>
                 <span className={`font-bold ${
                   spotsLeft !== null && spotsLeft <= 10 
@@ -199,7 +199,7 @@ export function EventCardCompact({
               <div className="w-full h-1.5 bg-raised rounded-full overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary"
-                  style={{ width: `${Math.min((registrationCount / capacity) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((registrationCount / maxGuestlistSize) * 100, 100)}%` }}
                 />
               </div>
             </div>
