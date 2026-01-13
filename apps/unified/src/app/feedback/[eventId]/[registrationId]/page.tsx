@@ -232,17 +232,17 @@ export default function FeedbackPage() {
               <p className="text-center text-lg text-secondary mb-8">
                 Thanks for attending! How would you rate your experience?
               </p>
-              <div className="flex justify-center gap-2 mb-8">
+              <div className="flex justify-center gap-1 md:gap-2 mb-8">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => handleRatingSelect(star)}
-                    className="transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-2"
+                    className="transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 md:p-2"
                     aria-label={`Rate ${star} star${star !== 1 ? "s" : ""}`}
                   >
                     <Star
-                      className={`h-16 w-16 ${
+                      className={`h-10 w-10 md:h-16 md:w-16 ${
                         rating && star <= rating
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-gray-300 dark:text-gray-600"
