@@ -1511,12 +1511,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   if (effectivePermissions.canEdit || config.role === "organizer" || config.role === "venue" || config.role === "admin") {
     tabs.push({ value: "lineup", label: "Lineup" });
   }
-  // Tables tab - show for venues only (manages table availability)
-  if (config.canViewTables && config.role === "venue") {
+  // Tables tab - show for venues and admins (manages table availability)
+  if (config.canViewTables && (config.role === "venue" || config.role === "admin")) {
     tabs.push({ value: "tables", label: "Tables" });
   }
-  // Bookings tab - show for venues and organizers when enabled
-  if (config.canViewBookings && (config.role === "venue" || config.role === "organizer")) {
+  // Bookings tab - show for venues, organizers, and admins when enabled
+  if (config.canViewBookings && (config.role === "venue" || config.role === "organizer" || config.role === "admin")) {
     tabs.push({ value: "bookings", label: "Bookings" });
   }
   // Venue Pulse (Feedback) tab - show for venues only
@@ -2845,8 +2845,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </TabsContent>
           )}
 
-          {/* Tables Tab - Venue Only */}
-          {config.canViewTables && config.role === "venue" && (
+          {/* Tables Tab - Venue and Admin */}
+          {config.canViewTables && (config.role === "venue" || config.role === "admin") && (
             <TabsContent value="tables" className="space-y-4">
               {/* Booking Mode Selector */}
               <Card>
@@ -3140,8 +3140,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
             </TabsContent>
           )}
 
-          {/* Bookings Tab - Venue and Organizer */}
-          {config.canViewBookings && (config.role === "venue" || config.role === "organizer") && (
+          {/* Bookings Tab - Venue, Organizer, and Admin */}
+          {config.canViewBookings && (config.role === "venue" || config.role === "organizer" || config.role === "admin") && (
             <TabsContent value="bookings" className="space-y-4">
               <Card>
                 <div className="mb-4">
@@ -3150,7 +3150,10 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     Manage table booking requests for this event.
                   </p>
                 </div>
-                <BookingsTab eventId={event.id} />
+                <BookingsTab
+                  eventId={event.id}
+                  apiBasePath={config.role === "admin" ? "/api/admin/events" : "/api/venue/events"}
+                />
               </Card>
             </TabsContent>
           )}

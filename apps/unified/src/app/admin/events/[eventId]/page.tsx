@@ -30,6 +30,9 @@ export default function AdminEventDetailPage() {
         canPublish: true,
         showVenueApproval: true,
         showEditHistory: false,
+        canViewTables: true,
+        canViewBookings: true,
+        tablesApiEndpoint: `/api/admin/events/${eventId}/tables`,
       }}
     />
   );

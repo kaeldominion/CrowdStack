@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.QR_JWT_SECRET || process.env.JWT_SECRET || "crowdstack-dev-jwt-secret-do-not-use-in-production";
+// Use the same secret as generation in packages/shared/src/qr/generate.ts
+const DEV_SECRET = "crowdstack-dev-jwt-secret-do-not-use-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || DEV_SECRET;
 
 interface DecodedQR {
   type: "pass" | "registration_url" | "invite_code" | "unknown";

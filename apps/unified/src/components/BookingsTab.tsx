@@ -101,12 +101,13 @@ interface BookingLink {
 
 interface BookingsTabProps {
   eventId: string;
+  apiBasePath?: string; // Defaults to /api/venue/events
 }
 
 type StatusFilter = "all" | "pending" | "confirmed" | "cancelled" | "no_show" | "completed";
 type TabType = "bookings" | "closeout" | "commissions";
 
-export function BookingsTab({ eventId }: BookingsTabProps) {
+export function BookingsTab({ eventId, apiBasePath = "/api/venue/events" }: BookingsTabProps) {
   const [bookings, setBookings] = useState<TableBooking[]>([]);
   const [allTables, setAllTables] = useState<TableOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
         params.set("status", statusFilter);
       }
 
-      const url = `/api/venue/events/${eventId}/bookings${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `${apiBasePath}/${eventId}/bookings${params.toString() ? `?${params.toString()}` : ""}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -216,7 +217,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
 
   const fetchBookingLinks = async () => {
     try {
-      const response = await fetch(`/api/venue/events/${eventId}/booking-links`);
+      const response = await fetch(`${apiBasePath}/${eventId}/booking-links`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -241,7 +242,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
         body.expires_at = new Date(newLinkExpiry).toISOString();
       }
 
-      const response = await fetch(`/api/venue/events/${eventId}/booking-links`, {
+      const response = await fetch(`${apiBasePath}/${eventId}/booking-links`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -271,7 +272,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
     try {
       setDeletingLinkId(linkId);
 
-      const response = await fetch(`/api/venue/events/${eventId}/booking-links/${linkId}`, {
+      const response = await fetch(`${apiBasePath}/${eventId}/booking-links/${linkId}`, {
         method: "DELETE",
       });
 
@@ -324,7 +325,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
       setUpdating(true);
       setUpdateError(null);
 
-      const response = await fetch(`/api/venue/events/${eventId}/bookings/${selectedBooking.id}`, {
+      const response = await fetch(`${apiBasePath}/${eventId}/bookings/${selectedBooking.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -458,7 +459,7 @@ export function BookingsTab({ eventId }: BookingsTabProps) {
     try {
       setReassigning(true);
       const response = await fetch(
-        `/api/venue/events/${eventId}/bookings/${reassignBookingId}/reassign`,
+        `${apiBasePath}/${eventId}/bookings/${reassignBookingId}/reassign`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

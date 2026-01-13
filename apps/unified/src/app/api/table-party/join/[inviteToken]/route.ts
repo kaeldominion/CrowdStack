@@ -638,6 +638,16 @@ export async function POST(
       );
 
       // Notify host that guest joined
+      // Get updated guest count after this join
+      const { data: updatedPartyGuests } = await serviceSupabase
+        .from("table_party_guests")
+        .select("id")
+        .eq("booking_id", bookingId)
+        .eq("status", "joined");
+
+      const updatedJoinedCount = updatedPartyGuests?.length || 1;
+      const bookingUrl = `${baseUrl}/me`;
+
       await sendTemplateEmail(
         "table_party_guest_joined_host",
         booking.guest_email,
@@ -647,6 +657,9 @@ export async function POST(
           guest_name: attendee.name,
           event_name: event.name,
           table_name: booking.table?.name || "Table",
+          current_count: String(updatedJoinedCount),
+          party_size: String(booking.party_size),
+          booking_url: bookingUrl,
         },
         {
           event_id: event.id,
