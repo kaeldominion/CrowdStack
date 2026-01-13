@@ -12,6 +12,10 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 // Events change more frequently than venues (registration counts, status updates)
 export const revalidate = 30;
 
+// Force static generation with ISR - without this, dynamic routes may be treated as
+// server-side rendered and not cached
+export const dynamic = 'force-static';
+
 function getBaseUrl() {
   if (typeof window !== "undefined") {
     return window.location.origin;
