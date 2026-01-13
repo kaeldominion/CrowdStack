@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     const invoiceNumber = generateBookingInvoiceNumber(booking.id);
 
     // Build callback URLs
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
     const callbackUrl = `${baseUrl}/booking/${booking.id}/payment-complete`;
     const callbackUrlCancel = `${baseUrl}/booking/${booking.id}/payment-cancelled`;
 

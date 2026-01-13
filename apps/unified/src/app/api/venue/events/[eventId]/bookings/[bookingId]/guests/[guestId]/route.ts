@@ -225,7 +225,7 @@ export async function PATCH(
 
       // Send invite email
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
         const joinUrl = `${baseUrl}/join-table/${currentGuest.invite_token}`;
 
         const startTime = event.start_time ? new Date(event.start_time) : null;

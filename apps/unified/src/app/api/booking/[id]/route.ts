@@ -251,7 +251,7 @@ export async function GET(
         }
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
 
       partyData = {
         host: hostGuest ? {

@@ -297,7 +297,7 @@ async function handleTableBookingPayment(
           })
         : "TBA";
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
       const passUrl = hostGuestId ? `${baseUrl}/table-pass/${hostGuestId}` : `${baseUrl}/booking/${bookingId}`;
       const bookingUrl = `${baseUrl}/booking/${bookingId}`;
       const venueUrl = venue?.slug ? `${baseUrl}/venue/${venue.slug}` : "";

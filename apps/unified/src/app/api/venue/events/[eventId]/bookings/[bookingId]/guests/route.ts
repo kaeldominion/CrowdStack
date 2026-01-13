@@ -333,7 +333,7 @@ async function sendInviteAndRespond(
   successMessage: string
 ) {
   // Build join URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
   const joinUrl = `${baseUrl}/join-table/${guest.invite_token}`;
 
   // Format event date

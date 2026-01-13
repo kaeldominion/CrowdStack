@@ -557,7 +557,7 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
         {/* Help Text */}
         <p className="text-center text-xs text-muted pt-4">
           Questions about your booking?{" "}
-          <a href={`mailto:support@crowdstack.com`} className="text-accent-secondary hover:underline">
+          <a href={`mailto:support@crowdstack.app`} className="text-accent-secondary hover:underline">
             Contact support
           </a>
         </p>

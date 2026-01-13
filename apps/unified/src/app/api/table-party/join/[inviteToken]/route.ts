@@ -492,7 +492,7 @@ export async function POST(
 
     // Send confirmation email with QR code link
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
       const qrUrl = `${baseUrl}/e/${event.slug}/pass?token=${qrToken}`;
 
       const eventTimezone = event.timezone || "UTC";

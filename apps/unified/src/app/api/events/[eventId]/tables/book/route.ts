@@ -417,7 +417,7 @@ export async function POST(
     // Build booking URL for payment/status page
     // Use relative URL for same-site navigation (returned to frontend)
     // DOKU callbacks below use baseUrl since they need absolute URLs for external redirect
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
     const bookingUrl = `/booking/${booking.id}`;
 
     // If deposit is required, check if DOKU is enabled and create checkout session

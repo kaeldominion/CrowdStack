@@ -382,7 +382,7 @@ export class DokuService {
           },
           customer: {
             name: "Test Customer",
-            email: "test@crowdstack.com",
+            email: "test@crowdstack.app",
           },
           payment: {
             paymentDueDate: 5, // 5 minutes - will expire quickly
@@ -411,7 +411,7 @@ export class DokuService {
         },
         customer: {
           name: "Test Customer",
-          email: "test@crowdstack.com",
+          email: "test@crowdstack.app",
         },
         payment: {
           paymentDueDate: 5, // 5 minutes - will expire quickly

@@ -297,7 +297,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
       }
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
 
     // Re-fetch the host to get updated data (including attendee_id if just linked)
     if (hostGuest) {
