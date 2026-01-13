@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
-import { decodeTokenType, verifyTablePartyToken } from "@crowdstack/shared/qr/table-party";
+import { decodeTokenType } from "@crowdstack/shared/qr/table-party";
 import { cookies } from "next/headers";
 
 // Force dynamic rendering
@@ -55,26 +55,24 @@ export async function GET(
     if (qrToken && !registrationId) {
       try {
         const tokenData = verifyQRPassToken(qrToken);
-        if (tokenData.eventId !== eventId) {
+        if (tokenData.event_id !== eventId) {
           return NextResponse.json(
             { error: "QR token is for a different event" },
             { status: 400 }
           );
         }
-        finalRegistrationId = tokenData.registrationId;
+        finalRegistrationId = tokenData.registration_id;
       } catch (error: any) {
-        // Try table party token
+        // Try table party token - but preview is not supported for table party guests
         try {
           const tokenType = decodeTokenType(qrToken);
           if (tokenType === "table_party") {
-            const tableData = verifyTablePartyToken(qrToken);
-            if (tableData.eventId !== eventId) {
-              return NextResponse.json(
-                { error: "QR token is for a different event" },
-                { status: 400 }
-              );
-            }
-            finalRegistrationId = tableData.registrationId;
+            // Table party tokens use guest_id/booking_id, not registration_id
+            // Preview is not supported for table party guests - use the checkin endpoint directly
+            return NextResponse.json(
+              { error: "Preview not supported for table party QR codes. Use check-in directly." },
+              { status: 400 }
+            );
           } else {
             return NextResponse.json(
               { error: "Invalid QR token" },
@@ -282,45 +280,9 @@ export async function GET(
       }
     }
 
-    // Check for table party
+    // Check for table party info (for regular QR tokens that might be part of a table party)
+    // Note: Table party QR tokens return early above, this is for regular registrations
     let tablePartyInfo = null;
-    if (qrToken) {
-      try {
-        const tokenType = decodeTokenType(qrToken);
-        if (tokenType === "table_party") {
-          const tableData = verifyTablePartyToken(qrToken);
-          const { data: table } = await serviceSupabase
-            .from("table_parties")
-            .select("name, host_registration_id")
-            .eq("id", tableData.tablePartyId)
-            .single();
-
-          if (table) {
-            const { data: hostReg } = await serviceSupabase
-              .from("registrations")
-              .select(`
-                attendee:attendees(name, surname)
-              `)
-              .eq("id", table.host_registration_id)
-              .single();
-
-            const host = Array.isArray(hostReg?.attendee) 
-              ? hostReg?.attendee[0] 
-              : hostReg?.attendee;
-
-            tablePartyInfo = {
-              tableName: table.name,
-              isHost: table.host_registration_id === finalRegistrationId,
-              hostName: host 
-                ? (host.surname ? `${host.name} ${host.surname}` : host.name)
-                : null,
-            };
-          }
-        }
-      } catch {
-        // Not a table party token, ignore
-      }
-    }
 
     return NextResponse.json({
       registration_id: finalRegistrationId,

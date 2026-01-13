@@ -324,7 +324,8 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
     if (checkins) {
       checkinHistory = checkins.map((checkin) => {
         const reg = Array.isArray(checkin.registrations) ? checkin.registrations[0] : checkin.registrations;
-        const event = reg && Array.isArray(reg.events) ? reg.events[0] : reg?.events;
+        const eventData = reg?.events;
+        const event = Array.isArray(eventData) ? eventData[0] : eventData;
         return {
           id: checkin.id,
           checked_in_at: checkin.checked_in_at,
