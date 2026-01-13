@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Button, Card, Textarea, Checkbox, LoadingSpinner, useToast } from "@crowdstack/ui";
-import { Star, CheckCircle2, AlertCircle } from "lucide-react";
+import { Star, CheckCircle2, AlertCircle, Activity } from "lucide-react";
 
 interface Event {
   id: string;
@@ -169,7 +169,12 @@ export default function FeedbackPage() {
   if (error && !event) {
     return (
       <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-md w-full relative">
+          {/* Venue PULSE Branding */}
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-mono text-secondary">
+            <Activity className="h-3.5 w-3.5" />
+            <span className="uppercase tracking-wider">Venue PULSE</span>
+          </div>
           <div className="p-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Unable to Load Feedback</h1>
@@ -183,7 +188,12 @@ export default function FeedbackPage() {
   if (hasSubmitted) {
     return (
       <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 overflow-y-auto">
-        <Card className="max-w-md w-full my-8">
+        <Card className="max-w-md w-full my-8 relative">
+          {/* Venue PULSE Branding */}
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-mono text-secondary">
+            <Activity className="h-3.5 w-3.5" />
+            <span className="uppercase tracking-wider">Venue PULSE</span>
+          </div>
           <div className="p-8 text-center">
             <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Thank You!</h1>
@@ -210,7 +220,12 @@ export default function FeedbackPage() {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 overflow-y-auto">
-      <Card className="max-w-2xl w-full my-8">
+      <Card className="max-w-2xl w-full my-8 relative">
+        {/* Venue PULSE Branding */}
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 text-xs font-mono text-secondary">
+          <Activity className="h-3.5 w-3.5" />
+          <span className="uppercase tracking-wider">Venue PULSE</span>
+        </div>
         <div className="p-8">
           {/* Header */}
           <div className="text-center mb-8">
