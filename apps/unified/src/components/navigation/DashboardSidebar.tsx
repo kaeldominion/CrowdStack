@@ -82,6 +82,7 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     title: "Manage",
     items: [
       { href: "/app/venue/insights", label: "Insights", icon: TrendingUp },
+      { href: "/app/venue/emails", label: "Email Activity", icon: Mail },
       { href: "/app/venue/tables", label: "Tables", icon: Layers },
       { href: "/app/venue/table-bookings", label: "Table Bookings", icon: UtensilsCrossed },
       { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Ticket },
