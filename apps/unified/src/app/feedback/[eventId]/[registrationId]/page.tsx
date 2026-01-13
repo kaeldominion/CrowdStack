@@ -281,6 +281,26 @@ export default function FeedbackPage() {
           {/* Step 2a: Positive Feedback */}
           {step === "positive" && (
             <div className="space-y-6">
+              {rating && (
+                <div className="flex flex-col items-center gap-2 mb-4">
+                  <p className="text-sm text-secondary">Your rating:</p>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-6 w-6 ${
+                          star <= rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300 dark:text-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-secondary">
+                    {rating} out of 5 stars
+                  </p>
+                </div>
+              )}
               <p className="text-center text-lg text-secondary mb-6">
                 Want to leave a quick comment for the venue?
               </p>
@@ -317,6 +337,26 @@ export default function FeedbackPage() {
           {/* Step 2b: Negative Feedback */}
           {step === "negative" && (
             <div className="space-y-6">
+              {rating && (
+                <div className="flex flex-col items-center gap-2 mb-4">
+                  <p className="text-sm text-secondary">Your rating:</p>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-6 w-6 ${
+                          star <= rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300 dark:text-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-secondary">
+                    {rating} out of 5 stars
+                  </p>
+                </div>
+              )}
               <p className="text-center text-lg text-secondary mb-6">
                 What could have been better?
               </p>
