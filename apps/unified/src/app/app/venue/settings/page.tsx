@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card, Button, Input, Textarea, Tabs, TabsList, TabsTrigger, TabsContent, Badge, Modal, ConfirmModal, LoadingSpinner, Select } from "@crowdstack/ui";
-import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin, Plus, FileText, Edit2, Palette } from "lucide-react";
+import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, ImagePlus, CheckCircle2, MapPin, Plus, FileText, Edit2, Palette, Settings } from "lucide-react";
 import Image from "next/image";
 import { MapPreview } from "@/components/venue/MapPreview";
 import { FeedbackSettingsTab } from "@/components/venue/FeedbackSettingsTab";
@@ -514,15 +514,18 @@ export default function VenueSettingsPage() {
     : null;
 
   return (
-    <div className="space-y-8 pt-4">
+    <div className="space-y-4 pt-4">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Venue Settings</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <Settings className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Settings
+          </h1>
+          <p className="page-description">
             {venueId ? "Managing venue settings" : "Manage your venue profile and preferences"}
           </p>
           {data?.venue && (
-            <p className="mt-1 text-sm font-medium text-primary">{data.venue.name}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{data.venue.name}</p>
           )}
         </div>
         <div className="flex gap-2">

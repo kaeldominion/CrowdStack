@@ -132,13 +132,39 @@ export async function GET(request: Request) {
       });
     }
 
-    // 4. Build final response
+    // 4. Batch fetch table bookings count
+    const { data: allTableBookings } = await serviceSupabase
+      .from("table_bookings")
+      .select("event_id")
+      .in("event_id", eventIds);
+
+    const tableBookingsByEvent = new Map<string, number>();
+    (allTableBookings || []).forEach((booking) => {
+      const current = tableBookingsByEvent.get(booking.event_id) || 0;
+      tableBookingsByEvent.set(booking.event_id, current + 1);
+    });
+
+    // 5. Batch fetch feedback count
+    const { data: allFeedback } = await serviceSupabase
+      .from("event_feedback")
+      .select("event_id")
+      .in("event_id", eventIds);
+
+    const feedbackByEvent = new Map<string, number>();
+    (allFeedback || []).forEach((feedback) => {
+      const current = feedbackByEvent.get(feedback.event_id) || 0;
+      feedbackByEvent.set(feedback.event_id, current + 1);
+    });
+
+    // 6. Build final response
     const eventsWithCounts = events.map((event) => ({
       ...event,
       registrations: registrationsByEvent.get(event.id) || 0,
       checkins: checkinsByEvent.get(event.id) || 0,
       payouts_pending: payoutsPending[event.id] || 0,
       payouts_paid: payoutsPaid[event.id] || 0,
+      table_bookings: tableBookingsByEvent.get(event.id) || 0,
+      feedback_count: feedbackByEvent.get(event.id) || 0,
     }));
 
     return NextResponse.json({ events: eventsWithCounts });

@@ -193,38 +193,41 @@ export default function VenueEmailLogsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="page-title">Email Activity</h1>
-        <p className="text-sm text-secondary mt-2">
+        <h1 className="page-title flex items-center gap-2">
+          <Mail className="h-6 w-6 text-[var(--accent-secondary)]" />
+          Email Activity
+        </h1>
+        <p className="page-description">
           View all emails sent for your venue and events
         </p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Row */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Card className="!p-3">
-            <p className="text-xs text-secondary mb-1">Total Sent</p>
-            <p className="text-2xl font-bold text-primary">{stats.totalSent}</p>
-          </Card>
-          <Card className="!p-3">
-            <p className="text-xs text-secondary mb-1">Open Rate</p>
-            <p className="text-2xl font-bold text-green-400">{stats.openRate.toFixed(1)}%</p>
-          </Card>
-          <Card className="!p-3">
-            <p className="text-xs text-secondary mb-1">Click Rate</p>
-            <p className="text-2xl font-bold text-blue-400">{stats.clickRate.toFixed(1)}%</p>
-          </Card>
-          <Card className="!p-3">
-            <p className="text-xs text-secondary mb-1">Bounce Rate</p>
-            <p className="text-2xl font-bold text-red-400">{stats.bounceRate.toFixed(1)}%</p>
-          </Card>
-          <Card className="!p-3">
-            <p className="text-xs text-secondary mb-1">Today</p>
-            <p className="text-2xl font-bold text-primary">{stats.todayCount}</p>
-          </Card>
+        <div className="flex flex-wrap gap-2">
+          <div className="stat-chip">
+            <span className="stat-chip-value">{stats.totalSent}</span>
+            <span className="stat-chip-label">Sent</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-value text-[var(--accent-success)]">{stats.openRate.toFixed(1)}%</span>
+            <span className="stat-chip-label">Open Rate</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-value text-[var(--accent-secondary)]">{stats.clickRate.toFixed(1)}%</span>
+            <span className="stat-chip-label">Click Rate</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-value text-[var(--accent-error)]">{stats.bounceRate.toFixed(1)}%</span>
+            <span className="stat-chip-label">Bounce</span>
+          </div>
+          <div className="stat-chip">
+            <span className="stat-chip-value">{stats.todayCount}</span>
+            <span className="stat-chip-label">Today</span>
+          </div>
         </div>
       )}
 

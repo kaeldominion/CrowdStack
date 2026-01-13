@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge } from "@crowdstack/ui";
-import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight, Briefcase, Share2, Download } from "lucide-react";
+import { Calendar, Users, Ticket, TrendingUp, BarChart3, Activity, Plus, Zap, DollarSign, Trophy, Target, QrCode, Copy, Check, Building2, Repeat, Radio, MapPin, UserCheck, Globe, Eye, ExternalLink, History, Clock, ArrowUpRight, ChevronRight, Briefcase, Share2, Download, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
@@ -294,17 +294,21 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-secondary">Loading dashboard...</div>
+        <div className="animate-pulse text-[var(--text-muted)]">Loading dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Dashboard</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <LayoutGrid className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Dashboard
+          </h1>
+          <p className="page-description">
             {userRoles.length > 1 
               ? "Overview across all your roles" 
               : "Overview of your performance"}
@@ -313,16 +317,16 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
         <div className="flex gap-2">
           {isVenue && (
             <Link href="/app/venue/events/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Create Event
               </Button>
             </Link>
           )}
           {isOrganizer && (
             <Link href="/app/organizer/events/new">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Create Event
               </Button>
             </Link>
@@ -336,9 +340,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-              <h2 className="text-xl font-semibold text-primary">Live Now</h2>
+              <h2 className="section-header !mb-0">Live Now</h2>
             </div>
-            <span className="text-sm text-secondary">
+            <span className="text-xs text-[var(--text-muted)]">
               {liveEvents.length} event{liveEvents.length !== 1 ? "s" : ""} happening now
             </span>
           </div>
@@ -440,8 +444,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Venue Admin Section */}
       {isVenue && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+          <h2 className="section-header flex items-center gap-2 !mb-0">
+            <Building2 className="h-4 w-4 text-[var(--accent-secondary)]" />
             Venue Performance
           </h2>
 
@@ -745,8 +749,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Event Organizer Section */}
       {isOrganizer && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <h2 className="section-header flex items-center gap-2 !mb-0">
+            <Calendar className="h-4 w-4 text-[var(--accent-secondary)]" />
             Event Management
           </h2>
 
@@ -917,15 +921,15 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
       {/* Promoter Section */}
       {isPromoter && (
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-              <Users className="h-5 w-5" />
+            <h2 className="section-header flex items-center gap-2 !mb-0">
+              <Users className="h-4 w-4 text-[var(--accent-secondary)]" />
               Your Events
             </h2>
             <Link href="/app/promoter/events">
-              <Button variant="secondary" size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
+              <Button variant="secondary" size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Find Events
               </Button>
             </Link>
@@ -1310,19 +1314,17 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
 
       {/* DJ Section */}
       {isDJ && (
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-              <Radio className="h-5 w-5" />
+            <h2 className="section-header flex items-center gap-2 !mb-0">
+              <Radio className="h-4 w-4 text-[var(--accent-secondary)]" />
               DJ Dashboard
             </h2>
-            <div className="flex items-center gap-2">
-              <Link href="/app/dj/profile">
-                <Button variant="secondary" size="sm">
-                  Edit Profile Info
-                </Button>
-              </Link>
-            </div>
+            <Link href="/app/dj/profile">
+              <Button variant="secondary" size="sm">
+                Edit Profile
+              </Button>
+            </Link>
           </div>
 
           {/* DJ Profile Selector */}
@@ -1525,8 +1527,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Superadmin Section */}
       {isSuperadmin && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+          <h2 className="section-header flex items-center gap-2 !mb-0">
+            <BarChart3 className="h-4 w-4 text-[var(--accent-secondary)]" />
             Admin Access
           </h2>
           <BentoCard>

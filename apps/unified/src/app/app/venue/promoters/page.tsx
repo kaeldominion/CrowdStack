@@ -1,30 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Button, LoadingSpinner } from "@crowdstack/ui";
 import {
-  Card,
-  Container,
-  Section,
-  Button,
-  Input,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  Badge,
-} from "@crowdstack/ui";
-import {
-  Users,
+  Megaphone,
   Search,
   Calendar,
   TrendingUp,
   Ticket,
   Mail,
   Phone,
+  Users,
   ChevronRight,
-  UserPlus,
 } from "lucide-react";
 import { PromoterProfileModal } from "@/components/PromoterProfileModal";
 
@@ -45,7 +32,6 @@ interface Promoter {
 
 export default function VenuePromotersPage() {
   const [promoters, setPromoters] = useState<Promoter[]>([]);
-  const [filteredPromoters, setFilteredPromoters] = useState<Promoter[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedPromoter, setSelectedPromoter] = useState<Promoter | null>(null);
@@ -54,20 +40,13 @@ export default function VenuePromotersPage() {
     loadPromoters();
   }, []);
 
-  useEffect(() => {
-    filterPromoters();
-  }, [search, promoters]);
-
   const loadPromoters = async () => {
     try {
       setLoading(true);
-      // Add cache busting timestamp to ensure fresh data
       const timestamp = Date.now();
       const response = await fetch(`/api/venue/promoters?_t=${timestamp}`, {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-        },
+        headers: { 'Cache-Control': 'no-cache' },
       });
       if (!response.ok) throw new Error("Failed to load promoters");
       const data = await response.json();
@@ -80,175 +59,204 @@ export default function VenuePromotersPage() {
     }
   };
 
-  const filterPromoters = () => {
-    let filtered = [...promoters];
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name?.toLowerCase().includes(searchLower) ||
-          p.email?.toLowerCase().includes(searchLower)
-      );
-    }
-    setFilteredPromoters(filtered);
-  };
+  const filteredPromoters = useMemo(() => {
+    if (!search) return promoters;
+    const searchLower = search.toLowerCase();
+    return promoters.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(searchLower) ||
+        p.email?.toLowerCase().includes(searchLower)
+    );
+  }, [search, promoters]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const totalReferrals = promoters.reduce((sum, p) => sum + p.referrals_count, 0);
+    const totalCheckins = promoters.reduce((sum, p) => sum + p.checkins_count, 0);
+    const avgConversion = promoters.length > 0 
+      ? Math.round(promoters.reduce((sum, p) => sum + p.conversion_rate, 0) / promoters.length)
+      : 0;
+    return { totalReferrals, totalCheckins, avgConversion };
+  }, [promoters]);
 
   if (loading) {
     return (
-      <Container>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-secondary">Loading promoters...</div>
-        </div>
-      </Container>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <Section spacing="lg">
-        <Container>
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-primary">Promoters</h1>
-              <p className="mt-2 text-sm text-secondary">
-                Promoters who have worked events at your venue
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => {
-                // Will be implemented with AddPromoterModal
-                alert("Add Promoter - use the event page to add promoters to specific events");
-              }}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Promoter
-            </Button>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <Megaphone className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Promoters
+          </h1>
+          <p className="page-description">
+            Promoters who have worked events at your venue
+          </p>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="flex flex-wrap gap-2">
+        <div className="stat-chip">
+          <span className="stat-chip-value">{promoters.length}</span>
+          <span className="stat-chip-label">Total</span>
+        </div>
+        <div className="stat-chip">
+          <div className="flex items-center gap-1">
+            <Users className="h-4 w-4 text-[var(--accent-primary)]" />
+            <span className="stat-chip-value">{stats.totalReferrals}</span>
           </div>
-
-          <Card>
-            <div className="p-6">
-              <Input
-                placeholder="Search promoters by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </Card>
-
-          <div className="mt-4 text-sm text-secondary">
-            Showing {filteredPromoters.length} of {promoters.length} promoters
+          <span className="stat-chip-label">Referrals</span>
+        </div>
+        <div className="stat-chip">
+          <div className="flex items-center gap-1">
+            <Ticket className="h-4 w-4 text-[var(--accent-success)]" />
+            <span className="stat-chip-value">{stats.totalCheckins}</span>
           </div>
+          <span className="stat-chip-label">Check-ins</span>
+        </div>
+        <div className="stat-chip">
+          <div className="flex items-center gap-1">
+            <TrendingUp className="h-4 w-4 text-[var(--accent-secondary)]" />
+            <span className="stat-chip-value">{stats.avgConversion}%</span>
+          </div>
+          <span className="stat-chip-label">Avg Conv.</span>
+        </div>
+      </div>
 
-          <Card>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Promoter</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Events</TableHead>
-                    <TableHead>Referrals</TableHead>
-                    <TableHead>Check-ins</TableHead>
-                    <TableHead>Conversion</TableHead>
-                    <TableHead>Assignment</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPromoters.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="text-center py-8 text-secondary"
-                      >
-                        {promoters.length === 0
-                          ? "No promoters have worked events at your venue yet"
-                          : "No promoters match your search"}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredPromoters.map((promoter) => (
-                      <TableRow
-                        key={promoter.id}
-                        hover
-                        onClick={() => setSelectedPromoter(promoter)}
-                        className="cursor-pointer"
-                      >
-                        <TableCell>
-                          <div className="font-medium flex items-center gap-2">
-                            <Users className="h-4 w-4 text-secondary" />
-                            {promoter.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {promoter.email && (
-                              <div className="text-sm text-secondary flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {promoter.email}
-                              </div>
-                            )}
-                            {promoter.phone && (
-                              <div className="text-sm text-secondary flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {promoter.phone}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="primary">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {promoter.events_count}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-secondary" />
-                            <span className="text-sm">{promoter.referrals_count}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Ticket className="h-4 w-4 text-secondary" />
-                            <span className="text-sm">{promoter.checkins_count}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="h-4 w-4 text-secondary" />
-                            <span className="text-sm font-medium">
-                              {promoter.conversion_rate}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {promoter.has_direct_assignment && (
-                              <Badge variant="default" className="text-xs">
-                                Direct
-                              </Badge>
-                            )}
-                            {promoter.has_indirect_assignment && (
-                              <Badge variant="secondary" className="text-xs">
-                                Via Organizer
-                              </Badge>
-                            )}
-                            {!promoter.has_direct_assignment && !promoter.has_indirect_assignment && (
-                              <span className="text-xs text-secondary">-</span>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+        <input
+          type="text"
+          placeholder="Search promoters..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
+      {/* Promoters List */}
+      <div className="glass-panel">
+        {/* Header */}
+        <div className="table-header-row grid-cols-[1fr_1fr_70px_80px_80px_80px_90px_40px]">
+          <div>Promoter</div>
+          <div>Contact</div>
+          <div>Events</div>
+          <div>Referrals</div>
+          <div>Check-ins</div>
+          <div>Conv.</div>
+          <div>Type</div>
+          <div></div>
+        </div>
+
+        {filteredPromoters.length === 0 ? (
+          <div className="text-center py-8">
+            <Megaphone className="h-6 w-6 text-[var(--text-muted)] mx-auto mb-2" />
+            <p className="text-xs text-[var(--text-secondary)]">
+              {promoters.length === 0
+                ? "No promoters have worked events at your venue yet"
+                : "No promoters match your search"}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--border-subtle)]/50">
+            {filteredPromoters.map((promoter) => (
+              <div
+                key={promoter.id}
+                onClick={() => setSelectedPromoter(promoter)}
+                className="table-data-row grid-cols-[1fr_1fr_70px_80px_80px_80px_90px_40px] cursor-pointer"
+              >
+                {/* Promoter */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Megaphone className="h-3.5 w-3.5 text-[var(--text-muted)] flex-shrink-0" />
+                    <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+                      {promoter.name}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div className="min-w-0 space-y-0.5">
+                  {promoter.email && (
+                    <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 truncate">
+                      <Mail className="h-2.5 w-2.5 flex-shrink-0" />
+                      <span className="truncate">{promoter.email}</span>
+                    </div>
                   )}
-                </TableBody>
-              </Table>
-            </div>
-          </Card>
-        </Container>
-      </Section>
+                  {promoter.phone && (
+                    <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
+                      <Phone className="h-2.5 w-2.5" />
+                      {promoter.phone}
+                    </div>
+                  )}
+                </div>
+
+                {/* Events */}
+                <div className="text-center">
+                  <span className="text-sm font-mono text-[var(--text-primary)]">{promoter.events_count}</span>
+                </div>
+
+                {/* Referrals */}
+                <div className="text-center">
+                  <span className="text-sm font-mono text-[var(--text-primary)]">{promoter.referrals_count}</span>
+                </div>
+
+                {/* Check-ins */}
+                <div className="text-center">
+                  <span className="text-sm font-mono text-[var(--text-primary)]">{promoter.checkins_count}</span>
+                </div>
+
+                {/* Conversion */}
+                <div className="text-center">
+                  <span className={`text-sm font-mono ${
+                    promoter.conversion_rate >= 50 ? "text-[var(--accent-success)]" :
+                    promoter.conversion_rate >= 25 ? "text-[var(--accent-warning)]" :
+                    "text-[var(--text-secondary)]"
+                  }`}>
+                    {promoter.conversion_rate}%
+                  </span>
+                </div>
+
+                {/* Assignment Type */}
+                <div>
+                  {promoter.has_direct_assignment && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded">
+                      Direct
+                    </span>
+                  )}
+                  {promoter.has_indirect_assignment && !promoter.has_direct_assignment && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-[var(--bg-active)] text-[var(--text-secondary)] rounded">
+                      Via Org
+                    </span>
+                  )}
+                  {!promoter.has_direct_assignment && !promoter.has_indirect_assignment && (
+                    <span className="text-[10px] text-[var(--text-muted)]">—</span>
+                  )}
+                </div>
+
+                {/* Action */}
+                <div className="flex justify-end">
+                  <ChevronRight className="h-4 w-4 text-[var(--text-muted)]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="panel-footer">
+          {filteredPromoters.length} of {promoters.length} promoters
+        </div>
+      </div>
 
       <PromoterProfileModal
         isOpen={!!selectedPromoter}

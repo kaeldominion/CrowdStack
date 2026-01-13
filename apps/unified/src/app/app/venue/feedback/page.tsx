@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent, Select, Modal } from "@crowdstack/ui";
-import { Star, MessageSquare, TrendingUp, AlertCircle, CheckCircle2, XCircle, Send, Mail, Phone, Calendar, User, History } from "lucide-react";
+import { Badge, Button, LoadingSpinner, useToast, Tabs, TabsList, TabsTrigger, TabsContent, Select, Modal } from "@crowdstack/ui";
+import { Star, MessageSquare, AlertCircle, CheckCircle2, XCircle, Send, Mail, Phone, User, History, Activity } from "lucide-react";
 import Link from "next/link";
 
 interface FeedbackItem {
@@ -209,275 +209,245 @@ export default function VenueFeedbackPage() {
 
   if (!stats) {
     return (
-      <Card>
-        <div className="p-6 text-center">
-          <AlertCircle className="h-12 w-12 text-secondary mx-auto mb-4" />
-          <p className="text-secondary">No feedback data available.</p>
-        </div>
-      </Card>
+      <div className="p-6 text-center bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl">
+        <AlertCircle className="h-8 w-8 text-[var(--text-muted)] mx-auto mb-2" />
+        <p className="text-sm text-[var(--text-secondary)]">No feedback data available.</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Venue Pulse</h1>
-        <p className="text-sm text-secondary mt-2">
-          View and manage feedback from attendees across all your events
-        </p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <Activity className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Venue Pulse
+          </h1>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            View and manage feedback from attendees across all your events
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setShowManualRequest(!showManualRequest);
+            if (!showManualRequest && events.length === 0) {
+              loadEvents();
+            }
+          }}
+        >
+          <Send className="h-3.5 w-3.5 mr-1.5" />
+          {showManualRequest ? "Hide" : "Send Request"}
+        </Button>
       </div>
 
-      {/* Manual Feedback Request Section */}
-      <Card>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <Send className="h-5 w-5" />
-                Send Feedback Request
-              </h3>
-              <p className="text-sm text-secondary mt-1">
-                Manually send a feedback request email to a checked-in attendee. Emails are automatically logged to email_send_logs.
-              </p>
+      {/* Manual Feedback Request - Collapsible */}
+      {showManualRequest && (
+        <div className="p-4 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl space-y-3">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+            Send Feedback Request
+          </p>
+          {loadingEvents ? (
+            <div className="flex items-center gap-2 py-2">
+              <LoadingSpinner size="sm" />
+              <span className="text-xs text-[var(--text-secondary)]">Loading events...</span>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setShowManualRequest(!showManualRequest);
-                if (!showManualRequest && events.length === 0) {
-                  loadEvents();
-                }
-              }}
-            >
-              {showManualRequest ? "Hide" : "Send Request"}
-            </Button>
-          </div>
-
-          {showManualRequest && (
-            <div className="space-y-4 pt-4 border-t border-border-subtle">
-              {loadingEvents ? (
-                <div className="flex items-center justify-center py-4">
-                  <LoadingSpinner size="sm" />
-                  <span className="ml-2 text-sm text-secondary">Loading events...</span>
+          ) : events.length === 0 ? (
+            <p className="text-xs text-[var(--text-secondary)]">
+              No past events found. Feedback requests can only be sent for events that have already occurred.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5 block">
+                    Event
+                  </label>
+                  <Select
+                    value={selectedEventId}
+                    onChange={(e) => setSelectedEventId(e.target.value)}
+                    options={[
+                      { value: "", label: "Choose an event..." },
+                      ...events.map((event) => ({
+                        value: event.id,
+                        label: `${event.name} - ${new Date(event.start_time).toLocaleDateString()}`
+                      }))
+                    ]}
+                  />
                 </div>
-              ) : events.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm text-secondary">
-                    No past events found. Feedback requests can only be sent for events that have already occurred.
-                  </p>
-                </div>
-              ) : (
-                <>
+                {selectedEventId && (
                   <div>
-                    <label className="block text-sm font-medium text-primary mb-2">
-                      Select Event
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-1.5 block">
+                      Attendee
                     </label>
-                    <Select
-                      value={selectedEventId}
-                      onChange={(e) => setSelectedEventId(e.target.value)}
-                      options={[
-                        { value: "", label: "Choose an event..." },
-                        ...events.map((event) => ({
-                          value: event.id,
-                          label: `${event.name} - ${new Date(event.start_time).toLocaleDateString()}`
-                        }))
-                      ]}
-                    />
+                    {loadingAttendees ? (
+                      <div className="flex items-center gap-2 py-2">
+                        <LoadingSpinner size="sm" />
+                        <span className="text-xs text-[var(--text-secondary)]">Loading...</span>
+                      </div>
+                    ) : attendees.length === 0 ? (
+                      <p className="text-xs text-[var(--text-secondary)]">No checked-in attendees with email</p>
+                    ) : (
+                      <Select
+                        value={selectedRegistrationId}
+                        onChange={(e) => setSelectedRegistrationId(e.target.value)}
+                        options={[
+                          { value: "", label: "Choose an attendee..." },
+                          ...attendees.map((attendee) => ({
+                            value: attendee.registration_id,
+                            label: `${attendee.name} ${attendee.email ? `(${attendee.email})` : ""}`
+                          }))
+                        ]}
+                      />
+                    )}
                   </div>
-
-                  {selectedEventId && (
-                    <>
-                      {loadingAttendees ? (
-                        <div className="flex items-center justify-center py-4">
-                          <LoadingSpinner size="sm" />
-                          <span className="ml-2 text-sm text-secondary">Loading checked-in attendees...</span>
-                        </div>
-                      ) : attendees.length === 0 ? (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-secondary">
-                            No checked-in attendees with email addresses found for this event.
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-primary mb-2">
-                              Select Attendee
-                            </label>
-                            <Select
-                              value={selectedRegistrationId}
-                              onChange={(e) => setSelectedRegistrationId(e.target.value)}
-                              options={[
-                                { value: "", label: "Choose an attendee..." },
-                                ...attendees.map((attendee) => ({
-                                  value: attendee.registration_id,
-                                  label: `${attendee.name} ${attendee.email ? `(${attendee.email})` : ""}`
-                                }))
-                              ]}
-                            />
-                            <p className="text-xs text-secondary mt-1">
-                              Only checked-in attendees with email addresses are shown
-                            </p>
-                          </div>
-                          <Button
-                            onClick={handleSendRequest}
-                            disabled={!selectedRegistrationId || sendingRequest}
-                            loading={sendingRequest}
-                            variant="primary"
-                          >
-                            <Send className="h-4 w-4 mr-2" />
-                            Send Feedback Request
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <p className="text-xs text-blue-300">
-                      <strong>Note:</strong> The feedback request email will be sent immediately and logged to the email management system (email_send_logs table). 
-                      You can view email stats in the Email Stats tab.
-                    </p>
-                  </div>
-                </>
+                )}
+              </div>
+              {selectedRegistrationId && (
+                <Button
+                  onClick={handleSendRequest}
+                  disabled={sendingRequest}
+                  loading={sendingRequest}
+                  variant="primary"
+                  size="sm"
+                >
+                  <Send className="h-3.5 w-3.5 mr-1.5" />
+                  Send Request
+                </Button>
               )}
-            </div>
+            </>
           )}
         </div>
-      </Card>
+      )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-secondary">Average Rating</span>
-              <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-            </div>
-            <div className="text-3xl font-bold text-primary">
-              {stats.average_rating.toFixed(1)}
-            </div>
-            <div className="text-sm text-secondary mt-1">out of 5.0</div>
+      {/* Stats Row - Compact chips */}
+      <div className="flex flex-wrap gap-2">
+        <div className="px-3 py-2 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+            <span className="text-lg font-bold text-[var(--text-primary)]">{stats.average_rating.toFixed(1)}</span>
           </div>
-        </Card>
-
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-secondary">Total Feedback</span>
-              <MessageSquare className="h-5 w-5 text-primary" />
-            </div>
-            <div className="text-3xl font-bold text-primary">
-              {stats.total_feedback}
-            </div>
-            <div className="text-sm text-secondary mt-1">
-              from {stats.events_with_feedback} events
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-secondary">Unresolved</span>
-              <XCircle className="h-5 w-5 text-orange-400" />
-            </div>
-            <div className="text-3xl font-bold text-primary">
-              {stats.recent_feedback.filter((f) => !f.resolved_at).length}
-            </div>
-            <div className="text-sm text-secondary mt-1">needs attention</div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-secondary">Resolved</span>
-              <CheckCircle2 className="h-5 w-5 text-green-400" />
-            </div>
-            <div className="text-3xl font-bold text-primary">
-              {stats.recent_feedback.filter((f) => f.resolved_at).length}
-            </div>
-            <div className="text-sm text-secondary mt-1">addressed</div>
-          </div>
-        </Card>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Avg Rating</span>
+        </div>
+        <div className="px-3 py-2 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-3">
+          <span className="text-lg font-bold text-[var(--text-primary)]">{stats.total_feedback}</span>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Total</span>
+        </div>
+        <div className="px-3 py-2 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-3">
+          <span className="text-lg font-bold text-[var(--accent-warning)]">{stats.recent_feedback.filter((f) => !f.resolved_at).length}</span>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Unresolved</span>
+        </div>
+        <div className="px-3 py-2 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-3">
+          <span className="text-lg font-bold text-[var(--accent-success)]">{stats.recent_feedback.filter((f) => f.resolved_at).length}</span>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Resolved</span>
+        </div>
+        <div className="px-3 py-2 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-3">
+          <span className="text-lg font-bold text-[var(--text-secondary)]">{stats.events_with_feedback}</span>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Events</span>
+        </div>
       </div>
 
-      {/* Rating Distribution */}
-      <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Rating Distribution</h3>
-          <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map((rating) => {
-              const count = stats.rating_distribution[rating.toString() as keyof typeof stats.rating_distribution];
-              const percentage = stats.total_feedback > 0 
-                ? (count / stats.total_feedback) * 100 
-                : 0;
-              
-              return (
-                <div key={rating} className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 w-20">
-                    <span className="text-sm font-medium">{rating}</span>
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="h-6 bg-secondary/20 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium w-12 text-right">
-                    {count}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Rating Distribution - Compact bar chart */}
+      <div className="p-3 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Rating Distribution</span>
         </div>
-      </Card>
+        <div className="flex items-end gap-2 h-10">
+          {[1, 2, 3, 4, 5].map((rating) => {
+            const count = stats.rating_distribution[rating.toString() as keyof typeof stats.rating_distribution];
+            const maxCount = Math.max(...Object.values(stats.rating_distribution), 1);
+            const heightPercent = (count / maxCount) * 100;
+            
+            return (
+              <div key={rating} className="flex-1 flex flex-col items-center gap-0.5">
+                <div className="w-full flex flex-col justify-end h-10">
+                  <div
+                    className={`w-full rounded-sm transition-all duration-300 ${
+                      rating >= 4 ? "bg-[var(--accent-success)]" : 
+                      rating === 3 ? "bg-[var(--accent-warning)]" : 
+                      "bg-[var(--accent-error)]"
+                    }`}
+                    style={{ height: `${Math.max(heightPercent, count > 0 ? 8 : 0)}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-[9px] font-mono text-[var(--text-muted)]">{rating}★</span>
+                  <span className="text-[9px] font-mono text-[var(--text-secondary)]">({count})</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Feedback List */}
-      <Card>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Recent Feedback</h3>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="unresolved">Unresolved</TabsTrigger>
-                <TabsTrigger value="resolved">Resolved</TabsTrigger>
-              </TabsList>
-            </Tabs>
+      <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+        {/* Header with tabs */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Recent Feedback</span>
+          <div className="flex items-center gap-1">
+            {(["all", "unresolved", "resolved"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-2 py-1 rounded text-[10px] font-medium transition-all ${
+                  activeTab === tab
+                    ? "bg-[var(--accent-primary)] text-[var(--bg-void)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-active)]"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
-
-          {filteredFeedback.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 text-secondary mx-auto mb-4" />
-              <p className="text-secondary">
-                {activeTab === "all" 
-                  ? "No feedback yet" 
-                  : activeTab === "unresolved"
-                  ? "No unresolved feedback"
-                  : "No resolved feedback"}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredFeedback.map((item) => (
-                <FeedbackItemCard
-                  key={item.id}
-                  item={item}
-                  onUpdate={loadFeedback}
-                  onAttendeeClick={handleAttendeeClick}
-                />
-              ))}
-            </div>
-          )}
         </div>
-      </Card>
+
+        {/* Table Header */}
+        <div className="grid grid-cols-[60px_70px_80px_1fr_1fr_80px_100px_80px] gap-2 px-3 py-1.5 bg-[var(--bg-raised)] border-b border-[var(--border-subtle)] text-[10px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+          <div>Rating</div>
+          <div>Type</div>
+          <div>Status</div>
+          <div>Event</div>
+          <div>Category</div>
+          <div>Date</div>
+          <div></div>
+          <div></div>
+        </div>
+
+        {filteredFeedback.length === 0 ? (
+          <div className="text-center py-8">
+            <MessageSquare className="h-6 w-6 text-[var(--text-muted)] mx-auto mb-2" />
+            <p className="text-xs text-[var(--text-secondary)]">
+              {activeTab === "all" 
+                ? "No feedback yet" 
+                : activeTab === "unresolved"
+                ? "No unresolved feedback"
+                : "No resolved feedback"}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[var(--border-subtle)]/50">
+            {filteredFeedback.map((item) => (
+              <FeedbackItemCard
+                key={item.id}
+                item={item}
+                onUpdate={loadFeedback}
+                onAttendeeClick={handleAttendeeClick}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="px-3 py-1.5 border-t border-[var(--border-subtle)] bg-[var(--bg-raised)]">
+          <p className="text-[10px] text-[var(--text-muted)] font-mono">
+            {filteredFeedback.length} feedback items
+          </p>
+        </div>
+      </div>
 
       {/* Attendee Detail Modal */}
       <Modal
@@ -761,134 +731,148 @@ function FeedbackItemCard({
   };
 
   return (
-    <div className="border border-border-subtle rounded-lg p-4 hover:bg-secondary/5 transition-colors">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`h-4 w-4 ${
-                    star <= item.rating
-                      ? "text-yellow-400 fill-yellow-400"
-                      : "text-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-            <Badge
-              variant={item.feedback_type === "positive" ? "success" : "warning"}
-            >
-              {item.feedback_type === "positive" ? "Positive" : "Negative"}
-            </Badge>
-            {item.resolved_at ? (
-              <Badge variant="success" className="flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Resolved
-              </Badge>
-            ) : (
-              <Badge variant="warning" className="flex items-center gap-1">
-                <XCircle className="h-3 w-3" />
-                Unresolved
-              </Badge>
-            )}
-            {item.attendee_name && (
-              <button
-                onClick={() => onAttendeeClick(item.attendee_id)}
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                {item.attendee_name}
-              </button>
-            )}
-            <Link 
-              href={`/app/venue/events/${item.event_id}`}
-              className="text-sm text-primary hover:underline"
-            >
-              {item.event_name}
-            </Link>
-            <span className="text-xs text-secondary">
-              {new Date(item.submitted_at).toLocaleDateString()}
+    <>
+      {/* Grid row matching header */}
+      <div 
+        className="grid grid-cols-[60px_70px_80px_1fr_1fr_80px_100px_80px] gap-2 px-3 py-1.5 items-center hover:bg-[var(--bg-active)] transition-colors cursor-pointer"
+        onClick={() => onAttendeeClick(item.attendee_id)}
+      >
+        {/* Rating - Stars */}
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`h-2.5 w-2.5 ${
+                star <= item.rating
+                  ? "text-yellow-400 fill-yellow-400"
+                  : "text-gray-600"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Type Badge */}
+        <div>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-medium ${
+            item.feedback_type === "positive" 
+              ? "bg-[var(--accent-success)]/20 text-[var(--accent-success)]"
+              : "bg-[var(--accent-warning)]/20 text-[var(--accent-warning)]"
+          }`}>
+            {item.feedback_type}
+          </span>
+        </div>
+
+        {/* Status */}
+        <div>
+          {item.resolved_at ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-success)]/10 text-[var(--accent-success)] flex items-center gap-1 w-fit">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              resolved
             </span>
-          </div>
-
-          {item.comment && (
-            <p className="text-sm text-primary mb-2">{item.comment}</p>
-          )}
-
-          {item.categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {item.categories.map((cat) => (
-                <Badge key={cat} variant="outline" size="sm">
-                  {cat.replace(/_/g, " ")}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {item.free_text && (
-            <p className="text-sm text-primary mb-2">{item.free_text}</p>
-          )}
-
-          {item.internal_notes && !showNotes && (
-            <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-xs">
-              <strong>Internal Notes:</strong> {item.internal_notes}
-            </div>
-          )}
-
-          {showNotes && (
-            <div className="mt-2 space-y-2">
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add internal notes (not visible to attendees)..."
-                className="w-full p-2 border border-border-subtle rounded text-sm"
-                rows={3}
-              />
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={handleSaveNotes}
-                  disabled={saving}
-                  loading={saving}
-                >
-                  Save Notes
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setShowNotes(false);
-                    setNotes(item.internal_notes || "");
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--accent-warning)]/10 text-[var(--accent-warning)] flex items-center gap-1 w-fit">
+              <XCircle className="h-2.5 w-2.5" />
+              open
+            </span>
           )}
         </div>
 
-        <div className="flex flex-col gap-2 ml-4">
+        {/* Event Name */}
+        <div className="min-w-0">
+          <Link 
+            href={`/app/venue/events/${item.event_id}`}
+            className="text-xs text-[var(--text-primary)] hover:underline truncate block"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {item.event_name}
+          </Link>
+        </div>
+
+        {/* Category */}
+        <div className="min-w-0">
+          {item.categories.length > 0 ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-active)] text-[var(--text-secondary)] uppercase truncate block w-fit max-w-full">
+              {item.categories[0].replace(/_/g, " ")}
+            </span>
+          ) : (
+            <span className="text-[10px] text-[var(--text-muted)]">-</span>
+          )}
+        </div>
+
+        {/* Date */}
+        <div className="text-[10px] text-[var(--text-muted)] font-mono">
+          {new Date(item.submitted_at).toLocaleDateString()}
+        </div>
+
+        {/* Resolve Action */}
+        <div onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
-            variant={item.resolved_at ? "secondary" : "primary"}
+            variant={item.resolved_at ? "ghost" : "primary"}
             onClick={handleMarkResolved}
             disabled={saving}
             loading={saving}
+            className="h-6 text-[10px] px-2 w-full"
           >
-            {item.resolved_at ? "Mark Unresolved" : "Mark Resolved"}
+            {item.resolved_at ? "Unresolve" : "Mark Resolved"}
           </Button>
+        </div>
+
+        {/* Notes Action */}
+        <div onClick={(e) => e.stopPropagation()}>
           <Button
             size="sm"
-            variant="secondary"
+            variant="ghost"
             onClick={() => setShowNotes(!showNotes)}
+            className="h-6 text-[10px] px-2 w-full"
           >
-            {showNotes ? "Cancel" : item.internal_notes ? "Edit Notes" : "Add Notes"}
+            {showNotes ? "Cancel" : item.internal_notes ? "Edit" : "Add Notes"}
           </Button>
         </div>
       </div>
-    </div>
+
+      {/* Expandable notes section */}
+      {showNotes && (
+        <div className="px-3 py-2 bg-[var(--bg-raised)] border-t border-[var(--border-subtle)]">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add internal notes (not visible to attendees)..."
+            className="w-full p-2 border border-[var(--border-subtle)] rounded text-xs bg-[var(--bg-glass)]"
+            rows={2}
+          />
+          <div className="flex gap-2 mt-2">
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleSaveNotes}
+              disabled={saving}
+              loading={saving}
+              className="h-6 text-[10px] px-3"
+            >
+              Save Notes
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setShowNotes(false);
+                setNotes(item.internal_notes || "");
+              }}
+              className="h-6 text-[10px] px-3"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Internal notes display (when not editing) */}
+      {item.internal_notes && !showNotes && (
+        <div className="px-3 py-1.5 bg-blue-500/5 border-t border-blue-500/20 text-[10px] text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">Notes:</strong> {item.internal_notes}
+        </div>
+      )}
+    </>
   );
 }

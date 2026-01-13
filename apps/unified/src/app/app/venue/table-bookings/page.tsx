@@ -25,6 +25,7 @@ import {
   QrCode,
   ExternalLink,
   Trash2,
+  PartyPopper,
 } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 
@@ -324,8 +325,11 @@ export default function VenueTableBookingsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-primary">Table Bookings</h1>
-            <p className="text-xs text-secondary">
+            <h1 className="page-title flex items-center gap-2">
+              <PartyPopper className="h-6 w-6 text-[var(--accent-secondary)]" />
+              Table Bookings
+            </h1>
+            <p className="page-description">
               Manage table reservations across all events
             </p>
           </div>

@@ -15,7 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   Users,
-  Layers,
+  RectangleHorizontal,
   X,
   DollarSign,
 } from "lucide-react";
@@ -305,25 +305,29 @@ export default function VenueTablesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Table Management</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <RectangleHorizontal className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Tables
+          </h1>
+          <p className="page-description">
             Define zones and tables for your venue
-            <span className="ml-2 text-xs text-muted">
-              (Currency: {venueCurrency})
+            <span className="ml-2 text-[10px] text-[var(--text-muted)]">
+              ({venueCurrency})
             </span>
           </p>
         </div>
         <Button
+          size="sm"
           onClick={() => {
             resetZoneForm();
             setShowZoneForm(true);
           }}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
           Add Zone
         </Button>
       </div>
@@ -379,7 +383,7 @@ export default function VenueTablesPage() {
       {/* Zones List */}
       {zones.length === 0 ? (
         <Card className="p-8 text-center">
-          <Layers className="h-12 w-12 mx-auto text-secondary mb-4" />
+          <RectangleHorizontal className="h-12 w-12 mx-auto text-secondary mb-4" />
           <h3 className="text-lg font-medium text-primary mb-2">No zones yet</h3>
           <p className="text-secondary mb-4">
             Create zones to organize your tables (e.g., VIP, Dinner, Club area)

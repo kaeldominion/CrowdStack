@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Card, 
   Button, 
   Badge, 
   Table, 
@@ -12,11 +11,6 @@ import {
   TableRow, 
   TableHead, 
   TableCell,
-  Input,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
 } from "@crowdstack/ui";
 import { 
   Calendar, 
@@ -35,6 +29,10 @@ import {
   CheckCircle2,
   DollarSign,
   Lock,
+  Filter,
+  ChevronDown,
+  UtensilsCrossed,
+  MessageSquare,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,6 +58,8 @@ interface Event {
   closed_at: string | null;
   payouts_pending: number;
   payouts_paid: number;
+  table_bookings: number;
+  feedback_count: number;
   organizer: {
     id: string;
     name: string;
@@ -78,6 +78,8 @@ export default function VenueEventsPage() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [filteredOrganizer, setFilteredOrganizer] = useState<{ id: string; name: string } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [ownershipFilter, setOwnershipFilter] = useState<"all" | "venue" | "organizer">("all");
+  const [selectedOrganizerId, setSelectedOrganizerId] = useState<string>(organizerFilterId || "");
 
   useEffect(() => {
     loadEvents();
@@ -97,6 +99,13 @@ export default function VenueEventsPage() {
   };
 
   useEffect(() => {
+    // Sync selectedOrganizerId with URL param
+    if (organizerFilterId) {
+      setSelectedOrganizerId(organizerFilterId);
+    } else {
+      setSelectedOrganizerId("");
+    }
+
     // If organizer filter is in URL, find and set the organizer info
     if (organizerFilterId && events.length > 0) {
       const organizer = events.find(e => e.organizer.id === organizerFilterId)?.organizer;
@@ -133,28 +142,19 @@ export default function VenueEventsPage() {
     });
   };
 
-  const getApprovalBadge = (status: string | null) => {
+  const getApprovalIcon = (status: string | null) => {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="warning" className="flex items-center gap-1">
-            <ShieldAlert className="h-3 w-3" />
-            Pending
-          </Badge>
+          <ShieldAlert className="h-4 w-4 text-[var(--accent-warning)]" />
         );
       case "approved":
         return (
-          <Badge variant="success" className="flex items-center gap-1">
-            <ShieldCheck className="h-3 w-3" />
-            Approved
-          </Badge>
+          <ShieldCheck className="h-4 w-4 text-[var(--accent-success)]" />
         );
       case "rejected":
         return (
-          <Badge variant="danger" className="flex items-center gap-1">
-            <ShieldX className="h-3 w-3" />
-            Rejected
-          </Badge>
+          <ShieldX className="h-4 w-4 text-[var(--accent-error)]" />
         );
       default:
         return null;
@@ -162,8 +162,14 @@ export default function VenueEventsPage() {
   };
 
   const getStatusBadge = (status: string, event: Event) => {
-    // For owned events, show lifecycle status instead of basic status
-    if (event.owner_user_id && currentUserId && event.owner_user_id === currentUserId) {
+    const isVenueOwnedEvent = isVenueOwned(event);
+    const now = new Date();
+    const eventStart = new Date(event.start_time);
+    const isPast = eventStart <= now;
+    const isUpcoming = eventStart > now;
+
+    // For venue owned events, show lifecycle status (closeout workflow)
+    if (isVenueOwnedEvent) {
       const isClosed = !!event.closed_at;
       const totalPayouts = event.payouts_pending + event.payouts_paid;
       const allPaid = totalPayouts > 0 && event.payouts_pending === 0;
@@ -190,19 +196,45 @@ export default function VenueEventsPage() {
             Closed
           </Badge>
         );
-      } else if (new Date(event.start_time) <= new Date()) {
+      } else if (isPast) {
         return (
-          <Badge variant="secondary">Ended</Badge>
+          <Badge variant="warning" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Needs Closeout
+          </Badge>
+        );
+      } else if (isUpcoming) {
+        return (
+          <Badge variant="success" className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Upcoming
+          </Badge>
         );
       }
     }
 
-    // Default status badges for non-owned events
+    // For organizer owned events, show status with lifecycle context
+    if (isPast) {
+      if (status === "published") {
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Ended
+          </Badge>
+        );
+      }
+    }
+
+    // Default status badges
     switch (status) {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
       case "published":
-        return <Badge variant="success">Published</Badge>;
+        return isUpcoming ? (
+          <Badge variant="success">Published</Badge>
+        ) : (
+          <Badge variant="secondary">Ended</Badge>
+        );
       case "cancelled":
         return <Badge variant="danger">Cancelled</Badge>;
       case "completed":
@@ -212,10 +244,31 @@ export default function VenueEventsPage() {
     }
   };
 
+  // Get unique organizers for filter dropdown
+  const uniqueOrganizers = Array.from(
+    new Map(events.map(e => [e.organizer.id, e.organizer])).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Determine if event is venue owned
+  // If owner_user_id is set, it means a venue user created it (venue owned)
+  // If owner_user_id is null, an organizer created it (organizer owned)
+  const isVenueOwned = (event: Event) => {
+    return !!event.owner_user_id;
+  };
+
   // Filter events
   const filteredEvents = events.filter((event) => {
-    // Organizer filter
-    if (organizerFilterId && event.organizer.id !== organizerFilterId) {
+    // Ownership filter
+    if (ownershipFilter === "venue" && !isVenueOwned(event)) {
+      return false;
+    }
+    if (ownershipFilter === "organizer" && isVenueOwned(event)) {
+      return false;
+    }
+
+    // Organizer filter (from URL or dropdown)
+    const activeOrganizerFilter = organizerFilterId || selectedOrganizerId;
+    if (activeOrganizerFilter && event.organizer.id !== activeOrganizerFilter) {
       return false;
     }
     
@@ -247,6 +300,8 @@ export default function VenueEventsPage() {
   const pendingCount = events.filter(e => e.venue_approval_status === "pending").length;
   const approvedCount = events.filter(e => e.venue_approval_status === "approved").length;
   const upcomingCount = events.filter(e => new Date(e.start_time) > new Date()).length;
+  const venueOwnedCount = events.filter(e => isVenueOwned(e)).length;
+  const organizerOwnedCount = events.filter(e => !isVenueOwned(e)).length;
 
   if (loading) {
     return (
@@ -258,153 +313,224 @@ export default function VenueEventsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Events at Your Venue</h1>
-          <p className="text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Events
+          </h1>
+          <p className="page-description">
             Manage and track all events hosted at your venue
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/app/venue/events/new">
-            <Button variant="primary">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button variant="primary" size="sm">
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
               New Event
             </Button>
           </Link>
           {pendingCount > 0 && (
             <Link href="/app/venue/events/pending">
-              <Button variant="primary">
-                <ShieldAlert className="h-4 w-4 mr-2" />
-                {pendingCount} Pending Approval{pendingCount > 1 ? "s" : ""}
+              <Button variant="primary" size="sm">
+                <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+                {pendingCount} Pending
               </Button>
             </Link>
           )}
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-2">
-        <Card className="[&>div]:!px-3 [&>div]:!py-2.5">
-          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Tot. Events</p>
-          <p className="font-sans text-lg font-bold tracking-tight text-primary">{events.length}</p>
-        </Card>
-        <Card className="border-accent-warning/30 bg-accent-warning/5 [&>div]:!px-3 [&>div]:!py-2.5">
-          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Pending</p>
-          <p className="font-sans text-lg font-bold tracking-tight text-accent-warning">{pendingCount}</p>
-        </Card>
-        <Card className="border-accent-success/30 bg-accent-success/5 [&>div]:!px-3 [&>div]:!py-2.5">
-          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Approved</p>
-          <p className="font-sans text-lg font-bold tracking-tight text-accent-success">{approvedCount}</p>
-        </Card>
-        <Card className="[&>div]:!px-3 [&>div]:!py-2.5">
-          <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-secondary mb-0.5 truncate">Upcoming</p>
-          <p className="font-sans text-lg font-bold tracking-tight text-primary">{upcomingCount}</p>
-        </Card>
+      {/* Stats Row */}
+      <div className="flex flex-wrap gap-2">
+        <div className="stat-chip">
+          <span className="stat-chip-value">{events.length}</span>
+          <span className="stat-chip-label">Total</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-primary)]">{venueOwnedCount}</span>
+          <span className="stat-chip-label">Venue Owned</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-secondary)]">{organizerOwnedCount}</span>
+          <span className="stat-chip-label">Organizer</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-warning)]">{pendingCount}</span>
+          <span className="stat-chip-label">Pending</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-success)]">{approvedCount}</span>
+          <span className="stat-chip-label">Approved</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-chip-value">{upcomingCount}</span>
+          <span className="stat-chip-label">Upcoming</span>
+        </div>
       </div>
 
-      {/* Organizer Filter Badge */}
-      {filteredOrganizer && (
-        <div className="p-4 rounded-xl bg-glass border border-accent-secondary/20 bg-accent-secondary/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span className="text-sm text-primary">
-                Showing events from <strong>{filteredOrganizer.name}</strong>
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearOrganizerFilter}
-              className="text-secondary hover:text-primary"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear Filter
-            </Button>
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Ownership Filter */}
+        <div className="flex items-center gap-1.5">
+          <Filter className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+          <div className="flex items-center gap-1">
+            {[
+              { value: "all", label: "All" },
+              { value: "venue", label: "Venue Owned" },
+              { value: "organizer", label: "Organizer" },
+            ].map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setOwnershipFilter(filter.value as typeof ownershipFilter)}
+                className={`px-2.5 py-1.5 rounded text-xs font-medium transition-all ${
+                  ownershipFilter === filter.value
+                    ? "bg-[var(--accent-primary)] text-[var(--bg-void)]"
+                    : "bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Organizer Filter Dropdown */}
+        {ownershipFilter !== "venue" && uniqueOrganizers.length > 0 && (
+          <div className="relative">
+            <select
+              value={selectedOrganizerId}
+              onChange={(e) => {
+                setSelectedOrganizerId(e.target.value);
+                if (e.target.value) {
+                  router.push(`/app/venue/events?organizer=${e.target.value}`);
+                } else {
+                  router.push("/app/venue/events");
+                }
+              }}
+              className="pl-8 pr-8 py-1.5 text-xs bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-secondary)] appearance-none cursor-pointer"
+            >
+              <option value="">All Organizers</option>
+              {uniqueOrganizers.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+            <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)] pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--text-muted)] pointer-events-none" />
+          </div>
+        )}
+
+        {/* Active Filter Badge */}
+        {(filteredOrganizer || selectedOrganizerId) && (
+          <div className="px-2.5 py-1.5 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg flex items-center gap-1.5">
+            <Building2 className="h-3 w-3 text-[var(--accent-secondary)]" />
+            <span className="text-xs text-[var(--text-primary)]">
+              {filteredOrganizer?.name || uniqueOrganizers.find(o => o.id === selectedOrganizerId)?.name}
+            </span>
+            <button
+              onClick={() => {
+                setSelectedOrganizerId("");
+                clearOrganizerFilter();
+              }}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Tabs and Search */}
       <div className="space-y-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <TabsList>
-              <TabsTrigger value="all">All Events</TabsTrigger>
-              <TabsTrigger value="pending">
-                Pending {pendingCount > 0 && `(${pendingCount})`}
-              </TabsTrigger>
-              <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="past">Past</TabsTrigger>
-            </TabsList>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-1">
+            {[
+              { value: "all", label: "All" },
+              { value: "pending", label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
+              { value: "approved", label: "Approved" },
+              { value: "upcoming", label: "Upcoming" },
+              { value: "past", label: "Past" },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`px-2.5 py-1.5 rounded text-xs font-medium transition-all ${
+                  activeTab === tab.value
+                    ? "bg-[var(--accent-primary)] text-[var(--bg-void)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-active)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Search events or organizers..."
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
+              <input
+                type="text"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-xs"
+                className="pl-8 pr-3 py-1.5 text-xs bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-secondary)] w-40"
               />
-              <div className="flex items-center gap-1 p-1 bg-glass rounded-lg border border-border-subtle">
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded transition-colors ${
-                    viewMode === "list"
-                      ? "bg-active text-primary"
-                      : "text-secondary hover:text-primary"
-                  }`}
-                  title="List view"
-                >
-                  <List className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("calendar")}
-                  className={`p-1.5 rounded transition-colors ${
-                    viewMode === "calendar"
-                      ? "bg-active text-primary"
-                      : "text-secondary hover:text-primary"
-                  }`}
-                  title="Calendar view"
-                >
-                  <Calendar className="h-4 w-4" />
-                </button>
-              </div>
+            </div>
+            <div className="flex items-center gap-0.5 p-0.5 bg-[var(--bg-glass)] rounded-lg border border-[var(--border-subtle)]">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "list"
+                    ? "bg-[var(--bg-active)] text-[var(--text-primary)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+                title="List view"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === "calendar"
+                    ? "bg-[var(--bg-active)] text-[var(--text-primary)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+                title="Calendar view"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
-        </Tabs>
+        </div>
 
         {/* Events View */}
         {filteredEvents.length === 0 ? (
-          <Card>
-            <div className="p-8 text-center">
-              <Calendar className="h-12 w-12 mx-auto text-secondary mb-4" />
-              <h3 className="text-lg font-semibold text-primary mb-2">
-                No Events Found
-              </h3>
-              <p className="text-sm text-secondary">
-                {filteredOrganizer
-                  ? `No events found for ${filteredOrganizer.name}.`
-                  : activeTab === "pending" 
-                  ? "No events are waiting for your approval."
-                  : searchQuery 
-                  ? "No events match your search."
-                  : "No events have been created at your venue yet."}
-              </p>
-            </div>
-          </Card>
+          <div className="glass-panel p-8 text-center">
+            <Calendar className="h-8 w-8 mx-auto text-[var(--text-muted)] mb-2" />
+            <p className="text-xs text-[var(--text-secondary)]">
+              {filteredOrganizer
+                ? `No events found for ${filteredOrganizer.name}.`
+                : activeTab === "pending" 
+                ? "No events are waiting for your approval."
+                : searchQuery 
+                ? "No events match your search."
+                : "No events have been created at your venue yet."}
+            </p>
+          </div>
         ) : viewMode === "list" ? (
-          <Card>
+          <div className="glass-panel overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Event</TableHead>
                   <TableHead>Organizer</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Registrations</TableHead>
-                  <TableHead>Check-ins</TableHead>
-                  <TableHead>Approval</TableHead>
+                  <TableHead>Reg/Check</TableHead>
+                  <TableHead>Tables</TableHead>
+                  <TableHead>Feedback</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -431,7 +557,13 @@ export default function VenueEventsPage() {
                         )}
                         <div className="min-w-0">
                           <div className="font-sans font-semibold text-primary truncate">{event.name}</div>
-                          <div className="text-xs text-secondary mt-0.5 truncate">{event.slug}</div>
+                          <div className="mt-0.5">
+                            {isVenueOwned(event) ? (
+                              <Badge variant="primary" className="text-[9px] px-1 py-0">Venue</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[9px] px-1 py-0">Organizer</Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -442,37 +574,55 @@ export default function VenueEventsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-secondary">
-                        <Clock className="h-3 w-3 text-muted" />
-                        <span>{formatDate(event.start_time)}</span>
+                      <div className="text-xs">
+                        <div className="text-[var(--text-primary)]">
+                          {new Date(event.start_time).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </div>
+                        <div className="text-[var(--text-muted)] mt-0.5">
+                          {new Date(event.start_time).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-primary">
-                        <Users className="h-4 w-4 text-muted" />
+                      <div className="text-sm font-mono text-[var(--text-primary)]">
+                        <span>{event.checkins}</span>
+                        <span className="text-[var(--text-muted)]">/</span>
                         <span>{event.registrations}</span>
                         {event.capacity && (
-                          <span className="text-secondary">/ {event.capacity}</span>
+                          <span className="text-[var(--text-muted)] text-xs"> / {event.capacity}</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-primary">
-                        <UserCheck className="h-4 w-4 text-accent-success" />
-                        <span>{event.checkins}</span>
+                      <div className="flex items-center gap-1 text-sm font-mono text-[var(--text-primary)]">
+                        <UtensilsCrossed className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                        <span>{event.table_bookings || 0}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getApprovalBadge(event.venue_approval_status)}
+                      <div className="flex items-center gap-1 text-sm font-mono text-[var(--text-primary)]">
+                        <MessageSquare className="h-3.5 w-3.5 text-[var(--text-muted)]" />
+                        <span>{event.feedback_count || 0}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(event.status, event)}
+                      <div className="flex items-center gap-1.5">
+                        {getApprovalIcon(event.venue_approval_status)}
+                        {getStatusBadge(event.status, event)}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </Card>
+          </div>
         ) : (
           <EventsCalendarView
             events={filteredEvents.map(e => ({
@@ -493,7 +643,10 @@ export default function VenueEventsPage() {
               const fullEvent = filteredEvents.find(e => e.id === event?.id);
               return fullEvent ? getStatusBadge(status, fullEvent) : null;
             }}
-            getApprovalBadge={getApprovalBadge}
+            getApprovalBadge={(status) => {
+              const icon = getApprovalIcon(status);
+              return icon ? <div className="flex items-center justify-center">{icon}</div> : null;
+            }}
             onEventClick={(eventId) => router.push(`/app/venue/events/${eventId}`)}
           />
         )}

@@ -146,32 +146,41 @@ export default function VenueInsightsPage() {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tighter text-primary">Venue Insights</h1>
-        <Card className="p-6">
-          <p className="text-error">Failed to load insights: {error}</p>
-        </Card>
+      <div className="space-y-4">
+        <h1 className="page-title flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-[var(--accent-secondary)]" />
+          Insights
+        </h1>
+        <div className="glass-panel p-6">
+          <p className="text-[var(--accent-error)]">Failed to load insights: {error}</p>
+        </div>
       </div>
     );
   }
 
   if (!insights) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tighter text-primary">Venue Insights</h1>
-        <Card className="p-6">
-          <p className="text-secondary">No insights data available.</p>
-        </Card>
+      <div className="space-y-4">
+        <h1 className="page-title flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-[var(--accent-secondary)]" />
+          Insights
+        </h1>
+        <div className="glass-panel p-6">
+          <p className="text-[var(--text-secondary)]">No insights data available.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-primary">Venue Insights</h1>
-        <p className="mt-2 text-sm text-secondary">
+        <h1 className="page-title flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-[var(--accent-secondary)]" />
+          Insights
+        </h1>
+        <p className="page-description">
           Aggregated performance metrics for your venue
         </p>
       </div>

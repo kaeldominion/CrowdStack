@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, Container, Section, Button, Input, Modal } from "@crowdstack/ui";
-import { ArrowLeft, QrCode, Plus, Edit2, Trash2, Copy, Check, ExternalLink, Download, Eye } from "lucide-react";
+import { Card, Button, Input, Modal } from "@crowdstack/ui";
+import { QrCode, Plus, Edit2, Trash2, Copy, Check, ExternalLink, Download, Eye } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
 interface DynamicQRCode {
@@ -299,36 +299,25 @@ export default function VenueQRCodesPage() {
   };
 
   return (
-    <Section spacing="lg">
-      <Container>
-        <div className="mb-8">
-          <Link
-            href="/app"
-            className="inline-flex items-center gap-2 text-sm text-secondary hover:text-primary mb-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent-secondary/20 rounded-lg border border-accent-secondary/30">
-                <QrCode className="w-6 h-6 text-accent-secondary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-primary">Dynamic QR Codes</h1>
-                <p className="text-sm text-secondary">
-                  Create reusable QR codes that can point to different URLs dynamically
-                </p>
-              </div>
-            </div>
-            {!showCreateForm && !editingId && (
-              <Button onClick={() => setShowCreateForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create QR Code
-              </Button>
-            )}
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <QrCode className="h-6 w-6 text-[var(--accent-secondary)]" />
+            QR Codes
+          </h1>
+          <p className="page-description">
+            Create reusable QR codes that can point to different URLs dynamically
+          </p>
         </div>
+        {!showCreateForm && !editingId && (
+          <Button size="sm" onClick={() => setShowCreateForm(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Create QR Code
+          </Button>
+        )}
+      </div>
 
         {(showCreateForm || editingId) && (
           <Card className="!p-6 mb-8">
@@ -582,8 +571,7 @@ export default function VenueQRCodesPage() {
             </div>
           </Modal>
         )}
-      </Container>
-    </Section>
+    </div>
   );
 }
 

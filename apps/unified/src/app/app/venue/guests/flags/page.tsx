@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Card, Badge, Modal } from "@crowdstack/ui";
+import { Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Modal, LoadingSpinner, Card } from "@crowdstack/ui";
 import { Search, Flag, AlertTriangle, Ban } from "lucide-react";
 import type { GuestFlag } from "@/lib/data/flags";
 
@@ -64,17 +64,21 @@ export default function VenueGuestFlagsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-secondary">Loading flags...</div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Guest Flags & Bans</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <Flag className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Guest Flags
+          </h1>
+          <p className="page-description">
             Manage flagged attendees and track strikes
           </p>
         </div>
@@ -84,16 +88,16 @@ export default function VenueGuestFlagsPage() {
         </Button>
       </div>
 
-      <Card>
-        <div className="p-6">
-          <Input
-            placeholder="Search by name, email, or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
-          />
-        </div>
-      </Card>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+        <input
+          type="text"
+          placeholder="Search by name, email, or phone..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
 
       <div className="text-sm text-secondary">
         Showing {filteredFlags.length} flagged attendees

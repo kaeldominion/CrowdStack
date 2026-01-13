@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  Card,
-  Container,
-  Section,
   Button,
   Input,
   Table,
@@ -16,8 +13,10 @@ import {
   TableCell,
   Modal,
   Badge,
+  LoadingSpinner,
+  Card,
 } from "@crowdstack/ui";
-import { Plus, Trash2, Edit, User as UserIcon, Mail } from "lucide-react";
+import { Plus, Trash2, Edit, Users, Mail, User } from "lucide-react";
 import { PermissionsEditor } from "@/components/PermissionsEditor";
 import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
 import type { VenueUser, VenuePermissions } from "@crowdstack/shared/types";
@@ -188,34 +187,33 @@ export default function VenueUsersPage() {
 
   if (loading) {
     return (
-      <Container>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-secondary">Loading users...</div>
-        </div>
-      </Container>
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <Section spacing="lg">
-        <Container>
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-primary">Venue Users</h1>
-              <p className="mt-2 text-sm text-secondary">
-                Manage users who can access this venue and their permissions
-              </p>
-            </div>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
-          </div>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <Users className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Team
+          </h1>
+          <p className="page-description">
+            Manage users who can access this venue and their permissions
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setShowAddModal(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Add User
+        </Button>
+      </div>
 
-          <Card>
-            <div className="overflow-x-auto">
-              <Table>
+      <div className="glass-panel overflow-hidden">
+        <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>User</TableHead>
@@ -239,7 +237,7 @@ export default function VenueUsersPage() {
                       <TableRow key={venueUser.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <UserIcon className="h-4 w-4 text-secondary" />
+                            <User className="h-4 w-4 text-secondary" />
                             <div>
                               <div className="font-medium">
                                 {(venueUser.user as any)?.name || venueUser.user?.email || "Unknown"}
@@ -282,10 +280,9 @@ export default function VenueUsersPage() {
                   )}
                 </TableBody>
               </Table>
-            </div>
-          </Card>
+      </div>
 
-          {/* Add User Modal */}
+      {/* Add User Modal */}
           <Modal
             isOpen={showAddModal}
             onClose={() => {
@@ -380,8 +377,6 @@ export default function VenueUsersPage() {
               </div>
             </Modal>
           )}
-        </Container>
-      </Section>
     </div>
   );
 }

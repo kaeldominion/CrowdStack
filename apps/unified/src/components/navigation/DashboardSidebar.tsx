@@ -7,7 +7,6 @@ import { cn } from "@crowdstack/ui";
 import { useSidebar } from "@/contexts/SidebarContext";
 import {
   Calendar,
-  LayoutGrid,
   Users,
   Megaphone,
   CreditCard,
@@ -18,8 +17,6 @@ import {
   Music,
   BarChart3,
   Clock,
-  Star,
-  Ticket,
   Wrench,
   DollarSign,
   TrendingUp,
@@ -32,10 +29,13 @@ import {
   UserCog,
   Mail,
   MessageSquare,
+  Activity,
   Palette,
   QrCode,
-  Layers,
-  UtensilsCrossed,
+  RectangleHorizontal,
+  PartyPopper,
+  Flag,
+  LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
@@ -73,7 +73,6 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     items: [
       { href: "/app/venue/attendees", label: "Attendees", icon: Users },
       { href: "/app/venue/organizers", label: "Organizers", icon: Building2 },
-      { href: "/app/venue/organizers/preapproved", label: "Pre-approved", icon: Star },
       { href: "/app/venue/promoters", label: "Promoters", icon: Megaphone },
       { href: "/app/venue/users", label: "Team", icon: Users },
     ],
@@ -83,9 +82,9 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     items: [
       { href: "/app/venue/insights", label: "Insights", icon: TrendingUp },
       { href: "/app/venue/emails", label: "Email Activity", icon: Mail },
-      { href: "/app/venue/tables", label: "Tables", icon: Layers },
-      { href: "/app/venue/table-bookings", label: "Table Bookings", icon: UtensilsCrossed },
-      { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Ticket },
+      { href: "/app/venue/tables", label: "Tables", icon: RectangleHorizontal },
+      { href: "/app/venue/table-bookings", label: "Table Bookings", icon: PartyPopper },
+      { href: "/app/venue/guests/flags", label: "Guest Flags", icon: Flag },
       { href: "/app/venue/qr-codes", label: "QR Codes", icon: QrCode },
     ],
   },
@@ -93,7 +92,7 @@ const VENUE_SIDEBAR_ITEMS: SidebarSection[] = [
     title: "ADMIN",
     items: [
       { href: "/app/venue/reports", label: "Reports", icon: BarChart3 },
-      { href: "/app/venue/feedback", label: "Venue Pulse", icon: MessageSquare },
+      { href: "/app/venue/feedback", label: "Venue Pulse", icon: Activity },
       { href: "/app/venue/finance", label: "Finance", icon: DollarSign },
       { href: "/app/venue/settings", label: "Settings", icon: Settings },
     ],

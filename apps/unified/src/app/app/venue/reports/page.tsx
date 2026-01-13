@@ -195,56 +195,56 @@ export default function VenueReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Reports</h1>
-          <p className="text-sm text-secondary">
+          <h1 className="page-title flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Reports
+          </h1>
+          <p className="page-description">
             Analytics and insights for your venue
           </p>
         </div>
-        <Button variant="secondary" onClick={exportCSV} disabled={loading}>
-          <Download className="h-4 w-4 mr-2" />
+        <Button variant="secondary" size="sm" onClick={exportCSV} disabled={loading}>
+          <Download className="h-3.5 w-3.5 mr-1.5" />
           Export CSV
         </Button>
       </div>
 
       {/* Date Range Filters */}
-      <Card>
-        <div className="p-4 flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-secondary" />
-            <span className="text-sm text-secondary">Date Range:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-border-subtle bg-glass text-primary text-sm"
-            />
-            <span className="text-sm text-secondary">to</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-1.5 rounded-lg border border-border-subtle bg-glass text-primary text-sm"
-            />
-            {(startDate || endDate) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setStartDate("");
-                  setEndDate("");
-                }}
-                className="text-secondary hover:text-primary"
-              >
-                Clear
-              </Button>
-            )}
-          </div>
+      <div className="p-3 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
+          <span className="text-xs text-[var(--text-secondary)]">Date Range:</span>
         </div>
-      </Card>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-glass)] text-[var(--text-primary)] text-xs"
+          />
+          <span className="text-xs text-[var(--text-muted)]">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-glass)] text-[var(--text-primary)] text-xs"
+          />
+          {(startDate || endDate) && (
+            <button
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Report Tabs */}
       <Tabs value={activeReport} onValueChange={(v) => setActiveReport(v as ReportType)}>

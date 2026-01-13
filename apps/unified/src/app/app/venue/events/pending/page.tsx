@@ -139,13 +139,14 @@ export default function VenuePendingEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">
-            Pending Event Approvals
+          <h1 className="page-title flex items-center gap-2">
+            <Clock className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Pending Approvals
           </h1>
-          <p className="mt-2 text-sm text-secondary">
+          <p className="page-description">
             Review and approve events that organizers want to host at your venue
           </p>
         </div>

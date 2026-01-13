@@ -3,14 +3,17 @@
 import { VenueFinanceSection } from "@/components/venue/VenueFinanceSection";
 import { Card } from "@crowdstack/ui";
 
+import { DollarSign } from "lucide-react";
+
 export default function VenueFinancePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="font-mono text-xl font-bold uppercase tracking-widest text-[var(--text-primary)]">
+        <h1 className="page-title flex items-center gap-2">
+          <DollarSign className="h-6 w-6 text-[var(--accent-secondary)]" />
           Finance
         </h1>
-        <p className="mt-1 text-xs text-[var(--text-secondary)]">
+        <p className="page-description">
           Manage payment settings and payout templates
         </p>
       </div>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Input, Button, Card } from "@crowdstack/ui";
-import { Search, Filter, Download, Crown } from "lucide-react";
+import { Button, LoadingSpinner } from "@crowdstack/ui";
+import { Search, Filter, Download, Crown, Users } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { AttendeesDashboardList } from "@/components/dashboard/AttendeesDashboardList";
@@ -118,15 +118,24 @@ export default function VenueAttendeesPage() {
     return { total, vips, withAccount, checkedIn };
   }, [attendees]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-mono text-xl font-bold uppercase tracking-widest text-[var(--text-primary)]">
-            Attendee Database
+          <h1 className="page-title flex items-center gap-2">
+            <Users className="h-6 w-6 text-[var(--accent-secondary)]" />
+            Attendees
           </h1>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+          <p className="page-description">
             All attendees who have registered or checked in at your venue
           </p>
         </div>
@@ -136,100 +145,97 @@ export default function VenueAttendeesPage() {
         </Button>
       </div>
 
-      {/* Privacy Notice */}
-      <div className="hidden md:block p-3 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg">
-        <p className="text-xs text-[var(--text-secondary)]">
-          <strong className="text-[var(--text-primary)]">Privacy Protection:</strong> Contact details are masked.
-          Use messaging features to communicate with your audience.
-        </p>
-      </div>
-
-      {/* Stats Chips */}
+      {/* Stats Row */}
       <div className="flex flex-wrap gap-2">
-        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
-          <span className="text-sm font-bold text-[var(--text-primary)]">{stats.total}</span>
-          <span className="text-xs text-[var(--text-muted)]">Total</span>
+        <div className="stat-chip">
+          <span className="stat-chip-value">{stats.total}</span>
+          <span className="stat-chip-label">Total</span>
         </div>
-        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
-          <span className="text-sm font-bold text-amber-400">{stats.vips}</span>
-          <span className="text-xs text-[var(--text-muted)]">VIPs</span>
+        <div className="stat-chip">
+          <div className="flex items-center gap-1">
+            <Crown className="h-4 w-4 text-amber-400" />
+            <span className="stat-chip-value text-amber-400">{stats.vips}</span>
+          </div>
+          <span className="stat-chip-label">VIPs</span>
         </div>
-        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
-          <span className="text-sm font-bold text-[var(--accent-success)]">{stats.checkedIn}</span>
-          <span className="text-xs text-[var(--text-muted)]">Attended</span>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-success)]">{stats.checkedIn}</span>
+          <span className="stat-chip-label">Attended</span>
         </div>
-        <div className="px-3 py-1.5 bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-lg flex items-center gap-2">
-          <span className="text-sm font-bold text-[var(--accent-primary)]">{stats.withAccount}</span>
-          <span className="text-xs text-[var(--text-muted)]">Linked</span>
+        <div className="stat-chip">
+          <span className="stat-chip-value text-[var(--accent-primary)]">{stats.withAccount}</span>
+          <span className="stat-chip-label">Linked</span>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-[var(--bg-glass)] border border-[var(--border-subtle)] rounded-xl p-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="flex gap-1.5 flex-wrap">
-            <button
-              onClick={() =>
-                setFilters({
-                  ...filters,
-                  has_check_in: filters.has_check_in === true ? undefined : true,
-                })
-              }
-              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
-                filters.has_check_in === true
-                  ? "bg-[var(--accent-success)] text-white"
-                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              <Filter className="h-3 w-3" />
-              Checked In
-            </button>
-            <button
-              onClick={() =>
-                setFilters({
-                  ...filters,
-                  is_flagged: filters.is_flagged === true ? undefined : true,
-                })
-              }
-              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
-                filters.is_flagged === true
-                  ? "bg-[var(--accent-error)] text-white"
-                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              Flagged
-            </button>
-            <button
-              onClick={() =>
-                setFilters({
-                  ...filters,
-                  is_vip: filters.is_vip === true ? undefined : true,
-                })
-              }
-              className={`px-2.5 py-1 text-[10px] rounded-md flex items-center gap-1 transition-colors ${
-                filters.is_vip === true
-                  ? "bg-amber-500/30 text-amber-400 border border-amber-500/50"
-                  : "bg-[var(--bg-raised)] text-[var(--text-secondary)] hover:text-amber-400"
-              }`}
-            >
-              <Crown className="h-3 w-3" />
-              VIP
-            </button>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          <button
+            onClick={() =>
+              setFilters({
+                ...filters,
+                has_check_in: filters.has_check_in === true ? undefined : true,
+              })
+            }
+            className={`px-2.5 py-1.5 text-xs rounded-lg flex items-center gap-1.5 transition-colors ${
+              filters.has_check_in === true
+                ? "bg-[var(--accent-success)] text-white"
+                : "bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            <Filter className="h-3 w-3" />
+            Checked In
+          </button>
+          <button
+            onClick={() =>
+              setFilters({
+                ...filters,
+                is_flagged: filters.is_flagged === true ? undefined : true,
+              })
+            }
+            className={`px-2.5 py-1.5 text-xs rounded-lg flex items-center gap-1.5 transition-colors ${
+              filters.is_flagged === true
+                ? "bg-[var(--accent-error)] text-white"
+                : "bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            Flagged
+          </button>
+          <button
+            onClick={() =>
+              setFilters({
+                ...filters,
+                is_vip: filters.is_vip === true ? undefined : true,
+              })
+            }
+            className={`px-2.5 py-1.5 text-xs rounded-lg flex items-center gap-1.5 transition-colors ${
+              filters.is_vip === true
+                ? "bg-amber-500 text-white"
+                : "bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-amber-400"
+            }`}
+          >
+            <Crown className="h-3 w-3" />
+            VIP
+          </button>
         </div>
       </div>
 
-      {/* Results Count */}
-      <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-        Showing {filteredAttendees.length} of {attendees.length} attendees
+      {/* Privacy Notice - inline */}
+      <div className="hidden md:block p-2.5 bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20 rounded-lg">
+        <p className="text-[10px] text-[var(--text-secondary)]">
+          <strong className="text-[var(--text-primary)]">Privacy:</strong> Contact details are masked. Use messaging features to communicate.
+        </p>
       </div>
 
       {/* Attendees List */}
