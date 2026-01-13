@@ -38,7 +38,6 @@ async function getEvent(slug: string) {
     const supabase = createServiceRoleClient();
 
     // Get published event by slug
-    // PERFORMANCE: Include venue_tags in main query to avoid separate fetch
     const { data: event, error: eventError } = await supabase
       .from("events")
       .select(`
@@ -54,8 +53,7 @@ async function getEvent(slug: string) {
           country,
           google_maps_url,
           cover_image_url,
-          logo_url,
-          venue_tags(tag_type, tag_value)
+          logo_url
         )
       `)
       .eq("slug", slug)
@@ -96,10 +94,6 @@ async function getEvent(slug: string) {
       ...event,
       registration_count: registrationCount || 0,
       recent_attendees: recentAttendees?.map(r => r.attendee).filter(Boolean) || [],
-      venue: event.venue ? {
-        ...event.venue,
-        venue_tags: event.venue.venue_tags || [],
-      } : null,
     };
   } catch (error) {
     console.error("Failed to fetch event:", error);
