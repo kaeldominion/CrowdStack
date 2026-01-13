@@ -31,6 +31,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { CheckInConfirmationModal } from "@/components/door/CheckInConfirmationModal";
 
 interface VipStatus {
   isVip: boolean;
@@ -157,6 +158,13 @@ export default function DoorScannerPage() {
   const [showAttendeeDetailModal, setShowAttendeeDetailModal] = useState(false);
   const [selectedAttendeeIdForModal, setSelectedAttendeeIdForModal] = useState<string | null>(null);
   const [doorRole, setDoorRole] = useState<"venue" | "organizer">("venue");
+  
+  // Check-in confirmation modal
+  const [showCheckInConfirmation, setShowCheckInConfirmation] = useState(false);
+  const [checkInPreviewData, setCheckInPreviewData] = useState<any>(null);
+  const [loadingCheckInPreview, setLoadingCheckInPreview] = useState(false);
+  const [pendingCheckIn, setPendingCheckIn] = useState<{ registrationId: string; qrToken?: string } | null>(null);
+  const [confirmingCheckIn, setConfirmingCheckIn] = useState(false);
 
   // Load event info and stats
   useEffect(() => {
@@ -275,34 +283,66 @@ export default function DoorScannerPage() {
     return () => clearTimeout(timer);
   }, [searchQuery, handleSearch]);
 
-  // Check-in functionality
-  const handleCheckIn = async (registrationId?: string, qrToken?: string) => {
-    // Prevent duplicate scans within 3 seconds
-    if (qrToken && lastScannedToken === qrToken) {
-      console.log("Duplicate scan detected, ignoring");
-      return;
-    }
+  // Fetch preview data for confirmation modal
+  const fetchCheckInPreview = async (registrationId?: string, qrToken?: string) => {
+    if (!registrationId && !qrToken) return;
 
-    if (qrToken) {
-      setLastScannedToken(qrToken);
-      // Clear the token after 3 seconds to allow re-scanning if needed
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
+    setLoadingCheckInPreview(true);
+    try {
+      const params = new URLSearchParams();
+      if (registrationId) params.append("registration_id", registrationId);
+      if (qrToken) params.append("qr_token", qrToken);
+
+      const response = await fetch(`/api/events/${eventId}/checkin/preview?${params.toString()}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setCheckInPreviewData(data);
+        setPendingCheckIn({ registrationId: registrationId || "", qrToken });
+        setShowCheckInConfirmation(true);
+      } else {
+        // If preview fails, show error
+        const result: CheckInResult = {
+          id: "",
+          name: data.attendee?.full_name || "Unknown",
+          status: "error",
+          message: data.error || "Failed to load guest details",
+          timestamp: new Date().toISOString(),
+        };
+        setLastCheckIn(result);
+        setFlashColor("red");
+        setTimeout(() => setFlashColor(null), 500);
       }
-      processingTimeoutRef.current = setTimeout(() => {
-        setLastScannedToken(null);
-      }, 3000);
+    } catch (err: any) {
+      console.error("Preview error:", err);
+      const result: CheckInResult = {
+        id: "",
+        name: "Unknown",
+        status: "error",
+        message: err.message || "Failed to load guest details",
+        timestamp: new Date().toISOString(),
+      };
+      setLastCheckIn(result);
+      setFlashColor("red");
+      setTimeout(() => setFlashColor(null), 500);
+    } finally {
+      setLoadingCheckInPreview(false);
     }
+  };
 
-    setProcessingCheckIn(true);
+  // Actually perform the check-in after confirmation
+  const confirmCheckIn = async () => {
+    if (!pendingCheckIn) return;
+
+    setConfirmingCheckIn(true);
     
     try {
       const response = await fetch(`/api/events/${eventId}/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          registration_id: registrationId, 
-          qr_token: qrToken 
+          registration_id: pendingCheckIn.registrationId, 
+          qr_token: pendingCheckIn.qrToken 
         }),
       });
 
@@ -328,10 +368,15 @@ export default function DoorScannerPage() {
         };
         setLastCheckIn(result);
 
+        // Close confirmation modal
+        setShowCheckInConfirmation(false);
+        setCheckInPreviewData(null);
+        setPendingCheckIn(null);
+
         // If VIP, show VIP acknowledgement modal instead of auto-dismissing
         if (data.vip_status?.isVip) {
           setShowVipAcknowledge(true);
-          setFlashColor("green"); // Still flash green for success
+          setFlashColor("green");
           setTimeout(() => setFlashColor(null), 500);
         } else {
           setFlashColor(data.duplicate ? null : "green");
@@ -357,6 +402,11 @@ export default function DoorScannerPage() {
         setFlashColor("red");
         setRecentScans((prev) => [result, ...prev].slice(0, 10));
         setTimeout(() => setFlashColor(null), 500);
+        
+        // Close modal on error
+        setShowCheckInConfirmation(false);
+        setCheckInPreviewData(null);
+        setPendingCheckIn(null);
       }
     } catch (err: any) {
       console.error("Check-in error:", err);
@@ -370,9 +420,46 @@ export default function DoorScannerPage() {
       setLastCheckIn(result);
       setFlashColor("red");
       setTimeout(() => setFlashColor(null), 500);
+      
+      // Close modal on error
+      setShowCheckInConfirmation(false);
+      setCheckInPreviewData(null);
+      setPendingCheckIn(null);
     } finally {
-      setProcessingCheckIn(false);
+      setConfirmingCheckIn(false);
     }
+  };
+
+  // Check-in functionality - now shows confirmation modal first
+  const handleCheckIn = async (registrationId?: string, qrToken?: string) => {
+    // Prevent duplicate scans within 3 seconds
+    if (qrToken && lastScannedToken === qrToken) {
+      console.log("Duplicate scan detected, ignoring");
+      return;
+    }
+
+    // Prevent duplicate processing
+    if (processingCheckIn || loadingCheckInPreview) {
+      return;
+    }
+
+    if (qrToken) {
+      setLastScannedToken(qrToken);
+      // Clear the token after 3 seconds to allow re-scanning if needed
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+      processingTimeoutRef.current = setTimeout(() => {
+        setLastScannedToken(null);
+      }, 3000);
+    }
+
+    setProcessingCheckIn(true);
+    
+    // Fetch preview and show confirmation modal
+    await fetchCheckInPreview(registrationId, qrToken);
+    
+    setProcessingCheckIn(false);
   };
 
   // QR Scanner using html5-qrcode
@@ -1326,6 +1413,20 @@ export default function DoorScannerPage() {
           role={doorRole}
         />
       )}
+
+      {/* Check-in Confirmation Modal */}
+      <CheckInConfirmationModal
+        isOpen={showCheckInConfirmation}
+        onClose={() => {
+          setShowCheckInConfirmation(false);
+          setCheckInPreviewData(null);
+          setPendingCheckIn(null);
+        }}
+        onConfirm={confirmCheckIn}
+        data={checkInPreviewData}
+        loading={loadingCheckInPreview}
+        confirming={confirmingCheckIn}
+      />
     </div>
   );
 }
