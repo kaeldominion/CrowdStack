@@ -79,12 +79,72 @@ export async function GET(
       status: guest.status,
       is_host: guest.is_host,
       has_qr_token: !!guest.qr_token,
+      has_attendee_id: !!guest.attendee_id,
     });
 
     // VERIFY USER OWNS THIS GUEST RECORD
-    if (!guest.attendee_id) {
+    // If guest doesn't have attendee_id yet, try to link by email
+    let attendeeId = guest.attendee_id;
+    
+    if (!attendeeId && guest.guest_email) {
+      // Check if logged-in user's email matches the guest email
+      if (user.email?.toLowerCase() === guest.guest_email.toLowerCase()) {
+        // Look for existing attendee with this email
+        const { data: existingAttendee } = await serviceSupabase
+          .from("attendees")
+          .select("id, user_id")
+          .eq("email", guest.guest_email.toLowerCase())
+          .single();
+        
+        if (existingAttendee) {
+          attendeeId = existingAttendee.id;
+          
+          // Link attendee to user if not already linked
+          if (!existingAttendee.user_id) {
+            await serviceSupabase
+              .from("attendees")
+              .update({ user_id: user.id })
+              .eq("id", existingAttendee.id);
+          }
+          
+          // Link guest record to attendee
+          await serviceSupabase
+            .from("table_party_guests")
+            .update({ attendee_id: attendeeId })
+            .eq("id", guest.id);
+        } else {
+          // Create new attendee linked to user
+          const { data: newAttendee } = await serviceSupabase
+            .from("attendees")
+            .insert({
+              email: guest.guest_email.toLowerCase(),
+              name: guest.guest_name,
+              user_id: user.id,
+            })
+            .select("id")
+            .single();
+          
+          if (newAttendee) {
+            attendeeId = newAttendee.id;
+            
+            // Link guest record to new attendee
+            await serviceSupabase
+              .from("table_party_guests")
+              .update({ attendee_id: attendeeId })
+              .eq("id", guest.id);
+          }
+        }
+      } else {
+        return NextResponse.json(
+          { error: "This pass belongs to a different email address. Please log in with the correct account." },
+          { status: 403 }
+        );
+      }
+    }
+    
+    if (!attendeeId) {
       return NextResponse.json(
-        { error: "Guest not linked to an account. Please accept your invitation first." },
+        { error: "Guest not linked to an account. Please contact support." },
         { status: 400 }
       );
     }
@@ -92,11 +152,27 @@ export async function GET(
     // Get attendee to verify user ownership
     const { data: attendee } = await serviceSupabase
       .from("attendees")
-      .select("user_id")
-      .eq("id", guest.attendee_id)
+      .select("id, user_id")
+      .eq("id", attendeeId)
       .single();
 
-    if (!attendee || attendee.user_id !== user.id) {
+    if (!attendee) {
+      return NextResponse.json(
+        { error: "Attendee record not found" },
+        { status: 404 }
+      );
+    }
+    
+    // If attendee exists but doesn't have user_id, link it (if emails match)
+    if (!attendee.user_id && user.email?.toLowerCase() === guest.guest_email?.toLowerCase()) {
+      await serviceSupabase
+        .from("attendees")
+        .update({ user_id: user.id })
+        .eq("id", attendee.id);
+      attendee.user_id = user.id;
+    }
+
+    if (attendee.user_id !== user.id) {
       return NextResponse.json(
         { error: "Unauthorized - this pass belongs to a different account" },
         { status: 403 }
@@ -135,13 +211,43 @@ export async function GET(
 
     const authoritativeStatus = bookingForEvent.status;
 
-    // Get registration to generate proper QR token
-    const { data: registration } = await serviceSupabase
+    // Get or create registration for QR token generation
+    let registration = await serviceSupabase
       .from("registrations")
       .select("id, event_id, attendee_id")
-      .eq("attendee_id", guest.attendee_id)
+      .eq("attendee_id", attendeeId)
       .eq("event_id", bookingForEvent.event_id)
-      .single();
+      .single()
+      .then(r => r.data);
+
+    // If no registration exists, create one for this table booking guest
+    if (!registration) {
+      console.log("[Pass API] Creating registration for table booking guest:", {
+        attendeeId,
+        eventId: bookingForEvent.event_id,
+      });
+      
+      const { data: newReg, error: regError } = await serviceSupabase
+        .from("registrations")
+        .insert({
+          attendee_id: attendeeId,
+          event_id: bookingForEvent.event_id,
+          source: "table_booking",
+          registered_at: new Date().toISOString(),
+        })
+        .select("id, event_id, attendee_id")
+        .single();
+      
+      if (regError) {
+        console.error("[Pass API] Failed to create registration:", regError);
+        return NextResponse.json(
+          { error: "Failed to create registration. Please contact support." },
+          { status: 500 }
+        );
+      }
+      
+      registration = newReg;
+    }
 
     if (!registration) {
       return NextResponse.json(

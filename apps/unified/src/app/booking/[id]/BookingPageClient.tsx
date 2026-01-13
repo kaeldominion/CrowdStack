@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, InlineSpinner, Card, Badge, Modal, Input } from "@crowdstack/ui";
+import { Button, InlineSpinner, Card, Badge } from "@crowdstack/ui";
 import {
   Calendar,
   MapPin,
-  AlertCircle,
   ArrowLeft,
   Check,
   Clock,
@@ -93,14 +92,6 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
   const [data, setData] = useState<BookingData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [creatingCheckout, setCreatingCheckout] = useState(false);
-  const [showAddGuestModal, setShowAddGuestModal] = useState(false);
-  const [addingGuest, setAddingGuest] = useState(false);
-  const [addGuestError, setAddGuestError] = useState<string | null>(null);
-  const [guestForm, setGuestForm] = useState({
-    guest_name: "",
-    guest_email: "",
-    guest_phone: "",
-  });
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -118,45 +109,6 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
       await navigator.clipboard.writeText(data.party.invite_url);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
-    }
-  };
-
-  const handleAddGuest = async () => {
-    if (!guestForm.guest_name || !guestForm.guest_email) {
-      setAddGuestError("Name and email are required");
-      return;
-    }
-
-    try {
-      setAddingGuest(true);
-      setAddGuestError(null);
-
-      const response = await fetch(`/api/booking/${bookingId}/guests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          guest_name: guestForm.guest_name,
-          guest_email: guestForm.guest_email,
-          guest_phone: guestForm.guest_phone || undefined,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to add guest");
-      }
-
-      // Reset form and close modal
-      setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-      setShowAddGuestModal(false);
-
-      // Refresh to show new guest
-      handleRefresh();
-    } catch (err: any) {
-      setAddGuestError(err.message);
-    } finally {
-      setAddingGuest(false);
     }
   };
 
@@ -476,16 +428,6 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
                 <div className="border-t border-border-subtle pt-4 mt-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-muted uppercase tracking-wide">Your party</p>
-                    {party.total_joined < party.party_size && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setShowAddGuestModal(true)}
-                      >
-                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                        Add Guest
-                      </Button>
-                    )}
                   </div>
                   {party.guests.length > 0 ? (
                     <div className="space-y-2">
@@ -620,78 +562,6 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
           </a>
         </p>
       </div>
-
-      {/* Add Guest Modal */}
-      <Modal
-        isOpen={showAddGuestModal}
-        onClose={() => {
-          setShowAddGuestModal(false);
-          setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-          setAddGuestError(null);
-        }}
-        title="Add Guest to Your Party"
-        size="md"
-        footer={
-          <>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setShowAddGuestModal(false);
-                setGuestForm({ guest_name: "", guest_email: "", guest_phone: "" });
-                setAddGuestError(null);
-              }}
-              disabled={addingGuest}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddGuest}
-              loading={addingGuest}
-              disabled={!guestForm.guest_name || !guestForm.guest_email}
-            >
-              Add Guest
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            Add a guest to your table booking. After adding, you can share the join link with them. The link works for both new and existing users.
-          </p>
-
-          {addGuestError && (
-            <div className="p-3 rounded-lg bg-raised border border-accent-error/30 text-accent-error text-sm">
-              {addGuestError}
-            </div>
-          )}
-
-          <Input
-            label="Guest Name"
-            type="text"
-            value={guestForm.guest_name}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_name: e.target.value })}
-            placeholder="John Doe"
-            required
-          />
-
-          <Input
-            label="Guest Email"
-            type="email"
-            value={guestForm.guest_email}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_email: e.target.value })}
-            placeholder="john@example.com"
-            required
-          />
-
-          <Input
-            label="Phone Number (Optional)"
-            type="tel"
-            value={guestForm.guest_phone}
-            onChange={(e) => setGuestForm({ ...guestForm, guest_phone: e.target.value })}
-            placeholder="+1 (555) 123-4567"
-          />
-        </div>
-      </Modal>
     </div>
   );
 }

@@ -147,13 +147,74 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
     // Get existing party guests
     const { data: partyGuests } = await serviceSupabase
       .from("table_party_guests")
-      .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in")
+      .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
       .eq("booking_id", bookingId)
       .order("is_host", { ascending: false })
       .order("created_at", { ascending: true });
 
     // Check if host guest record exists
     let hostGuest = partyGuests?.find(g => g.is_host);
+
+    // Helper function to ensure host has attendee_id and registration
+    const ensureHostLinked = async (hostId: string, hostEmail: string) => {
+      // Look up or create attendee for the host
+      let attendeeId: string | null = null;
+      
+      // First try to find existing attendee by email
+      const { data: existingAttendee } = await serviceSupabase
+        .from("attendees")
+        .select("id")
+        .eq("email", hostEmail.toLowerCase())
+        .single();
+      
+      if (existingAttendee) {
+        attendeeId = existingAttendee.id;
+      } else {
+        // Create new attendee for the host
+        const { data: newAttendee } = await serviceSupabase
+          .from("attendees")
+          .insert({
+            email: hostEmail.toLowerCase(),
+            name: booking.guest_name,
+          })
+          .select("id")
+          .single();
+        
+        if (newAttendee) {
+          attendeeId = newAttendee.id;
+        }
+      }
+      
+      if (attendeeId) {
+        // Update host guest record with attendee_id
+        await serviceSupabase
+          .from("table_party_guests")
+          .update({ attendee_id: attendeeId })
+          .eq("id", hostId);
+        
+        // Ensure registration exists for this attendee at this event
+        const { data: existingReg } = await serviceSupabase
+          .from("registrations")
+          .select("id")
+          .eq("attendee_id", attendeeId)
+          .eq("event_id", event?.id)
+          .single();
+        
+        if (!existingReg && event?.id) {
+          // Create registration for the host
+          await serviceSupabase
+            .from("registrations")
+            .insert({
+              attendee_id: attendeeId,
+              event_id: event.id,
+              source: "table_booking",
+              registered_at: new Date().toISOString(),
+            });
+        }
+      }
+      
+      return attendeeId;
+    };
 
     // If no host record, create one or upgrade existing guest to host
     if (!hostGuest) {
@@ -185,6 +246,11 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           }
           existingGuest.is_host = true;
           hostGuest = existingGuest;
+          
+          // Ensure host is linked to attendee and has registration
+          if (!existingGuest.attendee_id && booking.guest_email) {
+            await ensureHostLinked(existingGuest.id, booking.guest_email);
+          }
         }
       } else {
         // Create new host guest record
@@ -199,7 +265,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
             status: "joined",
             joined_at: new Date().toISOString(),
           })
-          .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in")
+          .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
           .single();
 
         if (!hostError && newHostGuest) {
@@ -217,11 +283,42 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
             .eq("id", newHostGuest.id);
 
           hostGuest = { ...newHostGuest, qr_token: qrToken };
+          
+          // Link host to attendee and create registration
+          if (booking.guest_email) {
+            await ensureHostLinked(newHostGuest.id, booking.guest_email);
+          }
         }
+      }
+    } else {
+      // Host exists - ensure they're linked to attendee and have registration
+      if (!hostGuest.attendee_id && hostGuest.guest_email) {
+        await ensureHostLinked(hostGuest.id, hostGuest.guest_email);
       }
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.com";
+
+    // Re-fetch the host to get updated data (including attendee_id if just linked)
+    if (hostGuest) {
+      const { data: refreshedHost } = await serviceSupabase
+        .from("table_party_guests")
+        .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
+        .eq("id", hostGuest.id)
+        .single();
+      
+      if (refreshedHost) {
+        hostGuest = refreshedHost;
+      }
+    }
+
+    // Count total joined (host + guests with status "joined")
+    // The host should always be counted since they have status "joined"
+    const allGuests = partyGuests || [];
+    const joinedCount = allGuests.filter(g => g.status === "joined").length;
+    // If we just created the host and they're not in partyGuests yet, add 1
+    const hostInList = allGuests.some(g => g.id === hostGuest?.id);
+    const totalJoined = hostInList ? joinedCount : joinedCount + (hostGuest ? 1 : 0);
 
     partyData = {
       host: hostGuest ? {
@@ -238,7 +335,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
         checked_in: g.checked_in,
       })),
       invite_url: hostGuest ? `${baseUrl}/join-table/${hostGuest.invite_token}` : null,
-      total_joined: (partyGuests || []).filter(g => g.status === "joined").length,
+      total_joined: totalJoined,
       party_size: booking.party_size,
     };
   }
