@@ -492,8 +492,12 @@ export function DashboardSidebar() {
           </button>
         </div>
         {/* Venue Switcher - only show on venue routes */}
-        {pathname?.startsWith("/app/venue") && !isCollapsed && (
-          <VenueSwitcher />
+        {pathname?.startsWith("/app/venue") && (
+          isCollapsed ? (
+            <VenueSwitcher alwaysShow compact />
+          ) : (
+            <VenueSwitcher />
+          )
         )}
       </div>
 

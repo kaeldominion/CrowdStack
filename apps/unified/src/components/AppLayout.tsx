@@ -8,6 +8,7 @@ import type { UserRole } from "@crowdstack/shared";
 import { DockNav } from "./navigation/DockNav";
 import { DashboardSidebar } from "./navigation/DashboardSidebar";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
+import { VenueProvider } from "@/contexts/VenueContext";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -83,9 +84,11 @@ function AppLayoutContent({ children, roles, userEmail, userId }: AppLayoutProps
 export function AppLayout({ children, roles, userEmail, userId }: AppLayoutProps) {
   return (
     <SidebarProvider>
-      <AppLayoutContent roles={roles} userEmail={userEmail} userId={userId}>
-        {children}
-      </AppLayoutContent>
+      <VenueProvider>
+        <AppLayoutContent roles={roles} userEmail={userEmail} userId={userId}>
+          {children}
+        </AppLayoutContent>
+      </VenueProvider>
     </SidebarProvider>
   );
 }

@@ -13,6 +13,8 @@ import { createBrowserClient } from "@crowdstack/shared";
 import { DJProfileSelector } from "@/components/DJProfileSelector";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { useVenue } from "@/contexts/VenueContext";
+import { VenueSwitcher } from "@/components/VenueSwitcher";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
@@ -146,6 +148,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   } | null>(null);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
 
+  // Get venue context for reacting to venue changes
+  const { venueVersion, selectedVenue } = useVenue();
+
   const isVenue = userRoles.includes("venue_admin");
   const isOrganizer = userRoles.includes("event_organizer");
   const isPromoter = userRoles.includes("promoter");
@@ -159,7 +164,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     // Refresh live events every 30 seconds
     const interval = setInterval(loadLiveEvents, 30000);
     return () => clearInterval(interval);
-  }, [userRoles, isPromoter, isVenue, isOrganizer, isDJ]);
+    // venueVersion triggers reload when venue is switched
+  }, [userRoles, isPromoter, isVenue, isOrganizer, isDJ, venueVersion]);
 
   const loadLiveEvents = async () => {
     try {
@@ -444,10 +450,21 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       {/* Venue Admin Section */}
       {isVenue && (
         <section className="space-y-4">
-          <h2 className="section-header flex items-center gap-2 !mb-0">
-            <Building2 className="h-4 w-4 text-[var(--accent-secondary)]" />
-            Venue Performance
-          </h2>
+          {/* Venue Header with Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-glass/50 border border-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent-primary/10">
+                <Building2 className="h-5 w-5 text-accent-primary" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted font-medium">Managing Venue</p>
+                <h2 className="text-lg font-semibold text-primary">
+                  {selectedVenue?.name || venue?.name || "Loading..."}
+                </h2>
+              </div>
+            </div>
+            <VenueSwitcher className="sm:min-w-[200px]" />
+          </div>
 
           {/* Public Profile Card */}
           {venue && (

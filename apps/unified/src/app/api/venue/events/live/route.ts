@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { cookies } from "next/headers";
+import { getUserVenueId } from "@/lib/data/get-user-entity";
 
 
 // Force dynamic rendering since this route uses cookies() or createClient()
@@ -31,25 +32,15 @@ export async function GET() {
 
     const serviceClient = createServiceRoleClient();
 
-    // Get venues this user manages
-    const { data: venueUsers } = await serviceClient
-      .from("venue_users")
-      .select("venue_id")
-      .eq("user_id", userId);
+    // Get the selected venue from cookie (consistent with other venue APIs)
+    const selectedVenueId = await getUserVenueId();
 
-    const { data: ownedVenues } = await serviceClient
-      .from("venues")
-      .select("id")
-      .eq("created_by", userId);
-
-    const venueIds = [
-      ...(venueUsers?.map((v) => v.venue_id) || []),
-      ...(ownedVenues?.map((v) => v.id) || []),
-    ].filter((id, index, self) => self.indexOf(id) === index);
-
-    if (venueIds.length === 0) {
+    if (!selectedVenueId) {
       return NextResponse.json({ events: [] });
     }
+
+    // Use only the selected venue
+    const venueIds = [selectedVenueId];
 
     // Fetch live events (currently happening) at these venues
     const now = new Date().toISOString();
