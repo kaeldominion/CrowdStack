@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { WidgetEventCard, type WidgetEvent } from "@/components/widget/WidgetEventCard";
 import { WidgetHeader } from "@/components/widget/WidgetHeader";
+import { WidgetCarousel, type CardSize } from "@/components/widget/WidgetCarousel";
 import { Calendar, ExternalLink } from "lucide-react";
 
 export const revalidate = 30; // ISR: revalidate every 30 seconds
@@ -17,6 +18,7 @@ interface OrganizerWidgetPageProps {
     limit?: string;
     accent?: string;
     hideHeader?: string;
+    cardSize?: string;
   }>;
 }
 
@@ -33,6 +35,7 @@ export default async function OrganizerWidgetPage({
   const limit = Math.min(Math.max(parseInt(query.limit || "5", 10), 1), 20);
   const accentColor = query.accent || null;
   const hideHeader = query.hideHeader === "true";
+  const cardSize: CardSize = query.cardSize === "lg" ? "lg" : query.cardSize === "md" ? "md" : "sm";
 
   const supabase = createServiceRoleClient();
 
@@ -128,16 +131,29 @@ export default async function OrganizerWidgetPage({
         )}
 
         {formattedEvents.length > 0 ? (
-          <div className={layout === "full" ? "widget-events-full" : layout === "grid" ? "widget-events-grid" : "widget-events"}>
-            {formattedEvents.map((event) => (
-              <WidgetEventCard
-                key={event.id}
-                event={event}
-                baseUrl={baseUrl}
-                layout={layout}
-              />
-            ))}
-          </div>
+          layout === "full" ? (
+            <WidgetCarousel cardSize={cardSize}>
+              {formattedEvents.map((event) => (
+                <WidgetEventCard
+                  key={event.id}
+                  event={event}
+                  baseUrl={baseUrl}
+                  layout={layout}
+                />
+              ))}
+            </WidgetCarousel>
+          ) : (
+            <div className={layout === "grid" ? "widget-events-grid" : "widget-events"}>
+              {formattedEvents.map((event) => (
+                <WidgetEventCard
+                  key={event.id}
+                  event={event}
+                  baseUrl={baseUrl}
+                  layout={layout}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className="widget-empty">
             <Calendar className="widget-empty-icon" />

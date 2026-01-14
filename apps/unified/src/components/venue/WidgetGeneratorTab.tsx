@@ -13,6 +13,7 @@ interface WidgetGeneratorTabProps {
 
 type WidgetTheme = "light" | "dark";
 type WidgetLayout = "list" | "grid" | "full";
+type CardSize = "sm" | "md" | "lg";
 
 export function WidgetGeneratorTab({
   venueSlug,
@@ -27,6 +28,7 @@ export function WidgetGeneratorTab({
   const [config, setConfig] = useState({
     theme: "dark" as WidgetTheme,
     layout: "list" as WidgetLayout,
+    cardSize: "sm" as CardSize,
     limit: 5,
     accent: accentColor?.replace("#", "") || "9933ff",
     hideHeader: false,
@@ -51,6 +53,9 @@ export function WidgetGeneratorTab({
     }
     if (config.hideHeader) {
       params.set("hideHeader", "true");
+    }
+    if (config.layout === "full" && config.cardSize) {
+      params.set("cardSize", config.cardSize);
     }
 
     return `${baseUrl}${entityPath}?${params.toString()}`;
@@ -168,6 +173,44 @@ export function WidgetGeneratorTab({
                  "Compact horizontal rows"}
               </p>
             </div>
+
+            {/* Card Size (only for Full layout) */}
+            {config.layout === "full" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-primary">Card Size</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={config.cardSize === "sm" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setConfig({ ...config, cardSize: "sm" })}
+                    className="flex-1"
+                  >
+                    Small
+                  </Button>
+                  <Button
+                    variant={config.cardSize === "md" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setConfig({ ...config, cardSize: "md" })}
+                    className="flex-1"
+                  >
+                    Medium
+                  </Button>
+                  <Button
+                    variant={config.cardSize === "lg" ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setConfig({ ...config, cardSize: "lg" })}
+                    className="flex-1"
+                  >
+                    Large
+                  </Button>
+                </div>
+                <p className="text-xs text-muted">
+                  {config.cardSize === "lg" ? "280px wide cards" :
+                   config.cardSize === "md" ? "220px wide cards" :
+                   "160px wide cards"}
+                </p>
+              </div>
+            )}
 
             {/* Event Limit */}
             <div className="space-y-2">

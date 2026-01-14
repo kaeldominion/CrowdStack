@@ -40,34 +40,29 @@ export function Logo({
   };
   const numSize = numericSizes[size];
 
-  const StackIcon = () => {
-    // Animation variants for each stack line - appears from bottom to top
-    const lineVariants = {
-      hidden: { 
-        opacity: 0, 
-        scaleX: 0,
-        transformOrigin: "center"
+  // 3-chevron logo icon (matches favicon/brand)
+  const ChevronIcon = () => {
+    // Animation variants for each chevron layer
+    const layerVariants = {
+      hidden: {
+        opacity: 0,
+        pathLength: 0,
       },
-      visible: { 
-        opacity: 1, 
-        scaleX: 1,
+      visible: {
+        opacity: 1,
+        pathLength: 1,
         transition: {
-          duration: 0.4,
+          duration: 0.5,
           ease: [0.4, 0, 0.2, 1]
         }
       }
     };
 
-    // Loading animation - continuous stacking effect
-    const loadingLineVariants = {
-      initial: { 
-        opacity: 0.3, 
-        scaleX: 0.8,
-        transformOrigin: "center"
-      },
-      animate: { 
+    // Loading animation
+    const loadingVariants = {
+      initial: { opacity: 0.3 },
+      animate: {
         opacity: [0.3, 1, 0.3],
-        scaleX: [0.8, 1, 0.8],
         transition: {
           duration: 1.5,
           ease: "easeInOut",
@@ -76,301 +71,111 @@ export function Logo({
       }
     };
 
-    // Orbital element animation
-    const orbitVariants = {
-      initial: { rotate: 0 },
-      animate: { 
-        rotate: 360,
-        transition: {
-          duration: 3,
-          ease: "linear",
-          repeat: Infinity,
-        }
-      }
-    };
-
     const svgContent = (
       <svg
-        viewBox="0 0 32 32"
+        viewBox="0 0 24 24"
         className={iconSize}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Stack layers - bottom to top (4 bars) */}
-        {/* Bottom layer (widest) */}
+        <defs>
+          <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#A855F7" />
+            <stop offset="100%" stopColor="#C084FC" />
+          </linearGradient>
+          <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#60A5FA" />
+          </linearGradient>
+        </defs>
+        {/* Top layer (white/current color) */}
         {loading ? (
-          <motion.rect
-            x="4"
-            y="20"
-            width="24"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M12 2L2 7L12 12L22 7L12 2Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             initial="initial"
             animate="animate"
-            variants={{
-              ...loadingLineVariants,
-              animate: {
-                ...loadingLineVariants.animate,
-                transition: {
-                  ...loadingLineVariants.animate.transition,
-                  delay: 0,
-                }
-              }
-            }}
-            style={{ opacity: 0.4 }}
+            variants={loadingVariants}
           />
         ) : animated ? (
-          <motion.rect
-            x="4"
-            y="20"
-            width="24"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M12 2L2 7L12 12L22 7L12 2Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             initial="hidden"
             animate="visible"
-            variants={lineVariants}
-            style={{ opacity: 0.4 }}
+            variants={layerVariants}
           />
         ) : (
-          <rect x="4" y="20" width="24" height="3" rx="1" fill="currentColor" opacity="0.4" />
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         )}
-        
-        {/* Third layer */}
+        {/* Middle layer (purple) */}
         {loading ? (
-          <motion.rect
-            x="6"
-            y="14"
-            width="20"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M2 12L12 17L22 12"
+            stroke="url(#purpleGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             initial="initial"
             animate="animate"
-            variants={{
-              ...loadingLineVariants,
-              animate: {
-                ...loadingLineVariants.animate,
-                transition: {
-                  ...loadingLineVariants.animate.transition,
-                  delay: 0.15,
-                }
-              }
-            }}
-            style={{ opacity: 0.6 }}
+            variants={{ ...loadingVariants, animate: { ...loadingVariants.animate, transition: { ...loadingVariants.animate.transition, delay: 0.15 } } }}
           />
         ) : animated ? (
-          <motion.rect
-            x="6"
-            y="14"
-            width="20"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M2 12L12 17L22 12"
+            stroke="url(#purpleGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             initial="hidden"
             animate="visible"
-            variants={{
-              ...lineVariants,
-              visible: {
-                ...lineVariants.visible,
-                transition: {
-                  ...lineVariants.visible.transition,
-                  delay: 0.15
-                }
-              }
-            }}
-            style={{ opacity: 0.6 }}
+            variants={{ ...layerVariants, visible: { ...layerVariants.visible, transition: { ...layerVariants.visible.transition, delay: 0.15 } } }}
           />
         ) : (
-          <rect x="6" y="14" width="20" height="3" rx="1" fill="currentColor" opacity="0.6" />
+          <path d="M2 12L12 17L22 12" stroke="url(#purpleGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         )}
-        
-        {/* Second layer */}
+        {/* Bottom layer (blue) */}
         {loading ? (
-          <motion.rect
-            x="8"
-            y="8"
-            width="16"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M2 17L12 22L22 17"
+            stroke="url(#blueGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             initial="initial"
             animate="animate"
-            variants={{
-              ...loadingLineVariants,
-              animate: {
-                ...loadingLineVariants.animate,
-                transition: {
-                  ...loadingLineVariants.animate.transition,
-                  delay: 0.3,
-                }
-              }
-            }}
-            style={{ opacity: 0.8 }}
+            variants={{ ...loadingVariants, animate: { ...loadingVariants.animate, transition: { ...loadingVariants.animate.transition, delay: 0.3 } } }}
           />
         ) : animated ? (
-          <motion.rect
-            x="8"
-            y="8"
-            width="16"
-            height="3"
-            rx="1"
-            fill="currentColor"
+          <motion.path
+            d="M2 17L12 22L22 17"
+            stroke="url(#blueGrad)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             initial="hidden"
             animate="visible"
-            variants={{
-              ...lineVariants,
-              visible: {
-                ...lineVariants.visible,
-                transition: {
-                  ...lineVariants.visible.transition,
-                  delay: 0.3
-                }
-              }
-            }}
-            style={{ opacity: 0.8 }}
+            variants={{ ...layerVariants, visible: { ...layerVariants.visible, transition: { ...layerVariants.visible.transition, delay: 0.3 } } }}
           />
         ) : (
-          <rect x="8" y="8" width="16" height="3" rx="1" fill="currentColor" opacity="0.8" />
-        )}
-        
-        {/* Top layer - primary accent color */}
-        {loading ? (
-          <motion.rect
-            x="10"
-            y="2"
-            width="12"
-            height="3"
-            rx="1"
-            fill="#3B82F6"
-            initial="initial"
-            animate="animate"
-            variants={{
-              ...loadingLineVariants,
-              animate: {
-                ...loadingLineVariants.animate,
-                transition: {
-                  ...loadingLineVariants.animate.transition,
-                  delay: 0.45,
-                }
-              }
-            }}
-          />
-        ) : animated ? (
-          <motion.rect
-            x="10"
-            y="2"
-            width="12"
-            height="3"
-            rx="1"
-            fill="#3B82F6"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              ...lineVariants,
-              visible: {
-                ...lineVariants.visible,
-                transition: {
-                  ...lineVariants.visible.transition,
-                  delay: 0.45
-                }
-              }
-            }}
-          />
-        ) : (
-          <rect x="10" y="2" width="12" height="3" rx="1" fill="#3B82F6" />
+          <path d="M2 17L12 22L22 17" stroke="url(#blueGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         )}
       </svg>
     );
 
-    // Wrap with orbital element for loading state
-    if (loading) {
-      return (
-        <div className="relative">
-          {/* Main logo */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            {svgContent}
-          </motion.div>
-          
-          {/* Orbital square */}
-          <motion.div
-            className="absolute inset-0"
-            initial="initial"
-            animate="animate"
-            variants={orbitVariants}
-            style={{ 
-              width: numSize, 
-              height: numSize,
-            }}
-          >
-            <motion.div
-              className="absolute"
-              style={{
-                width: 4,
-                height: 4,
-                top: -2,
-                left: '50%',
-                marginLeft: -2,
-                backgroundColor: '#3B82F6',
-                borderRadius: 1,
-              }}
-              animate={{
-                opacity: [0.5, 1, 0.5],
-                scale: [0.8, 1.2, 0.8],
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          </motion.div>
-          
-          {/* Secondary orbital */}
-          <motion.div
-            className="absolute inset-0"
-            initial="initial"
-            animate="animate"
-            variants={{
-              ...orbitVariants,
-              animate: {
-                rotate: -360,
-                transition: {
-                  duration: 4,
-                  ease: "linear",
-                  repeat: Infinity,
-                }
-              }
-            }}
-            style={{ 
-              width: numSize, 
-              height: numSize,
-            }}
-          >
-            <motion.div
-              className="absolute"
-              style={{
-                width: 3,
-                height: 3,
-                bottom: -2,
-                left: '50%',
-                marginLeft: -1.5,
-                backgroundColor: '#3B82F6',
-                borderRadius: '50%',
-                opacity: 0.5,
-              }}
-            />
-          </motion.div>
-        </div>
-      );
-    }
-
-    if (animated) {
+    if (animated || loading) {
       return (
         <motion.div
           initial={{ opacity: 0 }}
@@ -448,7 +253,7 @@ export function Logo({
   }
 
   if (variant === "icon") {
-    return <div className={`inline-flex items-center ${className}`}>{StackIcon()}</div>;
+    return <div className={`inline-flex items-center ${className}`}>{ChevronIcon()}</div>;
   }
 
   if (variant === "wordmark") {
@@ -461,7 +266,7 @@ export function Logo({
 
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
-      <StackIcon />
+      <ChevronIcon />
       <Wordmark />
     </div>
   );
