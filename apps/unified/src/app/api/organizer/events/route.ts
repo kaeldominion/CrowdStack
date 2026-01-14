@@ -81,11 +81,19 @@ export async function GET() {
     });
 
     // Map events with stats from pre-computed maps (no additional queries)
-    const eventsWithCounts = (events || []).map((event) => ({
-      ...event,
-      registrations: regsByEvent.get(event.id) || 0,
-      checkins: checkinsByEvent.get(event.id) || 0,
-    }));
+    // Also normalize Supabase array relations
+    const eventsWithCounts = (events || []).map((event) => {
+      const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+      const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+
+      return {
+        ...event,
+        venue,
+        organizer,
+        registrations: regsByEvent.get(event.id) || 0,
+        checkins: checkinsByEvent.get(event.id) || 0,
+      };
+    });
 
     return NextResponse.json({ events: eventsWithCounts }, {
       headers: {

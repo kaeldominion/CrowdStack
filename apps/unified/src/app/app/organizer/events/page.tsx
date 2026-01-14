@@ -1,10 +1,8 @@
-import { redirect } from "next/navigation";
-import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserOrganizerId } from "@/lib/data/get-user-entity";
-import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
+"use client";
 
-// Force dynamic rendering - this page uses cookies/auth
-export const dynamic = 'force-dynamic';
+import { useState, useEffect } from "react";
+import { LoadingSpinner } from "@crowdstack/ui";
+import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
 
 interface Event {
   id: string;
@@ -27,136 +25,60 @@ interface Event {
   organizer: any | null;
 }
 
-async function getOrganizerEvents() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export default function OrganizerEventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!user) {
-    redirect("/login");
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("/api/organizer/events");
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to load events");
+      }
+
+      const data = await response.json();
+      console.log("[OrganizerEventsPage] Loaded events:", data.events?.length || 0);
+      setEvents(data.events || []);
+    } catch (err: any) {
+      console.error("[OrganizerEventsPage] Error loading events:", err);
+      setError(err.message || "Failed to load events");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner text="Loading events..." />
+      </div>
+    );
   }
-
-  // Use the same helper as the dashboard API for consistency
-  const organizerId = await getUserOrganizerId();
-
-  if (!organizerId) {
-    console.error("[OrganizerEvents] No organizer ID found for user:", user.id);
-    return { events: [] };
-  }
-
-  console.log("[OrganizerEvents] Found organizer ID:", organizerId);
-
-  const serviceSupabase = createServiceRoleClient();
-
-  // Get events for this organizer
-  const { data: events, error } = await serviceSupabase
-    .from("events")
-    .select(`
-      id,
-      name,
-      slug,
-      description,
-      start_time,
-      end_time,
-      status,
-      closed_at,
-      venue_approval_status,
-      venue_rejection_reason,
-      capacity,
-      cover_image_url,
-      flier_url,
-      created_at,
-      venue:venues(id, name, logo_url, cover_image_url, city, state),
-      organizer:organizers(id, name, logo_url)
-    `)
-    .eq("organizer_id", organizerId)
-    .order("start_time", { ascending: false });
 
   if (error) {
-    console.error("[OrganizerEvents] Query error:", error);
-    return { events: [] };
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-accent-error mb-4">{error}</p>
+          <button
+            onClick={loadEvents}
+            className="text-accent-primary hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
-
-  console.log("[OrganizerEvents] Found events:", events?.length || 0);
-
-  // Get registration, checkin, and payout counts using efficient aggregation
-  const eventIds = events?.map(e => e.id) || [];
-  let registrationCounts: Record<string, number> = {};
-  let checkinCounts: Record<string, number> = {};
-  let payoutsPending: Record<string, number> = {};
-  let payoutsPaid: Record<string, number> = {};
-
-  if (eventIds.length > 0) {
-    // Use parallel queries with aggregation for better performance
-    const [regCountsResult, checkinCountsResult, payoutsResult] = await Promise.all([
-      // Count registrations per event
-      serviceSupabase
-        .from("registrations")
-        .select("event_id")
-        .in("event_id", eventIds),
-      // Count checkins per event by joining through registrations
-      serviceSupabase
-        .from("checkins")
-        .select("registrations!inner(event_id)")
-        .in("registrations.event_id", eventIds)
-        .is("undo_at", null),
-      // Get payout lines with event info
-      serviceSupabase
-        .from("payout_lines")
-        .select(`
-          payment_status,
-          payout_runs!inner(event_id)
-        `)
-        .in("payout_runs.event_id", eventIds)
-    ]);
-
-    // Count registrations per event (in-memory aggregation of just event_ids)
-    (regCountsResult.data || []).forEach((reg: any) => {
-      registrationCounts[reg.event_id] = (registrationCounts[reg.event_id] || 0) + 1;
-    });
-
-    // Count checkins per event
-    (checkinCountsResult.data || []).forEach((checkin: any) => {
-      const eventId = checkin.registrations?.event_id;
-      if (eventId) {
-        checkinCounts[eventId] = (checkinCounts[eventId] || 0) + 1;
-      }
-    });
-
-    // Count payouts per event by status
-    (payoutsResult.data || []).forEach((payout: any) => {
-      const eventId = payout.payout_runs?.event_id;
-      if (eventId) {
-        if (payout.payment_status === "paid" || payout.payment_status === "confirmed") {
-          payoutsPaid[eventId] = (payoutsPaid[eventId] || 0) + 1;
-        } else {
-          payoutsPending[eventId] = (payoutsPending[eventId] || 0) + 1;
-        }
-      }
-    });
-  }
-
-  // Add counts to events and normalize nested relations (Supabase may return arrays)
-  const eventsWithCounts: Event[] = (events || []).map((event) => {
-    // Handle Supabase's array return type for relations
-    const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
-    const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
-
-    return {
-      ...event,
-      venue,
-      organizer,
-      registrations: registrationCounts[event.id] || 0,
-      checkins: checkinCounts[event.id] || 0,
-      payouts_pending: payoutsPending[event.id] || 0,
-      payouts_paid: payoutsPaid[event.id] || 0,
-    };
-  });
-
-  return { events: eventsWithCounts };
-}
-
-export default async function OrganizerEventsPage() {
-  const { events } = await getOrganizerEvents();
 
   return <OrganizerEventsPageClient initialEvents={events} />;
 }
