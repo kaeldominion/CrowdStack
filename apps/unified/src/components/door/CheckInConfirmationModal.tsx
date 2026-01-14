@@ -383,7 +383,7 @@ export function CheckInConfirmationModal({
               Cancel
             </Button>
             <Button
-              variant={data.cutoff_status?.isPastCutoff && !data.already_checked_in ? "warning" : "primary"}
+              variant="primary"
               onClick={() => {
                 if (data.cutoff_status?.isPastCutoff && !data.already_checked_in && onConfirmWithOverride) {
                   onConfirmWithOverride(overrideReason || undefined);
