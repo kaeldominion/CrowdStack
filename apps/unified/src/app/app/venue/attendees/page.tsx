@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button, LoadingSpinner } from "@crowdstack/ui";
-import { Search, Filter, Download, Crown, Users } from "lucide-react";
+import { Search, Filter, Download, Crown, Users, Star } from "lucide-react";
 import type { VenueAttendee } from "@/lib/data/attendees-venue";
-import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { AttendeeDrawer } from "@/components/AttendeeDrawer";
 import { AttendeesDashboardList } from "@/components/dashboard/AttendeesDashboardList";
 
 export default function VenueAttendeesPage() {
@@ -115,7 +115,12 @@ export default function VenueAttendeesPage() {
     const vips = attendees.filter(a => a.is_venue_vip || a.is_global_vip).length;
     const withAccount = attendees.filter(a => a.user_id).length;
     const checkedIn = attendees.filter(a => a.total_check_ins > 0).length;
-    return { total, vips, withAccount, checkedIn };
+    // Calculate average pulse rating across all attendees who have ratings
+    const withRating = attendees.filter(a => a.avg_venue_pulse_rating !== null);
+    const avgPulse = withRating.length > 0
+      ? Math.round((withRating.reduce((sum, a) => sum + (a.avg_venue_pulse_rating || 0), 0) / withRating.length) * 10) / 10
+      : null;
+    return { total, vips, withAccount, checkedIn, avgPulse, ratingCount: withRating.length };
   }, [attendees]);
 
   if (loading) {
@@ -166,6 +171,15 @@ export default function VenueAttendeesPage() {
           <span className="stat-chip-value text-[var(--accent-primary)]">{stats.withAccount}</span>
           <span className="stat-chip-label">Linked</span>
         </div>
+        {stats.avgPulse && (
+          <div className="stat-chip">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="stat-chip-value text-yellow-400">{stats.avgPulse}</span>
+            </div>
+            <span className="stat-chip-label">Avg Pulse ({stats.ratingCount})</span>
+          </div>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -249,11 +263,14 @@ export default function VenueAttendeesPage() {
         isLoading={loading}
       />
 
-      <AttendeeDetailModal
+      <AttendeeDrawer
         isOpen={!!selectedAttendeeId}
         onClose={() => setSelectedAttendeeId(null)}
         attendeeId={selectedAttendeeId || ""}
         role="venue"
+        venueId={venueId}
+        onToggleVip={toggleVenueVip}
+        togglingVip={togglingVipId}
       />
     </div>
   );

@@ -37,6 +37,9 @@ export interface DashboardAttendee {
   venues_count?: number;
   strike_count?: number | null;
   last_event_at?: string | null;
+  // Venue Pulse rating
+  avg_venue_pulse_rating?: number | null;
+  venue_pulse_count?: number;
   // Promoter-specific
   referral_count?: number;
   upcoming_signups?: number;
@@ -114,7 +117,9 @@ export function AttendeesDashboardList({
           ? "grid-cols-[2fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
           : role === "admin"
           ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
-          : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
+          : role === "venue"
+          ? "grid-cols-[1fr_50px_50px] sm:grid-cols-[1fr_1fr_50px_50px_50px_50px] md:grid-cols-[1fr_1fr_50px_60px_50px_50px_50px_50px_60px_36px]"
+          : "grid-cols-[1fr_50px_50px] sm:grid-cols-[1fr_1fr_50px_50px_50px_50px] md:grid-cols-[1fr_1fr_50px_60px_50px_50px_50px_60px_36px]"
       }`}>
         <div>Name</div>
         <div className="hidden sm:block">Contact</div>
@@ -134,14 +139,15 @@ export function AttendeesDashboardList({
         ) : (
           <>
             <div>VIP</div>
-            <div className="text-center">Acct</div>
+            <div className="text-center hidden sm:block">Acct</div>
             <div className="text-center">Events</div>
-            <div className="text-center">Ins</div>
-            <div>Status</div>
+            <div className="text-center hidden sm:block">Ins</div>
+            {role === "venue" && <div className="text-center hidden md:block">Pulse</div>}
+            <div className="hidden md:block">Status</div>
           </>
         )}
-        <div className="hidden sm:block">Last</div>
-        {role !== "promoter" && <div className="text-center">{role !== "admin" ? "Set" : ""}</div>}
+        <div className="hidden md:block">Last</div>
+        {role !== "promoter" && <div className="text-center hidden md:block">{role !== "admin" ? "Set" : ""}</div>}
       </div>
 
       {/* Virtual Scrolling Container */}
@@ -177,7 +183,9 @@ export function AttendeesDashboardList({
                       ? "grid-cols-[2fr_40px_40px_40px_60px] sm:grid-cols-[2fr_1fr_40px_40px_40px_60px] md:grid-cols-[1fr_1fr_60px_60px_60px_80px]"
                       : role === "admin"
                       ? "grid-cols-[1fr_1fr_60px_60px_60px_60px_80px_24px]"
-                      : "grid-cols-[1fr_1fr_50px_60px_60px_60px_60px_80px_36px]"
+                      : role === "venue"
+                      ? "grid-cols-[1fr_50px_50px] sm:grid-cols-[1fr_1fr_50px_50px_50px_50px] md:grid-cols-[1fr_1fr_50px_60px_50px_50px_50px_50px_60px_36px]"
+                      : "grid-cols-[1fr_50px_50px] sm:grid-cols-[1fr_1fr_50px_50px_50px_50px] md:grid-cols-[1fr_1fr_50px_60px_50px_50px_50px_60px_36px]"
                   }`}
                   style={{
                     position: "absolute",
@@ -277,8 +285,8 @@ export function AttendeesDashboardList({
                           <span className="text-[10px] text-[var(--text-muted)]">-</span>
                         )}
                       </div>
-                      {/* Account */}
-                      <div className="flex items-center justify-center">
+                      {/* Account - hidden on mobile */}
+                      <div className="hidden sm:flex items-center justify-center">
                         {attendee.user_id ? (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--accent-success)]/10">
                             <UserCheck className="h-3 w-3 text-[var(--accent-success)]" />
@@ -291,12 +299,27 @@ export function AttendeesDashboardList({
                       <div className="text-center text-xs text-[var(--text-secondary)]">
                         {attendee.events_attended || 0}
                       </div>
-                      {/* Check-ins */}
-                      <div className="text-center text-xs text-[var(--text-secondary)]">
+                      {/* Check-ins - hidden on mobile */}
+                      <div className="hidden sm:block text-center text-xs text-[var(--text-secondary)]">
                         {attendee.total_check_ins || 0}
                       </div>
-                      {/* Status */}
-                      <div className="flex items-center justify-start gap-1.5">
+                      {/* Pulse Rating - venue only, hidden on mobile/tablet */}
+                      {role === "venue" && (
+                        <div className="hidden md:flex items-center justify-center">
+                          {attendee.avg_venue_pulse_rating ? (
+                            <div className="flex items-center gap-0.5">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-[10px] text-[var(--text-primary)]">
+                                {attendee.avg_venue_pulse_rating}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-[var(--text-muted)]">-</span>
+                          )}
+                        </div>
+                      )}
+                      {/* Status - hidden on mobile/tablet */}
+                      <div className="hidden md:flex items-center justify-start gap-1.5">
                         {(attendee.total_check_ins || 0) > 0 ? (
                           <>
                             <UserCheck className="h-3.5 w-3.5 text-[var(--accent-success)] flex-shrink-0" />
@@ -306,17 +329,17 @@ export function AttendeesDashboardList({
                           getStrikeBadge(attendee.strike_count) || <span className="text-[10px] text-[var(--text-muted)]">-</span>
                         )}
                       </div>
-                    </>
+</>
                   )}
 
-                  {/* Last Event - Hidden on mobile */}
-                  <div className="hidden sm:block text-[10px] text-[var(--text-muted)]">
+                  {/* Last Event - Hidden on mobile/tablet */}
+                  <div className="hidden md:block text-[10px] text-[var(--text-muted)]">
                     {formatDate(attendee.last_event_at || attendee.created_at)}
                   </div>
 
-                  {/* Actions (not for promoter) */}
+                  {/* Actions (not for promoter) - Hidden on mobile/tablet */}
                   {role !== "promoter" && (
-                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="hidden md:flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                       {role !== "admin" && onToggleVip && entityId && (
                         <button
                           onClick={(e) => {

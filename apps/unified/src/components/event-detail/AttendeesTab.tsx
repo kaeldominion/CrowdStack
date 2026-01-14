@@ -621,7 +621,7 @@ export function AttendeesTab({
           </table>
         </div>
 
-        {/* Mobile Card View */}
+        {/* Mobile Row View */}
         <div className="md:hidden divide-y divide-[var(--border-subtle)]/50">
           {filteredAttendees.length === 0 ? (
             <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
@@ -631,72 +631,57 @@ export function AttendeesTab({
             </div>
           ) : (
             filteredAttendees.map((attendee) => (
-              <div 
-                key={attendee.id} 
-                className="p-3 space-y-2 cursor-pointer hover:bg-[var(--bg-raised)]/30 transition-colors"
+              <div
+                key={attendee.id}
+                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--bg-raised)]/30 transition-colors"
                 onClick={() => setSelectedAttendeeId(attendee.attendee_id)}
               >
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-[var(--text-primary)] truncate">{attendee.name}</div>
-                    <div className="text-xs text-[var(--text-secondary)] truncate">{maskEmail(attendee.email)}</div>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    {attendee.checked_in ? (
-                      <div className="flex flex-col items-end">
-                        <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)]">
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                          In
-                        </span>
-                        {attendee.check_in_time && (
-                          <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                            {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
+                {/* Name & VIP badges */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-[var(--text-primary)] truncate">{attendee.name}</span>
+                    {(attendee.is_global_vip || attendee.is_venue_vip || attendee.is_organizer_vip || attendee.is_event_vip) && (
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {attendee.is_global_vip && <VipBadge level="global" variant="badge" size="xs" />}
+                        {attendee.is_venue_vip && <VipBadge level="venue" variant="badge" size="xs" />}
+                        {attendee.is_organizer_vip && <VipBadge level="organizer" variant="badge" size="xs" />}
+                        {attendee.is_event_vip && <VipBadge level="event" variant="badge" size="xs" />}
                       </div>
-                    ) : canCheckIn ? (
-                      <button
-                        onClick={() => onCheckIn(attendee.id)}
-                        disabled={checkingIn === attendee.id}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)] hover:text-[var(--accent-success)] hover:bg-[var(--accent-success)]/10 transition-colors"
-                      >
-                        {checkingIn === attendee.id ? (
-                          <InlineSpinner size="xs" />
-                        ) : (
-                          <>
-                            <Clock className="h-2.5 w-2.5" />
-                            Check in
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <span className="inline-flex items-center gap-0.5 px-2 py-1 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)]">
-                        <Clock className="h-2.5 w-2.5" />
-                        Pending
-                      </span>
                     )}
                   </div>
                 </div>
 
-                {/* Info Row */}
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[var(--text-muted)]">
-                    {new Date(attendee.registration_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {attendee.is_global_vip && <VipBadge level="global" variant="badge" size="xs" />}
-                    {attendee.is_venue_vip && <VipBadge level="venue" variant="badge" size="xs" />}
-                    {attendee.is_organizer_vip && <VipBadge level="organizer" variant="badge" size="xs" />}
-                    {attendee.is_event_vip && <VipBadge level="event" variant="badge" size="xs" />}
-                  </div>
-                </div>
-
-                {/* Actions Row */}
-                <div 
-                  className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border-subtle)]/50"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                {/* Check-in Status */}
+                <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {attendee.checked_in ? (
+                    <div className="flex flex-col items-center">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)]">
+                        <CheckCircle2 className="h-2.5 w-2.5" />
+                        In
+                      </span>
+                      {attendee.check_in_time && (
+                        <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                          {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  ) : canCheckIn ? (
+                    <button
+                      onClick={() => onCheckIn(attendee.id)}
+                      disabled={checkingIn === attendee.id}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)] hover:text-[var(--accent-success)] hover:bg-[var(--accent-success)]/10 transition-colors"
+                    >
+                      {checkingIn === attendee.id ? (
+                        <InlineSpinner size="xs" />
+                      ) : (
+                        <Clock className="h-2.5 w-2.5" />
+                      )}
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)]">
+                      <Clock className="h-2.5 w-2.5" />
+                    </span>
+                  )}
                 </div>
               </div>
             ))

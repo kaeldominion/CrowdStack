@@ -17,6 +17,8 @@ export interface VenueAttendee {
   is_venue_vip: boolean;
   is_global_vip: boolean;
   created_at: string;
+  avg_venue_pulse_rating: number | null;
+  venue_pulse_count: number;
 }
 
 export interface VenueAttendeeFilters {
@@ -124,6 +126,22 @@ export async function getVenueAttendees(
 
   const eventsMap = new Map(events?.map((e) => [e.id, e]) || []);
 
+  // Get venue pulse feedback for these attendees at this venue's events
+  const { data: feedbackData } = await supabase
+    .from("event_feedback")
+    .select("attendee_id, rating")
+    .in("attendee_id", filteredAttendeeIds)
+    .in("event_id", eventIds);
+
+  // Calculate average rating per attendee
+  const feedbackByAttendee = new Map<string, { total: number; count: number }>();
+  feedbackData?.forEach((fb) => {
+    const existing = feedbackByAttendee.get(fb.attendee_id) || { total: 0, count: 0 };
+    existing.total += fb.rating;
+    existing.count += 1;
+    feedbackByAttendee.set(fb.attendee_id, existing);
+  });
+
   // Transform and aggregate data
   const attendeesMap = new Map<string, VenueAttendee>();
 
@@ -141,6 +159,12 @@ export async function getVenueAttendees(
       .filter(Boolean)
       .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime());
 
+    // Get feedback stats for this attendee
+    const feedbackStats = feedbackByAttendee.get(attendee.id);
+    const avgRating = feedbackStats
+      ? Math.round((feedbackStats.total / feedbackStats.count) * 10) / 10
+      : null;
+
     const attendeeData: VenueAttendee = {
       id: attendee.id,
       name: attendee.name,
@@ -156,6 +180,8 @@ export async function getVenueAttendees(
       is_venue_vip: venueVipSet.has(attendee.id),
       is_global_vip: globalVipSet.has(attendee.id),
       created_at: attendee.created_at,
+      avg_venue_pulse_rating: avgRating,
+      venue_pulse_count: feedbackStats?.count || 0,
     };
 
     attendeesMap.set(attendee.id, attendeeData);
