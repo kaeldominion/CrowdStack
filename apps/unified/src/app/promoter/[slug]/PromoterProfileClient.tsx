@@ -27,7 +27,7 @@ interface Event {
   start_time: string;
   end_time: string | null;
   flier_url: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   registration_count: number;
   venue: {
     id: string;
