@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
 
 interface Event {
@@ -31,30 +32,17 @@ async function getOrganizerEvents() {
     redirect("/login");
   }
 
-  const serviceSupabase = createServiceRoleClient();
+  // Use the same helper as the dashboard API for consistency
+  const organizerId = await getUserOrganizerId();
 
-  // Get organizer IDs for current user in a single parallel query
-  const [organizerUsersResult, createdOrganizersResult] = await Promise.all([
-    serviceSupabase
-      .from("organizer_users")
-      .select("organizer_id")
-      .eq("user_id", user.id),
-    serviceSupabase
-      .from("organizers")
-      .select("id")
-      .eq("created_by", user.id)
-  ]);
-
-  const organizerIds = new Set<string>();
-  (organizerUsersResult.data || []).forEach((ou: any) => organizerIds.add(ou.organizer_id));
-  (createdOrganizersResult.data || []).forEach((o: any) => organizerIds.add(o.id));
-
-  if (organizerIds.size === 0) {
+  if (!organizerId) {
+    console.error("[OrganizerEvents] No organizer ID found for user:", user.id);
     return { events: [] };
   }
 
-  // Use first organizer ID (for single-organizer users) or all for multi-organizer
-  const organizerId = [...organizerIds][0];
+  console.log("[OrganizerEvents] Found organizer ID:", organizerId);
+
+  const serviceSupabase = createServiceRoleClient();
 
   // Get events for this organizer
   const { data: events, error } = await serviceSupabase
@@ -84,6 +72,8 @@ async function getOrganizerEvents() {
     console.error("[OrganizerEvents] Query error:", error);
     return { events: [] };
   }
+
+  console.log("[OrganizerEvents] Found events:", events?.length || 0);
 
   // Get registration, checkin, and payout counts using efficient aggregation
   const eventIds = events?.map(e => e.id) || [];
