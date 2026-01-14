@@ -405,88 +405,66 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
           </h2>
 
           {upcomingEvents.length === 0 ? (
-            <Card className="text-center py-12">
-              <PartyPopper className="h-12 w-12 text-muted mx-auto mb-4" />
+            <div className="glass-panel p-8 text-center">
+              <PartyPopper className="h-10 w-10 text-muted mx-auto mb-3" />
               <p className="text-secondary">No upcoming events right now.</p>
               <p className="text-sm text-muted mt-1">Check back soon!</p>
-            </Card>
+            </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {upcomingEvents.map((event) => (
                 <Link
                   key={event.id}
                   href={`/e/${event.slug}?ref=${promoterId}`}
                   className="block group"
                 >
-                  <Card className="overflow-hidden hover:border-accent-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent-primary/10">
-                    <div className="flex flex-col sm:flex-row">
-                      {/* Event Image */}
-                      {event.flier_url && (
-                        <div className="relative w-full sm:w-48 h-48 sm:h-auto flex-shrink-0">
-                          <Image
-                            src={event.flier_url}
-                            alt={event.name}
-                            fill
-                            className="object-cover"
-                          />
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-glass border border-subtle hover:border-accent-primary/30 transition-all">
+                    {/* Compact Thumbnail */}
+                    {event.flier_url ? (
+                      <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 border border-subtle">
+                        <Image
+                          src={event.flier_url}
+                          alt={event.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-14 h-20 rounded-md bg-raised flex items-center justify-center flex-shrink-0 border border-subtle">
+                        <Calendar className="h-5 w-5 text-muted" />
+                      </div>
+                    )}
+
+                    {/* Event Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-primary uppercase text-sm line-clamp-1 group-hover:text-accent-primary transition-colors">
+                        {event.name}
+                      </h3>
+                      <div className="flex items-center gap-1.5 mt-1 text-xs text-secondary">
+                        <Calendar className="h-3 w-3 text-muted" />
+                        <span>{formatDate(event.start_time)}</span>
+                        <span className="text-muted">•</span>
+                        <span>{formatTime(event.start_time)}</span>
+                      </div>
+                      {event.venue && (
+                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-secondary">
+                          <MapPin className="h-3 w-3 text-muted" />
+                          <span className="line-clamp-1">{event.venue.name}</span>
                         </div>
                       )}
-
-                      {/* Event Info */}
-                      <div className="flex-1 p-5">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-lg font-bold text-primary group-hover:text-accent-primary transition-colors">
-                              {event.name}
-                            </h3>
-
-                            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-secondary">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {formatDate(event.start_time)}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatTime(event.start_time)}
-                              </span>
-                              {event.venue && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {event.venue.name}
-                                  {event.venue.city && `, ${event.venue.city}`}
-                                </span>
-                              )}
-                            </div>
-
-                            {event.description && (
-                              <p className="text-sm text-muted mt-3 line-clamp-2">
-                                {event.description}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Registration count */}
-                          <div className="text-right flex-shrink-0">
-                            <div className="flex items-center gap-1 text-accent-success">
-                              <Users className="h-4 w-4" />
-                              <span className="font-bold">{event.registration_count}</span>
-                            </div>
-                            <span className="text-xs text-muted">attending</span>
-                          </div>
-                        </div>
-
-                        {/* CTA */}
-                        <div className="mt-4 flex items-center justify-between">
-                          <span className="label-mono">
-                            By {event.organizer?.name || "Unknown"}
-                          </span>
-                          <span className="px-4 py-2 bg-accent-primary text-void text-sm font-bold rounded-lg group-hover:glow-primary transition-shadow">
-                            Join Guestlist
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                  </Card>
+
+                    {/* Stats & CTA */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-center">
+                        <p className="text-sm font-bold text-primary">{event.registration_count}</p>
+                        <p className="label-mono text-[8px]">Going</p>
+                      </div>
+                      <span className="px-3 py-1.5 bg-accent-primary text-void text-xs font-bold rounded-md group-hover:glow-primary transition-shadow">
+                        Join
+                      </span>
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -501,29 +479,40 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
               Recent Events
             </h2>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
               {pastEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="relative aspect-[3/4] rounded-lg overflow-hidden glass-panel group"
+                  className="flex items-center gap-3 p-2.5 rounded-lg bg-glass/50 border border-subtle/50"
                 >
+                  {/* Small icon or thumbnail */}
                   {event.flier_url ? (
-                    <Image
-                      src={event.flier_url}
-                      alt={event.name}
-                      fill
-                      className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
-                    />
+                    <div className="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={event.flier_url}
+                        alt={event.name}
+                        fill
+                        className="object-cover opacity-70"
+                      />
+                    </div>
                   ) : (
-                    <div className="absolute inset-0 bg-raised" />
+                    <div className="w-10 h-10 rounded-md bg-raised flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="h-4 w-4 text-muted" />
+                    </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="label-mono mb-1">{formatDate(event.start_time)}</p>
-                    <h4 className="text-sm font-bold text-primary line-clamp-2">{event.name}</h4>
-                    {event.venue && (
-                      <p className="text-xs text-secondary mt-1">{event.venue.name}</p>
-                    )}
+
+                  {/* Event details */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-primary line-clamp-1">{event.name}</h4>
+                    <div className="flex items-center gap-2 text-xs text-muted">
+                      <span>{formatDate(event.start_time)}</span>
+                      {event.venue && (
+                        <>
+                          <span>•</span>
+                          <span className="line-clamp-1">{event.venue.name}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

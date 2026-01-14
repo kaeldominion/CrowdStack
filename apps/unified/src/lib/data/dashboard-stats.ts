@@ -61,28 +61,14 @@ export async function getOrganizerDashboardStats(): Promise<DashboardStats> {
     };
   }
 
-  // Get registration count
-  const { count: regCount } = await supabase
+  // Get registration and check-in counts in one query
+  const { data: allRegs } = await supabase
     .from("registrations")
-    .select("*", { count: "exact", head: true })
+    .select("id, checked_in")
     .in("event_id", eventIds);
 
-  // Get check-in count
-  const { data: registrations } = await supabase
-    .from("registrations")
-    .select("id")
-    .in("event_id", eventIds);
-
-  const regIds = registrations?.map((r) => r.id) || [];
-  let checkinCount = 0;
-  if (regIds.length > 0) {
-    const { count } = await supabase
-      .from("checkins")
-      .select("*", { count: "exact", head: true })
-      .in("registration_id", regIds)
-      .is("undo_at", null);
-    checkinCount = count || 0;
-  }
+  const regCount = allRegs?.length || 0;
+  const checkinCount = allRegs?.filter((r) => r.checked_in).length || 0;
 
   // Get promoter count
   const { count: promoterCount } = await supabase
@@ -508,26 +494,18 @@ export async function getVenueDashboardStats(): Promise<{
     .eq("venue_id", venueId)
     .gte("start_time", startOfMonth.toISOString());
 
-  // Get check-ins
+  // Get check-ins using checked_in boolean field
   const { data: events } = await supabase.from("events").select("id").eq("venue_id", venueId);
   const eventIds = events?.map((e) => e.id) || [];
 
   let totalCheckIns = 0;
   if (eventIds.length > 0) {
-    const { data: regs } = await supabase
+    const { data: allRegs } = await supabase
       .from("registrations")
-      .select("id")
+      .select("id, checked_in")
       .in("event_id", eventIds);
 
-    const regIds = regs?.map((r) => r.id) || [];
-    if (regIds.length > 0) {
-      const { count } = await supabase
-        .from("checkins")
-        .select("*", { count: "exact", head: true })
-        .in("registration_id", regIds)
-        .is("undo_at", null);
-      totalCheckIns = count || 0;
-    }
+    totalCheckIns = allRegs?.filter((r) => r.checked_in).length || 0;
   }
 
   // Calculate average attendance
