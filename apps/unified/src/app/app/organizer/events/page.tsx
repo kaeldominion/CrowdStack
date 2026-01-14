@@ -3,6 +3,9 @@ import { createClient, createServiceRoleClient } from "@crowdstack/shared/supaba
 import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { OrganizerEventsPageClient } from "./OrganizerEventsPageClient";
 
+// Force dynamic rendering - this page uses cookies/auth
+export const dynamic = 'force-dynamic';
+
 interface Event {
   id: string;
   name: string;
