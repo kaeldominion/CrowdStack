@@ -753,224 +753,313 @@ export default function JoinTablePage() {
             {inviteContent}
           </MobileScrollExperience>
 
-          {/* Desktop: Premium side-by-side layout */}
-          <div className="hidden lg:grid lg:grid-cols-2 min-h-screen bg-void">
-            {/* Left side - Flier with premium overlay */}
-            <div className="relative">
-              <div className="sticky top-0 h-screen overflow-hidden">
-                <Image
-                  src={imageUrl}
-                  alt={`${partyData.event.name} flier`}
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="50vw"
-                />
-                {/* Multi-layer gradient for depth */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-void/20 to-void" />
-                <div className="absolute inset-0 bg-gradient-to-b from-void/30 via-transparent to-void/60" />
-
-                {/* Event info overlay at bottom left */}
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <div className="max-w-md">
-                    {eventStartDate && (
-                      <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-accent-primary mb-4">
-                        <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-void">
-                          {eventStartDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                    <h2 className="font-sans font-black uppercase tracking-tighter leading-[0.9] text-4xl xl:text-5xl text-white drop-shadow-lg mb-3">
-                      {partyData.event.name}
-                    </h2>
-                    {partyData.venue.slug ? (
-                      <Link
-                        href={`/v/${partyData.venue.slug}`}
-                        className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors"
-                      >
-                        <MapPin className="h-4 w-4" />
-                        <span className="font-mono text-sm tracking-wide underline underline-offset-2">
-                          {partyData.venue.name}{partyData.venue.city && `, ${partyData.venue.city}`}
-                        </span>
-                      </Link>
-                    ) : (
-                      <div className="flex items-center gap-2 text-white/80">
-                        <MapPin className="h-4 w-4" />
-                        <span className="font-mono text-sm tracking-wide">
-                          {partyData.venue.name}{partyData.venue.city && `, ${partyData.venue.city}`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+          {/* Desktop: Event page style layout */}
+          <>
+            {/* Blurred Background - Fixed, fills entire viewport */}
+            <div
+              className="hidden lg:block fixed inset-0 z-0 overflow-hidden pointer-events-none bg-void"
+              aria-hidden="true"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{
+                  filter: 'blur(80px)',
+                  transform: 'scale(1.3)',
+                  opacity: 0.15,
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-void/40 via-void/70 to-void" />
             </div>
 
-            {/* Right side - Content with proper centering and styling */}
-            <div className="relative flex items-center justify-center py-12 px-8">
-              {/* Subtle background texture */}
-              <div className="absolute inset-0 bg-raised/50" />
+            {/* Main Content */}
+            <div className="hidden lg:block min-h-screen relative z-10 pt-20">
+              <div className="max-w-7xl mx-auto px-4 lg:px-8 pb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-              {/* Content container */}
-              <div className="relative z-10 max-w-lg w-full">
-                {/* Header */}
-                <div className="text-center mb-8">
-                  <h1 className="page-title text-3xl xl:text-4xl mb-2">
-                    Table Party Invite
-                  </h1>
-                  <p className="text-secondary">
-                    {partyData.host.name} has invited you to join their table
-                  </p>
-                </div>
+                  {/* Left Column - Flier */}
+                  <div className="lg:col-span-4">
+                    <div className="sticky top-24">
+                      {/* Flier */}
+                      <div className="relative aspect-[9/16] max-w-sm mx-auto rounded-2xl overflow-hidden border border-border-subtle shadow-soft">
+                        <Image
+                          src={imageUrl}
+                          alt={`${partyData.event.name} flier`}
+                          fill
+                          className="object-cover"
+                          priority
+                          sizes="(max-width: 1024px) 100vw, 384px"
+                        />
+                      </div>
 
-                {/* Main content card */}
-                <div className="glass-panel p-6 xl:p-8">
-                  {/* Table Info */}
-                  <div className="flex items-center justify-between mb-6 pb-6 border-b border-border-subtle">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20">
-                        <Users className="w-6 h-6 text-accent-primary" />
-                      </div>
-                      <div>
-                        <p className="text-primary font-semibold text-lg">{partyData.booking.table_name}</p>
-                        {partyData.booking.zone_name !== "General" && (
-                          <p className="text-secondary text-sm">{partyData.booking.zone_name}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <Badge
-                        variant={partyData.booking.is_full ? "error" : "secondary"}
-                        className="mb-1"
-                      >
-                        {partyData.booking.is_full ? "Full" : spotsText}
-                      </Badge>
-                      <p className="text-muted text-xs">
-                        {partyData.booking.joined_count}/{partyData.booking.party_size} joined
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Host Info */}
-                  <div className="mb-6">
-                    <p className="label-mono text-xs mb-3">HOSTED BY</p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
-                        <Crown className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-primary font-semibold">{partyData.host.name}</p>
-                        <p className="text-muted text-sm">Table Host</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Guest List */}
-                  {partyData.guests.length > 0 && (
-                    <div className="mb-6 pb-6 border-b border-border-subtle">
-                      <p className="label-mono text-xs mb-3">WHO&apos;S COMING</p>
-                      <div className="space-y-2">
-                        {partyData.guests.slice(0, 4).map((guest) => (
-                          <div key={guest.id} className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                              guest.is_host
-                                ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white"
-                                : "bg-raised text-secondary border border-border-subtle"
-                            }`}>
-                              {guest.is_host ? <Crown className="w-4 h-4" /> : guest.initial}
-                            </div>
-                            <span className="text-primary text-sm flex-1">{guest.name}</span>
-                            <Check className="w-4 h-4 text-accent-success" />
-                          </div>
-                        ))}
-                        {partyData.guests.length > 4 && (
-                          <p className="text-muted text-xs pl-11">
-                            +{partyData.guests.length - 4} more guests
+                      {/* Party Stats Card */}
+                      <div className="mt-6 glass-panel p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary">
+                            Party Status
                           </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                          <Badge
+                            variant={partyData.booking.is_full ? "error" : "success"}
+                          >
+                            {partyData.booking.is_full ? "Full" : spotsText}
+                          </Badge>
+                        </div>
 
-                  {/* Action Section */}
-                  <div>
-                    {partyData.booking.is_full && !partyData.guest.has_joined ? (
-                      <div className="p-4 rounded-xl bg-accent-error/10 border border-accent-error/20 text-center">
-                        <p className="text-accent-error font-medium">This party is full</p>
-                        <p className="text-secondary text-sm mt-1">Contact the host to request a spot</p>
-                      </div>
-                    ) : partyData.event.is_past ? (
-                      <div className="p-4 rounded-xl bg-accent-warning/10 border border-accent-warning/20 text-center">
-                        <p className="text-accent-warning font-medium">This event has passed</p>
-                      </div>
-                    ) : readyToJoin ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-accent-success/10 border border-accent-success/20">
-                          <Check className="w-5 h-5 text-accent-success" />
-                          <div>
-                            <p className="text-primary text-sm font-medium">Signed in as {userEmail}</p>
-                            <p className="text-muted text-xs">Ready to join!</p>
+                        {/* Guest avatars */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex -space-x-2">
+                            {partyData.guests.slice(0, 5).map((guest) => (
+                              <div
+                                key={guest.id}
+                                className={`w-8 h-8 rounded-full border-2 border-void flex items-center justify-center text-xs font-bold ${
+                                  guest.is_host
+                                    ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white"
+                                    : "bg-raised text-secondary"
+                                }`}
+                              >
+                                {guest.is_host ? <Crown className="w-4 h-4" /> : guest.initial}
+                              </div>
+                            ))}
+                            {partyData.booking.party_size > 5 && (
+                              <div className="w-8 h-8 rounded-full bg-raised border-2 border-void flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-primary">
+                                  +{partyData.booking.party_size - 5}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-primary">
+                              {partyData.booking.joined_count}
+                            </p>
+                            <p className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                              of {partyData.booking.party_size}
+                            </p>
                           </div>
                         </div>
-                        <button
-                          onClick={handleJoinParty}
-                          disabled={joiningParty}
-                          className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {joiningParty ? (
-                            <>
-                              <LoadingSpinner className="w-5 h-5" />
-                              Joining...
-                            </>
-                          ) : (
-                            <>
+
+                        {/* Progress bar */}
+                        <div className="w-full h-2 bg-raised rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min((partyData.booking.joined_count / partyData.booking.party_size) * 100, 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Center Column - Invite Info */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* Header Badges */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {eventStartDate && (
+                        <Badge color="purple" variant="solid" className="font-mono uppercase">
+                          {eventStartDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase()}
+                        </Badge>
+                      )}
+                      <Badge color="blue" variant="solid" className="font-mono uppercase flex items-center gap-1">
+                        <PartyPopper className="h-3 w-3" />
+                        Table Party
+                      </Badge>
+                    </div>
+
+                    {/* Event Title */}
+                    <h1 className="font-sans text-4xl xl:text-5xl font-black text-primary uppercase tracking-tight leading-[0.95]">
+                      {partyData.event.name}
+                    </h1>
+
+                    {/* Venue Link */}
+                    {partyData.venue.name && (
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+                          <MapPin className="w-5 h-5 text-accent-secondary" />
+                        </div>
+                        {partyData.venue.slug ? (
+                          <Link
+                            href={`/v/${partyData.venue.slug}`}
+                            className="text-primary hover:text-accent-primary transition-colors"
+                          >
+                            <p className="font-semibold">{partyData.venue.name}</p>
+                            {partyData.venue.city && (
+                              <p className="text-sm text-secondary">{partyData.venue.city}</p>
+                            )}
+                          </Link>
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-primary">{partyData.venue.name}</p>
+                            {partyData.venue.city && (
+                              <p className="text-sm text-secondary">{partyData.venue.city}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Divider */}
+                    <div className="border-t border-border-subtle" />
+
+                    {/* Table Info Card */}
+                    <div className="glass-panel p-5">
+                      <p className="label-mono text-xs mb-4">TABLE DETAILS</p>
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-accent-primary/10 border border-accent-primary/20">
+                          <Users className="w-6 h-6 text-accent-primary" />
+                        </div>
+                        <div>
+                          <p className="text-primary font-semibold text-lg">{partyData.booking.table_name}</p>
+                          {partyData.booking.zone_name !== "General" && (
+                            <p className="text-secondary text-sm">{partyData.booking.zone_name}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Host Info */}
+                    <div className="glass-panel p-5">
+                      <p className="label-mono text-xs mb-4">HOSTED BY</p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
+                          <Crown className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-primary font-semibold text-lg">{partyData.host.name}</p>
+                          <p className="text-muted text-sm">Table Host</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Guest List */}
+                    {partyData.guests.length > 0 && (
+                      <div className="glass-panel p-5">
+                        <p className="label-mono text-xs mb-4">WHO&apos;S COMING</p>
+                        <div className="space-y-3">
+                          {partyData.guests.map((guest) => (
+                            <div key={guest.id} className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                                guest.is_host
+                                  ? "bg-gradient-to-br from-accent-primary to-accent-secondary text-white"
+                                  : "bg-raised text-secondary border border-border-subtle"
+                              }`}>
+                                {guest.is_host ? <Crown className="w-5 h-5" /> : guest.initial}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-primary font-medium">{guest.name}</p>
+                                {guest.instagram && (
+                                  <p className="text-secondary text-xs">@{guest.instagram}</p>
+                                )}
+                              </div>
+                              <Check className="w-5 h-5 text-accent-success" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column - Actions */}
+                  <div className="lg:col-span-3">
+                    <div className="sticky top-24 space-y-4">
+                      {/* Invitation Card */}
+                      <div className="glass-panel p-5 border-accent-primary/30">
+                        <div className="text-center mb-5">
+                          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent-primary/20 mb-3">
+                            <Ticket className="w-7 h-7 text-accent-primary" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-primary">You&apos;re Invited!</h3>
+                          <p className="text-sm text-secondary mt-1">
+                            Join {partyData.host.name}&apos;s table
+                          </p>
+                        </div>
+
+                        {/* Action Section */}
+                        {partyData.booking.is_full && !partyData.guest.has_joined ? (
+                          <div className="p-4 rounded-xl bg-accent-error/10 border border-accent-error/20 text-center">
+                            <p className="text-accent-error font-medium">This party is full</p>
+                            <p className="text-secondary text-sm mt-1">Contact the host to request a spot</p>
+                          </div>
+                        ) : partyData.event.is_past ? (
+                          <div className="p-4 rounded-xl bg-accent-warning/10 border border-accent-warning/20 text-center">
+                            <p className="text-accent-warning font-medium">This event has passed</p>
+                          </div>
+                        ) : readyToJoin ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-accent-success/10 border border-accent-success/20">
+                              <Check className="w-5 h-5 text-accent-success flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-primary text-sm font-medium truncate">{userEmail}</p>
+                                <p className="text-muted text-xs">Ready to join!</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={handleJoinParty}
+                              disabled={joiningParty}
+                              className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {joiningParty ? (
+                                <>
+                                  <LoadingSpinner className="w-5 h-5" />
+                                  Joining...
+                                </>
+                              ) : (
+                                <>
+                                  <PartyPopper className="w-5 h-5" />
+                                  Join This Table
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : userEmail ? (
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-accent-secondary/10 border border-accent-secondary/20">
+                              <User className="w-5 h-5 text-accent-secondary flex-shrink-0" />
+                              <div>
+                                <p className="text-primary text-sm font-medium">Almost there!</p>
+                                <p className="text-muted text-xs">Complete your profile to join</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setShowProfileForm(true)}
+                              className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                            >
+                              <PartyPopper className="w-5 h-5" />
+                              Complete Profile & Join
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <button
+                              onClick={handleLoginRedirect}
+                              className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                            >
                               <PartyPopper className="w-5 h-5" />
                               Join This Table
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    ) : userEmail ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-accent-secondary/10 border border-accent-secondary/20">
-                          <User className="w-5 h-5 text-accent-secondary" />
-                          <div>
-                            <p className="text-primary text-sm font-medium">Almost there!</p>
-                            <p className="text-muted text-xs">Complete your profile to join</p>
+                            </button>
+                            <p className="text-center text-muted text-sm">
+                              Quick signup to get your QR pass
+                            </p>
                           </div>
-                        </div>
-                        <button
-                          onClick={() => setShowProfileForm(true)}
-                          className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                        >
-                          <PartyPopper className="w-5 h-5" />
-                          Complete Profile & Join
-                        </button>
+                        )}
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <button
-                          onClick={handleLoginRedirect}
-                          className="w-full px-6 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-                        >
-                          <PartyPopper className="w-5 h-5" />
-                          Join This Table
-                        </button>
-                        <p className="text-center text-muted text-sm">
-                          Quick signup to get your QR pass
-                        </p>
-                      </div>
-                    )}
+
+                      {/* View Event Link */}
+                      <Link
+                        href={`/e/${partyData.event.slug}`}
+                        className="block w-full p-4 rounded-xl border border-border-subtle bg-raised/50 hover:bg-raised transition-colors text-center"
+                      >
+                        <p className="text-primary font-medium">View Event Details</p>
+                        <p className="text-muted text-xs mt-1">See full event info</p>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-
-                {/* Footer */}
-                <p className="text-center text-muted text-xs mt-6">
-                  Powered by CrowdStack
-                </p>
               </div>
             </div>
-          </div>
+          </>
         </>
       );
     }
