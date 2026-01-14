@@ -20,7 +20,7 @@ interface Event {
   payouts_paid: number;
   flier_url: string | null;
   cover_image_url: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   venue: any | null;
   organizer: any | null;
 }

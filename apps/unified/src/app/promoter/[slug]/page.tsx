@@ -56,7 +56,7 @@ async function getPromoter(slug: string) {
         end_time,
         flier_url,
         status,
-        capacity,
+        max_guestlist_size,
         venue:venues(
           id,
           name,
@@ -97,6 +97,10 @@ async function getPromoter(slug: string) {
         .select("*", { count: "exact", head: true })
         .eq("event_id", event.id);
 
+      // Normalize Supabase array relations
+      const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+      const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+
       return {
         id: event.id,
         name: event.name,
@@ -105,10 +109,10 @@ async function getPromoter(slug: string) {
         start_time: event.start_time,
         end_time: event.end_time,
         flier_url: event.flier_url,
-        capacity: event.capacity,
+        max_guestlist_size: event.max_guestlist_size,
         registration_count: registrationCount || 0,
-        venue: event.venue,
-        organizer: event.organizer,
+        venue,
+        organizer,
       };
     })
   );
@@ -134,7 +138,15 @@ async function getPromoter(slug: string) {
       return new Date(b.events.start_time).getTime() - new Date(a.events.start_time).getTime();
     })
     .slice(0, 6)
-    .map((ep: any) => ep.events);
+    .map((ep: any) => {
+      const event = ep.events;
+      // Normalize Supabase array relations
+      const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+      return {
+        ...event,
+        venue,
+      };
+    });
 
   // Get total stats
   const { count: totalEventsPromoted } = await supabase

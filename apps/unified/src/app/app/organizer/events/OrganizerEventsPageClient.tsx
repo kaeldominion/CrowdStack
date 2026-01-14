@@ -25,7 +25,7 @@ interface Event {
   payouts_paid: number;
   flier_url: string | null;
   cover_image_url: string | null;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   venue: any | null;
   organizer: any | null;
 }
@@ -370,8 +370,8 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
                       <div className="flex items-center gap-1 text-sm text-primary">
                         <Users className="h-4 w-4 text-muted" />
                         <span>{event.registrations}</span>
-                        {event.capacity && (
-                          <span className="text-secondary">/ {event.capacity}</span>
+                        {event.max_guestlist_size && (
+                          <span className="text-secondary">/ {event.max_guestlist_size}</span>
                         )}
                       </div>
                     </TableCell>

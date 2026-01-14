@@ -63,7 +63,7 @@ export async function GET(
           end_time,
           flier_url,
           status,
-          capacity,
+          max_guestlist_size,
           venue:venues(
             id,
             name,
@@ -129,7 +129,7 @@ export async function GET(
           start_time: event.start_time,
           end_time: event.end_time,
           flier_url: event.flier_url,
-          capacity: event.capacity,
+          max_guestlist_size: event.max_guestlist_size,
           registration_count: registrationCount || 0,
           venue,
           organizer,
