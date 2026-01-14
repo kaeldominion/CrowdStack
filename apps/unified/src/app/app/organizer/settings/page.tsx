@@ -10,6 +10,7 @@ import { TeamMemberCard } from "@/components/organizer/TeamMemberCard";
 import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
 import { PermissionsEditor } from "@/components/PermissionsEditor";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { WidgetGeneratorTab } from "@/components/venue/WidgetGeneratorTab";
 
 interface OrganizerSettingsData {
   organizer: Organizer;
@@ -328,6 +329,7 @@ export default function OrganizerSettingsPage() {
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="door-staff">Door Staff</TabsTrigger>
           <TabsTrigger value="finance">Finance</TabsTrigger>
+          <TabsTrigger value="widget">Embed Widget</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -675,6 +677,14 @@ export default function OrganizerSettingsPage() {
               )}
             </div>
           </Card>
+        </TabsContent>
+
+        {/* Embed Widget Tab */}
+        <TabsContent value="widget">
+          <WidgetGeneratorTab
+            organizerId={data?.organizer?.id}
+            entityName={data?.organizer?.name}
+          />
         </TabsContent>
       </Tabs>
 

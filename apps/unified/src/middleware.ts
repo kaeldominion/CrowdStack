@@ -36,6 +36,7 @@ export async function middleware(request: NextRequest) {
     "/api/events/", // Photos GET route - handled by route itself, but allow through middleware
     "/api/venues/by-slug/", // Public venue pages
     "/api/venues/", // Venue events route
+    "/api/widget/", // Widget API endpoints (CORS-enabled for external embedding)
   ];
 
   // Public route patterns
@@ -47,6 +48,7 @@ export async function middleware(request: NextRequest) {
     "/p/", // Photo pages
     "/checkin/", // Check-in pages
     "/door/invite/", // Door staff invite pages (viewing only, accepting requires auth)
+    "/widget/", // Embeddable widget pages (no auth required)
   ];
 
   // Cacheable routes - skip session refresh to enable ISR caching
@@ -54,6 +56,7 @@ export async function middleware(request: NextRequest) {
   // mark responses as dynamic and prevent caching
   const cacheablePatterns = [
     "/e/", // Event pages - high traffic, must be cached
+    "/widget/", // Widget pages - must be cached for external embedding
   ];
 
   // Check if route is public

@@ -8,6 +8,7 @@ import { Save, Upload, X, Trash2, Star, ExternalLink, Eye, Check, Loader2, Image
 import Image from "next/image";
 import { MapPreview } from "@/components/venue/MapPreview";
 import { FeedbackSettingsTab } from "@/components/venue/FeedbackSettingsTab";
+import { WidgetGeneratorTab } from "@/components/venue/WidgetGeneratorTab";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import { CURRENCIES } from "@/lib/constants/currencies";
 import type { Venue, VenueGallery as VenueGalleryType, VenueTag } from "@crowdstack/shared/types";
@@ -560,6 +561,7 @@ export default function VenueSettingsPage() {
           <TabsTrigger value="policies">Policies</TabsTrigger>
           <TabsTrigger value="defaults">Defaults</TabsTrigger>
           <TabsTrigger value="feedback">Venue Pulse</TabsTrigger>
+          <TabsTrigger value="widget">Embed Widget</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -1346,6 +1348,15 @@ export default function VenueSettingsPage() {
         {/* Venue Pulse (Feedback) Tab */}
         <TabsContent value="feedback">
           <FeedbackSettingsTab venueId={data?.venue?.id} />
+        </TabsContent>
+
+        {/* Embed Widget Tab */}
+        <TabsContent value="widget">
+          <WidgetGeneratorTab
+            venueSlug={data?.venue?.slug || undefined}
+            accentColor={data?.venue?.accent_color}
+            entityName={data?.venue?.name}
+          />
         </TabsContent>
       </Tabs>
 

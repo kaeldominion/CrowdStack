@@ -55,6 +55,8 @@ const isStandaloneRoute = (pathname: string) => {
   if (pathname.startsWith("/i/")) return true;
   // Invite token signup pages
   if (pathname.match(/^\/invite\/[^/]+\/signup/)) return true;
+  // Widget pages are standalone (embedded in external iframes)
+  if (pathname.startsWith("/widget/")) return true;
   return false;
 };
 
