@@ -314,13 +314,14 @@ export async function GET(
         }
       }
 
+      // Use absolute URL for invite_url (shared externally), relative for pass_url (used in-app)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
 
       partyData = {
         host: hostGuest ? {
           id: hostGuest.id,
           name: hostGuest.guest_name,
-          pass_url: `${baseUrl}/table-pass/${hostGuest.id}`,
+          pass_url: `/table-pass/${hostGuest.id}`,
           checked_in: hostGuest.checked_in,
         } : null,
         guests: (partyGuests || []).filter(g => !g.is_host).map(g => ({

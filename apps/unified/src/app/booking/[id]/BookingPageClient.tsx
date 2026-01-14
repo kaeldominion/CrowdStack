@@ -21,6 +21,7 @@ import {
   Share2,
   Trash2,
   X,
+  LogOut,
 } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
@@ -102,6 +103,12 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [removingGuest, setRemovingGuest] = useState<string | null>(null); // Guest ID being removed
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null); // Guest ID to confirm removal
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
 
   // Server-side refresh - navigates to force a full server re-render
   const handleRefresh = () => {
@@ -182,31 +189,93 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
     }
   };
 
+  const cancelBooking = async () => {
+    try {
+      setCancelling(true);
+      setCancelError(null);
+
+      const response = await fetch(`/api/booking/${bookingId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to cancel booking");
+      }
+
+      // Update local state
+      setData(prev => ({
+        ...prev,
+        booking: {
+          ...prev.booking,
+          status: "cancelled",
+        },
+      }));
+
+      setShowCancelModal(false);
+    } catch (err: any) {
+      setCancelError(err.message);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const leaveParty = async () => {
+    try {
+      setLeaving(true);
+      setLeaveError(null);
+
+      const response = await fetch(`/api/booking/${bookingId}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to leave party");
+      }
+
+      // Redirect to home/my tables after leaving
+      setShowLeaveModal(false);
+      router.push("/me?tab=tables");
+    } catch (err: any) {
+      setLeaveError(err.message);
+    } finally {
+      setLeaving(false);
+    }
+  };
+
   const { booking, event, venue, table, payment, party, currencySymbol } = data;
   const eventDate = new Date(event.start_time);
 
   // Status badge config
-  const statusConfig: Record<string, { color: "green" | "amber" | "red" | "blue" | "slate"; label: string }> = {
-    pending: { color: "amber", label: "Pending" },
-    confirmed: { color: "green", label: "Confirmed" },
-    cancelled: { color: "red", label: "Cancelled" },
-    completed: { color: "blue", label: "Completed" },
-    no_show: { color: "slate", label: "No Show" },
+  // Note: "Pending Confirmation" is shown when deposit is paid but venue hasn't confirmed yet
+  const getStatusConfig = () => {
+    if (booking.status === "pending" && booking.payment_status === "paid") {
+      return { color: "amber" as const, label: "Pending Confirmation" };
+    }
+    const configs: Record<string, { color: "green" | "amber" | "red" | "blue" | "slate"; label: string }> = {
+      pending: { color: "amber", label: "Pending" },
+      confirmed: { color: "green", label: "Confirmed" },
+      cancelled: { color: "red", label: "Cancelled" },
+      completed: { color: "blue", label: "Completed" },
+      no_show: { color: "slate", label: "No Show" },
+    };
+    return configs[booking.status] || configs.pending;
   };
 
   const paymentStatusConfig: Record<string, { color: "green" | "amber" | "slate" | "blue" | "purple"; label: string; icon: any }> = {
     not_required: { color: "slate", label: "No Deposit Required", icon: Check },
     pending: { color: "amber", label: "Payment Pending", icon: Clock },
-    paid: { color: "green", label: "Paid", icon: Check },
+    paid: { color: "green", label: "Deposit Received", icon: Check },
     refunded: { color: "blue", label: "Refunded", icon: CreditCard },
     waived: { color: "purple", label: "Waived", icon: Check },
   };
 
-  // If payment is paid, show as confirmed (even if status is still pending)
-  const effectiveStatus = booking.payment_status === "paid" && booking.status === "pending" 
-    ? "confirmed" 
-    : booking.status;
-  const currentStatus = statusConfig[effectiveStatus] || statusConfig.pending;
+  const currentStatus = getStatusConfig();
   const currentPaymentStatus = paymentStatusConfig[booking.payment_status] || paymentStatusConfig.pending;
   const PaymentIcon = currentPaymentStatus.icon;
 
@@ -233,13 +302,22 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
 
         <div className="relative max-w-2xl mx-auto px-4 pt-8 pb-4">
           <div className="flex items-center justify-between mb-6">
-            <Link
-              href={`/e/${event.slug}`}
-              className="inline-flex items-center text-sm text-secondary hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              View event
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/me?tab=tables"
+                className="inline-flex items-center text-sm text-secondary hover:text-primary transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                My Tables
+              </Link>
+              <span className="text-muted">•</span>
+              <Link
+                href={`/e/${event.slug}`}
+                className="text-sm text-secondary hover:text-primary transition-colors"
+              >
+                View Event
+              </Link>
+            </div>
             <Button
               variant="secondary"
               size="sm"
@@ -402,8 +480,26 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
             </Card>
           )}
 
+        {/* Pending Confirmation Notice - Host only, when deposit paid but not yet confirmed */}
+        {data.isHost && booking.status === "pending" && booking.payment_status === "paid" && (
+          <Card>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-accent-warning/10 border border-accent-warning/20">
+                <Clock className="h-5 w-5 text-accent-warning" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-primary">Awaiting Venue Confirmation</h2>
+                <p className="text-xs text-secondary">Your deposit has been received</p>
+              </div>
+            </div>
+            <p className="text-sm text-secondary">
+              Once the venue confirms your booking, you&apos;ll be able to view your entry pass and invite guests to your table.
+            </p>
+          </Card>
+        )}
+
         {/* Confirmed Booking - Party Section */}
-        {(booking.status === "confirmed" || booking.payment_status === "paid" || data.isGuest) && party && (
+        {(booking.status === "confirmed" || data.isGuest) && party && (
           <>
             {/* Your Pass - Host only (guests get their pass from join confirmation) */}
             {data.isHost && (
@@ -686,6 +782,60 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
           </div>
         </Card>
 
+        {/* Cancel Booking - Host only, when booking can be cancelled */}
+        {data.isHost && ["pending", "confirmed"].includes(booking.status) && (
+          <Card>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-accent-error/10 border border-accent-error/20">
+                <X className="h-5 w-5 text-accent-error" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-primary">Cancel Booking</h2>
+                <p className="text-xs text-secondary">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <Button
+              variant="secondary"
+              onClick={() => setShowCancelModal(true)}
+              className="w-full border-accent-error/30 text-accent-error hover:bg-accent-error/10"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel Booking
+            </Button>
+
+            {booking.deposit_required && booking.deposit_required > 0 && booking.payment_status === "paid" && (
+              <p className="mt-3 text-xs text-muted text-center">
+                Note: Deposits are non-refundable for guest cancellations.
+              </p>
+            )}
+          </Card>
+        )}
+
+        {/* Leave Party - Guest only (not host) */}
+        {data.isGuest && !data.isHost && (
+          <Card>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-accent-error/10 border border-accent-error/20">
+                <LogOut className="h-5 w-5 text-accent-error" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-primary">Leave Party</h2>
+                <p className="text-xs text-secondary">Remove yourself from this table</p>
+              </div>
+            </div>
+
+            <Button
+              variant="secondary"
+              onClick={() => setShowLeaveModal(true)}
+              className="w-full border-accent-error/30 text-accent-error hover:bg-accent-error/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Leave Table Party
+            </Button>
+          </Card>
+        )}
+
         {/* Help Text */}
         <p className="text-center text-xs text-muted pt-4">
           Questions about your booking?{" "}
@@ -694,6 +844,158 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
           </a>
         </p>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface rounded-2xl border border-border-subtle shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-xl bg-accent-error/10 border border-accent-error/20">
+                  <X className="h-6 w-6 text-accent-error" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-primary">Cancel Booking?</h3>
+                  <p className="text-sm text-secondary">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="mb-6 p-4 rounded-xl bg-raised border border-border-subtle">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted">Event</span>
+                    <span className="text-primary">{event.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Table</span>
+                    <span className="text-primary">{table.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Party Size</span>
+                    <span className="text-primary">{booking.party_size} guests</span>
+                  </div>
+                </div>
+              </div>
+
+              {booking.deposit_required && booking.deposit_required > 0 && booking.payment_status === "paid" && (
+                <div className="mb-6 p-3 rounded-xl bg-accent-warning/10 border border-accent-warning/20">
+                  <p className="text-sm text-accent-warning">
+                    <strong>Warning:</strong> Your {currencySymbol}{booking.deposit_required.toLocaleString()} deposit is non-refundable.
+                  </p>
+                </div>
+              )}
+
+              {cancelError && (
+                <div className="mb-4 p-3 rounded-xl bg-accent-error/10 border border-accent-error/20 text-accent-error text-sm">
+                  {cancelError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelError(null);
+                  }}
+                  disabled={cancelling}
+                  className="flex-1"
+                >
+                  Keep Booking
+                </Button>
+                <Button
+                  onClick={cancelBooking}
+                  disabled={cancelling}
+                  className="flex-1 bg-accent-error hover:bg-accent-error/80"
+                >
+                  {cancelling ? (
+                    <>
+                      <InlineSpinner className="h-4 w-4 mr-2" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Yes, Cancel"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Party Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-surface rounded-2xl border border-border-subtle shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-xl bg-accent-error/10 border border-accent-error/20">
+                  <LogOut className="h-6 w-6 text-accent-error" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-primary">Leave Table Party?</h3>
+                  <p className="text-sm text-secondary">You can rejoin if invited again</p>
+                </div>
+              </div>
+
+              <div className="mb-6 p-4 rounded-xl bg-raised border border-border-subtle">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted">Event</span>
+                    <span className="text-primary">{event.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Table</span>
+                    <span className="text-primary">{table.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted">Host</span>
+                    <span className="text-primary">{booking.guest_name}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mb-6 text-sm text-secondary">
+                This will remove you from the table party and your entry pass will no longer be valid. The host will be notified.
+              </p>
+
+              {leaveError && (
+                <div className="mb-4 p-3 rounded-xl bg-accent-error/10 border border-accent-error/20 text-accent-error text-sm">
+                  {leaveError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowLeaveModal(false);
+                    setLeaveError(null);
+                  }}
+                  disabled={leaving}
+                  className="flex-1"
+                >
+                  Stay in Party
+                </Button>
+                <Button
+                  onClick={leaveParty}
+                  disabled={leaving}
+                  className="flex-1 bg-accent-error hover:bg-accent-error/80"
+                >
+                  {leaving ? (
+                    <>
+                      <InlineSpinner className="h-4 w-4 mr-2" />
+                      Leaving...
+                    </>
+                  ) : (
+                    "Yes, Leave"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

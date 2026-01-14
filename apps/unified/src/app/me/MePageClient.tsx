@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, Ticket, Heart, UserPlus, Users, X, Radio, UtensilsCrossed, Clock, MapPin, CheckCircle, AlertCircle, DollarSign } from "lucide-react";
@@ -148,9 +149,28 @@ export function MePageClient({
   upcomingTablePartyGuests,
   pastTablePartyGuests,
 }: MePageClientProps) {
+  const searchParams = useSearchParams();
   const [showProfileCta, setShowProfileCta] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("events");
   const [mobileEventsTab, setMobileEventsTab] = useState<MobileEventsTab>("upcoming");
+
+  // Handle ?tab= query param for deep linking
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "tables") {
+      setActiveTab("tables");
+      setMobileEventsTab("tables");
+    } else if (tabParam === "djs") {
+      setActiveTab("djs");
+      setMobileEventsTab("djs");
+    } else if (tabParam === "venues") {
+      setActiveTab("venues");
+      setMobileEventsTab("venues");
+    } else if (tabParam === "history") {
+      setActiveTab("history");
+      setMobileEventsTab("past");
+    }
+  }, [searchParams]);
 
   const getJoinYear = (dateStr: string | null | undefined) => {
     if (!dateStr) return null;
@@ -823,6 +843,17 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
     });
   };
 
+  const formatBookedDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const handleCancel = async () => {
     setCancelling(true);
     try {
@@ -862,96 +893,103 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
 
   return (
     <>
-      <Card className={`hover:border-accent-primary/30 transition-colors ${isPast ? "opacity-75" : ""}`}>
-        <div className="flex items-start gap-4">
+      <Card className={isPast ? "opacity-60" : ""}>
+        <div className="flex items-start gap-3">
           {/* Table Icon */}
-          <div className="w-12 h-12 rounded-lg bg-accent-primary/20 border border-accent-primary/30 flex items-center justify-center flex-shrink-0">
-            <UtensilsCrossed className="h-6 w-6 text-accent-primary" />
+          <div className="w-10 h-10 rounded-lg bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
+            <UtensilsCrossed className="h-5 w-5 text-accent-primary" />
           </div>
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h3 className="font-sans font-bold text-primary">
+            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+              <h3 className="text-sm font-semibold text-primary">
                 {booking.table?.name || "Table"}
               </h3>
               {booking.table?.zone_name && (
-                <span className="text-sm text-secondary">({booking.table.zone_name})</span>
+                <span className="text-xs text-muted">• {booking.table.zone_name}</span>
               )}
               {getStatusBadge()}
             </div>
 
             <Link
               href={`/e/${booking.event?.slug}`}
-              className="text-sm text-accent-primary hover:underline block mb-2"
+              className="text-sm text-accent-secondary hover:underline block mb-1.5"
             >
               {booking.event?.name || "Event"}
             </Link>
 
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-secondary">
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-secondary">
               {booking.event?.start_time && (
                 <span className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
+                  <Calendar className="h-3 w-3 text-muted" />
                   {formatDate(booking.event.start_time)}
                 </span>
               )}
               {booking.slot_start_time ? (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
+                  <Clock className="h-3 w-3 text-muted" />
                   {formatTime(booking.slot_start_time)}
                   {booking.slot_end_time && ` - ${formatTime(booking.slot_end_time)}`}
                 </span>
               ) : booking.event?.start_time && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
+                  <Clock className="h-3 w-3 text-muted" />
                   {formatTime(booking.event.start_time)}
                 </span>
               )}
               {booking.venue && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {booking.venue.name}{booking.venue.city && `, ${booking.venue.city}`}
+                  <MapPin className="h-3 w-3 text-muted" />
+                  {booking.venue.name}
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" />
-                Party of {booking.party_size}
+                <Users className="h-3 w-3 text-muted" />
+                {booking.party_size} guests
               </span>
             </div>
 
             {/* Financial Info */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mt-2">
-              {booking.minimum_spend && (
-                <span className="flex items-center gap-1 text-secondary">
-                  <DollarSign className="h-3.5 w-3.5" />
-                  Min spend: {currencySymbol}{booking.minimum_spend.toLocaleString()}
-                </span>
-              )}
-              {booking.deposit_required && (
-                <span className={`flex items-center gap-1 ${booking.deposit_received ? "text-green-400" : "text-amber-400"}`}>
-                  {booking.deposit_received ? (
-                    <CheckCircle className="h-3.5 w-3.5" />
-                  ) : (
-                    <AlertCircle className="h-3.5 w-3.5" />
-                  )}
-                  Deposit: {currencySymbol}{booking.deposit_required.toLocaleString()}
-                  {booking.deposit_received ? " (Paid)" : " (Pending)"}
-                </span>
-              )}
-            </div>
+            {(booking.minimum_spend || booking.deposit_required) && (
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mt-1.5">
+                {booking.minimum_spend && (
+                  <span className="text-muted">
+                    Min: {currencySymbol}{booking.minimum_spend.toLocaleString()}
+                  </span>
+                )}
+                {booking.deposit_required && (
+                  <span className={booking.deposit_received ? "text-accent-success" : "text-accent-warning"}>
+                    {booking.deposit_received ? (
+                      <CheckCircle className="h-3 w-3 inline mr-0.5" />
+                    ) : (
+                      <AlertCircle className="h-3 w-3 inline mr-0.5" />
+                    )}
+                    Deposit {booking.deposit_received ? "paid" : "pending"}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Arrival Deadline */}
             {booking.arrival_deadline && !isPast && (
-              <div className="mt-2 text-sm text-amber-400 flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5" />
-                Arrive by: {formatTime(booking.arrival_deadline)}
+              <div className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Arrive by {formatTime(booking.arrival_deadline)}
+              </div>
+            )}
+
+            {/* Booked on */}
+            {booking.created_at && (
+              <div className="mt-1.5 pt-1.5 border-t border-border-subtle text-xs text-muted">
+                Booked {formatBookedDate(booking.created_at)}
               </div>
             )}
           </div>
 
           {/* Actions */}
           {!isPast && booking.status !== "completed" && (
-            <div className="flex flex-col gap-2 flex-shrink-0">
+            <div className="flex flex-col gap-1.5 flex-shrink-0">
               <Button size="sm" href={`/booking/${booking.id}`}>
                 View Details
               </Button>
@@ -960,7 +998,7 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
                   size="sm"
                   variant="ghost"
                   onClick={() => setShowCancelModal(true)}
-                  className="text-red-400 hover:text-red-300"
+                  className="text-accent-error hover:bg-accent-error/10"
                 >
                   Cancel
                 </Button>
@@ -974,22 +1012,23 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
       {showCancelModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm p-4">
           <Card className="max-w-md w-full">
-            <h3 className="font-sans text-lg font-bold text-primary mb-2">Cancel Table Booking?</h3>
-            <p className="text-sm text-secondary mb-4">
-              Are you sure you want to cancel your table reservation at{" "}
-              <strong>{booking.event?.name}</strong>?
+            <h3 className="text-base font-semibold text-primary mb-2">Cancel Table Booking?</h3>
+            <p className="text-sm text-secondary mb-3">
+              Are you sure you want to cancel your table at{" "}
+              <span className="text-primary">{booking.event?.name}</span>?
             </p>
-            <p className="text-sm text-amber-400 mb-4">
+            <p className="text-xs text-accent-warning mb-4">
               Note: Deposits are non-refundable for guest cancellations.
             </p>
-            <div className="flex gap-3 justify-end">
-              <Button variant="secondary" onClick={() => setShowCancelModal(false)}>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" size="sm" onClick={() => setShowCancelModal(false)}>
                 Keep Booking
               </Button>
               <Button
-                variant="destructive"
+                size="sm"
                 onClick={handleCancel}
                 disabled={cancelling}
+                className="bg-accent-error hover:bg-accent-error/80"
               >
                 {cancelling ? "Cancelling..." : "Yes, Cancel"}
               </Button>
@@ -1024,94 +1063,106 @@ function TablePartyGuestCard({ guest, isPast = false }: { guest: TablePartyGuest
     });
   };
 
+  const formatJoinedDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   return (
-    <Card className={`hover:border-accent-primary/30 transition-colors ${isPast ? "opacity-75" : ""}`}>
-      <div className="flex items-start gap-4">
+    <Card className={isPast ? "opacity-60" : ""}>
+      <div className="flex items-start gap-3">
         {/* Table Icon */}
-        <div className="w-12 h-12 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-          <Users className="h-6 w-6 text-purple-400" />
+        <div className="w-10 h-10 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20 flex items-center justify-center flex-shrink-0">
+          <Users className="h-5 w-5 text-accent-secondary" />
         </div>
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-sans font-bold text-primary">
+          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+            <h3 className="text-sm font-semibold text-primary">
               {guest.table?.name || "Table"}
             </h3>
             {guest.table?.zone_name && (
-              <span className="text-sm text-secondary">({guest.table.zone_name})</span>
+              <span className="text-xs text-muted">• {guest.table.zone_name}</span>
             )}
-            <Badge color="purple">Guest</Badge>
+            <Badge color="blue" size="sm">Guest</Badge>
           </div>
 
           <Link
             href={`/e/${guest.event?.slug}`}
-            className="text-sm text-accent-primary hover:underline block mb-2"
+            className="text-sm text-accent-secondary hover:underline block mb-1"
           >
             {guest.event?.name || "Event"}
           </Link>
 
           {/* Host info */}
-          <div className="text-sm text-secondary mb-2">
-            <span className="flex items-center gap-1">
-              <UserPlus className="h-3.5 w-3.5" />
-              Hosted by {guest.host_name}
-            </span>
+          <div className="text-xs text-muted mb-1.5">
+            Hosted by {guest.host_name}
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-secondary">
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-secondary">
             {guest.event?.start_time && (
               <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar className="h-3 w-3 text-muted" />
                 {formatDate(guest.event.start_time)}
               </span>
             )}
             {guest.slot_start_time ? (
               <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
+                <Clock className="h-3 w-3 text-muted" />
                 {formatTime(guest.slot_start_time)}
                 {guest.slot_end_time && ` - ${formatTime(guest.slot_end_time)}`}
               </span>
             ) : guest.event?.start_time && (
               <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
+                <Clock className="h-3 w-3 text-muted" />
                 {formatTime(guest.event.start_time)}
               </span>
             )}
             {guest.venue && (
               <span className="flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" />
-                {guest.venue.name}{guest.venue.city && `, ${guest.venue.city}`}
+                <MapPin className="h-3 w-3 text-muted" />
+                {guest.venue.name}
               </span>
             )}
             <span className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              Party of {guest.party_size}
+              <Users className="h-3 w-3 text-muted" />
+              {guest.party_size} guests
             </span>
           </div>
 
           {/* Minimum Spend Info */}
           {guest.minimum_spend && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mt-2">
-              <span className="flex items-center gap-1 text-secondary">
-                <DollarSign className="h-3.5 w-3.5" />
-                Min spend: {currencySymbol}{guest.minimum_spend.toLocaleString()}
-              </span>
+            <div className="text-xs text-muted mt-1.5">
+              Min: {currencySymbol}{guest.minimum_spend.toLocaleString()}
             </div>
           )}
 
           {/* Arrival Deadline */}
           {guest.arrival_deadline && !isPast && (
-            <div className="mt-2 text-sm text-amber-400 flex items-center gap-1">
-              <AlertCircle className="h-3.5 w-3.5" />
-              Arrive by: {formatTime(guest.arrival_deadline)}
+            <div className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Arrive by {formatTime(guest.arrival_deadline)}
+            </div>
+          )}
+
+          {/* Joined on */}
+          {guest.joined_at && (
+            <div className="mt-1.5 pt-1.5 border-t border-border-subtle text-xs text-muted">
+              Joined {formatJoinedDate(guest.joined_at)}
             </div>
           )}
         </div>
 
         {/* Actions */}
         {!isPast && guest.booking_status !== "completed" && (
-          <div className="flex flex-col gap-2 flex-shrink-0">
+          <div className="flex-shrink-0">
             <Button size="sm" href={`/table-pass/${guest.id}`}>
               View Pass
             </Button>

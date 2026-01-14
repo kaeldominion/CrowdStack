@@ -142,7 +142,7 @@ export default function TablePassPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 pt-14">
+      <div className="flex-1 flex flex-col items-center px-4 pt-16 pb-8">
         {/* Pass Card - contains everything for consistent width */}
         <div className="w-full max-w-sm">
           {/* Event Info - inside card container for consistent width */}
@@ -267,13 +267,22 @@ export default function TablePassPage() {
           </p>
         </div>
 
-        {/* Event Details Link */}
-        <Link
-          href={`/e/${passData.event.slug}`}
-          className="mt-6 text-sm text-accent-primary hover:underline"
-        >
-          View event details
-        </Link>
+        {/* Action Links */}
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <Link
+            href={`/booking/${passData.booking.id}`}
+            className="text-sm text-accent-secondary hover:underline flex items-center gap-1.5"
+          >
+            <Users className="h-4 w-4" />
+            View Table Party
+          </Link>
+          <Link
+            href={`/e/${passData.event.slug}`}
+            className="text-sm text-accent-primary hover:underline"
+          >
+            View event details
+          </Link>
+        </div>
       </div>
 
       {/* Fullscreen QR Code Modal */}

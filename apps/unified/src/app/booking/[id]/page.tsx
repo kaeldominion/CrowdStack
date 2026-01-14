@@ -349,7 +349,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
       host: hostGuest ? {
         id: hostGuest.id,
         name: hostGuest.guest_name,
-        pass_url: `${baseUrl}/table-pass/${hostGuest.id}`,
+        pass_url: `/table-pass/${hostGuest.id}`,
         checked_in: hostGuest.checked_in,
       } : null,
       guests: (partyGuests || []).filter(g => !g.is_host).map(g => ({
