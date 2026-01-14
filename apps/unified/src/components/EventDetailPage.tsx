@@ -2042,8 +2042,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                         <div className="min-w-0">
                           <div className="text-secondary text-xs">Venue</div>
                           {event.venue.slug && event.venue.slug.trim() !== "" ? (
-                            <Link 
-                              href={`/venues/${event.venue.slug}`}
+                            <Link
+                              href={`/v/${event.venue.slug}`}
                               target="_blank"
                               className="text-primary hover:underline font-medium truncate block"
                             >
@@ -4191,8 +4191,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         loading={removingVideo}
       />
 
-      {/* Referral QR Code Modal (for promoters and organizers) */}
-      {showQRModal && (config.role === "promoter" || config.role === "organizer") && event && (
+      {/* Referral QR Code Modal (for promoters, organizers, and venues) */}
+      {showQRModal && (config.role === "promoter" || config.role === "organizer" || config.role === "venue") && event && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <Surface variant="void" className="max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between">
