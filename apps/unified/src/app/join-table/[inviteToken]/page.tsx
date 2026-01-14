@@ -67,6 +67,7 @@ interface PartyData {
   };
   venue: {
     name: string;
+    slug: string;
     address: string;
     city: string;
   };
@@ -610,6 +611,25 @@ export default function JoinTablePage() {
             )}
           </div>
 
+          {/* Venue Link */}
+          {partyData.venue.slug && partyData.venue.name && (
+            <Link
+              href={`/v/${partyData.venue.slug}`}
+              className="flex items-center gap-3 p-4 rounded-xl bg-raised/50 border border-border-subtle hover:border-accent-primary/30 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-accent-secondary/10 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-accent-secondary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-primary font-medium truncate">{partyData.venue.name}</p>
+                {partyData.venue.city && (
+                  <p className="text-secondary text-sm">{partyData.venue.city}</p>
+                )}
+              </div>
+              <ArrowLeft className="w-4 h-4 text-secondary rotate-180" />
+            </Link>
+          )}
+
           {/* Your Invitation Card */}
           <div className="glass-panel p-4 border-accent-primary/30">
             <div className="flex items-center gap-3 mb-4">
@@ -763,12 +783,24 @@ export default function JoinTablePage() {
                     <h2 className="font-sans font-black uppercase tracking-tighter leading-[0.9] text-4xl xl:text-5xl text-white drop-shadow-lg mb-3">
                       {partyData.event.name}
                     </h2>
-                    <div className="flex items-center gap-2 text-white/80">
-                      <MapPin className="h-4 w-4" />
-                      <span className="font-mono text-sm tracking-wide">
-                        {partyData.venue.name}{partyData.venue.city && `, ${partyData.venue.city}`}
-                      </span>
-                    </div>
+                    {partyData.venue.slug ? (
+                      <Link
+                        href={`/v/${partyData.venue.slug}`}
+                        className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        <span className="font-mono text-sm tracking-wide underline underline-offset-2">
+                          {partyData.venue.name}{partyData.venue.city && `, ${partyData.venue.city}`}
+                        </span>
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-2 text-white/80">
+                        <MapPin className="h-4 w-4" />
+                        <span className="font-mono text-sm tracking-wide">
+                          {partyData.venue.name}{partyData.venue.city && `, ${partyData.venue.city}`}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

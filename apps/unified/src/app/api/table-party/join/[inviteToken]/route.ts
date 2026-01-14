@@ -29,6 +29,7 @@ interface EventWithVenue {
   venue: {
     id: string;
     name: string;
+    slug: string;
     address: string | null;
     city: string | null;
   } | null;
@@ -114,7 +115,7 @@ export async function GET(
           timezone,
           cover_image_url,
           flier_url,
-          venue:venues(id, name, address, city)
+          venue:venues(id, name, slug, address, city)
         )
       `)
       .eq("id", guest.booking_id)
@@ -250,6 +251,7 @@ export async function GET(
       },
       venue: {
         name: event.venue?.name || "",
+        slug: event.venue?.slug || "",
         address: event.venue?.address || "",
         city: event.venue?.city || "",
       },
