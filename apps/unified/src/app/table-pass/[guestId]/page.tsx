@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { X, CheckCircle2, Scan, Maximize2, Users, Calendar, MapPin, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { Logo, Card, Button } from "@crowdstack/ui";
+import { Card, Button } from "@crowdstack/ui";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PassData {
@@ -132,7 +132,7 @@ export default function TablePassPage() {
   return (
     <div className="min-h-screen bg-void flex flex-col">
       {/* Close button */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-3 right-3 z-10">
         <Link
           href={`/e/${passData.event.slug}`}
           className="w-10 h-10 rounded-full bg-glass/80 border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:bg-active transition-colors"
@@ -142,27 +142,23 @@ export default function TablePassPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        {/* Logo Badge */}
-        <div className="mb-6">
-          <div className="w-24 h-24 rounded-2xl bg-void border-2 border-accent-secondary/50 flex items-center justify-center shadow-lg shadow-accent-secondary/20">
-            <Logo variant="tricolor" size="xl" iconOnly />
-          </div>
-        </div>
-
-        {/* Event Info */}
-        <div className="text-center mb-8">
-          <h1 className="font-sans text-3xl font-black text-primary uppercase tracking-tight">
-            {passData.event.name}
-          </h1>
-          <p className="font-mono text-sm font-medium text-accent-secondary tracking-wide mt-2">
-            {passData.event.date}
-            {passData.venue.name && ` • ${passData.venue.name.toUpperCase()}`}
-          </p>
-        </div>
-
-        {/* Pass Card */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 pt-14">
+        {/* Pass Card - contains everything for consistent width */}
         <div className="w-full max-w-sm">
+          {/* Event Info - inside card container for consistent width */}
+          <div className="text-center mb-4 px-2">
+            <h1 className="font-sans text-xl sm:text-2xl font-black text-primary uppercase tracking-tight leading-tight">
+              {passData.event.name}
+            </h1>
+            <p className="font-mono text-sm font-medium text-accent-secondary tracking-wide mt-2">
+              {passData.event.date}
+            </p>
+            {passData.venue.name && (
+              <p className="font-mono text-sm font-medium text-secondary tracking-wide mt-1">
+                {passData.venue.name.toUpperCase()}
+              </p>
+            )}
+          </div>
           {/* Gradient top border - different colors for table pass */}
           <div className="h-1 rounded-t-2xl bg-gradient-to-r from-accent-secondary via-accent-primary to-accent-secondary" />
 
@@ -177,11 +173,18 @@ export default function TablePassPage() {
                 <p className="font-sans text-xl font-bold text-primary">
                   {passData.pass.guest_name}
                 </p>
-                {passData.pass.is_host && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-accent-primary/20 text-accent-primary">
-                    Host
-                  </span>
-                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {passData.pass.is_host && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-accent-primary/20 text-accent-primary">
+                      Host
+                    </span>
+                  )}
+                  {passData.booking.zone_name?.toLowerCase().includes('vip') && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border border-amber-500/30">
+                      VIP
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="text-right">
                 <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">

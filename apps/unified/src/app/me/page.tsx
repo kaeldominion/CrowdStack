@@ -88,7 +88,7 @@ async function getUserData() {
     .maybeSingle();
 
   // Fetch all other data in parallel (now that we have attendee ID)
-  const [registrationsResult, favoritesResult, followingResult, tableBookingsResult] = await Promise.all([
+  const [registrationsResult, favoritesResult, followingResult, tableBookingsResult, tablePartyGuestsResult] = await Promise.all([
 
     // Registrations with event and venue data (only if we have attendee ID)
     attendeeId
@@ -187,6 +187,47 @@ async function getUserData() {
           .eq("attendee_id", attendeeId)
           .in("status", ["pending", "confirmed", "completed"])
           .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+
+    // Table party guest entries (where user is invited guest, not host)
+    attendeeId
+      ? serviceSupabase
+          .from("table_party_guests")
+          .select(`
+            id,
+            status,
+            qr_token,
+            joined_at,
+            booking:table_bookings(
+              id,
+              guest_name,
+              party_size,
+              minimum_spend,
+              status,
+              slot_start_time,
+              slot_end_time,
+              arrival_deadline,
+              event:events(
+                id,
+                name,
+                slug,
+                start_time,
+                end_time,
+                timezone,
+                currency,
+                flier_url,
+                venue:venues(id, name, slug, city, currency)
+              ),
+              table:venue_tables(
+                id,
+                name,
+                zone:table_zones(id, name)
+              )
+            )
+          `)
+          .eq("attendee_id", attendeeId)
+          .eq("status", "joined")
+          .order("joined_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -353,7 +394,7 @@ async function getUserData() {
     };
   });
 
-  // Separate upcoming and past table bookings
+  // Separate upcoming and past table bookings (host)
   const upcomingTableBookings = tableBookings.filter((b: any) => {
     if (!b.event?.start_time) return false;
     const eventStart = new Date(b.event.start_time);
@@ -364,6 +405,67 @@ async function getUserData() {
     if (!b.event?.start_time) return b.status === "completed";
     const eventStart = new Date(b.event.start_time);
     return eventStart <= now || b.status === "completed";
+  });
+
+  // Process table party guest entries (where user is invited guest)
+  const tablePartyGuestEntries = (tablePartyGuestsResult.data || []).map((guest: any) => {
+    const booking = Array.isArray(guest.booking) ? guest.booking[0] : guest.booking;
+    if (!booking) return null;
+
+    const event = Array.isArray(booking.event) ? booking.event[0] : booking.event;
+    const table = Array.isArray(booking.table) ? booking.table[0] : booking.table;
+    const venue = event?.venue ? (Array.isArray(event.venue) ? event.venue[0] : event.venue) : null;
+    const zone = table?.zone ? (Array.isArray(table.zone) ? table.zone[0] : table.zone) : null;
+
+    return {
+      id: guest.id, // table_party_guest id
+      booking_id: booking.id,
+      isGuest: true as const, // Flag to indicate this is a guest entry, not host
+      host_name: booking.guest_name,
+      party_size: booking.party_size,
+      minimum_spend: booking.minimum_spend,
+      booking_status: booking.status,
+      slot_start_time: booking.slot_start_time,
+      slot_end_time: booking.slot_end_time,
+      arrival_deadline: booking.arrival_deadline,
+      joined_at: guest.joined_at,
+      qr_token: guest.qr_token,
+      event: event ? {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        timezone: event.timezone,
+        currency: event.currency,
+        flier_url: event.flier_url,
+      } : null,
+      venue: venue ? {
+        id: venue.id,
+        name: venue.name,
+        slug: venue.slug,
+        city: venue.city,
+        currency: venue.currency,
+      } : null,
+      table: table ? {
+        id: table.id,
+        name: table.name,
+        zone_name: zone?.name || null,
+      } : null,
+    };
+  }).filter((g): g is NonNullable<typeof g> => g !== null);
+
+  // Separate upcoming and past table party guest entries
+  const upcomingTablePartyGuests = tablePartyGuestEntries.filter((g) => {
+    if (!g.event?.start_time) return false;
+    const eventStart = new Date(g.event.start_time);
+    return eventStart > now && g.booking_status !== "completed";
+  });
+
+  const pastTablePartyGuests = tablePartyGuestEntries.filter((g) => {
+    if (!g.event?.start_time) return g.booking_status === "completed";
+    const eventStart = new Date(g.event.start_time);
+    return eventStart <= now || g.booking_status === "completed";
   });
 
   return {
@@ -377,6 +479,8 @@ async function getUserData() {
     followedDJs,
     upcomingTableBookings,
     pastTableBookings,
+    upcomingTablePartyGuests,
+    pastTablePartyGuests,
   };
 }
 

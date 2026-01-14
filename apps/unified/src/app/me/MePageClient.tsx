@@ -79,6 +79,43 @@ interface TableBooking {
   } | null;
 }
 
+interface TablePartyGuest {
+  id: string;
+  booking_id: string;
+  isGuest: true;
+  host_name: string;
+  party_size: number;
+  minimum_spend: number | null;
+  booking_status: "pending" | "confirmed" | "completed";
+  slot_start_time: string | null;
+  slot_end_time: string | null;
+  arrival_deadline: string | null;
+  joined_at: string;
+  qr_token: string | null;
+  event: {
+    id: string;
+    name: string;
+    slug: string;
+    start_time: string;
+    end_time: string | null;
+    timezone: string | null;
+    currency: string | null;
+    flier_url: string | null;
+  } | null;
+  venue: {
+    id: string;
+    name: string;
+    slug: string;
+    city: string | null;
+    currency: string | null;
+  } | null;
+  table: {
+    id: string;
+    name: string;
+    zone_name: string | null;
+  } | null;
+}
+
 type TabId = "events" | "djs" | "venues" | "history" | "tables";
 type MobileEventsTab = "upcoming" | "past" | "djs" | "venues" | "tables";
 
@@ -93,6 +130,8 @@ interface MePageClientProps {
   followedDJs: any[];
   upcomingTableBookings: TableBooking[];
   pastTableBookings: TableBooking[];
+  upcomingTablePartyGuests: TablePartyGuest[];
+  pastTablePartyGuests: TablePartyGuest[];
 }
 
 export function MePageClient({
@@ -106,6 +145,8 @@ export function MePageClient({
   followedDJs,
   upcomingTableBookings,
   pastTableBookings,
+  upcomingTablePartyGuests,
+  pastTablePartyGuests,
 }: MePageClientProps) {
   const [showProfileCta, setShowProfileCta] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("events");
@@ -409,11 +450,16 @@ export function MePageClient({
           {/* Tables Tab */}
           {mobileEventsTab === "tables" && (
             <div className="space-y-3">
-              {upcomingTableBookings.length > 0 ? (
-                upcomingTableBookings.map((booking) => (
-                  <TableBookingCard key={booking.id} booking={booking} />
-                ))
-              ) : (
+              {/* Host bookings */}
+              {upcomingTableBookings.map((booking) => (
+                <TableBookingCard key={booking.id} booking={booking} />
+              ))}
+              {/* Guest entries */}
+              {upcomingTablePartyGuests.map((guest) => (
+                <TablePartyGuestCard key={guest.id} guest={guest} />
+              ))}
+              {/* Empty state */}
+              {upcomingTableBookings.length === 0 && upcomingTablePartyGuests.length === 0 && (
                 <Card className="!p-6 text-center !border-dashed">
                   <UtensilsCrossed className="h-10 w-10 text-muted mx-auto mb-3" />
                   <h3 className="font-sans text-base font-bold text-primary mb-1">No table bookings</h3>
@@ -704,13 +750,16 @@ export function MePageClient({
                 {/* TABLES Tab */}
                 {activeTab === "tables" && (
                   <>
-                    {/* Upcoming Table Bookings */}
+                    {/* Upcoming Table Bookings & Guest Entries */}
                     <section className="mb-8">
                       <h2 className="section-header">Upcoming Table Reservations</h2>
-                      {upcomingTableBookings.length > 0 ? (
+                      {upcomingTableBookings.length > 0 || upcomingTablePartyGuests.length > 0 ? (
                         <div className="space-y-3">
                           {upcomingTableBookings.map((booking) => (
                             <TableBookingCard key={booking.id} booking={booking} />
+                          ))}
+                          {upcomingTablePartyGuests.map((guest) => (
+                            <TablePartyGuestCard key={guest.id} guest={guest} />
                           ))}
                         </div>
                       ) : (
@@ -723,13 +772,16 @@ export function MePageClient({
                       )}
                     </section>
 
-                    {/* Past Table Bookings */}
-                    {pastTableBookings.length > 0 && (
+                    {/* Past Table Bookings & Guest Entries */}
+                    {(pastTableBookings.length > 0 || pastTablePartyGuests.length > 0) && (
                       <section>
                         <h2 className="section-header">Past Table Reservations</h2>
                         <div className="space-y-3">
                           {pastTableBookings.map((booking) => (
                             <TableBookingCard key={booking.id} booking={booking} isPast />
+                          ))}
+                          {pastTablePartyGuests.map((guest) => (
+                            <TablePartyGuestCard key={guest.id} guest={guest} isPast />
                           ))}
                         </div>
                       </section>
@@ -946,6 +998,127 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
         </div>
       )}
     </>
+  );
+}
+
+// Table Party Guest Card Component (for invited guests, not hosts)
+function TablePartyGuestCard({ guest, isPast = false }: { guest: TablePartyGuest; isPast?: boolean }) {
+  const currency = guest.event?.currency || guest.venue?.currency || "USD";
+  const currencySymbol = getCurrencySymbol(currency);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  return (
+    <Card className={`hover:border-accent-primary/30 transition-colors ${isPast ? "opacity-75" : ""}`}>
+      <div className="flex items-start gap-4">
+        {/* Table Icon */}
+        <div className="w-12 h-12 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+          <Users className="h-6 w-6 text-purple-400" />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h3 className="font-sans font-bold text-primary">
+              {guest.table?.name || "Table"}
+            </h3>
+            {guest.table?.zone_name && (
+              <span className="text-sm text-secondary">({guest.table.zone_name})</span>
+            )}
+            <Badge color="purple">Guest</Badge>
+          </div>
+
+          <Link
+            href={`/e/${guest.event?.slug}`}
+            className="text-sm text-accent-primary hover:underline block mb-2"
+          >
+            {guest.event?.name || "Event"}
+          </Link>
+
+          {/* Host info */}
+          <div className="text-sm text-secondary mb-2">
+            <span className="flex items-center gap-1">
+              <UserPlus className="h-3.5 w-3.5" />
+              Hosted by {guest.host_name}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-secondary">
+            {guest.event?.start_time && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                {formatDate(guest.event.start_time)}
+              </span>
+            )}
+            {guest.slot_start_time ? (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatTime(guest.slot_start_time)}
+                {guest.slot_end_time && ` - ${formatTime(guest.slot_end_time)}`}
+              </span>
+            ) : guest.event?.start_time && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatTime(guest.event.start_time)}
+              </span>
+            )}
+            {guest.venue && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                {guest.venue.name}{guest.venue.city && `, ${guest.venue.city}`}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
+              Party of {guest.party_size}
+            </span>
+          </div>
+
+          {/* Minimum Spend Info */}
+          {guest.minimum_spend && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm mt-2">
+              <span className="flex items-center gap-1 text-secondary">
+                <DollarSign className="h-3.5 w-3.5" />
+                Min spend: {currencySymbol}{guest.minimum_spend.toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {/* Arrival Deadline */}
+          {guest.arrival_deadline && !isPast && (
+            <div className="mt-2 text-sm text-amber-400 flex items-center gap-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Arrive by: {formatTime(guest.arrival_deadline)}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        {!isPast && guest.booking_status !== "completed" && (
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            <Button size="sm" href={`/table-pass/${guest.id}`}>
+              View Pass
+            </Button>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 

@@ -14,8 +14,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { LoadingSpinner, Badge } from "@crowdstack/ui";
 import { TypeformSignup, type SignupData } from "@/components/TypeformSignup";
-import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
-import { Users, Crown, Check, User, PartyPopper } from "lucide-react";
+import { Users, Crown, Check, User, PartyPopper, Ticket } from "lucide-react";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 
 interface PartyData {
@@ -82,7 +81,6 @@ export default function JoinTablePage() {
   const [success, setSuccess] = useState(false);
   const [guestId, setGuestId] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null); // For link to booking page
-  const [qrToken, setQrToken] = useState<string>("");
   const [error, setError] = useState("");
   const [existingProfile, setExistingProfile] = useState<{
     name?: string | null;
@@ -176,7 +174,6 @@ export default function JoinTablePage() {
                     setSuccess(true);
                     setGuestId(joinData.guest_id);
                     setBookingId(freshPartyData.booking?.id || null);
-                    setQrToken(joinData.qr_token || "");
                   }
                 }
               } else if (isProfileComplete) {
@@ -235,7 +232,6 @@ export default function JoinTablePage() {
       setSuccess(true);
       setGuestId(result.guest_id);
       setBookingId(partyData?.booking?.id || null);
-      setQrToken(result.qr_token || "");
       setReadyToJoin(false);
     } catch (err: any) {
       console.error("Error joining party:", err);
@@ -267,7 +263,6 @@ export default function JoinTablePage() {
       setSuccess(true);
       setGuestId(result.guest_id);
       setBookingId(partyData?.booking?.id || null);
-      setQrToken(result.qr_token || "");
       setShowSignup(false);
       setShowTypeformJoin(false);
     } catch (err: any) {
@@ -391,34 +386,33 @@ export default function JoinTablePage() {
             </div>
           </div>
 
-          {/* QR Code */}
-          {qrToken && (
-            <div className="glass-panel p-6 mb-6">
-              <p className="label-mono text-xs text-center mb-4">YOUR ENTRY PASS</p>
-              <div className="flex justify-center mb-4 p-4 bg-white rounded-xl">
-                <BeautifiedQRCode url={`${window.location.origin}/e/${partyData.event.slug}/pass?token=${qrToken}`} size={200} />
-              </div>
-              <p className="text-secondary text-xs text-center">
-                Show this QR code at the door for entry
-              </p>
-            </div>
-          )}
-
           {/* Actions */}
           <div className="space-y-3">
+            {/* Primary: View Entry Pass */}
+            {guestId && (
+              <Link
+                href={`/table-pass/${guestId}`}
+                className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold shadow-lg shadow-accent-primary/25 hover:shadow-accent-primary/40 transition-all"
+              >
+                <Ticket className="w-5 h-5" />
+                View Your Entry Pass
+              </Link>
+            )}
+
+            {/* Secondary: View Table & Friends */}
             {bookingId && (
               <Link
                 href={`/booking/${bookingId}`}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-accent-primary text-white rounded-xl font-semibold hover:bg-accent-primary/90 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-raised text-primary rounded-xl font-medium border border-border-subtle hover:border-border-strong transition-colors"
               >
                 <Users className="w-5 h-5" />
                 View Table & Friends
               </Link>
             )}
-            
+
             <Link
               href={`/e/${partyData.event.slug}`}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-raised text-primary rounded-xl font-medium border border-border-subtle hover:border-border-strong transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-glass text-secondary rounded-xl font-medium hover:text-primary transition-colors"
             >
               View Event Details
             </Link>
@@ -693,22 +687,50 @@ export default function JoinTablePage() {
       </div>
     );
 
-    // Render with MobileScrollExperience if we have a flier image
+    // Render with MobileScrollExperience for mobile, and a desktop layout
     if (imageUrl) {
       return (
-        <MobileScrollExperience
-          flierUrl={imageUrl}
-          eventName={partyData.event.name}
-          venueName={partyData.venue.name}
-          venueCity={partyData.venue.city}
-          startDate={eventStartDate}
-        >
-          {inviteContent}
-        </MobileScrollExperience>
+        <>
+          {/* Mobile: Immersive scroll experience */}
+          <MobileScrollExperience
+            flierUrl={imageUrl}
+            eventName={partyData.event.name}
+            venueName={partyData.venue.name}
+            venueCity={partyData.venue.city}
+            startDate={eventStartDate}
+          >
+            {inviteContent}
+          </MobileScrollExperience>
+
+          {/* Desktop: Side-by-side layout */}
+          <div className="hidden lg:flex min-h-screen bg-void">
+            {/* Left side - Flier */}
+            <div className="w-1/2 relative">
+              <div className="sticky top-0 h-screen">
+                <Image
+                  src={imageUrl}
+                  alt={`${partyData.event.name} flier`}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="50vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-void/80" />
+              </div>
+            </div>
+
+            {/* Right side - Content */}
+            <div className="w-1/2 flex items-center justify-center py-12">
+              <div className="max-w-md w-full px-8">
+                {inviteContent}
+              </div>
+            </div>
+          </div>
+        </>
       );
     }
 
-    // Fallback without MobileScrollExperience if no flier
+    // Fallback without flier image
     return (
       <div className="min-h-screen bg-void">
         <div className="h-32 bg-gradient-to-b from-accent-primary/20 to-void" />

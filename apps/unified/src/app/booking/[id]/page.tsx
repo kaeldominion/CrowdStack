@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
-import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
+import { generateQRPassToken } from "@crowdstack/shared/qr/generate";
 import { BookingPageClient, BookingData } from "./BookingPageClient";
 import Link from "next/link";
 import { Button } from "@crowdstack/ui";
@@ -161,17 +161,19 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
     let hostGuest = partyGuests?.find(g => g.is_host);
 
     // Helper function to ensure host has attendee_id and registration
-    const ensureHostLinked = async (hostId: string, hostEmail: string) => {
+    // Returns both attendeeId and registrationId for token generation
+    const ensureHostLinked = async (hostId: string, hostEmail: string): Promise<{ attendeeId: string | null; registrationId: string | null }> => {
       // Look up or create attendee for the host
       let attendeeId: string | null = null;
-      
+      let registrationId: string | null = null;
+
       // First try to find existing attendee by email
       const { data: existingAttendee } = await serviceSupabase
         .from("attendees")
         .select("id")
         .eq("email", hostEmail.toLowerCase())
         .single();
-      
+
       if (existingAttendee) {
         attendeeId = existingAttendee.id;
       } else {
@@ -184,19 +186,19 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           })
           .select("id")
           .single();
-        
+
         if (newAttendee) {
           attendeeId = newAttendee.id;
         }
       }
-      
+
       if (attendeeId) {
         // Update host guest record with attendee_id
         await serviceSupabase
           .from("table_party_guests")
           .update({ attendee_id: attendeeId })
           .eq("id", hostId);
-        
+
         // Ensure registration exists for this attendee at this event
         const { data: existingReg } = await serviceSupabase
           .from("registrations")
@@ -204,21 +206,29 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           .eq("attendee_id", attendeeId)
           .eq("event_id", event?.id)
           .single();
-        
-        if (!existingReg && event?.id) {
+
+        if (existingReg) {
+          registrationId = existingReg.id;
+        } else if (event?.id) {
           // Create registration for the host
-          await serviceSupabase
+          const { data: newReg } = await serviceSupabase
             .from("registrations")
             .insert({
               attendee_id: attendeeId,
               event_id: event.id,
               source: "table_booking",
               registered_at: new Date().toISOString(),
-            });
+            })
+            .select("id")
+            .single();
+
+          if (newReg) {
+            registrationId = newReg.id;
+          }
         }
       }
-      
-      return attendeeId;
+
+      return { attendeeId, registrationId };
     };
 
     // If no host record, create one or upgrade existing guest to host
@@ -240,21 +250,23 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           .eq("id", existingGuest.id);
 
         if (!upgradeError) {
-          // Generate QR token if missing
-          if (!existingGuest.qr_token) {
-            const qrToken = generateTablePartyToken(existingGuest.id, bookingId, event?.id);
-            await serviceSupabase
-              .from("table_party_guests")
-              .update({ qr_token: qrToken })
-              .eq("id", existingGuest.id);
-            existingGuest.qr_token = qrToken;
-          }
           existingGuest.is_host = true;
           hostGuest = existingGuest;
-          
-          // Ensure host is linked to attendee and has registration
-          if (!existingGuest.attendee_id && booking.guest_email) {
-            await ensureHostLinked(existingGuest.id, booking.guest_email);
+
+          // Ensure host is linked to attendee and has registration FIRST
+          if (booking.guest_email) {
+            const { attendeeId, registrationId } = await ensureHostLinked(existingGuest.id, booking.guest_email);
+
+            // Generate registration-based QR token if missing or regenerate to ensure consistency
+            if (registrationId && attendeeId && event?.id) {
+              const qrToken = generateQRPassToken(registrationId, event.id, attendeeId);
+              await serviceSupabase
+                .from("table_party_guests")
+                .update({ qr_token: qrToken, attendee_id: attendeeId })
+                .eq("id", existingGuest.id);
+              existingGuest.qr_token = qrToken;
+              existingGuest.attendee_id = attendeeId;
+            }
           }
         }
       } else {
@@ -274,31 +286,39 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           .single();
 
         if (!hostError && newHostGuest) {
-          // Generate QR token for host
-          const qrToken = generateTablePartyToken(
-            newHostGuest.id,
-            bookingId,
-            event?.id
-          );
+          hostGuest = newHostGuest;
 
-          // Update with QR token
-          await serviceSupabase
-            .from("table_party_guests")
-            .update({ qr_token: qrToken })
-            .eq("id", newHostGuest.id);
-
-          hostGuest = { ...newHostGuest, qr_token: qrToken };
-          
-          // Link host to attendee and create registration
+          // Link host to attendee and create registration FIRST
           if (booking.guest_email) {
-            await ensureHostLinked(newHostGuest.id, booking.guest_email);
+            const { attendeeId, registrationId } = await ensureHostLinked(newHostGuest.id, booking.guest_email);
+
+            // Generate registration-based QR token
+            if (registrationId && attendeeId && event?.id) {
+              const qrToken = generateQRPassToken(registrationId, event.id, attendeeId);
+              await serviceSupabase
+                .from("table_party_guests")
+                .update({ qr_token: qrToken, attendee_id: attendeeId })
+                .eq("id", newHostGuest.id);
+              hostGuest = { ...newHostGuest, qr_token: qrToken, attendee_id: attendeeId };
+            }
           }
         }
       }
     } else {
       // Host exists - ensure they're linked to attendee and have registration
-      if (!hostGuest.attendee_id && hostGuest.guest_email) {
-        await ensureHostLinked(hostGuest.id, hostGuest.guest_email);
+      // Also regenerate token if needed for consistency
+      if (hostGuest.guest_email) {
+        const { attendeeId, registrationId } = await ensureHostLinked(hostGuest.id, hostGuest.guest_email);
+
+        // Regenerate registration-based token if we have the needed data
+        if (registrationId && attendeeId && event?.id && !hostGuest.qr_token) {
+          const qrToken = generateQRPassToken(registrationId, event.id, attendeeId);
+          await serviceSupabase
+            .from("table_party_guests")
+            .update({ qr_token: qrToken })
+            .eq("id", hostGuest.id);
+          hostGuest.qr_token = qrToken;
+        }
       }
     }
 

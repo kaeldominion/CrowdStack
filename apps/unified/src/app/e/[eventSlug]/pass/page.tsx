@@ -9,9 +9,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { X, CheckCircle2, QrCode, Scan, Maximize2 } from "lucide-react";
+import { X, CheckCircle2, Scan, Maximize2 } from "lucide-react";
 import Link from "next/link";
-import { Logo, LoadingSpinner, Button, Card, ConfirmModal } from "@crowdstack/ui";
+import { LoadingSpinner, Button, Card, ConfirmModal } from "@crowdstack/ui";
 import { DockNav } from "@/components/navigation/DockNav";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -63,10 +63,27 @@ export default function QRPassPage() {
       try {
         setLoading(true);
         setError(null);
-        
+
+        // First check if user has a table party guest entry for this event
+        // If so, redirect to the table-pass page which shows table details
+        try {
+          const tableCheckResponse = await fetch(`/api/events/by-slug/${eventSlug}/check-table-guest`);
+          if (tableCheckResponse.ok) {
+            const tableData = await tableCheckResponse.json();
+            if (tableData.hasTableGuest && tableData.guestId) {
+              // Redirect to table-pass page
+              router.replace(`/table-pass/${tableData.guestId}`);
+              return;
+            }
+          }
+        } catch (tableError) {
+          // Continue with regular pass if table check fails
+          console.log("Table check failed, showing regular pass");
+        }
+
         let token = tokenFromQuery;
         let eventDetails = { name: "", venue: "", date: "", attendee: "", flier: "" };
-        
+
         // If we have a token in URL, validate it first to get all details
         if (tokenFromQuery) {
           const validateResponse = await fetch("/api/pass/validate", {
@@ -191,7 +208,7 @@ export default function QRPassPage() {
       <DockNav />
       
       {/* Close button */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-3 right-3 z-10">
         <Link
           href={`/e/${eventSlug}`}
           className="w-10 h-10 rounded-full bg-glass/80 border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:bg-active transition-colors"
@@ -201,7 +218,7 @@ export default function QRPassPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 pt-14">
         
         {loading ? (
           <div className="flex flex-col items-center gap-4">
@@ -223,26 +240,22 @@ export default function QRPassPage() {
           </Card>
         ) : passData && qrCodeUrl ? (
           <>
-            {/* Logo Badge */}
-            <div className="mb-6">
-              <div className="w-24 h-24 rounded-2xl bg-void border-2 border-accent-primary/50 flex items-center justify-center shadow-lg shadow-accent-primary/20">
-                <Logo variant="tricolor" size="xl" iconOnly />
-              </div>
-            </div>
-
-            {/* Event Info */}
-            <div className="text-center mb-8">
-              <h1 className="font-sans text-3xl font-black text-primary uppercase tracking-tight">
-                {passData.eventName || "Event"}
-              </h1>
-              <p className="font-mono text-sm font-medium text-accent-secondary tracking-wide mt-2">
-                {formatEventDate(passData.eventDate)}
-                {passData.venueName && ` • ${passData.venueName.toUpperCase()}`}
-              </p>
-            </div>
-
-            {/* Pass Card */}
+            {/* Pass Card - contains everything for consistent width */}
             <div className="w-full max-w-sm">
+              {/* Event Info - inside card container for consistent width */}
+              <div className="text-center mb-4 px-2">
+                <h1 className="font-sans text-xl sm:text-2xl font-black text-primary uppercase tracking-tight leading-tight">
+                  {passData.eventName || "Event"}
+                </h1>
+                <p className="font-mono text-sm font-medium text-accent-secondary tracking-wide mt-2">
+                  {formatEventDate(passData.eventDate)}
+                </p>
+                {passData.venueName && (
+                  <p className="font-mono text-sm font-medium text-secondary tracking-wide mt-1">
+                    {passData.venueName.toUpperCase()}
+                  </p>
+                )}
+              </div>
               {/* Gradient top border */}
               <div className="h-1 rounded-t-2xl bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary" />
               
