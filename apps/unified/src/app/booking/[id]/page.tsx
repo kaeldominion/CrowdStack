@@ -149,10 +149,10 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
   // For confirmed/paid bookings, fetch/create party data
   let partyData = null;
   if (authoritativeStatus === "confirmed" || authoritativePaymentStatus === "paid") {
-    // Get existing party guests
+    // Get existing party guests with attendee data for instagram
     const { data: partyGuests } = await serviceSupabase
       .from("table_party_guests")
-      .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
+      .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id, attendee:attendees(instagram_handle)")
       .eq("booking_id", bookingId)
       .order("is_host", { ascending: false })
       .order("created_at", { ascending: true });
@@ -286,7 +286,8 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
           .single();
 
         if (!hostError && newHostGuest) {
-          hostGuest = newHostGuest;
+          // Add empty attendee array since newly created guest won't have one yet
+          hostGuest = { ...newHostGuest, attendee: [] };
 
           // Link host to attendee and create registration FIRST
           if (booking.guest_email) {
@@ -299,7 +300,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
                 .from("table_party_guests")
                 .update({ qr_token: qrToken, attendee_id: attendeeId })
                 .eq("id", newHostGuest.id);
-              hostGuest = { ...newHostGuest, qr_token: qrToken, attendee_id: attendeeId };
+              hostGuest = { ...newHostGuest, qr_token: qrToken, attendee_id: attendeeId, attendee: [] };
             }
           }
         }
@@ -328,10 +329,10 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
     if (hostGuest) {
       const { data: refreshedHost } = await serviceSupabase
         .from("table_party_guests")
-        .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
+        .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id, attendee:attendees(instagram_handle)")
         .eq("id", hostGuest.id)
         .single();
-      
+
       if (refreshedHost) {
         hostGuest = refreshedHost;
       }
@@ -345,10 +346,17 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
     const hostInList = allGuests.some(g => g.id === hostGuest?.id);
     const totalJoined = hostInList ? joinedCount : joinedCount + (hostGuest ? 1 : 0);
 
+    // Helper to get instagram from attendee relation
+    const getInstagram = (g: any): string | null => {
+      const attendee = Array.isArray(g.attendee) ? g.attendee[0] : g.attendee;
+      return attendee?.instagram_handle || null;
+    };
+
     partyData = {
       host: hostGuest ? {
         id: hostGuest.id,
         name: hostGuest.guest_name,
+        instagram: getInstagram(hostGuest),
         pass_url: `/table-pass/${hostGuest.id}`,
         checked_in: hostGuest.checked_in,
       } : null,
@@ -356,6 +364,7 @@ async function getBookingData(bookingId: string): Promise<BookingData | null> {
         id: g.id,
         name: g.guest_name,
         email: g.guest_email,
+        instagram: getInstagram(g),
         status: g.status,
         checked_in: g.checked_in,
       })),

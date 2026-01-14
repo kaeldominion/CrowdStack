@@ -176,6 +176,7 @@ async function getUserData() {
               end_time,
               timezone,
               currency,
+              flier_url,
               venue:venues(id, name, slug, city, currency)
             ),
             table:venue_tables(
@@ -378,6 +379,7 @@ async function getUserData() {
         end_time: event.end_time,
         timezone: event.timezone,
         currency: event.currency,
+        flier_url: event.flier_url || null,
       } : null,
       venue: venue ? {
         id: venue.id,
