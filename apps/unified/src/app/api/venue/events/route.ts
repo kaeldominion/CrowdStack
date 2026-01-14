@@ -73,28 +73,40 @@ export async function GET(request: Request) {
 
     // BATCH QUERY OPTIMIZATION: Fetch all counts in bulk instead of N+1 queries
     const eventIds = events.map((e) => e.id);
-    console.log("[venue/events] Fetching stats for", eventIds.length, "events:", eventIds.slice(0, 3));
 
-    // 1. Batch fetch all registrations with checked_in status for these events
-    const { data: allRegistrations, error: regError } = await serviceSupabase
+    // 1. Batch fetch all registrations for these events
+    const { data: allRegistrations } = await serviceSupabase
       .from("registrations")
-      .select("event_id, checked_in")
+      .select("id, event_id")
       .in("event_id", eventIds);
 
-    console.log("[venue/events] Registrations found:", allRegistrations?.length || 0, "Error:", regError?.message || "none");
-
-    // Build count maps for registrations and check-ins
+    // Build registration count map
     const registrationsByEvent = new Map<string, number>();
-    const checkinsByEvent = new Map<string, number>();
+    const registrationIdToEventId = new Map<string, string>();
 
     (allRegistrations || []).forEach((reg) => {
-      // Count registrations
       registrationsByEvent.set(reg.event_id, (registrationsByEvent.get(reg.event_id) || 0) + 1);
-      // Count check-ins using the checked_in boolean field
-      if (reg.checked_in) {
-        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
-      }
+      registrationIdToEventId.set(reg.id, reg.event_id);
     });
+
+    // 2. Batch fetch check-ins from the checkins table (separate from registrations)
+    const registrationIds = allRegistrations?.map((r) => r.id) || [];
+    const checkinsByEvent = new Map<string, number>();
+
+    if (registrationIds.length > 0) {
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", registrationIds)
+        .is("undo_at", null);
+
+      (allCheckins || []).forEach((checkin) => {
+        const eventId = registrationIdToEventId.get(checkin.registration_id);
+        if (eventId) {
+          checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
+        }
+      });
+    }
 
     // 3. Batch fetch payout information for owned events
     const payoutsPending: Record<string, number> = {};
