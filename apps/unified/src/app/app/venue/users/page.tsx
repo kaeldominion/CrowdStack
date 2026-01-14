@@ -19,8 +19,17 @@ import {
 import { Plus, Trash2, Edit, Users, Mail, User } from "lucide-react";
 import { PermissionsEditor } from "@/components/PermissionsEditor";
 import { PermanentDoorStaffSection } from "@/components/PermanentDoorStaffSection";
+import { UserSearchInput } from "@/components/UserSearchInput";
 import type { VenueUser, VenuePermissions } from "@crowdstack/shared/types";
 import { DEFAULT_VENUE_PERMISSIONS } from "@crowdstack/shared/constants/permissions";
+
+interface SelectedUser {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  already_assigned: boolean;
+}
 
 export default function VenueUsersPage() {
   const searchParams = useSearchParams();
@@ -31,7 +40,7 @@ export default function VenueUsersPage() {
   const [venueName, setVenueName] = useState<string>("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<VenueUser | null>(null);
-  const [newUserEmail, setNewUserEmail] = useState("");
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [newUserPermissions, setNewUserPermissions] =
     useState<VenuePermissions>(DEFAULT_VENUE_PERMISSIONS);
 
@@ -68,17 +77,17 @@ export default function VenueUsersPage() {
   };
 
   const handleAddUser = async () => {
-    if (!newUserEmail) {
-      alert("Please enter an email address");
+    if (!selectedUser) {
+      alert("Please select a user");
       return;
     }
 
     try {
       const body: any = {
-        email: newUserEmail,
+        email: selectedUser.email,
         permissions: newUserPermissions,
       };
-      
+
       // Include venueId if we have it, otherwise let API figure it out
       if (venueId) {
         body.venueId = venueId;
@@ -97,7 +106,7 @@ export default function VenueUsersPage() {
 
       await loadUsers();
       setShowAddModal(false);
-      setNewUserEmail("");
+      setSelectedUser(null);
       setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
     } catch (error: any) {
       alert(error.message || "Failed to add user");
@@ -287,20 +296,21 @@ export default function VenueUsersPage() {
             isOpen={showAddModal}
             onClose={() => {
               setShowAddModal(false);
-              setNewUserEmail("");
+              setSelectedUser(null);
               setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
             }}
-            title="Add User to Venue"
+            title="Add Team Member"
             size="lg"
           >
             <div className="space-y-6">
-              <Input
-                label="User Email"
-                type="email"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder="user@example.com"
-                required
+              <UserSearchInput
+                searchEndpoint="/api/venue/users/search"
+                queryParams={venueId ? { venueId } : {}}
+                onSelect={(user) => setSelectedUser(user)}
+                selectedUser={selectedUser}
+                onClear={() => setSelectedUser(null)}
+                label="Search User"
+                placeholder="Search by name or email..."
               />
 
               <Card>
@@ -318,14 +328,18 @@ export default function VenueUsersPage() {
                   variant="ghost"
                   onClick={() => {
                     setShowAddModal(false);
-                    setNewUserEmail("");
+                    setSelectedUser(null);
                     setNewUserPermissions(DEFAULT_VENUE_PERMISSIONS);
                   }}
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={handleAddUser}>
-                  Add User
+                <Button
+                  variant="primary"
+                  onClick={handleAddUser}
+                  disabled={!selectedUser}
+                >
+                  Add Team Member
                 </Button>
               </div>
             </div>
