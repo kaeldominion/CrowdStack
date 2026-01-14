@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Section, Container, Button } from "@crowdstack/ui";
-import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, PartyPopper } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Ticket, ArrowLeft, User, PartyPopper, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
@@ -22,6 +22,8 @@ interface RegistrationSuccessProps {
   venueAddress?: string | null;
   showPhotoEmailNotice?: boolean;
   tablePartyGuestId?: string | null;
+  checkinCutoffEnabled?: boolean;
+  checkinCutoffTime?: string | null;
 }
 
 export function RegistrationSuccess({
@@ -36,6 +38,8 @@ export function RegistrationSuccess({
   venueAddress,
   showPhotoEmailNotice = false,
   tablePartyGuestId = null,
+  checkinCutoffEnabled = false,
+  checkinCutoffTime = null,
 }: RegistrationSuccessProps) {
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
@@ -198,6 +202,24 @@ export function RegistrationSuccess({
                         hour: "numeric",
                         minute: "2-digit",
                       })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Check-in Cutoff Time */}
+              {checkinCutoffEnabled && checkinCutoffTime && (
+                <div className="flex items-start gap-3 p-3 bg-amber-500/10 rounded-xl border border-amber-500/30">
+                  <Clock className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-amber-500/80 mb-0.5">Check-in Closes</p>
+                    <p className="text-sm font-semibold text-amber-500">
+                      {(() => {
+                        const [hours, minutes] = checkinCutoffTime.split(':').map(Number);
+                        const date = new Date();
+                        date.setHours(hours, minutes);
+                        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                      })()}
                     </p>
                   </div>
                 </div>

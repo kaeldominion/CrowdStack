@@ -70,7 +70,9 @@ export async function GET(
         end_time,
         venue_id,
         flier_url,
-        show_photo_email_notice
+        show_photo_email_notice,
+        checkin_cutoff_enabled,
+        checkin_cutoff_time
       `)
       .eq("id", event.id)
       .single();
@@ -110,6 +112,8 @@ export async function GET(
         venue: venue ? { id: venue.id, name: venue.name, slug: venue.slug } : null,
         end_time: eventDetails.end_time,
         show_photo_email_notice: eventDetails.show_photo_email_notice || false,
+        checkin_cutoff_enabled: eventDetails.checkin_cutoff_enabled || false,
+        checkin_cutoff_time: eventDetails.checkin_cutoff_time || null,
       } : null,
     });
   } catch (error: any) {

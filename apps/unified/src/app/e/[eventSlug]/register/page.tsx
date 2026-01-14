@@ -47,6 +47,8 @@ export default function RegisterPage() {
     registration_count?: number;
     flier_url?: string | null;
     show_photo_email_notice?: boolean;
+    checkin_cutoff_enabled?: boolean;
+    checkin_cutoff_time?: string | null;
   } | null>(null);
   const [eventDataForSignup, setEventDataForSignup] = useState<{
     name: string;
@@ -91,6 +93,8 @@ export default function RegisterPage() {
                 registration_count: eventData.event.registration_count || 0,
                 flier_url: eventData.event.flier_url || null,
                 show_photo_email_notice: eventData.event.show_photo_email_notice || false,
+                checkin_cutoff_enabled: eventData.event.checkin_cutoff_enabled || false,
+                checkin_cutoff_time: eventData.event.checkin_cutoff_time || null,
               });
             }
           }
@@ -121,6 +125,8 @@ export default function RegisterPage() {
                 end_time: checkData.event.end_time || null,
                 flier_url: checkData.event.flier_url,
                 show_photo_email_notice: checkData.event.show_photo_email_notice || false,
+                checkin_cutoff_enabled: checkData.event.checkin_cutoff_enabled || false,
+                checkin_cutoff_time: checkData.event.checkin_cutoff_time || null,
               });
               setLoading(false);
               return;
@@ -262,6 +268,8 @@ export default function RegisterPage() {
           end_time: data.event.end_time || null,
           flier_url: data.event.flier_url,
           show_photo_email_notice: data.event.show_photo_email_notice || false,
+          checkin_cutoff_enabled: data.event.checkin_cutoff_enabled || false,
+          checkin_cutoff_time: data.event.checkin_cutoff_time || null,
         });
       } else {
         // If event details not in response, fetch them
@@ -276,6 +284,8 @@ export default function RegisterPage() {
               end_time: eventData.event?.end_time || eventData.end_time || null,
               flier_url: eventData.event?.flier_url || eventData.flier_url || null,
               show_photo_email_notice: eventData.event?.show_photo_email_notice || false,
+              checkin_cutoff_enabled: eventData.event?.checkin_cutoff_enabled || false,
+              checkin_cutoff_time: eventData.event?.checkin_cutoff_time || null,
             });
           }
         } catch (err) {
@@ -309,6 +319,8 @@ export default function RegisterPage() {
             venue: checkData.event.venue,
             start_time: checkData.event.start_time,
             flier_url: checkData.event.flier_url,
+            checkin_cutoff_enabled: checkData.event.checkin_cutoff_enabled || false,
+            checkin_cutoff_time: checkData.event.checkin_cutoff_time || null,
           });
           return true;
         }
@@ -349,6 +361,8 @@ export default function RegisterPage() {
         flierUrl={flierUrl}
         venueAddress={eventDetails.venue?.address || null}
         showPhotoEmailNotice={eventDetails.show_photo_email_notice || false}
+        checkinCutoffEnabled={eventDetails.checkin_cutoff_enabled || false}
+        checkinCutoffTime={eventDetails.checkin_cutoff_time || null}
       />
     );
   }
