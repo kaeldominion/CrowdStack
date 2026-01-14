@@ -62,14 +62,25 @@ export async function getOrganizerDashboardStats(passedOrganizerId?: string | nu
     };
   }
 
-  // Get registration and check-in counts in one query
+  // Get registration count
   const { data: allRegs } = await supabase
     .from("registrations")
-    .select("id, checked_in")
+    .select("id")
     .in("event_id", eventIds);
 
   const regCount = allRegs?.length || 0;
-  const checkinCount = allRegs?.filter((r) => r.checked_in).length || 0;
+  const regIds = allRegs?.map((r) => r.id) || [];
+
+  // Get check-in count from checkins table
+  let checkinCount = 0;
+  if (regIds.length > 0) {
+    const { count } = await supabase
+      .from("checkins")
+      .select("*", { count: "exact", head: true })
+      .in("registration_id", regIds)
+      .is("undo_at", null);
+    checkinCount = count || 0;
+  }
 
   // Get promoter count
   const { count: promoterCount } = await supabase
@@ -119,23 +130,40 @@ export async function getOrganizerChartData(passedOrganizerId?: string | null): 
   // Batch fetch all registrations for these events
   const { data: allRegs, error: regsError } = await supabase
     .from("registrations")
-    .select("event_id, checked_in")
+    .select("id, event_id")
     .in("event_id", eventIds);
 
   if (regsError) {
     console.error("[getOrganizerChartData] Error fetching registrations:", regsError);
   }
 
-  // Build counts maps for O(1) lookups
+  // Build registration ID to event ID mapping and count registrations per event
   const regsByEvent = new Map<string, number>();
-  const checkinsByEvent = new Map<string, number>();
+  const registrationIdToEventId = new Map<string, string>();
 
   (allRegs || []).forEach((reg) => {
     regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-    if (reg.checked_in) {
-      checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
-    }
+    registrationIdToEventId.set(reg.id, reg.event_id);
   });
+
+  // Batch fetch check-ins from checkins table
+  const checkinsByEvent = new Map<string, number>();
+  const regIds = allRegs?.map((r) => r.id) || [];
+
+  if (regIds.length > 0) {
+    const { data: allCheckins } = await supabase
+      .from("checkins")
+      .select("registration_id")
+      .in("registration_id", regIds)
+      .is("undo_at", null);
+
+    (allCheckins || []).forEach((checkin) => {
+      const eventId = registrationIdToEventId.get(checkin.registration_id);
+      if (eventId) {
+        checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
+      }
+    });
+  }
 
   // Build chart data from pre-computed maps (no additional queries)
   const chartData: ChartDataPoint[] = events.map((event) => ({
@@ -298,17 +326,34 @@ export async function getPromoterDashboardStats(): Promise<{
 
     const { data: allActiveRegs } = await supabase
       .from("registrations")
-      .select("event_id, checked_in")
+      .select("id, event_id")
       .in("event_id", activeEventIds)
       .eq("referral_promoter_id", promoterId);
 
-    // Build check-in counts map for O(1) lookups
-    const checkinsByActiveEvent = new Map<string, number>();
+    // Build registration ID to event ID mapping
+    const activeRegIdToEventId = new Map<string, string>();
     (allActiveRegs || []).forEach((reg) => {
-      if (reg.checked_in) {
-        checkinsByActiveEvent.set(reg.event_id, (checkinsByActiveEvent.get(reg.event_id) || 0) + 1);
-      }
+      activeRegIdToEventId.set(reg.id, reg.event_id);
     });
+
+    // Batch fetch check-ins from checkins table
+    const checkinsByActiveEvent = new Map<string, number>();
+    const activeRegIds = allActiveRegs?.map((r) => r.id) || [];
+
+    if (activeRegIds.length > 0) {
+      const { data: allActiveCheckins } = await supabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", activeRegIds)
+        .is("undo_at", null);
+
+      (allActiveCheckins || []).forEach((checkin) => {
+        const eventId = activeRegIdToEventId.get(checkin.registration_id);
+        if (eventId) {
+          checkinsByActiveEvent.set(eventId, (checkinsByActiveEvent.get(eventId) || 0) + 1);
+        }
+      });
+    }
 
     // Calculate estimated earnings using pre-computed map
     for (const ep of activeEventPromoters) {
@@ -505,7 +550,7 @@ export async function getVenueDashboardStats(): Promise<{
     .eq("venue_id", venueId)
     .gte("start_time", startOfMonth.toISOString());
 
-  // Get check-ins using checked_in boolean field
+  // Get check-ins from checkins table
   const { data: events } = await supabase.from("events").select("id").eq("venue_id", venueId);
   const eventIds = events?.map((e) => e.id) || [];
 
@@ -513,10 +558,18 @@ export async function getVenueDashboardStats(): Promise<{
   if (eventIds.length > 0) {
     const { data: allRegs } = await supabase
       .from("registrations")
-      .select("id, checked_in")
+      .select("id")
       .in("event_id", eventIds);
 
-    totalCheckIns = allRegs?.filter((r) => r.checked_in).length || 0;
+    const regIds = allRegs?.map((r) => r.id) || [];
+    if (regIds.length > 0) {
+      const { count } = await supabase
+        .from("checkins")
+        .select("*", { count: "exact", head: true })
+        .in("registration_id", regIds)
+        .is("undo_at", null);
+      totalCheckIns = count || 0;
+    }
   }
 
   // Calculate average attendance
@@ -544,19 +597,36 @@ export async function getVenueDashboardStats(): Promise<{
       // Batch fetch all registrations for all venue events
       const { data: allRegs } = await supabase
         .from("registrations")
-        .select("event_id, checked_in")
+        .select("id, event_id")
         .in("event_id", allEventIds);
 
-      // Build counts maps for O(1) lookups
+      // Build registration counts map and reg-to-event mapping
       const regsByEvent = new Map<string, number>();
-      const checkinsByEvent = new Map<string, number>();
+      const regIdToEventId = new Map<string, string>();
 
       (allRegs || []).forEach((reg) => {
         regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-        if (reg.checked_in) {
-          checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
-        }
+        regIdToEventId.set(reg.id, reg.event_id);
       });
+
+      // Batch fetch all check-ins for these registrations
+      const checkinsByEvent = new Map<string, number>();
+      const regIds = allRegs?.map((r) => r.id) || [];
+
+      if (regIds.length > 0) {
+        const { data: allCheckins } = await supabase
+          .from("checkins")
+          .select("registration_id")
+          .in("registration_id", regIds)
+          .is("undo_at", null);
+
+        (allCheckins || []).forEach((checkin) => {
+          const eventId = regIdToEventId.get(checkin.registration_id);
+          if (eventId) {
+            checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
+          }
+        });
+      }
 
       // Build event stats from pre-computed maps
       const eventStats = allEvents.map((event) => ({
