@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
-import { decodeTokenType } from "@crowdstack/shared/qr/table-party";
 import { cookies } from "next/headers";
 
 // Force dynamic rendering
@@ -63,28 +62,10 @@ export async function GET(
         }
         finalRegistrationId = tokenData.registration_id;
       } catch (error: any) {
-        // Try table party token - but preview is not supported for table party guests
-        try {
-          const tokenType = decodeTokenType(qrToken);
-          if (tokenType === "table_party") {
-            // Table party tokens use guest_id/booking_id, not registration_id
-            // Preview is not supported for table party guests - use the checkin endpoint directly
-            return NextResponse.json(
-              { error: "Preview not supported for table party QR codes. Use check-in directly." },
-              { status: 400 }
-            );
-          } else {
-            return NextResponse.json(
-              { error: "Invalid QR token" },
-              { status: 400 }
-            );
-          }
-        } catch {
-          return NextResponse.json(
-            { error: "Invalid QR token" },
-            { status: 400 }
-          );
-        }
+        return NextResponse.json(
+          { error: "Invalid QR token" },
+          { status: 400 }
+        );
       }
     }
 
@@ -280,9 +261,84 @@ export async function GET(
       }
     }
 
-    // Check for table party info (for regular QR tokens that might be part of a table party)
-    // Note: Table party QR tokens return early above, this is for regular registrations
-    let tablePartyInfo = null;
+    // Check for table party info
+    let tablePartyInfo: {
+      isTableParty: boolean;
+      tableName: string | null;
+      hostName: string | null;
+      isHost: boolean;
+      checkedInCount: number;
+      partySize: number;
+      zoneName: string | null;
+      bookingId: string | null;
+      notes: string | null;
+    } | null = null;
+
+    console.log(`[Check-in Preview API] Looking for table party for attendee_id: ${attendee.id}, event: ${eventId}`);
+
+    try {
+      // Look for a table_party_guests record for this attendee at this event
+      const { data: tableGuest, error: tableGuestError } = await serviceSupabase
+        .from("table_party_guests")
+        .select(`
+          id,
+          is_host,
+          status,
+          booking_id,
+          table_bookings!inner(
+            id,
+            event_id,
+            guest_name,
+            party_size,
+            status,
+            special_requests,
+            table:venue_tables(
+              id,
+              name,
+              zone:table_zones(id, name)
+            )
+          )
+        `)
+        .eq("attendee_id", attendee.id)
+        .eq("table_bookings.event_id", eventId)
+        .eq("status", "joined")
+        .maybeSingle();
+
+      console.log(`[Check-in Preview API] Table guest lookup result:`, {
+        found: !!tableGuest,
+        error: tableGuestError?.message || 'none',
+        guestData: tableGuest ? { id: tableGuest.id, is_host: tableGuest.is_host, booking_id: tableGuest.booking_id } : null
+      });
+
+      if (tableGuest) {
+        const booking = tableGuest.table_bookings as any;
+        const table = booking?.table;
+        const zone = table?.zone;
+
+        // Count how many guests are checked in for this booking
+        const { count: checkedInCount } = await serviceSupabase
+          .from("table_party_guests")
+          .select("*", { count: "exact", head: true })
+          .eq("booking_id", tableGuest.booking_id)
+          .eq("status", "joined")
+          .eq("checked_in", true);
+
+        tablePartyInfo = {
+          isTableParty: true,
+          tableName: table?.name || null,
+          hostName: booking?.guest_name || null,
+          isHost: tableGuest.is_host,
+          checkedInCount: checkedInCount || 0,
+          partySize: booking?.party_size || 0,
+          zoneName: zone?.name || null,
+          bookingId: tableGuest.booking_id,
+          notes: booking?.special_requests || null,
+        };
+      }
+    } catch (tablePartyError) {
+      console.warn(`[Check-in Preview API] Error checking table party info:`, tablePartyError);
+      // Continue without table party info - non-critical
+    }
 
     return NextResponse.json({
       registration_id: finalRegistrationId,

@@ -130,16 +130,14 @@ export default function TablePassPage() {
   }
 
   return (
-    <div className="min-h-screen bg-void flex flex-col">
+    <div className="min-h-screen bg-void flex flex-col relative">
       {/* Close button */}
-      <div className="absolute top-3 right-3 z-10">
-        <Link
-          href={`/e/${passData.event.slug}`}
-          className="w-10 h-10 rounded-full bg-glass/80 border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:bg-active transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </Link>
-      </div>
+      <Link
+        href={`/e/${passData.event.slug}`}
+        className="absolute top-4 right-4 z-50 w-11 h-11 rounded-full bg-glass/80 backdrop-blur-sm border border-border-subtle flex items-center justify-center text-secondary hover:text-primary hover:bg-active transition-colors"
+      >
+        <X className="h-5 w-5" />
+      </Link>
 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center px-4 pt-16 pb-8">

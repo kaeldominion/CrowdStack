@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: Request,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
+    const { eventId } = await params;
     const cookieStore = await cookies();
     const supabase = await createClient();
 
@@ -31,9 +32,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log(`[Live Metrics API] Fetching metrics for event ${params.eventId}`);
+    console.log(`[Live Metrics API] Fetching metrics for event ${eventId}`);
 
-    const metrics = await getLiveMetrics(params.eventId);
+    const metrics = await getLiveMetrics(eventId);
 
     if (!metrics) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });

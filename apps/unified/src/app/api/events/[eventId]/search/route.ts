@@ -11,9 +11,10 @@ import { cookies } from "next/headers";
 export const dynamic = 'force-dynamic';
 export async function GET(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
+    const { eventId } = await params;
     const cookieStore = await cookies();
     const supabase = await createClient();
     const serviceSupabase = createServiceRoleClient();
@@ -44,13 +45,13 @@ export async function GET(
       return NextResponse.json({ results: [] });
     }
 
-    console.log(`[Search API] Searching for "${query}" in event ${params.eventId}`);
+    console.log(`[Search API] Searching for "${query}" in event ${eventId}`);
 
     // First, get total registration count to determine if we need stricter matching
     const { count: totalRegistrations } = await serviceSupabase
       .from("registrations")
       .select("*", { count: "exact", head: true })
-      .eq("event_id", params.eventId);
+      .eq("event_id", eventId);
 
     const isLargeEvent = (totalRegistrations || 0) > 1000;
 
@@ -63,7 +64,7 @@ export async function GET(
         attendee_id,
         attendee:attendees(id, name, surname, email, phone)
       `)
-      .eq("event_id", params.eventId);
+      .eq("event_id", eventId);
 
     // If query provided, we need to search attendees first, then get their registrations
     if (query && !showAll) {
@@ -215,7 +216,7 @@ export async function GET(
     const { data: event } = await serviceSupabase
       .from("events")
       .select("venue_id, organizer_id")
-      .eq("id", params.eventId)
+      .eq("id", eventId)
       .single();
 
     // Get attendee IDs for VIP lookup

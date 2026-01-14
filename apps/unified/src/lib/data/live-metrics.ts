@@ -71,16 +71,23 @@ export interface VIPArrival {
  * Get real-time metrics for an active event
  */
 export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | null> {
+  console.log(`[LiveMetrics] ========== START getLiveMetrics ==========`);
+  console.log(`[LiveMetrics] Received eventId: "${eventId}" (type: ${typeof eventId})`);
+
+  if (!eventId || eventId === 'undefined' || eventId === 'null') {
+    console.error(`[LiveMetrics] INVALID eventId received: "${eventId}"`);
+    return null;
+  }
+
   const supabase = createServiceRoleClient();
 
   // Get event details with venue and organizer
-  const { data: event } = await supabase
+  const { data: event, error: eventError } = await supabase
     .from("events")
     .select(`
-      id, 
-      name, 
-      capacity, 
-      start_time, 
+      id,
+      name,
+      start_time,
       end_time,
       venue_id,
       organizer_id,
@@ -90,7 +97,14 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     .eq("id", eventId)
     .single();
 
+  console.log(`[LiveMetrics] Event lookup result:`, {
+    found: !!event,
+    eventName: event?.name || 'N/A',
+    error: eventError?.message || 'none'
+  });
+
   if (!event) {
+    console.error(`[LiveMetrics] Event not found for eventId: "${eventId}"`);
     return null;
   }
 
@@ -98,12 +112,24 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
   const eventVenueId = (event as any).venue_id;
 
   // Get total registrations for this event
-  const { count: totalRegistrations } = await supabase
+  const { count: totalRegistrations, error: regCountError } = await supabase
     .from("registrations")
     .select("*", { count: "exact", head: true })
     .eq("event_id", eventId);
 
-  // Get current check-in count
+  console.log(`[LiveMetrics] Event ${eventId}: totalRegistrations=${totalRegistrations}, error=${regCountError?.message || 'none'}`);
+
+  // Get current check-in count using checked_in field on registrations
+  // This is more reliable than querying the checkins table with joins
+  const { count: checkedInCount, error: checkinCountError } = await supabase
+    .from("registrations")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("checked_in", true);
+
+  console.log(`[LiveMetrics] Event ${eventId}: checkedInCount=${checkedInCount}, error=${checkinCountError?.message || 'none'}`);
+
+  // Get checkin details for recent activity and time-based metrics
   const { data: checkins, error: checkinsError } = await supabase
     .from("checkins")
     .select(`
@@ -121,7 +147,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
 
   if (checkinsError) {
     console.error("[LiveMetrics] Error fetching checkins:", checkinsError);
-    throw checkinsError;
+    // Don't throw - we have checkedInCount from registrations as fallback
   }
 
   // Fetch promoter names separately
@@ -144,10 +170,11 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     });
   }
 
-  const currentAttendance = checkins?.length || 0;
-  const capacityPercentage = event.capacity
-    ? Math.round((currentAttendance / event.capacity) * 100)
-    : 0;
+  // Use checkedInCount from registrations as primary source (more reliable)
+  // Fall back to checkins array length if checkedInCount is null
+  const currentAttendance = checkedInCount ?? (checkins?.length || 0);
+  // Capacity is no longer stored on events table - set to null
+  const capacityPercentage = 0;
 
   // Calculate hourly flow rates
   const now = new Date();
@@ -439,7 +466,7 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     venue_name: (event.venue as any)?.name || null,
     current_attendance: currentAttendance,
     total_registrations: totalRegistrations || 0,
-    capacity: event.capacity,
+    capacity: null, // Capacity no longer stored on events table
     capacity_percentage: capacityPercentage,
     check_ins_last_hour: checkInsLastHour,
     check_ins_last_15min: checkInsLast15min,

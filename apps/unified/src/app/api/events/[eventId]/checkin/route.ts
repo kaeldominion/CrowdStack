@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { verifyQRPassToken } from "@crowdstack/shared/qr/verify";
-import { decodeTokenType, verifyTablePartyToken } from "@crowdstack/shared/qr/table-party";
 import { emitOutboxEvent } from "@crowdstack/shared/outbox/emit";
 import { cookies } from "next/headers";
 import { trackCheckIn } from "@/lib/analytics/server";
@@ -19,11 +18,11 @@ import { logActivity } from "@crowdstack/shared/activity/log-activity";
 export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const startTime = Date.now();
-  const eventId = params.eventId;
-  
+  const { eventId } = await params;
+
   console.log(`[Check-in API] Starting check-in for event ${eventId}`);
 
   try {
@@ -141,50 +140,6 @@ export async function POST(
     if (qr_token) {
       console.log(`[Check-in API] Verifying QR token`);
 
-      // Detect token type first
-      const tokenType = decodeTokenType(qr_token);
-      console.log(`[Check-in API] Token type detected: ${tokenType}`);
-
-      // Handle table party tokens
-      if (tokenType === "table_party") {
-        console.log(`[Check-in API] Processing table party QR token`);
-
-        try {
-          const partyPayload = verifyTablePartyToken(qr_token);
-          console.log(`[Check-in API] Table party token verified:`, {
-            guest_id: partyPayload.guest_id,
-            booking_id: partyPayload.booking_id,
-            event_id: partyPayload.event_id,
-          });
-
-          if (partyPayload.event_id !== eventId) {
-            console.log(`[Check-in API] Table party token event mismatch: ${partyPayload.event_id} !== ${eventId}`);
-            return NextResponse.json(
-              { error: "QR code is for a different event" },
-              { status: 400 }
-            );
-          }
-
-          // Handle table party guest check-in
-          const partyResult = await handleTablePartyCheckIn(
-            serviceSupabase,
-            partyPayload.guest_id,
-            partyPayload.booking_id,
-            eventId,
-            userId
-          );
-
-          return NextResponse.json(partyResult);
-        } catch (error: any) {
-          console.error(`[Check-in API] Table party token verification failed:`, error.message);
-          return NextResponse.json(
-            { error: `Invalid table party QR code: ${error.message}` },
-            { status: 400 }
-          );
-        }
-      }
-
-      // Handle regular registration tokens
       try {
         const payload = verifyQRPassToken(qr_token);
         console.log(`[Check-in API] QR token verified:`, {
@@ -398,6 +353,21 @@ export async function POST(
 
     if (!checkin) {
       throw new Error("Failed to get or create checkin");
+    }
+
+    // Update registration to mark as checked in (for reliable stats queries)
+    // Do this for both new and duplicate check-ins to ensure consistency
+    const { error: updateRegError } = await serviceSupabase
+      .from("registrations")
+      .update({
+        checked_in: true,
+        checked_in_at: checkin.checked_in_at,
+      })
+      .eq("id", registrationId);
+
+    if (updateRegError) {
+      console.warn(`[Check-in API] Failed to update registration checked_in flag:`, updateRegError);
+      // Don't throw - check-in record was created successfully
     }
 
     if (isDuplicate) {
@@ -639,6 +609,93 @@ export async function POST(
       // Continue without feedback info - non-critical
     }
 
+    // Check for table party info
+    let tablePartyInfo: {
+      isTableParty: boolean;
+      tableName: string | null;
+      hostName: string | null;
+      isHost: boolean;
+      checkedInCount: number;
+      partySize: number;
+      zoneName: string | null;
+      bookingId: string | null;
+      notes: string | null;
+    } | null = null;
+
+    try {
+      // Look for a table_party_guests record for this attendee at this event
+      const { data: tableGuest } = await serviceSupabase
+        .from("table_party_guests")
+        .select(`
+          id,
+          is_host,
+          status,
+          booking_id,
+          table_bookings!inner(
+            id,
+            event_id,
+            guest_name,
+            party_size,
+            special_requests,
+            status,
+            table:venue_tables(
+              id,
+              name,
+              zone:table_zones(id, name)
+            )
+          )
+        `)
+        .eq("attendee_id", registration.attendee_id)
+        .eq("table_bookings.event_id", eventId)
+        .eq("status", "joined")
+        .maybeSingle();
+
+      if (tableGuest) {
+        const booking = tableGuest.table_bookings as any;
+        const table = booking?.table;
+        const zone = table?.zone;
+
+        // Count how many guests are checked in for this booking
+        const { count: checkedInCount } = await serviceSupabase
+          .from("table_party_guests")
+          .select("*", { count: "exact", head: true })
+          .eq("booking_id", tableGuest.booking_id)
+          .eq("status", "joined")
+          .eq("checked_in", true);
+
+        // Also mark this table party guest as checked in
+        await serviceSupabase
+          .from("table_party_guests")
+          .update({
+            checked_in: true,
+            checked_in_at: new Date().toISOString(),
+          })
+          .eq("id", tableGuest.id);
+
+        tablePartyInfo = {
+          isTableParty: true,
+          tableName: table?.name || null,
+          hostName: booking?.guest_name || null,
+          isHost: tableGuest.is_host,
+          checkedInCount: (checkedInCount || 0) + 1, // +1 for this guest
+          partySize: booking?.party_size || 0,
+          zoneName: zone?.name || null,
+          bookingId: tableGuest.booking_id,
+          notes: booking?.special_requests || null,
+        };
+
+        console.log(`[Check-in API] Table party guest detected:`, {
+          tableName: tablePartyInfo.tableName,
+          isHost: tablePartyInfo.isHost,
+          checkedInCount: tablePartyInfo.checkedInCount,
+          partySize: tablePartyInfo.partySize,
+        });
+      }
+    } catch (tablePartyError) {
+      console.warn(`[Check-in API] Error checking table party info:`, tablePartyError);
+      // Continue without table party info - non-critical
+    }
+
     const duration = Date.now() - startTime;
     console.log(`[Check-in API] Request completed in ${duration}ms`);
 
@@ -652,6 +709,7 @@ export async function POST(
       attendee: attendee,
       vip_status: vipStatus,
       feedback_history: feedbackHistory,
+      table_party: tablePartyInfo,
       message: isDuplicate
         ? `${attendeeName} was already checked in`
         : `${attendeeName} checked in successfully`,
@@ -663,148 +721,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
-
-/**
- * Handle check-in for table party guests
- */
-async function handleTablePartyCheckIn(
-  serviceSupabase: any,
-  guestId: string,
-  bookingId: string,
-  eventId: string,
-  userId: string
-) {
-  console.log(`[Check-in API] Table party check-in: guest ${guestId}, booking ${bookingId}`);
-
-  // Get the party guest record
-  const { data: guest, error: guestError } = await serviceSupabase
-    .from("table_party_guests")
-    .select("*")
-    .eq("id", guestId)
-    .eq("booking_id", bookingId)
-    .single();
-
-  if (guestError || !guest) {
-    console.log(`[Check-in API] Table party guest not found`);
-    return {
-      success: false,
-      error: "Guest not found in party",
-    };
-  }
-
-  // Check guest status
-  if (guest.status === "removed") {
-    console.log(`[Check-in API] Guest has been removed from party`);
-    return {
-      success: false,
-      error: "This guest has been removed from the party",
-    };
-  }
-
-  if (guest.status === "declined") {
-    console.log(`[Check-in API] Guest declined the invitation`);
-    return {
-      success: false,
-      error: "This guest declined the invitation",
-    };
-  }
-
-  if (guest.status !== "joined") {
-    console.log(`[Check-in API] Guest has not yet accepted invitation (status: ${guest.status})`);
-    return {
-      success: false,
-      error: "Guest has not yet accepted their invitation",
-    };
-  }
-
-  // Get booking info for display
-  const { data: booking } = await serviceSupabase
-    .from("table_bookings")
-    .select(`
-      id,
-      guest_name,
-      status,
-      table:venue_tables(id, name)
-    `)
-    .eq("id", bookingId)
-    .single();
-
-  if (!booking) {
-    console.log(`[Check-in API] Table booking not found`);
-    return {
-      success: false,
-      error: "Table booking not found",
-    };
-  }
-
-  // Check booking status
-  if (booking.status !== "confirmed" && booking.status !== "completed") {
-    console.log(`[Check-in API] Booking status does not allow check-in: ${booking.status}`);
-    return {
-      success: false,
-      error: `Cannot check in - booking is ${booking.status}`,
-    };
-  }
-
-  // Check if already checked in
-  if (guest.checked_in) {
-    console.log(`[Check-in API] Table party guest already checked in at ${guest.checked_in_at}`);
-    return {
-      success: true,
-      duplicate: true,
-      is_table_party: true,
-      guest_id: guest.id,
-      booking_id: bookingId,
-      attendee_name: guest.guest_name,
-      table_name: booking.table?.name || "Table",
-      host_name: booking.guest_name,
-      checked_in_at: guest.checked_in_at,
-      message: `${guest.guest_name} was already checked in`,
-    };
-  }
-
-  // Perform check-in
-  const now = new Date().toISOString();
-  const { error: updateError } = await serviceSupabase
-    .from("table_party_guests")
-    .update({
-      checked_in: true,
-      checked_in_at: now,
-      checked_in_by: userId,
-      updated_at: now,
-    })
-    .eq("id", guestId);
-
-  if (updateError) {
-    console.error(`[Check-in API] Failed to check in table party guest:`, updateError);
-    return {
-      success: false,
-      error: "Failed to check in guest",
-    };
-  }
-
-  // Get count of checked-in guests for this booking
-  const { count: checkedInCount } = await serviceSupabase
-    .from("table_party_guests")
-    .select("*", { count: "exact", head: true })
-    .eq("booking_id", bookingId)
-    .eq("checked_in", true);
-
-  console.log(`[Check-in API] ✅ Table party guest ${guest.guest_name} checked in successfully`);
-
-  return {
-    success: true,
-    duplicate: false,
-    is_table_party: true,
-    guest_id: guest.id,
-    booking_id: bookingId,
-    attendee_name: guest.guest_name,
-    attendee_id: guest.attendee_id,
-    table_name: booking.table?.name || "Table",
-    host_name: booking.guest_name,
-    is_host: guest.is_host,
-    checked_in_count: checkedInCount || 1,
-    message: `${guest.guest_name} checked in to ${booking.table?.name || "table"} (${checkedInCount} guest${checkedInCount !== 1 ? "s" : ""} at table)`,
-  };
 }

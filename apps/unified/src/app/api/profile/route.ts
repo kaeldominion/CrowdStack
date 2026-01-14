@@ -184,31 +184,53 @@ export async function PATCH(request: NextRequest) {
 
       // Check if profile is now complete (and wasn't before)
       const isCompleteNow = isProfileComplete(updated);
-      
-      if (isCompleteNow && !wasCompleteBefore) {
+
+      console.log(`[Profile] Completion check for user ${user.id}:`, {
+        name: !!updated.name,
+        bio: !!updated.bio,
+        instagram: !!updated.instagram_handle,
+        tiktok: !!updated.tiktok_handle,
+        wasCompleteBefore,
+        isCompleteNow,
+      });
+
+      // Award XP if profile is complete - check even if it was already complete
+      // This handles retroactive XP for users who completed profile before XP system
+      if (isCompleteNow) {
         // Check if user already received profile completion XP
-        const { data: existingXp } = await serviceSupabase
+        const { data: existingXp, error: xpCheckError } = await serviceSupabase
           .from("xp_ledger")
           .select("id")
           .eq("user_id", user.id)
           .eq("source_type", "PROFILE_COMPLETION")
           .limit(1);
-        
+
+        console.log(`[Profile] XP check for user ${user.id}:`, {
+          hasExistingXp: existingXp && existingXp.length > 0,
+          xpCheckError: xpCheckError?.message || null,
+        });
+
         if (!existingXp || existingXp.length === 0) {
           // Award 50 XP for profile completion
           try {
-            await serviceSupabase.rpc("award_xp", {
+            const { data: xpResult, error: xpError } = await serviceSupabase.rpc("award_xp", {
               p_user_id: user.id,
               p_amount: 50,
               p_source_type: "PROFILE_COMPLETION",
               p_role_context: "attendee",
               p_description: "Completed profile",
             });
-            console.log(`[Profile] Awarded 50 XP to user ${user.id} for profile completion`);
+            if (xpError) {
+              console.error("[Profile] RPC error awarding XP:", xpError);
+            } else {
+              console.log(`[Profile] Awarded 50 XP to user ${user.id} for profile completion, ledger_id: ${xpResult}`);
+            }
           } catch (xpError) {
             // Don't fail the request if XP awarding fails
-            console.error("[Profile] Error awarding XP:", xpError);
+            console.error("[Profile] Exception awarding XP:", xpError);
           }
+        } else {
+          console.log(`[Profile] User ${user.id} already has profile completion XP`);
         }
       }
 

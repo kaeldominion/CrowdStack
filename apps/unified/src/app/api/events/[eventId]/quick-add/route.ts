@@ -23,9 +23,9 @@ interface QuickAddRequest {
 export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
-  const eventId = params.eventId;
+  const { eventId } = await params;
   if (process.env.NODE_ENV === "development") {
     console.log(`[Quick Add API] Starting quick add for event ${eventId}`);
   }
@@ -280,6 +280,19 @@ export async function POST(
         console.error("[Quick Add API] Error creating checkin:", checkinError);
       }
       throw checkinError || new Error("Failed to create checkin - no data returned");
+    }
+
+    // Update registration to mark as checked in (for reliable stats queries)
+    const { error: updateRegError } = await serviceSupabase
+      .from("registrations")
+      .update({
+        checked_in: true,
+        checked_in_at: checkin.checked_in_at,
+      })
+      .eq("id", registration.id);
+
+    if (updateRegError && process.env.NODE_ENV === "development") {
+      console.warn("[Quick Add API] Failed to update registration checked_in flag:", updateRegError);
     }
 
     // Validate attendee exists before accessing name
