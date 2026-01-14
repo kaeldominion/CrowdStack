@@ -73,12 +73,15 @@ export async function GET(request: Request) {
 
     // BATCH QUERY OPTIMIZATION: Fetch all counts in bulk instead of N+1 queries
     const eventIds = events.map((e) => e.id);
+    console.log("[venue/events] Fetching stats for", eventIds.length, "events:", eventIds.slice(0, 3));
 
     // 1. Batch fetch all registrations with checked_in status for these events
-    const { data: allRegistrations } = await serviceSupabase
+    const { data: allRegistrations, error: regError } = await serviceSupabase
       .from("registrations")
       .select("event_id, checked_in")
       .in("event_id", eventIds);
+
+    console.log("[venue/events] Registrations found:", allRegistrations?.length || 0, "Error:", regError?.message || "none");
 
     // Build count maps for registrations and check-ins
     const registrationsByEvent = new Map<string, number>();
