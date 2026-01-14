@@ -142,14 +142,22 @@ async function getOrganizerEvents() {
     });
   }
 
-  // Add counts to events
-  const eventsWithCounts: Event[] = (events || []).map((event) => ({
-    ...event,
-    registrations: registrationCounts[event.id] || 0,
-    checkins: checkinCounts[event.id] || 0,
-    payouts_pending: payoutsPending[event.id] || 0,
-    payouts_paid: payoutsPaid[event.id] || 0,
-  }));
+  // Add counts to events and normalize nested relations (Supabase may return arrays)
+  const eventsWithCounts: Event[] = (events || []).map((event) => {
+    // Handle Supabase's array return type for relations
+    const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+    const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+
+    return {
+      ...event,
+      venue,
+      organizer,
+      registrations: registrationCounts[event.id] || 0,
+      checkins: checkinCounts[event.id] || 0,
+      payouts_pending: payoutsPending[event.id] || 0,
+      payouts_paid: payoutsPaid[event.id] || 0,
+    };
+  });
 
   return { events: eventsWithCounts };
 }

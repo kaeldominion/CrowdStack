@@ -331,7 +331,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-                <h1 className="text-3xl font-black text-white">{promoter.name}</h1>
+                <h1 className="text-3xl font-black text-primary">{promoter.name}</h1>
                 <Badge variant="secondary" className="!bg-accent-primary/20 !text-accent-primary">
                   Promoter
                 </Badge>
@@ -352,11 +352,11 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
               {/* Stats */}
               <div className="flex items-center justify-center sm:justify-start gap-6 mb-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats?.total_events_promoted || 0}</div>
+                  <div className="text-2xl font-bold text-primary">{stats?.total_events_promoted || 0}</div>
                   <div className="text-xs text-secondary uppercase tracking-wider">Events</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{stats?.total_checkins || 0}</div>
+                  <div className="text-2xl font-bold text-primary">{stats?.total_checkins || 0}</div>
                   <div className="text-xs text-secondary uppercase tracking-wider">Guests</div>
                 </div>
               </div>
@@ -399,7 +399,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
       <div className="max-w-4xl mx-auto px-4 pb-20">
         {/* Upcoming Events */}
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
             <Calendar className="h-5 w-5 text-accent-primary" />
             Upcoming Events
           </h2>
@@ -496,7 +496,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
         {/* Past Events */}
         {pastEvents.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-accent-success" />
               Recent Events
             </h2>

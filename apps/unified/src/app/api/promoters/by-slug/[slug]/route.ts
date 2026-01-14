@@ -117,6 +117,10 @@ export async function GET(
           .select("*", { count: "exact", head: true })
           .eq("event_id", event.id);
 
+        // Handle Supabase's array return type for relations
+        const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+        const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+
         return {
           id: event.id,
           name: event.name,
@@ -127,8 +131,8 @@ export async function GET(
           flier_url: event.flier_url,
           capacity: event.capacity,
           registration_count: registrationCount || 0,
-          venue: event.venue,
-          organizer: event.organizer,
+          venue,
+          organizer,
         };
       })
     );
@@ -156,7 +160,15 @@ export async function GET(
       })
       .slice(0, 6);
 
-    const pastEvents = pastEventsFiltered.map((ep: any) => ep.events);
+    const pastEvents = pastEventsFiltered.map((ep: any) => {
+      const event = ep.events;
+      // Handle Supabase's array return type for relations
+      const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+      return {
+        ...event,
+        venue,
+      };
+    });
 
     // Get total stats
     const { count: totalEventsPromoted } = await supabase

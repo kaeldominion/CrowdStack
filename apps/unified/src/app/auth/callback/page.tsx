@@ -198,12 +198,22 @@ function AuthCallbackContent() {
               if (organizerAccess && organizerAccess.length > 0) {
                 targetPath = "/app/organizer";
               } else {
-                // 3. Check for promoter profile
-                const { data: promoterProfile } = await supabase
+                // 3. Check for promoter profile (check both user_id and created_by for compatibility)
+                let { data: promoterProfile } = await supabase
                   .from("promoters")
                   .select("id")
                   .eq("user_id", user.id)
                   .limit(1);
+
+                // Fallback to created_by if no user_id match
+                if (!promoterProfile || promoterProfile.length === 0) {
+                  const { data: promoterLegacy } = await supabase
+                    .from("promoters")
+                    .select("id")
+                    .eq("created_by", user.id)
+                    .limit(1);
+                  promoterProfile = promoterLegacy;
+                }
 
                 if (promoterProfile && promoterProfile.length > 0) {
                   targetPath = "/app/promoter";
