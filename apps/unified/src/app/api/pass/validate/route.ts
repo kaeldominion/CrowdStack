@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       .select(`
         id,
         status,
-        attendee:attendees(id, name, email),
+        attendee:attendees(id, name, surname, email),
         event:events(
           id,
           name,
@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
       ? (Array.isArray(event.venue) ? event.venue[0] : event.venue)
       : null;
 
-    // Generate attendee display name
-    const attendeeName = attendee?.name || attendee?.email?.split("@")[0] || "Guest";
+    // Generate attendee display name (full name)
+    const attendeeName = [attendee?.name, attendee?.surname].filter(Boolean).join(" ") || attendee?.email?.split("@")[0] || "Guest";
 
     return NextResponse.json({
       valid: true,
