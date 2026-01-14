@@ -225,18 +225,20 @@ export function MobileScrollExperience({
             onError={() => setMediaLoaded(true)}
           />
         )}
-        {/* Gradient overlay - aggressive fade to black at bottom */}
+        {/* Gradient overlay - very aggressive fade to black at bottom */}
         <div
           className="absolute inset-0"
           style={{
             background: `linear-gradient(to bottom,
-              rgba(0,0,0,0.3) 0%,
-              rgba(0,0,0,0.1) 20%,
-              rgba(0,0,0,0.2) 40%,
-              rgba(0,0,0,0.5) 60%,
-              rgba(0,0,0,0.85) 80%,
-              rgba(0,0,0,1) 95%)`,
-            opacity: 0.7 + scrollProgress * 0.3
+              rgba(0,0,0,0.2) 0%,
+              rgba(0,0,0,0.1) 15%,
+              rgba(0,0,0,0.15) 30%,
+              rgba(0,0,0,0.4) 45%,
+              rgba(0,0,0,0.7) 55%,
+              rgba(0,0,0,0.9) 65%,
+              rgba(0,0,0,0.97) 75%,
+              rgba(0,0,0,1) 85%)`,
+            opacity: 0.8 + scrollProgress * 0.2
           }}
         />
       </div>
