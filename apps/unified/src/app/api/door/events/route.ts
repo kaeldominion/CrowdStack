@@ -93,7 +93,7 @@ export async function GET() {
           slug,
           start_time,
           end_time,
-          capacity,
+          max_guestlist_size,
           status,
           venue:venues(name)
         `)
@@ -222,7 +222,7 @@ export async function GET() {
           slug,
           start_time,
           end_time,
-          capacity,
+          max_guestlist_size,
           status,
           venue:venues(name)
         `)
@@ -231,36 +231,32 @@ export async function GET() {
         .gte("start_time", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
         .order("start_time", { ascending: true })
         .limit(50);
-      
+
       events = data || [];
     }
 
-    // Get current attendance for each event
-    const eventsWithStats = await Promise.all(
-      events.map(async (event: any) => {
-        const { data: registrations } = await serviceSupabase
+    // BATCH QUERY OPTIMIZATION: Get current attendance for all events at once
+    const eventIds = events.map((e: any) => e.id);
+
+    const { data: allRegs } = eventIds.length > 0
+      ? await serviceSupabase
           .from("registrations")
-          .select("id")
-          .eq("event_id", event.id);
+          .select("event_id, checked_in")
+          .in("event_id", eventIds)
+      : { data: [] };
 
-        const regIds = registrations?.map((r) => r.id) || [];
-        let currentAttendance = 0;
+    // Build attendance map for O(1) lookups
+    const attendanceByEvent = new Map<string, number>();
+    (allRegs || []).forEach((reg) => {
+      if (reg.checked_in) {
+        attendanceByEvent.set(reg.event_id, (attendanceByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
 
-        if (regIds.length > 0) {
-          const { count } = await serviceSupabase
-            .from("checkins")
-            .select("*", { count: "exact", head: true })
-            .in("registration_id", regIds)
-            .is("undo_at", null);
-          currentAttendance = count || 0;
-        }
-
-        return {
-          ...event,
-          current_attendance: currentAttendance,
-        };
-      })
-    );
+    const eventsWithStats = events.map((event: any) => ({
+      ...event,
+      current_attendance: attendanceByEvent.get(event.id) || 0,
+    }));
 
     return NextResponse.json({ events: eventsWithStats });
   } catch (error: any) {
