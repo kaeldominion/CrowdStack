@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
-import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
 import { getCurrencySymbol } from "@/lib/constants/currencies";
 
 export const dynamic = "force-dynamic";
@@ -136,13 +135,6 @@ export async function PATCH(
 
         if (!hostError && newHost) {
           hostGuestId = newHost.id;
-
-          // Generate QR token for host
-          const qrToken = generateTablePartyToken(newHost.id, bookingId, event?.id);
-          await serviceSupabase
-            .from("table_party_guests")
-            .update({ qr_token: qrToken })
-            .eq("id", newHost.id);
         }
       } else {
         hostGuestId = existingHost.id;

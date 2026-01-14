@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { Button, Card, PageLoader, Logo, Input } from "@crowdstack/ui";
-import { AlertCircle, Folder, Mail } from "lucide-react";
+import { AlertCircle, Folder, Mail, User, Calendar, CheckCircle } from "lucide-react";
 
 // Detect iOS Safari for OTP-first flow
 const isIOSSafari = () => {
@@ -72,6 +72,19 @@ function LoginContent() {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  // Profile completion state (shown after auth if basic profile is incomplete)
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "",
+    surname: "",
+    date_of_birth: "",
+    gender: "" as "" | "male" | "female",
+  });
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
+  const [authSession, setAuthSession] = useState<any>(null);
 
   // Detect mobile/iOS on mount
   useEffect(() => {
@@ -211,7 +224,7 @@ function LoginContent() {
         console.log("[Login] handleSuccessfulAuth called");
       }
       const session = authData.session;
-      
+
       if (!session) {
         if (process.env.NODE_ENV === "development") {
           console.error("[Login] No session in authData");
@@ -228,25 +241,19 @@ function LoginContent() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase/)?.[1] || "supabase";
       const cookieName = `sb-${projectRef}-auth-token`;
-      
+
       const cookieValue = JSON.stringify({
         access_token: session.access_token,
         refresh_token: session.refresh_token,
         expires_at: session.expires_at,
         user: session.user,
       });
-      
+
       const expiresAt = session.expires_at ? new Date(session.expires_at * 1000) : undefined;
-      const cookieOptions = expiresAt 
+      const cookieOptions = expiresAt
         ? `; expires=${expiresAt.toUTCString()}; path=/; SameSite=Lax`
         : `; path=/; SameSite=Lax`;
       document.cookie = `${cookieName}=${encodeURIComponent(cookieValue)}${cookieOptions}`;
-
-      // Skip session verification - we already have a valid session from sign in
-      // The getSession() call can sometimes hang, so just proceed with redirect
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Login] Session set, proceeding to redirect...");
-      }
 
       // Check for redirect param
       const urlParams = new URLSearchParams(window.location.search);
@@ -254,134 +261,254 @@ function LoginContent() {
       if (process.env.NODE_ENV === "development") {
         console.log("[Login] Redirect param:", redirect);
       }
-      
-      const isRedirectingToApp = redirect?.startsWith("/app") || 
-                                  redirect?.startsWith("/door") || 
-                                  redirect?.startsWith("/admin");
-      
-      if (isRedirectingToApp) {
-        let finalPath = "/admin";
-        if (redirect) {
-          try {
-            finalPath = new URL(redirect).pathname;
-          } catch {
-            finalPath = redirect.startsWith("/") ? redirect : "/admin";
-          }
-        }
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Login] Redirecting to app path:", finalPath);
-        }
-        window.location.href = finalPath;
-        return;
-      }
-      
-      // Check user profiles for redirect (priority: venue > organizer > promoter > dj > attendee)
-      const supabase = createBrowserClient();
-      const user = session.user;
-      
-      if (user && !redirect) {
+
+      // Check if basic profile is complete (name, surname, DOB, gender)
+      // Skip this check for admin/app/door routes (staff don't need attendee profile)
+      const isStaffRoute = redirect?.startsWith("/app") ||
+                           redirect?.startsWith("/door") ||
+                           redirect?.startsWith("/admin");
+
+      if (!isStaffRoute) {
         try {
-          // First check for special roles (superadmin, door_staff)
-          const { data: roles } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id);
+          const profileResponse = await fetch("/api/user/profile");
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
 
-          const roleNames = roles?.map((r: any) => r.role) || [];
-          
-          if (roleNames.includes("superadmin")) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting superadmin to /admin");
-            }
-            window.location.href = "/admin";
-            return;
-          } else if (roleNames.includes("door_staff")) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting door_staff to /door");
-            }
-            window.location.href = "/door";
-            return;
-          }
-          
-          // Check profiles in priority order: venue > organizer > promoter > dj
-          // 1. Check for venue profile
-          const { data: venueAccess } = await supabase
-            .from("venue_users")
-            .select("id")
-            .eq("user_id", user.id)
-            .limit(1);
+            if (!profileData.basicProfileComplete) {
+              // Profile incomplete - show completion step
+              if (process.env.NODE_ENV === "development") {
+                console.log("[Login] Basic profile incomplete, showing completion step");
+              }
 
-          if (venueAccess && venueAccess.length > 0) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting venue user to /app/venue");
-            }
-            window.location.href = "/app/venue";
-            return;
-          }
-          
-          // 2. Check for organizer profile
-          const { data: organizerAccess } = await supabase
-            .from("organizer_users")
-            .select("id")
-            .eq("user_id", user.id)
-            .limit(1);
+              // Pre-fill with any existing data
+              setProfileData({
+                name: profileData.profile?.name || "",
+                surname: profileData.profile?.surname || "",
+                date_of_birth: profileData.profile?.date_of_birth || "",
+                gender: profileData.profile?.gender || "",
+              });
 
-          if (organizerAccess && organizerAccess.length > 0) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting organizer user to /app/organizer");
+              // Store redirect for after profile completion
+              setPendingRedirect(redirect || "/me");
+              setAuthSession(authData);
+              setShowProfileCompletion(true);
+              setLoading(false);
+              return;
             }
-            window.location.href = "/app/organizer";
-            return;
-          }
-          
-          // 3. Check for promoter profile
-          const { data: promoterProfile } = await supabase
-            .from("promoters")
-            .select("id")
-            .eq("user_id", user.id)
-            .limit(1);
-
-          if (promoterProfile && promoterProfile.length > 0) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting promoter to /app/promoter");
-            }
-            window.location.href = "/app/promoter";
-            return;
-          }
-          
-          // 4. Check for DJ profile
-          const { data: djProfile } = await supabase
-            .from("djs")
-            .select("id")
-            .eq("user_id", user.id)
-            .limit(1);
-
-          if (djProfile && djProfile.length > 0) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("[Login] Redirecting DJ to /app/dj");
-            }
-            window.location.href = "/app/dj";
-            return;
           }
         } catch (profileErr: any) {
           if (process.env.NODE_ENV === "development") {
-            console.warn("[Login] Error checking profiles:", profileErr.message);
+            console.warn("[Login] Error checking profile:", profileErr.message);
           }
+          // Continue with redirect if profile check fails
         }
       }
-      
-      // Default: attendee goes to /me
-      const finalRedirect = redirect || "/me";
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Login] Redirecting to:", finalRedirect);
-      }
-      window.location.href = finalRedirect;
+
+      // Profile complete or staff route - proceed with redirect
+      await proceedWithRedirect(session, redirect);
     } catch (err: any) {
       if (process.env.NODE_ENV === "development") {
         console.error("[Login] handleSuccessfulAuth error:", err);
       }
       setError("Authentication succeeded but redirect failed. Please go to /me manually.");
       setLoading(false);
+    }
+  };
+
+  // Separate function for redirect logic (used after profile completion too)
+  const proceedWithRedirect = async (session: any, redirect: string | null) => {
+    const isRedirectingToApp = redirect?.startsWith("/app") ||
+                                redirect?.startsWith("/door") ||
+                                redirect?.startsWith("/admin");
+
+    if (isRedirectingToApp) {
+      let finalPath = "/admin";
+      if (redirect) {
+        try {
+          finalPath = new URL(redirect).pathname;
+        } catch {
+          finalPath = redirect.startsWith("/") ? redirect : "/admin";
+        }
+      }
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Redirecting to app path:", finalPath);
+      }
+      window.location.href = finalPath;
+      return;
+    }
+
+    // Check user profiles for redirect (priority: venue > organizer > promoter > dj > attendee)
+    const supabase = createBrowserClient();
+    const user = session.user;
+
+    if (user && !redirect) {
+      try {
+        // First check for special roles (superadmin, door_staff)
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id);
+
+        const roleNames = roles?.map((r: any) => r.role) || [];
+
+        if (roleNames.includes("superadmin")) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting superadmin to /admin");
+          }
+          window.location.href = "/admin";
+          return;
+        } else if (roleNames.includes("door_staff")) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting door_staff to /door");
+          }
+          window.location.href = "/door";
+          return;
+        }
+
+        // Check profiles in priority order: venue > organizer > promoter > dj
+        // 1. Check for venue profile
+        const { data: venueAccess } = await supabase
+          .from("venue_users")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (venueAccess && venueAccess.length > 0) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting venue user to /app/venue");
+          }
+          window.location.href = "/app/venue";
+          return;
+        }
+
+        // 2. Check for organizer profile
+        const { data: organizerAccess } = await supabase
+          .from("organizer_users")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (organizerAccess && organizerAccess.length > 0) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting organizer user to /app/organizer");
+          }
+          window.location.href = "/app/organizer";
+          return;
+        }
+
+        // 3. Check for promoter profile
+        const { data: promoterProfile } = await supabase
+          .from("promoters")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (promoterProfile && promoterProfile.length > 0) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting promoter to /app/promoter");
+          }
+          window.location.href = "/app/promoter";
+          return;
+        }
+
+        // 4. Check for DJ profile
+        const { data: djProfile } = await supabase
+          .from("djs")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (djProfile && djProfile.length > 0) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Login] Redirecting DJ to /app/dj");
+          }
+          window.location.href = "/app/dj";
+          return;
+        }
+      } catch (profileErr: any) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Login] Error checking profiles:", profileErr.message);
+        }
+      }
+    }
+
+    // Default: attendee goes to /me
+    const finalRedirect = redirect || "/me";
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Login] Redirecting to:", finalRedirect);
+    }
+    window.location.href = finalRedirect;
+  };
+
+  // Handle saving profile and continuing with redirect
+  const handleSaveProfile = async () => {
+    // Validate
+    const errors: Record<string, string> = {};
+
+    if (!profileData.name.trim()) {
+      errors.name = "First name is required";
+    } else if (profileData.name.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters";
+    }
+
+    if (!profileData.surname.trim()) {
+      errors.surname = "Last name is required";
+    } else if (profileData.surname.trim().length < 2) {
+      errors.surname = "Last name must be at least 2 characters";
+    }
+
+    if (!profileData.date_of_birth) {
+      errors.date_of_birth = "Date of birth is required";
+    } else {
+      const dob = new Date(profileData.date_of_birth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        errors.date_of_birth = "You must be 18 or older";
+      }
+    }
+
+    if (!profileData.gender) {
+      errors.gender = "Please select your gender";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setProfileErrors(errors);
+      return;
+    }
+
+    setSavingProfile(true);
+    setProfileErrors({});
+
+    try {
+      const response = await fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to save profile");
+      }
+
+      // Profile saved - proceed with redirect
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Profile saved, proceeding to redirect:", pendingRedirect);
+      }
+
+      if (authSession?.session) {
+        await proceedWithRedirect(authSession.session, pendingRedirect);
+      } else {
+        window.location.href = pendingRedirect || "/me";
+      }
+    } catch (err: any) {
+      setProfileErrors({ general: err.message || "Failed to save profile" });
+      setSavingProfile(false);
     }
   };
 
@@ -868,6 +995,149 @@ function LoginContent() {
       setVerifyingOtp(false);
     }
   };
+
+  // Profile completion UI - shown after auth if basic profile is incomplete
+  if (showProfileCompletion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <Card className="w-full max-w-md">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <Link href="/">
+              <Logo variant="tricolor" size="lg" />
+            </Link>
+          </div>
+
+          <div className="text-center mb-6">
+            <div className="mx-auto w-14 h-14 bg-accent-secondary/20 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-7 w-7 text-accent-secondary" />
+            </div>
+            <h1 className="text-2xl font-bold text-primary mb-2">One More Step</h1>
+            <p className="text-secondary text-sm">
+              We need a few details to get you on guest lists
+            </p>
+          </div>
+
+          {/* Progress indicator */}
+          <div className="bg-accent-secondary/10 border border-accent-secondary/20 rounded-lg p-3 mb-6">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle className="h-4 w-4 text-accent-secondary" />
+              <span className="text-accent-secondary font-medium">Account created</span>
+            </div>
+          </div>
+
+          {/* Error message */}
+          {profileErrors.general && (
+            <div className="rounded-md p-3 bg-accent-error/10 border border-accent-error/20 text-accent-error mb-4">
+              <p className="text-sm">{profileErrors.general}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Name fields */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1.5">
+                  First Name *
+                </label>
+                <Input
+                  value={profileData.name}
+                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  placeholder="John"
+                  error={profileErrors.name}
+                  autoComplete="given-name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary mb-1.5">
+                  Last Name *
+                </label>
+                <Input
+                  value={profileData.surname}
+                  onChange={(e) => setProfileData({ ...profileData, surname: e.target.value })}
+                  placeholder="Smith"
+                  error={profileErrors.surname}
+                  autoComplete="family-name"
+                />
+              </div>
+            </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1.5">
+                Date of Birth *
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
+                <input
+                  type="date"
+                  className="w-full pl-10 pr-3 py-2.5 bg-[var(--bg-raised)] border border-[var(--border-subtle)] rounded-lg text-primary focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] focus:border-transparent"
+                  value={profileData.date_of_birth}
+                  onChange={(e) => setProfileData({ ...profileData, date_of_birth: e.target.value })}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split("T")[0]}
+                  min="1920-01-01"
+                />
+              </div>
+              {profileErrors.date_of_birth && (
+                <p className="mt-1 text-sm text-accent-error">{profileErrors.date_of_birth}</p>
+              )}
+              <p className="mt-1 text-xs text-muted">You must be at least 18 years old</p>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-primary mb-1.5">
+                Gender *
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProfileData({ ...profileData, gender: "male" })}
+                  className={`py-3 rounded-lg border-2 font-medium transition-all active:scale-[0.98] ${
+                    profileData.gender === "male"
+                      ? "bg-accent-secondary/20 border-accent-secondary text-primary"
+                      : "bg-[var(--bg-raised)] border-[var(--border-subtle)] text-secondary hover:border-[var(--border-strong)]"
+                  }`}
+                >
+                  Male
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileData({ ...profileData, gender: "female" })}
+                  className={`py-3 rounded-lg border-2 font-medium transition-all active:scale-[0.98] ${
+                    profileData.gender === "female"
+                      ? "bg-accent-secondary/20 border-accent-secondary text-primary"
+                      : "bg-[var(--bg-raised)] border-[var(--border-subtle)] text-secondary hover:border-[var(--border-strong)]"
+                  }`}
+                >
+                  Female
+                </button>
+              </div>
+              {profileErrors.gender && (
+                <p className="mt-1 text-sm text-accent-error">{profileErrors.gender}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit */}
+          <Button
+            onClick={handleSaveProfile}
+            disabled={savingProfile}
+            loading={savingProfile}
+            className="w-full mt-6"
+            size="lg"
+          >
+            Continue
+          </Button>
+
+          {/* Why we need this */}
+          <p className="text-xs text-muted text-center mt-4">
+            Venues need this info to check you in at the door
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

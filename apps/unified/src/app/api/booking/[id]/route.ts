@@ -223,10 +223,10 @@ export async function GET(
         return { attendeeId, registrationId };
       };
 
-      // Get existing party guests
+      // Get existing party guests with attendee info for full names and instagram
       const { data: partyGuests } = await serviceSupabase
         .from("table_party_guests")
-        .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id")
+        .select("id, guest_name, guest_email, status, is_host, invite_token, qr_token, checked_in, attendee_id, attendee:attendees(id, name, surname, instagram_handle)")
         .eq("booking_id", bookingId)
         .order("is_host", { ascending: false })
         .order("created_at", { ascending: true });
@@ -285,7 +285,8 @@ export async function GET(
             .single();
 
           if (!hostError && newHostGuest) {
-            hostGuest = newHostGuest;
+            // Add empty attendee array since newly created guest won't have one yet
+            hostGuest = { ...newHostGuest, attendee: [] };
 
             // Ensure linked and generate registration-based token
             if (booking.guest_email) {
@@ -296,7 +297,7 @@ export async function GET(
                   .from("table_party_guests")
                   .update({ qr_token: qrToken, attendee_id: attendeeId })
                   .eq("id", newHostGuest.id);
-                hostGuest = { ...newHostGuest, qr_token: qrToken, attendee_id: attendeeId };
+                hostGuest = { ...newHostGuest, qr_token: qrToken, attendee_id: attendeeId, attendee: [] };
               }
             }
           }
@@ -317,16 +318,29 @@ export async function GET(
       // Use absolute URL for invite_url (shared externally), relative for pass_url (used in-app)
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://crowdstack.app";
 
+      // Helper to get attendee data (full name and instagram)
+      const getAttendeeInfo = (g: any) => {
+        // Supabase returns nested relations as arrays
+        const attendee = Array.isArray(g.attendee) ? g.attendee[0] : g.attendee;
+        const fullName = attendee?.name
+          ? (attendee.surname ? `${attendee.name} ${attendee.surname}` : attendee.name)
+          : g.guest_name;
+        return {
+          name: fullName,
+          instagram: attendee?.instagram_handle || null,
+        };
+      };
+
       partyData = {
         host: hostGuest ? {
           id: hostGuest.id,
-          name: hostGuest.guest_name,
+          ...getAttendeeInfo(hostGuest),
           pass_url: `/table-pass/${hostGuest.id}`,
           checked_in: hostGuest.checked_in,
         } : null,
         guests: (partyGuests || []).filter(g => !g.is_host).map(g => ({
           id: g.id,
-          name: g.guest_name,
+          ...getAttendeeInfo(g),
           email: g.guest_email,
           status: g.status,
           checked_in: g.checked_in,

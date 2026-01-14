@@ -51,9 +51,15 @@ interface CheckInConfirmationModalProps {
       event_date?: string | null;
     }>;
     table_party?: {
-      tableName: string;
+      isTableParty: boolean;
+      tableName: string | null;
+      hostName: string | null;
       isHost: boolean;
-      hostName?: string | null;
+      checkedInCount: number;
+      partySize: number;
+      zoneName: string | null;
+      bookingId: string | null;
+      notes: string | null;
     } | null;
     already_checked_in: boolean;
     checked_in_at?: string | null;
@@ -186,22 +192,60 @@ export function CheckInConfirmationModal({
           )}
 
           {/* Table Party Info */}
-          {data.table_party && (
+          {data.table_party?.isTableParty && (
             <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="h-5 w-5 text-purple-400" />
-                <h3 className="font-semibold text-primary">Table Party</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-purple-400" />
+                  <h3 className="font-semibold text-primary">Table Booking</h3>
+                </div>
+                {data.table_party.isHost && (
+                  <Badge variant="primary" className="text-xs">Table Host</Badge>
+                )}
               </div>
-              <p className="text-sm text-secondary mb-1">
-                <strong>Table:</strong> {data.table_party.tableName}
-              </p>
-              {data.table_party.isHost ? (
-                <Badge variant="primary" className="text-xs">Host</Badge>
-              ) : data.table_party.hostName ? (
+
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <span className="text-xs text-secondary">Table</span>
+                  <p className="font-semibold text-primary">{data.table_party.tableName || "TBA"}</p>
+                </div>
+                {data.table_party.zoneName && (
+                  <div>
+                    <span className="text-xs text-secondary">Zone</span>
+                    <p className="font-semibold text-primary">{data.table_party.zoneName}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="text-secondary">Party Progress</span>
+                <span className="font-semibold text-primary">
+                  {data.table_party.checkedInCount} / {data.table_party.partySize} checked in
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-2 bg-raised rounded-full overflow-hidden mb-3">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, (data.table_party.checkedInCount / Math.max(1, data.table_party.partySize)) * 100)}%`
+                  }}
+                />
+              </div>
+
+              {!data.table_party.isHost && data.table_party.hostName && (
                 <p className="text-sm text-secondary">
                   <strong>Host:</strong> {data.table_party.hostName}
                 </p>
-              ) : null}
+              )}
+
+              {data.table_party.notes && (
+                <div className="mt-3 p-2 bg-raised rounded border border-border-subtle">
+                  <span className="text-xs text-secondary block mb-1">Booking Notes</span>
+                  <p className="text-sm text-primary">{data.table_party.notes}</p>
+                </div>
+              )}
             </div>
           )}
 

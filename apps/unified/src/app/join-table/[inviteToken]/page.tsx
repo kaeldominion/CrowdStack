@@ -19,7 +19,7 @@ import Link from "next/link";
 import { createBrowserClient } from "@crowdstack/shared/supabase/client";
 import { LoadingSpinner, Badge } from "@crowdstack/ui";
 import { TableJoinForm, type TableJoinFormData } from "@/components/TableJoinForm";
-import { Users, Crown, Check, User, PartyPopper, Ticket, ArrowLeft, MapPin } from "lucide-react";
+import { Users, Crown, Check, User, PartyPopper, Ticket, ArrowLeft, MapPin, Instagram } from "lucide-react";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 
 interface PartyData {
@@ -217,10 +217,18 @@ export default function JoinTablePage() {
     setError("");
 
     try {
+      // Send existing profile data so the API uses the correct name
       const response = await fetch(`/api/table-party/join/${inviteToken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          name: existingProfile?.name || "",
+          surname: existingProfile?.surname || "",
+          date_of_birth: existingProfile?.date_of_birth || "",
+          gender: existingProfile?.gender || "",
+          instagram_handle: existingProfile?.instagram_handle || "",
+          whatsapp: existingProfile?.whatsapp || "",
+        }),
       });
 
       const result = await response.json();
@@ -585,7 +593,10 @@ export default function JoinTablePage() {
                           {guest.is_host && <span className="text-accent-primary ml-1">(Host)</span>}
                         </p>
                         {guest.instagram && (
-                          <p className="text-secondary text-xs">@{guest.instagram}</p>
+                          <p className="text-secondary text-xs flex items-center gap-1">
+                            <Instagram className="w-3 h-3" />
+                            @{guest.instagram}
+                          </p>
                         )}
                       </div>
                       <Check className="w-4 h-4 text-accent-success flex-shrink-0" />
@@ -950,7 +961,10 @@ export default function JoinTablePage() {
                               <div className="flex-1">
                                 <p className="text-primary font-medium">{guest.name}</p>
                                 {guest.instagram && (
-                                  <p className="text-secondary text-xs">@{guest.instagram}</p>
+                                  <p className="text-secondary text-xs flex items-center gap-1">
+                                    <Instagram className="w-3 h-3" />
+                                    @{guest.instagram}
+                                  </p>
                                 )}
                               </div>
                               <Check className="w-5 h-5 text-accent-success" />

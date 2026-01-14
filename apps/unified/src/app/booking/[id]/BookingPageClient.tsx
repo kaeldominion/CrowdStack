@@ -22,6 +22,7 @@ import {
   Trash2,
   X,
   LogOut,
+  Instagram,
 } from "lucide-react";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 
@@ -68,6 +69,7 @@ export interface BookingData {
     host: {
       id: string;
       name: string;
+      instagram: string | null;
       pass_url: string;
       checked_in: boolean;
     } | null;
@@ -75,6 +77,7 @@ export interface BookingData {
       id: string;
       name: string;
       email: string;
+      instagram: string | null;
       status: string;
       checked_in: boolean;
     }>;
@@ -627,7 +630,13 @@ export function BookingPageClient({ initialData }: BookingPageClientProps) {
                       >
                         <div className="flex-1 min-w-0">
                           <span className="text-sm text-primary block truncate">{guest.name || guest.email}</span>
-                          {guest.email && guest.name && (
+                          {guest.instagram && (
+                            <span className="text-xs text-secondary flex items-center gap-1">
+                              <Instagram className="w-3 h-3" />
+                              @{guest.instagram}
+                            </span>
+                          )}
+                          {guest.email && guest.name && !guest.instagram && (
                             <span className="text-xs text-secondary truncate block">{guest.email}</span>
                           )}
                         </div>

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, Ticket, Heart, UserPlus, Users, X, Radio, UtensilsCrossed, Clock, MapPin, CheckCircle, AlertCircle, DollarSign } from "lucide-react";
+import { Calendar, Ticket, Heart, UserPlus, Users, X, Radio, UtensilsCrossed, Clock, MapPin, CheckCircle, AlertCircle, DollarSign, QrCode } from "lucide-react";
 import { Button, Card, Badge } from "@crowdstack/ui";
 import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardRow } from "@/components/EventCardRow";
@@ -65,6 +65,7 @@ interface TableBooking {
     end_time: string | null;
     timezone: string | null;
     currency: string | null;
+    flier_url: string | null;
   } | null;
   venue: {
     id: string;
@@ -893,120 +894,82 @@ function TableBookingCard({ booking, isPast = false }: { booking: TableBooking; 
 
   return (
     <>
-      <Card className={isPast ? "opacity-60" : ""}>
-        <div className="flex items-start gap-3">
-          {/* Table Icon */}
-          <div className="w-10 h-10 rounded-lg bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
-            <UtensilsCrossed className="h-5 w-5 text-accent-primary" />
-          </div>
+      <Link href={`/booking/${booking.id}`} className="block">
+        <Card className={`${isPast ? "opacity-60" : ""} hover:border-border-strong transition-colors cursor-pointer`}>
+          <div className="flex gap-3">
+            {/* Flier Image (9:16 aspect) or Table Icon */}
+            {booking.event?.flier_url ? (
+              <div className="w-12 aspect-[9/16] rounded-lg overflow-hidden flex-shrink-0 relative bg-raised">
+                <Image
+                  src={booking.event.flier_url}
+                  alt={booking.event.name || "Event"}
+                  fill
+                  className="object-cover"
+                  sizes="48px"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center flex-shrink-0">
+                <UtensilsCrossed className="h-5 w-5 text-accent-primary" />
+              </div>
+            )}
 
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <h3 className="text-sm font-semibold text-primary">
-                {booking.table?.name || "Table"}
-              </h3>
-              {booking.table?.zone_name && (
-                <span className="text-xs text-muted">• {booking.table.zone_name}</span>
-              )}
-              {getStatusBadge()}
-            </div>
+            {/* Main Content */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              {/* Top row: Table name, zone, status */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-semibold text-primary">
+                  {booking.table?.name || "Table"}
+                </h3>
+                {booking.table?.zone_name && (
+                  <span className="text-xs text-muted">• {booking.table.zone_name}</span>
+                )}
+                {getStatusBadge()}
+              </div>
 
-            <Link
-              href={`/e/${booking.event?.slug}`}
-              className="text-sm text-accent-secondary hover:underline block mb-1.5"
-            >
-              {booking.event?.name || "Event"}
-            </Link>
-
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-secondary">
-              {booking.event?.start_time && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3 text-muted" />
-                  {formatDate(booking.event.start_time)}
-                </span>
-              )}
-              {booking.slot_start_time ? (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-muted" />
-                  {formatTime(booking.slot_start_time)}
-                  {booking.slot_end_time && ` - ${formatTime(booking.slot_end_time)}`}
-                </span>
-              ) : booking.event?.start_time && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-muted" />
-                  {formatTime(booking.event.start_time)}
-                </span>
-              )}
-              {booking.venue && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3 text-muted" />
-                  {booking.venue.name}
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Users className="h-3 w-3 text-muted" />
-                {booking.party_size} guests
+              {/* Event name */}
+              <span className="text-sm text-accent-secondary truncate">
+                {booking.event?.name || "Event"}
               </span>
-            </div>
 
-            {/* Financial Info */}
-            {(booking.minimum_spend || booking.deposit_required) && (
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mt-1.5">
+              {/* Compact info row: date, time, venue, guests */}
+              <div className="flex items-center gap-2 text-xs text-secondary mt-0.5">
+                {booking.event?.start_time && (
+                  <span>{formatDate(booking.event.start_time)}</span>
+                )}
+                {booking.slot_start_time ? (
+                  <span>• {formatTime(booking.slot_start_time)}</span>
+                ) : booking.event?.start_time && (
+                  <span>• {formatTime(booking.event.start_time)}</span>
+                )}
+                {booking.venue && <span>• {booking.venue.name}</span>}
+                <span>• {booking.party_size} pax</span>
+              </div>
+
+              {/* Bottom row: min spend, deposit status, arrival deadline */}
+              <div className="flex items-center gap-3 text-xs mt-auto pt-1.5">
                 {booking.minimum_spend && (
                   <span className="text-muted">
-                    Min: {currencySymbol}{booking.minimum_spend.toLocaleString()}
+                    Min {currencySymbol}{booking.minimum_spend.toLocaleString()}
                   </span>
                 )}
                 {booking.deposit_required && (
-                  <span className={booking.deposit_received ? "text-accent-success" : "text-accent-warning"}>
-                    {booking.deposit_received ? (
-                      <CheckCircle className="h-3 w-3 inline mr-0.5" />
-                    ) : (
-                      <AlertCircle className="h-3 w-3 inline mr-0.5" />
-                    )}
-                    Deposit {booking.deposit_received ? "paid" : "pending"}
+                  <span className={booking.deposit_received ? "text-accent-success flex items-center gap-0.5" : "text-accent-warning flex items-center gap-0.5"}>
+                    {booking.deposit_received ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                    {booking.deposit_received ? "Paid" : "Deposit due"}
+                  </span>
+                )}
+                {booking.arrival_deadline && !isPast && (
+                  <span className="text-accent-warning flex items-center gap-0.5">
+                    <Clock className="h-3 w-3" />
+                    Arrive by {formatTime(booking.arrival_deadline)}
                   </span>
                 )}
               </div>
-            )}
-
-            {/* Arrival Deadline */}
-            {booking.arrival_deadline && !isPast && (
-              <div className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                Arrive by {formatTime(booking.arrival_deadline)}
-              </div>
-            )}
-
-            {/* Booked on */}
-            {booking.created_at && (
-              <div className="mt-1.5 pt-1.5 border-t border-border-subtle text-xs text-muted">
-                Booked {formatBookedDate(booking.created_at)}
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          {!isPast && booking.status !== "completed" && (
-            <div className="flex flex-col gap-1.5 flex-shrink-0">
-              <Button size="sm" href={`/booking/${booking.id}`}>
-                View Details
-              </Button>
-              {booking.status === "confirmed" && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowCancelModal(true)}
-                  className="text-accent-error hover:bg-accent-error/10"
-                >
-                  Cancel
-                </Button>
-              )}
             </div>
-          )}
-        </div>
-      </Card>
+          </div>
+        </Card>
+      </Link>
 
       {/* Cancel Confirmation Modal */}
       {showCancelModal && (
@@ -1075,101 +1038,87 @@ function TablePartyGuestCard({ guest, isPast = false }: { guest: TablePartyGuest
   };
 
   return (
-    <Card className={isPast ? "opacity-60" : ""}>
-      <div className="flex items-start gap-3">
-        {/* Table Icon */}
-        <div className="w-10 h-10 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20 flex items-center justify-center flex-shrink-0">
-          <Users className="h-5 w-5 text-accent-secondary" />
-        </div>
+    <Link href={`/booking/${guest.booking_id}`} className="block">
+      <Card className={`${isPast ? "opacity-60" : ""} hover:border-border-strong transition-colors cursor-pointer`}>
+        <div className="flex gap-3">
+          {/* Flier Image (9:16 aspect) or Table Icon */}
+          {guest.event?.flier_url ? (
+            <div className="w-12 aspect-[9/16] rounded-lg overflow-hidden flex-shrink-0 relative bg-raised">
+              <Image
+                src={guest.event.flier_url}
+                alt={guest.event.name || "Event"}
+                fill
+                className="object-cover"
+                sizes="48px"
+              />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20 flex items-center justify-center flex-shrink-0">
+              <Users className="h-5 w-5 text-accent-secondary" />
+            </div>
+          )}
 
-        {/* Main Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <h3 className="text-sm font-semibold text-primary">
-              {guest.table?.name || "Table"}
-            </h3>
-            {guest.table?.zone_name && (
-              <span className="text-xs text-muted">• {guest.table.zone_name}</span>
-            )}
-            <Badge color="blue" size="sm">Guest</Badge>
-          </div>
+          {/* Main Content */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {/* Top row: Table name, zone, guest badge */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-sm font-semibold text-primary">
+                {guest.table?.name || "Table"}
+              </h3>
+              {guest.table?.zone_name && (
+                <span className="text-xs text-muted">• {guest.table.zone_name}</span>
+              )}
+              <Badge color="blue" size="sm">Guest</Badge>
+            </div>
 
-          <Link
-            href={`/e/${guest.event?.slug}`}
-            className="text-sm text-accent-secondary hover:underline block mb-1"
-          >
-            {guest.event?.name || "Event"}
-          </Link>
-
-          {/* Host info */}
-          <div className="text-xs text-muted mb-1.5">
-            Hosted by {guest.host_name}
-          </div>
-
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-secondary">
-            {guest.event?.start_time && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3 text-muted" />
-                {formatDate(guest.event.start_time)}
-              </span>
-            )}
-            {guest.slot_start_time ? (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-muted" />
-                {formatTime(guest.slot_start_time)}
-                {guest.slot_end_time && ` - ${formatTime(guest.slot_end_time)}`}
-              </span>
-            ) : guest.event?.start_time && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-muted" />
-                {formatTime(guest.event.start_time)}
-              </span>
-            )}
-            {guest.venue && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-muted" />
-                {guest.venue.name}
-              </span>
-            )}
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3 text-muted" />
-              {guest.party_size} guests
+            {/* Event name */}
+            <span className="text-sm text-accent-secondary truncate">
+              {guest.event?.name || "Event"}
             </span>
+
+            {/* Compact info row: host, date, time, venue */}
+            <div className="flex items-center gap-2 text-xs text-secondary mt-0.5">
+              <span>Host: {guest.host_name}</span>
+              {guest.event?.start_time && (
+                <span>• {formatDate(guest.event.start_time)}</span>
+              )}
+              {guest.slot_start_time ? (
+                <span>• {formatTime(guest.slot_start_time)}</span>
+              ) : guest.event?.start_time && (
+                <span>• {formatTime(guest.event.start_time)}</span>
+              )}
+            </div>
+
+            {/* Bottom row: min spend, arrival deadline, and pass button */}
+            <div className="flex items-center justify-between mt-auto pt-1.5">
+              <div className="flex items-center gap-3 text-xs">
+                {guest.minimum_spend && (
+                  <span className="text-muted">
+                    Min {currencySymbol}{guest.minimum_spend.toLocaleString()}
+                  </span>
+                )}
+                {guest.arrival_deadline && !isPast && (
+                  <span className="text-accent-warning flex items-center gap-0.5">
+                    <Clock className="h-3 w-3" />
+                    Arrive by {formatTime(guest.arrival_deadline)}
+                  </span>
+                )}
+              </div>
+
+              {/* QR Pass button - separate link */}
+              <Link
+                href={`/table-pass/${guest.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent-primary/10 border border-accent-primary/30 text-xs text-accent-primary hover:bg-accent-primary/20 transition-colors"
+              >
+                <QrCode className="h-3.5 w-3.5" />
+                <span>Pass</span>
+              </Link>
+            </div>
           </div>
-
-          {/* Minimum Spend Info */}
-          {guest.minimum_spend && (
-            <div className="text-xs text-muted mt-1.5">
-              Min: {currencySymbol}{guest.minimum_spend.toLocaleString()}
-            </div>
-          )}
-
-          {/* Arrival Deadline */}
-          {guest.arrival_deadline && !isPast && (
-            <div className="mt-1.5 text-xs text-accent-warning flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Arrive by {formatTime(guest.arrival_deadline)}
-            </div>
-          )}
-
-          {/* Joined on */}
-          {guest.joined_at && (
-            <div className="mt-1.5 pt-1.5 border-t border-border-subtle text-xs text-muted">
-              Joined {formatJoinedDate(guest.joined_at)}
-            </div>
-          )}
         </div>
-
-        {/* Actions */}
-        {!isPast && guest.booking_status !== "completed" && (
-          <div className="flex-shrink-0">
-            <Button size="sm" href={`/table-pass/${guest.id}`}>
-              View Pass
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 

@@ -149,10 +149,10 @@ export async function GET(
       );
     }
 
-    // Get attendee to verify user ownership
+    // Get attendee to verify user ownership and get correct name
     const { data: attendee } = await serviceSupabase
       .from("attendees")
-      .select("id, user_id")
+      .select("id, user_id, name, surname")
       .eq("id", attendeeId)
       .single();
 
@@ -336,10 +336,15 @@ export async function GET(
     const now = new Date();
     const isPastEvent = eventStartTime && eventStartTime < now;
 
+    // Build guest name from attendee (prefer attendee name over guest_name)
+    const guestDisplayName = attendee?.name
+      ? [attendee.name, attendee.surname].filter(Boolean).join(" ")
+      : guest.guest_name;
+
     return NextResponse.json({
       pass: {
         qr_token: qrToken, // Use registration-based QR token
-        guest_name: guest.guest_name,
+        guest_name: guestDisplayName,
         guest_email: guest.guest_email,
         is_host: guest.is_host,
         checked_in: guest.checked_in,

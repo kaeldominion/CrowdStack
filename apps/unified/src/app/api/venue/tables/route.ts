@@ -10,6 +10,7 @@ export interface VenueTable {
   venue_id: string;
   zone_id: string;
   name: string;
+  code: string | null;
   capacity: number;
   notes: string | null;
   minimum_spend: number | null;
@@ -23,6 +24,26 @@ export interface VenueTable {
     id: string;
     name: string;
   };
+}
+
+/**
+ * Generate a short code for a table based on zone name and table name
+ * Format: ZONE-TABLENAME (e.g., VIP-T1, MAIN-BOOTH3)
+ */
+function generateTableCode(zoneName: string, tableName: string): string {
+  // Clean zone name: uppercase, remove non-alphanumeric, take first 4 chars
+  const zonePrefix = zoneName
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 4) || 'TBL';
+
+  // Clean table name: uppercase, remove non-alphanumeric, take first 6 chars
+  const tableCode = tableName
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6) || 'X';
+
+  return `${zonePrefix}-${tableCode}`;
 }
 
 /**
@@ -131,10 +152,10 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient();
 
-    // Verify the zone belongs to this venue
+    // Verify the zone belongs to this venue and get zone name for code generation
     const { data: zone, error: zoneError } = await serviceSupabase
       .from("table_zones")
-      .select("id, venue_id")
+      .select("id, venue_id, name")
       .eq("id", zone_id)
       .single();
 
@@ -144,6 +165,34 @@ export async function POST(request: NextRequest) {
 
     if (zone.venue_id !== venueId) {
       return NextResponse.json({ error: "Zone does not belong to this venue" }, { status: 403 });
+    }
+
+    // Generate table code
+    let tableCode = generateTableCode(zone.name, name);
+
+    // Check for code conflicts and append number if needed
+    const { data: existingCodes } = await serviceSupabase
+      .from("venue_tables")
+      .select("code")
+      .eq("venue_id", venueId)
+      .like("code", `${tableCode}%`);
+
+    if (existingCodes && existingCodes.length > 0) {
+      // Find the highest suffix number
+      let maxSuffix = 0;
+      for (const existing of existingCodes) {
+        if (existing.code === tableCode) {
+          maxSuffix = Math.max(maxSuffix, 1);
+        } else {
+          const match = existing.code?.match(new RegExp(`^${tableCode}(\\d+)$`));
+          if (match) {
+            maxSuffix = Math.max(maxSuffix, parseInt(match[1], 10));
+          }
+        }
+      }
+      if (maxSuffix > 0) {
+        tableCode = `${tableCode}${maxSuffix + 1}`;
+      }
     }
 
     // Get the max display_order for this zone
@@ -163,6 +212,7 @@ export async function POST(request: NextRequest) {
         venue_id: venueId,
         zone_id,
         name: name.trim(),
+        code: tableCode,
         capacity,
         notes: notes?.trim() || null,
         minimum_spend: minimum_spend || null,

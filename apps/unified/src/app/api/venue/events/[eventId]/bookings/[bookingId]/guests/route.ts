@@ -3,7 +3,6 @@ import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 import { getUserId, userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
 import { getUserVenueId } from "@/lib/data/get-user-entity";
 import { sendTemplateEmail } from "@crowdstack/shared/email/template-renderer";
-import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
 
 export const dynamic = "force-dynamic";
 

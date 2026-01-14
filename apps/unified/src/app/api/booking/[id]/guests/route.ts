@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { generateTablePartyToken } from "@crowdstack/shared/qr/table-party";
 
 export const dynamic = "force-dynamic";
 

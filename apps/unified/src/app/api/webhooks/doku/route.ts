@@ -263,15 +263,6 @@ async function handleTableBookingPayment(
 
       if (newHost) {
         hostGuestId = newHost.id;
-
-        // Generate QR token for host
-        const { generateTablePartyToken } = await import("@crowdstack/shared/qr/table-party");
-        const event = booking.event as any;
-        const qrToken = generateTablePartyToken(newHost.id, bookingId, event?.id);
-        await supabase
-          .from("table_party_guests")
-          .update({ qr_token: qrToken })
-          .eq("id", newHost.id);
       }
     }
 

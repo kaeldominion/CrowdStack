@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Card, Button, Input, Select, useToast } from "@crowdstack/ui";
-import { Copy, Check, Code, Eye, Sun, Moon, LayoutList, LayoutGrid, ExternalLink } from "lucide-react";
+import { Copy, Check, Code, Eye, Sun, Moon, LayoutList, LayoutGrid, Smartphone, ExternalLink } from "lucide-react";
 
 interface WidgetGeneratorTabProps {
   venueSlug?: string;
@@ -12,7 +12,7 @@ interface WidgetGeneratorTabProps {
 }
 
 type WidgetTheme = "light" | "dark";
-type WidgetLayout = "list" | "grid";
+type WidgetLayout = "list" | "grid" | "full";
 
 export function WidgetGeneratorTab({
   venueSlug,
@@ -152,7 +152,21 @@ export function WidgetGeneratorTab({
                   <LayoutGrid className="h-4 w-4 mr-2" />
                   Grid
                 </Button>
+                <Button
+                  variant={config.layout === "full" ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setConfig({ ...config, layout: "full" })}
+                  className="flex-1"
+                >
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Full
+                </Button>
               </div>
+              <p className="text-xs text-muted">
+                {config.layout === "full" ? "9:16 aspect ratio - shows entire flier" :
+                 config.layout === "grid" ? "3:4 portrait cards in a grid" :
+                 "Compact horizontal rows"}
+              </p>
             </div>
 
             {/* Event Limit */}

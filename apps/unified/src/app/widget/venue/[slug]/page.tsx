@@ -7,7 +7,7 @@ import { Calendar, ExternalLink } from "lucide-react";
 export const revalidate = 30; // ISR: revalidate every 30 seconds
 
 type WidgetTheme = "light" | "dark";
-type WidgetLayout = "list" | "grid";
+type WidgetLayout = "list" | "grid" | "full";
 
 interface VenueWidgetPageProps {
   params: Promise<{ slug: string }>;
@@ -29,7 +29,7 @@ export default async function VenueWidgetPage({
 
   // Parse widget configuration from URL params
   const theme: WidgetTheme = query.theme === "light" ? "light" : "dark";
-  const layout: WidgetLayout = query.layout === "grid" ? "grid" : "list";
+  const layout: WidgetLayout = query.layout === "full" ? "full" : query.layout === "grid" ? "grid" : "list";
   const limit = Math.min(Math.max(parseInt(query.limit || "5", 10), 1), 20);
   const accentColor = query.accent || null;
   const hideHeader = query.hideHeader === "true";
@@ -59,6 +59,7 @@ export default async function VenueWidgetPage({
       end_time,
       cover_image_url,
       flier_url,
+      has_guestlist,
       organizer:organizers(id, name)
     `)
     .eq("venue_id", venue.id)
@@ -99,6 +100,7 @@ export default async function VenueWidgetPage({
       cover_image_url: event.cover_image_url || event.flier_url,
       organizer_name: organizer?.name || null,
       registration_count: registrationCounts[event.id] || 0,
+      has_guestlist: event.has_guestlist ?? false,
     };
   });
 
@@ -125,7 +127,7 @@ export default async function VenueWidgetPage({
         )}
 
         {formattedEvents.length > 0 ? (
-          <div className={layout === "grid" ? "widget-events-grid" : "widget-events"}>
+          <div className={layout === "full" ? "widget-events-full" : layout === "grid" ? "widget-events-grid" : "widget-events"}>
             {formattedEvents.map((event) => (
               <WidgetEventCard
                 key={event.id}

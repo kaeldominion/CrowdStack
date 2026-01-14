@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button, Input, Modal, InlineSpinner } from "@crowdstack/ui";
 import { Users, DollarSign, CheckCircle, AlertCircle, ChevronDown, ChevronUp, X, User, LogIn, Calendar, Instagram, CreditCard, Clock, ExternalLink } from "lucide-react";
@@ -70,6 +70,9 @@ export function TableBookingSection({ eventId, eventName, venueName, eventStartT
   const [bookingEnabled, setBookingEnabled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Ref to track if we've already processed a pending table selection (prevents double-processing)
+  const pendingTableProcessedRef = useRef(false);
+
   // User profile for pre-filling form
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // null = loading
@@ -116,6 +119,40 @@ export function TableBookingSection({ eventId, eventName, venueName, eventStartT
   useEffect(() => {
     fetchAvailableTables();
   }, [eventId, refCode, linkCode]);
+
+  // Check URL for pending table selection (after returning from login)
+  // This runs once when user returns from login with ?reserveTable=tableId
+  useEffect(() => {
+    // Skip if we've already processed a pending selection
+    if (pendingTableProcessedRef.current) return;
+
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const pendingTableId = url.searchParams.get("reserveTable");
+
+    // Only process if we have the table ID, zones are loaded, and user is logged in
+    if (!pendingTableId || zones.length === 0 || !isLoggedIn) return;
+
+    // Mark as processed IMMEDIATELY to prevent re-runs
+    pendingTableProcessedRef.current = true;
+
+    // Clean up URL first
+    url.searchParams.delete("reserveTable");
+    window.history.replaceState({}, "", url.toString());
+
+    // Find the table in zones
+    for (const zone of zones) {
+      const table = zone.tables.find(t => t.id === pendingTableId);
+      if (table && !table.has_confirmed_booking) {
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => {
+          handleSelectTable(table);
+        }, 100);
+        break;
+      }
+    }
+  }, [zones, isLoggedIn]);
 
   const fetchUserProfile = async () => {
     try {
@@ -230,9 +267,17 @@ export function TableBookingSection({ eventId, eventName, venueName, eventStartT
   };
 
   const handleLoginRedirect = () => {
-    // Store the current URL so we can return after login
-    const returnUrl = encodeURIComponent(window.location.href);
-    window.location.href = `/login?returnUrl=${returnUrl}`;
+    // Store the current URL with the selected table ID so we can resume after login
+    // Login page expects 'redirect' param
+    const currentUrl = new URL(window.location.href);
+
+    // Add the selected table ID to the URL so we can auto-open booking after login
+    if (selectedTable) {
+      currentUrl.searchParams.set("reserveTable", selectedTable.id);
+    }
+
+    const returnUrl = encodeURIComponent(currentUrl.toString());
+    window.location.href = `/login?redirect=${returnUrl}`;
   };
 
   const validateProfileForm = (): boolean => {

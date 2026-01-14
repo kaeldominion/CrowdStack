@@ -11,8 +11,9 @@ export const dynamic = "force-dynamic";
  * 1. Auth user metadata
  * 2. Attendee record (if exists)
  *
- * Also returns profileComplete boolean indicating if required fields are filled
- * Required for table booking: email, whatsapp, date_of_birth, gender, instagram_handle
+ * Also returns:
+ * - profileComplete: has all required fields for table booking (includes whatsapp, instagram)
+ * - basicProfileComplete: has minimum required fields (name, surname, DOB, gender)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,19 +21,20 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ profile: null, profileComplete: false });
+      return NextResponse.json({ profile: null, profileComplete: false, basicProfileComplete: false });
     }
 
     // Try to get attendee record for more complete profile
     const { data: attendee } = await supabase
       .from("attendees")
-      .select("id, name, email, phone, whatsapp, date_of_birth, gender, instagram_handle")
+      .select("id, name, surname, email, phone, whatsapp, date_of_birth, gender, instagram_handle")
       .eq("user_id", user.id)
       .single();
 
     // Build profile from auth user and attendee data
     const profile = {
-      name: attendee?.name || user.user_metadata?.full_name || user.user_metadata?.name || "",
+      name: attendee?.name || user.user_metadata?.full_name?.split(" ")[0] || user.user_metadata?.name || "",
+      surname: attendee?.surname || user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
       email: attendee?.email || user.email || "",
       phone: attendee?.phone || user.user_metadata?.phone || user.phone || "",
       whatsapp: attendee?.whatsapp || attendee?.phone || "",
@@ -41,32 +43,43 @@ export async function GET(request: NextRequest) {
       instagram_handle: attendee?.instagram_handle || "",
     };
 
-    // Check if profile has all required fields for table booking
-    const requiredFields = [
-      profile.email,
-      profile.whatsapp,
+    // Check BASIC profile completeness (required at signup)
+    // These are the minimum fields needed to get on a guest list
+    const basicRequiredFields = [
+      profile.name,
+      profile.surname,
       profile.date_of_birth,
       profile.gender,
+    ];
+    const basicProfileComplete = basicRequiredFields.every((field) => !!field);
+
+    // Check FULL profile completeness (required for table booking)
+    const fullRequiredFields = [
+      ...basicRequiredFields,
+      profile.whatsapp,
       profile.instagram_handle,
     ];
-    const profileComplete = requiredFields.every((field) => !!field);
+    const profileComplete = fullRequiredFields.every((field) => !!field);
 
     // List missing fields for UI feedback
     const missingFields: string[] = [];
-    if (!profile.whatsapp) missingFields.push("whatsapp");
+    if (!profile.name) missingFields.push("name");
+    if (!profile.surname) missingFields.push("surname");
     if (!profile.date_of_birth) missingFields.push("date_of_birth");
     if (!profile.gender) missingFields.push("gender");
+    if (!profile.whatsapp) missingFields.push("whatsapp");
     if (!profile.instagram_handle) missingFields.push("instagram_handle");
 
     return NextResponse.json({
       profile,
       profileComplete,
+      basicProfileComplete,
       missingFields,
       attendeeId: attendee?.id || null,
     });
   } catch (error: any) {
     console.error("Error fetching user profile:", error);
-    return NextResponse.json({ profile: null, profileComplete: false, missingFields: [] });
+    return NextResponse.json({ profile: null, profileComplete: false, basicProfileComplete: false, missingFields: [] });
   }
 }
 
@@ -74,7 +87,7 @@ export async function GET(request: NextRequest) {
  * PUT /api/user/profile
  * Update the current user's profile fields
  *
- * Body: { whatsapp?, date_of_birth?, gender?, instagram_handle? }
+ * Body: { name?, surname?, whatsapp?, date_of_birth?, gender?, instagram_handle? }
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -89,7 +102,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { whatsapp, date_of_birth, gender, instagram_handle } = body;
+    const { name, surname, whatsapp, date_of_birth, gender, instagram_handle } = body;
 
     // Validate gender if provided
     if (gender && !["male", "female"].includes(gender)) {
@@ -97,6 +110,23 @@ export async function PUT(request: NextRequest) {
         { error: "Gender must be 'male' or 'female'" },
         { status: 400 }
       );
+    }
+
+    // Validate age if DOB provided (must be 18+)
+    if (date_of_birth) {
+      const dob = new Date(date_of_birth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        return NextResponse.json(
+          { error: "You must be at least 18 years old" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if attendee record exists
@@ -107,6 +137,8 @@ export async function PUT(request: NextRequest) {
       .single();
 
     const updateData: Record<string, any> = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (surname !== undefined) updateData.surname = surname.trim();
     if (whatsapp !== undefined) updateData.whatsapp = whatsapp;
     if (date_of_birth !== undefined) updateData.date_of_birth = date_of_birth;
     if (gender !== undefined) updateData.gender = gender;
@@ -132,7 +164,8 @@ export async function PUT(request: NextRequest) {
         .from("attendees")
         .insert({
           user_id: user.id,
-          name: user.user_metadata?.full_name || user.user_metadata?.name || "",
+          name: name?.trim() || user.user_metadata?.full_name?.split(" ")[0] || "",
+          surname: surname?.trim() || user.user_metadata?.full_name?.split(" ").slice(1).join(" ") || "",
           email: user.email || "",
           ...updateData,
         });

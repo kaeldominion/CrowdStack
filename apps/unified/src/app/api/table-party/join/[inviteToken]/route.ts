@@ -330,9 +330,10 @@ export async function POST(
       .single();
 
     // Also check by attendee_id if user has an attendee record
+    // Fetch name too so we can use it as fallback
     const { data: userAttendee } = await serviceSupabase
       .from("attendees")
-      .select("id")
+      .select("id, name, surname")
       .eq("user_id", user.id)
       .single();
 
@@ -458,11 +459,15 @@ export async function POST(
 
     // If no guest entry exists (new user joining via host invite), create one
     if (!guest) {
+      // Use proper check for name - prefer body.name, then existing attendee name, then email prefix
+      const guestName = body.name && body.name.trim()
+        ? body.name.trim()
+        : (userAttendee?.name || user.email.split("@")[0]);
       const { data: newGuest, error: newGuestError } = await serviceSupabase
         .from("table_party_guests")
         .insert({
           booking_id: bookingId,
-          guest_name: body.name || user.email.split("@")[0],
+          guest_name: guestName,
           guest_email: user.email.toLowerCase(),
           guest_phone: body.whatsapp || body.phone || null,
           is_host: false,
@@ -489,8 +494,12 @@ export async function POST(
       .eq("user_id", user.id)
       .single();
 
+    // Use proper check for name - prefer body.name, then existing attendee name, then guest_name
+    const attendeeName = body.name && body.name.trim()
+      ? body.name.trim()
+      : (existingAttendee?.name || userAttendee?.name || guest.guest_name);
     const attendeeData: any = {
-      name: body.name || guest.guest_name,
+      name: attendeeName,
       email: user.email.toLowerCase(),
       user_id: user.id,
     };
