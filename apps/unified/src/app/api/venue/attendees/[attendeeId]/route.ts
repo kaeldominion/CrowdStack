@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
+import { createClient } from "@crowdstack/shared/supabase/server";
 import { getVenueAttendeeDetails } from "@/lib/data/attendees-venue";
+import { getUserVenueId } from "@/lib/data/get-user-entity";
 
 
 // Force dynamic rendering since this route uses cookies() or createClient()
@@ -20,21 +21,15 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const serviceSupabase = createServiceRoleClient();
+    // Get venue ID for current user (from cookie or first available)
+    const venueId = await getUserVenueId();
 
-    // Get venue ID for this user
-    const { data: venue } = await serviceSupabase
-      .from("venues")
-      .select("id")
-      .eq("created_by", user.id)
-      .single();
-
-    if (!venue) {
+    if (!venueId) {
       return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
     // Get attendee details
-    const details = await getVenueAttendeeDetails(attendeeId, venue.id);
+    const details = await getVenueAttendeeDetails(attendeeId, venueId);
 
     if (!details) {
       return NextResponse.json({ error: "Attendee not found" }, { status: 404 });
