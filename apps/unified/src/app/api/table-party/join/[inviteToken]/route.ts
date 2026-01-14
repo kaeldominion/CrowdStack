@@ -166,9 +166,13 @@ export async function GET(
       // Supabase returns nested relations as arrays when using select
       const attendeeData = g.attendee as unknown;
       const attendee = (Array.isArray(attendeeData) ? attendeeData[0] : attendeeData) as { id: string; name: string; surname?: string | null; instagram_handle?: string | null } | null;
+      // Build full name from first + last name
+      const fullName = attendee
+        ? [attendee.name, attendee.surname].filter(Boolean).join(" ")
+        : (g.guest_name || "Guest");
       return {
         id: g.id,
-        name: attendee?.name || g.guest_name || "Guest",
+        name: fullName,
         initial: (attendee?.name || g.guest_name || "G").charAt(0).toUpperCase(),
         is_host: g.is_host,
         instagram: attendee?.instagram_handle || null,
@@ -180,6 +184,10 @@ export async function GET(
     const hostGuest = (allGuests || []).find(g => g.is_host);
     const hostAttendeeData = hostGuest?.attendee as unknown;
     const hostAttendee = (Array.isArray(hostAttendeeData) ? hostAttendeeData[0] : hostAttendeeData) as { name: string; surname?: string | null } | null;
+    // Build full host name from first + last name
+    const hostFullName = hostAttendee
+      ? [hostAttendee.name, hostAttendee.surname].filter(Boolean).join(" ")
+      : booking.guest_name;
 
     // Format event date
     const eventTimezone = event.timezone || "UTC";
@@ -215,12 +223,12 @@ export async function GET(
         checked_in: guest.checked_in,
       },
       host: {
-        name: hostAttendee?.name || booking.guest_name,
-        initial: (hostAttendee?.name || booking.guest_name || "H").charAt(0).toUpperCase(),
+        name: hostFullName,
+        initial: (hostFullName || "H").charAt(0).toUpperCase(),
       },
       booking: {
         id: booking.id,
-        host_name: booking.guest_name,
+        host_name: hostFullName,
         party_size: booking.party_size,
         joined_count: joinedCount,
         spots_remaining: spotsRemaining,
@@ -583,7 +591,6 @@ export async function POST(
       .update({
         status: "joined",
         joined_at: new Date().toISOString(),
-        qr_token: qrToken, // Store QR token for backward compatibility
         guest_name: attendee.name,
         guest_phone: attendee.phone || attendee.whatsapp,
         attendee_id: attendee.id,
