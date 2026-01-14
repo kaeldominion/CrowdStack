@@ -13,7 +13,7 @@ export interface OrganizerEvent {
   venue_name: string | null;
   registrations: number;
   checkins: number;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   flier_url: string | null;
 }
 
@@ -40,7 +40,7 @@ export async function GET() {
         end_time,
         status,
         venue_approval_status,
-        capacity,
+        max_guestlist_size,
         flier_url,
         venue:venues(name)
       `)
@@ -92,7 +92,7 @@ export async function GET() {
         venue_name: Array.isArray(event.venue) ? event.venue[0]?.name : (event.venue as any)?.name || null,
         registrations: regsByEvent.get(event.id) || 0,
         checkins: checkinsByEvent.get(event.id) || 0,
-        capacity: event.capacity,
+        max_guestlist_size: event.max_guestlist_size,
         flier_url: event.flier_url,
       };
 

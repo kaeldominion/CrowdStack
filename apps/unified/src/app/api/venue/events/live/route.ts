@@ -62,7 +62,7 @@ export async function GET() {
         start_time,
         end_time,
         status,
-        capacity,
+        max_guestlist_size,
         venue:venues (
           id,
           name

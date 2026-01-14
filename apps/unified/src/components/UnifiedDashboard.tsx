@@ -25,7 +25,7 @@ interface LiveEvent {
   start_time: string;
   end_time: string | null;
   status: string;
-  capacity: number | null;
+  max_guestlist_size: number | null;
   venue?: { id: string; name: string } | null;
   organizer?: { id: string; name: string } | null;
   registrations: number;
@@ -113,9 +113,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     pastEvents: PromoterEvent[];
   }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   const [organizerEvents, setOrganizerEvents] = useState<{
-    liveEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
-    upcomingEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
-    pastEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; capacity: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+    liveEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+    upcomingEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
+    pastEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
   }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -385,18 +385,18 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     </div>
                   </div>
 
-                  {event.capacity && (
+                  {event.max_guestlist_size && (
                     <div className="mt-3">
                       <div className="h-1.5 bg-active rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all"
                           style={{
-                            width: `${Math.min((event.checkins / event.capacity) * 100, 100)}%`,
+                            width: `${Math.min((event.checkins / event.max_guestlist_size) * 100, 100)}%`,
                           }}
                         />
                       </div>
                       <p className="text-[10px] text-muted mt-1">
-                        {Math.round((event.checkins / event.capacity) * 100)}% capacity
+                        {Math.round((event.checkins / event.max_guestlist_size) * 100)}% capacity
                       </p>
                     </div>
                   )}

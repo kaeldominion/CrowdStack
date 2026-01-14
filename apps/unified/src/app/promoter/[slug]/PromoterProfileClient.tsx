@@ -265,7 +265,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
   return (
     <div className="min-h-screen bg-void">
       {/* Header */}
-      <div className="bg-gradient-to-b from-accent-primary/20 via-accent-secondary/10 to-transparent pb-8">
+      <div className="bg-gradient-to-b from-accent-primary/10 to-transparent pb-8">
         <div className="max-w-4xl mx-auto px-4 pt-24">
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-8">
@@ -277,10 +277,10 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
                   alt={promoter.name}
                   width={120}
                   height={120}
-                  className="rounded-full border-4 border-accent-primary/30 object-cover w-[120px] h-[120px]"
+                  className="rounded-full border-2 border-subtle object-cover w-[120px] h-[120px]"
                 />
               ) : (
-                <div className="w-[120px] h-[120px] rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-4xl font-black text-white">
+                <div className="w-[120px] h-[120px] rounded-full bg-accent-primary flex items-center justify-center text-4xl font-black text-void">
                   {promoter.name.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -315,15 +315,15 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
 
               {/* Edit badge for owner */}
               {isOwner && !uploadingAvatar && (
-                <div className="absolute -bottom-1 -right-1 bg-accent-primary rounded-full p-1.5 shadow-lg">
-                  <Pencil className="h-3 w-3 text-white" />
+                <div className="absolute -bottom-1 -right-1 bg-accent-primary rounded-full p-1.5 glow-primary">
+                  <Pencil className="h-3 w-3 text-void" />
                 </div>
               )}
             </div>
 
             {/* Avatar error message */}
             {avatarError && (
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-1 rounded-lg whitespace-nowrap">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-accent-error/90 text-primary text-xs px-3 py-1 rounded-lg whitespace-nowrap">
                 {avatarError}
               </div>
             )}
@@ -331,13 +331,13 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-                <h1 className="text-3xl font-black text-primary">{promoter.name}</h1>
-                <Badge variant="secondary" className="!bg-accent-primary/20 !text-accent-primary">
+                <h1 className="page-title">{promoter.name}</h1>
+                <Badge variant="secondary" className="!bg-accent-primary/20 !text-accent-primary text-xs">
                   Promoter
                 </Badge>
                 {isOwner && (
                   <Link href="/app/promoter/profile">
-                    <Badge variant="secondary" className="!bg-white/10 !text-white/60 hover:!bg-white/20 cursor-pointer">
+                    <Badge variant="secondary" className="!bg-glass !border !border-subtle hover:!border-accent-primary cursor-pointer">
                       <Pencil className="h-3 w-3 mr-1" />
                       Edit
                     </Badge>
@@ -350,14 +350,14 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
               )}
 
               {/* Stats */}
-              <div className="flex items-center justify-center sm:justify-start gap-6 mb-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{stats?.total_events_promoted || 0}</div>
-                  <div className="text-xs text-secondary uppercase tracking-wider">Events</div>
+              <div className="flex items-center justify-center sm:justify-start gap-3 mb-4">
+                <div className="stat-chip">
+                  <span className="stat-chip-value">{stats?.total_events_promoted || 0}</span>
+                  <span className="stat-chip-label">Events</span>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{stats?.total_checkins || 0}</div>
-                  <div className="text-xs text-secondary uppercase tracking-wider">Guests</div>
+                <div className="stat-chip">
+                  <span className="stat-chip-value">{stats?.total_checkins || 0}</span>
+                  <span className="stat-chip-label">Guests</span>
                 </div>
               </div>
 
@@ -368,7 +368,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
                     href={`https://instagram.com/${promoter.instagram_handle}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
+                    className="filter-toggle filter-toggle-inactive"
                   >
                     <Instagram className="h-4 w-4" />
                     @{promoter.instagram_handle}
@@ -379,7 +379,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
                     href={`https://wa.me/${promoter.whatsapp_number.replace(/[^0-9]/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
+                    className="filter-toggle filter-toggle-inactive !text-accent-success hover:!bg-accent-success/20"
                   >
                     <MessageCircle className="h-4 w-4" />
                     WhatsApp
@@ -399,7 +399,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
       <div className="max-w-4xl mx-auto px-4 pb-20">
         {/* Upcoming Events */}
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
+          <h2 className="section-header flex items-center gap-2">
             <Calendar className="h-5 w-5 text-accent-primary" />
             Upcoming Events
           </h2>
@@ -477,10 +477,10 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
 
                         {/* CTA */}
                         <div className="mt-4 flex items-center justify-between">
-                          <span className="text-xs text-muted">
+                          <span className="label-mono">
                             By {event.organizer?.name || "Unknown"}
                           </span>
-                          <span className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-bold rounded-lg group-hover:shadow-lg transition-shadow">
+                          <span className="px-4 py-2 bg-accent-primary text-void text-sm font-bold rounded-lg group-hover:glow-primary transition-shadow">
                             Join Guestlist
                           </span>
                         </div>
@@ -496,7 +496,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
         {/* Past Events */}
         {pastEvents.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-primary mb-6 flex items-center gap-2">
+            <h2 className="section-header flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-accent-success" />
               Recent Events
             </h2>
@@ -505,7 +505,7 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
               {pastEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="relative aspect-[3/4] rounded-xl overflow-hidden bg-raised group"
+                  className="relative aspect-[3/4] rounded-lg overflow-hidden glass-panel group"
                 >
                   {event.flier_url ? (
                     <Image
@@ -515,14 +515,14 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
                       className="object-cover opacity-60 group-hover:opacity-80 transition-opacity"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/20 to-accent-secondary/20" />
+                    <div className="absolute inset-0 bg-raised" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="text-xs text-white/60 mb-1">{formatDate(event.start_time)}</p>
-                    <h4 className="text-sm font-bold text-white line-clamp-2">{event.name}</h4>
+                    <p className="label-mono mb-1">{formatDate(event.start_time)}</p>
+                    <h4 className="text-sm font-bold text-primary line-clamp-2">{event.name}</h4>
                     {event.venue && (
-                      <p className="text-xs text-white/60 mt-1">{event.venue.name}</p>
+                      <p className="text-xs text-secondary mt-1">{event.venue.name}</p>
                     )}
                   </div>
                 </div>
