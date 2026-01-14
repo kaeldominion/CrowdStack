@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@crowdstack/shared/supabase/server";
 import { getOrganizerDashboardStats, getOrganizerChartData } from "@/lib/data/dashboard-stats";
+import { getUserOrganizerId } from "@/lib/data/get-user-entity";
 import { CACHE, getCacheControl } from "@/lib/cache";
 
 
@@ -17,8 +18,14 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const stats = await getOrganizerDashboardStats();
-    const chartData = await getOrganizerChartData();
+    // Get organizerId once and share between both functions to ensure consistency
+    const organizerId = await getUserOrganizerId();
+
+    // Fetch stats and chart data in parallel, passing the same organizerId to both
+    const [stats, chartData] = await Promise.all([
+      getOrganizerDashboardStats(organizerId),
+      getOrganizerChartData(organizerId),
+    ]);
 
     return NextResponse.json(
       { stats, chartData },
@@ -29,6 +36,7 @@ export async function GET() {
       }
     );
   } catch (error: any) {
+    console.error("[Organizer Dashboard Stats API] Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch dashboard stats" },
       { status: 500 }

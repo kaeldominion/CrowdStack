@@ -91,10 +91,10 @@ export async function GET(
     
     console.log("Found promoter:", promoter.id, "for user:", userId);
 
-    // Get registrations referred by this promoter for this event
+    // Get registrations referred by this promoter for this event (with checked_in status)
     const { data: registrations, error: regError } = await serviceClient
       .from("registrations")
-      .select("id, attendee_id, referral_promoter_id")
+      .select("id, attendee_id, referral_promoter_id, checked_in")
       .eq("event_id", params.eventId)
       .eq("referral_promoter_id", promoter.id);
 
@@ -107,31 +107,17 @@ export async function GET(
     }
 
     const referrals = registrations?.length || 0;
-    
-    // Get check-ins directly from checkins table (same approach as live-metrics)
-    let checkins = 0;
-    if (referrals > 0) {
-      const regIds = registrations.map(r => r.id);
-      const { count, error: checkinsError } = await serviceClient
-        .from("checkins")
-        .select("*", { count: "exact", head: true })
-        .in("registration_id", regIds)
-        .is("undo_at", null);
-      
-      if (checkinsError) {
-        console.error("[Promoter Stats] Error fetching checkins:", checkinsError);
-      } else {
-        checkins = count || 0;
-      }
-      
-      console.log(`[Promoter Stats] Promoter ${promoter.id}: referrals=${referrals}, checkins=${checkins}, regIds=`, regIds);
-    }
+
+    // Count check-ins using the checked_in boolean field
+    const checkins = registrations?.filter(r => r.checked_in).length || 0;
+    console.log(`[Promoter Stats] Promoter ${promoter.id}: referrals=${referrals}, checkins=${checkins}`);
+
     const conversionRate = referrals > 0 ? (checkins / referrals) * 100 : 0;
 
-    // Get overall event stats
+    // Get overall event stats with checked_in status
     const { data: allRegistrations, error: allRegError } = await serviceClient
       .from("registrations")
-      .select("id, referral_promoter_id")
+      .select("id, referral_promoter_id, checked_in")
       .eq("event_id", params.eventId);
 
     if (allRegError) {
@@ -139,26 +125,17 @@ export async function GET(
     }
 
     const event_total_registrations = allRegistrations?.length || 0;
-    
-    // Get all checkins for this event directly
-    const allRegIds = allRegistrations?.map(r => r.id) || [];
-    let event_total_checkins = 0;
+
+    // Count check-ins using checked_in field
+    const event_total_checkins = allRegistrations?.filter(r => r.checked_in).length || 0;
+
+    // Build set of checked-in registration IDs for leaderboard calculation
     const checkedInRegIds = new Set<string>();
-    
-    if (allRegIds.length > 0) {
-      const { data: allCheckins, error: allCheckinsError } = await serviceClient
-        .from("checkins")
-        .select("registration_id")
-        .in("registration_id", allRegIds)
-        .is("undo_at", null);
-      
-      if (allCheckinsError) {
-        console.error("[Promoter Stats] Error fetching all checkins:", allCheckinsError);
-      } else {
-        allCheckins?.forEach(c => checkedInRegIds.add(c.registration_id));
-        event_total_checkins = checkedInRegIds.size;
+    allRegistrations?.forEach(r => {
+      if (r.checked_in) {
+        checkedInRegIds.add(r.id);
       }
-    }
+    });
 
     // Calculate leaderboard position
     let leaderboard_position = 1;

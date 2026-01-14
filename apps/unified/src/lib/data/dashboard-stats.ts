@@ -20,9 +20,10 @@ export interface ChartDataPoint {
 
 /**
  * Get organizer dashboard stats
+ * Optionally accepts an organizerId to avoid redundant lookups
  */
-export async function getOrganizerDashboardStats(): Promise<DashboardStats> {
-  const organizerId = await getUserOrganizerId();
+export async function getOrganizerDashboardStats(passedOrganizerId?: string | null): Promise<DashboardStats> {
+  const organizerId = passedOrganizerId ?? await getUserOrganizerId();
   if (!organizerId) {
     return {
       totalEvents: 0,
@@ -90,19 +91,25 @@ export async function getOrganizerDashboardStats(): Promise<DashboardStats> {
 
 /**
  * Get organizer chart data (registrations vs check-ins over time)
+ * Optionally accepts an organizerId to avoid redundant lookups when called with stats
  */
-export async function getOrganizerChartData(): Promise<ChartDataPoint[]> {
-  const organizerId = await getUserOrganizerId();
+export async function getOrganizerChartData(passedOrganizerId?: string | null): Promise<ChartDataPoint[]> {
+  const organizerId = passedOrganizerId ?? await getUserOrganizerId();
   if (!organizerId) return [];
 
   const supabase = createServiceRoleClient();
 
-  // Get events
-  const { data: events } = await supabase
+  // Get events for this organizer
+  const { data: events, error: eventsError } = await supabase
     .from("events")
     .select("id, start_time")
     .eq("organizer_id", organizerId)
     .order("start_time", { ascending: true });
+
+  if (eventsError) {
+    console.error("[getOrganizerChartData] Error fetching events:", eventsError);
+    return [];
+  }
 
   if (!events || events.length === 0) return [];
 
@@ -110,10 +117,14 @@ export async function getOrganizerChartData(): Promise<ChartDataPoint[]> {
   const eventIds = events.map((e) => e.id);
 
   // Batch fetch all registrations for these events
-  const { data: allRegs } = await supabase
+  const { data: allRegs, error: regsError } = await supabase
     .from("registrations")
     .select("event_id, checked_in")
     .in("event_id", eventIds);
+
+  if (regsError) {
+    console.error("[getOrganizerChartData] Error fetching registrations:", regsError);
+  }
 
   // Build counts maps for O(1) lookups
   const regsByEvent = new Map<string, number>();

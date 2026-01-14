@@ -113,16 +113,14 @@ export async function GET(
       }
     }
 
-    // Get registration and checkin counts
-    const { count: registrations } = await serviceSupabase
+    // Get registration and checkin counts using checked_in field
+    const { data: allRegs } = await serviceSupabase
       .from("registrations")
-      .select("*", { count: "exact", head: true })
+      .select("id, checked_in")
       .eq("event_id", eventId);
 
-    const { count: checkins } = await serviceSupabase
-      .from("checkins")
-      .select("*", { count: "exact", head: true })
-      .eq("event_id", eventId);
+    const registrations = allRegs?.length || 0;
+    const checkins = allRegs?.filter((r) => r.checked_in).length || 0;
 
     return NextResponse.json({
       event: {

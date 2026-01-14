@@ -74,33 +74,22 @@ export async function GET(request: Request) {
     // BATCH QUERY OPTIMIZATION: Fetch all counts in bulk instead of N+1 queries
     const eventIds = events.map((e) => e.id);
 
-    // 1. Batch fetch all registrations for these events
+    // 1. Batch fetch all registrations with checked_in status for these events
     const { data: allRegistrations } = await serviceSupabase
       .from("registrations")
-      .select("event_id")
+      .select("event_id, checked_in")
       .in("event_id", eventIds);
 
-    // Build count map
+    // Build count maps for registrations and check-ins
     const registrationsByEvent = new Map<string, number>();
-    (allRegistrations || []).forEach((reg) => {
-      const current = registrationsByEvent.get(reg.event_id) || 0;
-      registrationsByEvent.set(reg.event_id, current + 1);
-    });
-
-    // 2. Batch fetch all checkins for these events (via registration join)
-    const { data: allCheckins } = await serviceSupabase
-      .from("checkins")
-      .select("registration_id, registrations!inner(event_id)")
-      .in("registrations.event_id", eventIds)
-      .is("undo_at", null);
-
-    // Build count map
     const checkinsByEvent = new Map<string, number>();
-    (allCheckins || []).forEach((checkin: any) => {
-      const eventId = checkin.registrations?.event_id;
-      if (eventId) {
-        const current = checkinsByEvent.get(eventId) || 0;
-        checkinsByEvent.set(eventId, current + 1);
+
+    (allRegistrations || []).forEach((reg) => {
+      // Count registrations
+      registrationsByEvent.set(reg.event_id, (registrationsByEvent.get(reg.event_id) || 0) + 1);
+      // Count check-ins using the checked_in boolean field
+      if (reg.checked_in) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
       }
     });
 

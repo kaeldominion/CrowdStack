@@ -61,14 +61,21 @@ export async function GET() {
 
     // BATCH QUERY OPTIMIZATION: Get all counts in bulk instead of per-event
     const eventIds = (events || []).map((e) => e.id);
+    console.log("[OrganizerEvents] Event IDs for registration lookup:", eventIds.length);
 
     // Batch fetch all registrations for these events
-    const { data: allRegs } = eventIds.length > 0
+    const { data: allRegs, error: regsError } = eventIds.length > 0
       ? await serviceSupabase
           .from("registrations")
           .select("event_id, checked_in")
           .in("event_id", eventIds)
-      : { data: [] };
+      : { data: [], error: null };
+
+    if (regsError) {
+      console.error("[OrganizerEvents] Registration query error:", regsError);
+    } else {
+      console.log("[OrganizerEvents] Found", allRegs?.length || 0, "registrations across all events");
+    }
 
     // Build counts maps for O(1) lookups
     const regsByEvent = new Map<string, number>();
@@ -78,6 +85,33 @@ export async function GET() {
       regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
       if (reg.checked_in) {
         checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+      }
+    });
+
+    // Log final counts for debugging
+    console.log("[OrganizerEvents] Registration counts by event:", Object.fromEntries(regsByEvent));
+    console.log("[OrganizerEvents] Check-in counts by event:", Object.fromEntries(checkinsByEvent));
+
+    // Get payout data for all events (for closed events status display)
+    const { data: payoutLines } = eventIds.length > 0
+      ? await serviceSupabase
+          .from("payout_lines")
+          .select("payout_runs(event_id), payment_status")
+          .in("payout_runs.event_id", eventIds)
+      : { data: [] };
+
+    // Build payout counts per event
+    const payoutsPendingByEvent = new Map<string, number>();
+    const payoutsPaidByEvent = new Map<string, number>();
+
+    (payoutLines || []).forEach((line: any) => {
+      const eventId = line.payout_runs?.event_id;
+      if (!eventId) return;
+
+      if (line.payment_status === "paid" || line.payment_status === "confirmed") {
+        payoutsPaidByEvent.set(eventId, (payoutsPaidByEvent.get(eventId) || 0) + 1);
+      } else {
+        payoutsPendingByEvent.set(eventId, (payoutsPendingByEvent.get(eventId) || 0) + 1);
       }
     });
 
@@ -93,6 +127,8 @@ export async function GET() {
         organizer,
         registrations: regsByEvent.get(event.id) || 0,
         checkins: checkinsByEvent.get(event.id) || 0,
+        payouts_pending: payoutsPendingByEvent.get(event.id) || 0,
+        payouts_paid: payoutsPaidByEvent.get(event.id) || 0,
       };
     });
 

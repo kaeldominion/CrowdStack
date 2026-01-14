@@ -187,23 +187,14 @@ export async function GET(
       }, { status: 403 });
     }
 
-    // Get stats
+    // Get stats using checked_in field
     const { data: registrations } = await serviceSupabase
       .from("registrations")
-      .select("id")
+      .select("id, checked_in")
       .eq("event_id", eventId);
 
-    const regIds = registrations?.map((r) => r.id) || [];
-    let checkinsCount = 0;
-
-    if (regIds.length > 0) {
-      const { count } = await serviceSupabase
-        .from("checkins")
-        .select("*", { count: "exact", head: true })
-        .in("registration_id", regIds)
-        .is("undo_at", null);
-      checkinsCount = count || 0;
-    }
+    const registrationsCount = registrations?.length || 0;
+    const checkinsCount = registrations?.filter((r) => r.checked_in).length || 0;
 
     return NextResponse.json({
       event: {
@@ -219,7 +210,7 @@ export async function GET(
         organizer: event.organizer,
       },
       stats: {
-        registrations_count: regIds.length,
+        registrations_count: registrationsCount,
         checkins_count: checkinsCount,
       },
     });
