@@ -7,9 +7,9 @@
  * Uses design system tokens and patterns.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { X, CheckCircle2, Scan, Maximize2 } from "lucide-react";
+import { X, CheckCircle2, Scan, Maximize2, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { LoadingSpinner, Button, Card, ConfirmModal } from "@crowdstack/ui";
 import { DockNav } from "@/components/navigation/DockNav";
@@ -23,6 +23,49 @@ interface PassData {
   attendeeName: string;
   passId: string;
   flierUrl?: string;
+  checkinCutoffEnabled?: boolean;
+  checkinCutoffTime?: string; // "HH:MM:SS"
+  eventTimezone?: string;
+}
+
+// Countdown timer component for cutoff time
+function CutoffCountdown({ cutoffTime, eventDate }: { cutoffTime: string; eventDate: string }) {
+  const [minutesRemaining, setMinutesRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    const calculateRemaining = () => {
+      const now = new Date();
+      const [hours, minutes] = cutoffTime.split(':').map(Number);
+      const event = new Date(eventDate);
+      const cutoff = new Date(event);
+      cutoff.setHours(hours, minutes, 0, 0);
+
+      const diff = cutoff.getTime() - now.getTime();
+      const minsRemaining = Math.floor(diff / (1000 * 60));
+      setMinutesRemaining(minsRemaining);
+    };
+
+    calculateRemaining();
+    const interval = setInterval(calculateRemaining, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [cutoffTime, eventDate]);
+
+  // Only show countdown when within 60 minutes and still positive
+  if (minutesRemaining === null || minutesRemaining <= 0 || minutesRemaining > 60) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
+      <div className="flex items-center justify-center gap-2 text-amber-400">
+        <AlertTriangle className="h-4 w-4" />
+        <span className="font-mono text-sm font-bold">
+          {minutesRemaining} min until check-in cutoff
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function QRPassPage() {
@@ -131,23 +174,32 @@ export default function QRPassPage() {
           }
         }
         
-        // Always fetch full event details to get flier, venue, etc.
+        // Always fetch full event details to get flier, venue, cutoff settings, etc.
+        let cutoffEnabled = false;
+        let cutoffTime: string | undefined;
+        let eventTimezone: string | undefined;
+
         const eventResponse = await fetch(`/api/events/by-slug/${eventSlug}`);
         if (eventResponse.ok) {
-          const eventData = await eventResponse.json();
+          const eventResponseData = await eventResponse.json();
+          const eventData = eventResponseData.event || eventResponseData; // Handle both wrapped and unwrapped response
           if (!eventDetails.name) eventDetails.name = eventData.name || "";
           if (!eventDetails.venue) eventDetails.venue = eventData.venue?.name || "";
           if (!eventDetails.date) eventDetails.date = eventData.start_time || "";
           // Always get flier from this endpoint as it's more reliable
           eventDetails.flier = eventData.flier_url || eventData.cover_image_url || eventDetails.flier || "";
+          // Get cutoff settings
+          cutoffEnabled = eventData.checkin_cutoff_enabled ?? false;
+          cutoffTime = eventData.checkin_cutoff_time ?? undefined;
+          eventTimezone = eventData.timezone ?? undefined;
         }
-        
+
         if (token) {
           // Generate QR code URL
           const qrData = encodeURIComponent(token);
           const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&bgcolor=ffffff&color=000000&margin=10`;
           setQrCodeUrl(qrUrl);
-          
+
           setPassData({
             qrToken: token,
             eventName: eventDetails.name,
@@ -156,6 +208,9 @@ export default function QRPassPage() {
             attendeeName: eventDetails.attendee || "Guest",
             passId: generatePassId(token),
             flierUrl: eventDetails.flier,
+            checkinCutoffEnabled: cutoffEnabled,
+            checkinCutoffTime: cutoffTime,
+            eventTimezone: eventTimezone,
           });
           
           // Update URL to include token for sharing/bookmarking
@@ -282,15 +337,39 @@ export default function QRPassPage() {
                   </div>
                 </div>
 
+                {/* Check-in Cutoff Time */}
+                {passData.checkinCutoffEnabled && passData.checkinCutoffTime && (
+                  <div className="px-5 pb-4">
+                    <div className="flex items-center justify-center gap-2 text-secondary">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">
+                        Check-in closes at{' '}
+                        <span className="font-semibold text-primary">
+                          {(() => {
+                            const [hours, minutes] = passData.checkinCutoffTime!.split(':').map(Number);
+                            const date = new Date();
+                            date.setHours(hours, minutes);
+                            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                          })()}
+                        </span>
+                      </span>
+                    </div>
+                    <CutoffCountdown
+                      cutoffTime={passData.checkinCutoffTime}
+                      eventDate={passData.eventDate}
+                    />
+                  </div>
+                )}
+
                 {/* QR Code */}
                 <div className="p-6 flex flex-col items-center">
-                  <div 
+                  <div
                     className="bg-white p-3 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow relative group"
                     onClick={() => setShowFullscreenQR(true)}
                   >
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="Event QR Pass" 
+                    <img
+                      src={qrCodeUrl}
+                      alt="Event QR Pass"
                       className="w-52 h-52"
                       style={{ imageRendering: "pixelated" }}
                     />

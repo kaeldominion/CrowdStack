@@ -136,12 +136,39 @@ export async function GET(
       .is("undo_at", null)
       .maybeSingle();
 
-    // Get event info for venue_id and organizer_id
+    // Get event info for venue_id, organizer_id, and cutoff settings
     const { data: eventInfo } = await serviceSupabase
       .from("events")
-      .select("venue_id, organizer_id, name")
+      .select("venue_id, organizer_id, name, checkin_cutoff_enabled, checkin_cutoff_time, timezone, start_time")
       .eq("id", eventId)
       .single();
+
+    // Calculate cutoff status
+    let cutoffStatus = {
+      isPastCutoff: false,
+      cutoffTime: null as string | null,
+      cutoffTimeFormatted: null as string | null,
+    };
+
+    if (eventInfo?.checkin_cutoff_enabled && eventInfo?.checkin_cutoff_time) {
+      const now = new Date();
+      const eventDate = new Date(eventInfo.start_time);
+      const [hours, minutes] = eventInfo.checkin_cutoff_time.split(':').map(Number);
+
+      // Create cutoff datetime by combining event date with cutoff time
+      const cutoffDateTime = new Date(eventDate);
+      cutoffDateTime.setHours(hours, minutes, 0, 0);
+
+      // Format the cutoff time for display
+      cutoffStatus.cutoffTime = eventInfo.checkin_cutoff_time;
+      cutoffStatus.cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: eventInfo.timezone || 'UTC',
+      });
+
+      cutoffStatus.isPastCutoff = now > cutoffDateTime;
+    }
 
     // Fetch VIP status
     let vipStatus = {
@@ -360,6 +387,7 @@ export async function GET(
       },
       feedback_history: feedbackHistory,
       table_party: tablePartyInfo,
+      cutoff_status: cutoffStatus,
       already_checked_in: !!existingCheckin,
       checked_in_at: existingCheckin?.checked_in_at || null,
       registered_at: registration.registered_at,

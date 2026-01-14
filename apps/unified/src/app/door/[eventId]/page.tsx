@@ -331,22 +331,38 @@ export default function DoorScannerPage() {
   };
 
   // Actually perform the check-in after confirmation
-  const confirmCheckIn = async () => {
+  const confirmCheckIn = async (cutoffOverride = false, cutoffOverrideReason?: string) => {
     if (!pendingCheckIn) return;
 
     setConfirmingCheckIn(true);
-    
+
     try {
       const response = await fetch(`/api/events/${eventId}/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          registration_id: pendingCheckIn.registrationId, 
-          qr_token: pendingCheckIn.qrToken 
+        body: JSON.stringify({
+          registration_id: pendingCheckIn.registrationId,
+          qr_token: pendingCheckIn.qrToken,
+          cutoff_override: cutoffOverride,
+          cutoff_override_reason: cutoffOverrideReason,
         }),
       });
 
       const data = await response.json();
+
+      // Handle past_cutoff soft block - update preview data to show cutoff warning
+      if (response.status === 400 && data.error === "past_cutoff") {
+        setCheckInPreviewData((prev: any) => prev ? ({
+          ...prev,
+          cutoff_status: {
+            isPastCutoff: true,
+            cutoffTime: data.cutoff_time_formatted,
+            cutoffTimeFormatted: data.cutoff_time_formatted,
+          },
+        }) : null);
+        setConfirmingCheckIn(false);
+        return;
+      }
 
       if (response.ok && data.success) {
         const result: CheckInResult = {
@@ -1422,7 +1438,8 @@ export default function DoorScannerPage() {
           setCheckInPreviewData(null);
           setPendingCheckIn(null);
         }}
-        onConfirm={confirmCheckIn}
+        onConfirm={() => confirmCheckIn(false)}
+        onConfirmWithOverride={(reason) => confirmCheckIn(true, reason)}
         data={checkInPreviewData}
         loading={loadingCheckInPreview}
         confirming={confirmingCheckIn}

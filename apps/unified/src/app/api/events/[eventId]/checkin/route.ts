@@ -133,7 +133,7 @@ export async function POST(
     console.log(`[Check-in API] Access granted for user ${userId}`);
 
     const body = await request.json();
-    const { qr_token, registration_id } = body;
+    const { qr_token, registration_id, cutoff_override, cutoff_override_reason } = body;
 
     let registrationId: string;
 
@@ -204,10 +204,59 @@ export async function POST(
     }
 
     const attendee = Array.isArray(registration.attendee) ? registration.attendee[0] : registration.attendee;
-    const attendeeName = attendee?.surname 
-      ? `${attendee?.name || ""} ${attendee.surname}`.trim() 
+    const attendeeName = attendee?.surname
+      ? `${attendee?.name || ""} ${attendee.surname}`.trim()
       : attendee?.name || "Unknown Attendee";
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
+
+    // Check cutoff time settings
+    let isPastCutoff = false;
+    let cutoffTimeFormatted: string | null = null;
+
+    try {
+      const { data: cutoffSettings } = await serviceSupabase
+        .from("events")
+        .select("checkin_cutoff_enabled, checkin_cutoff_time, timezone, start_time")
+        .eq("id", eventId)
+        .single();
+
+      if (cutoffSettings?.checkin_cutoff_enabled && cutoffSettings?.checkin_cutoff_time) {
+        const now = new Date();
+        const eventDate = new Date(cutoffSettings.start_time);
+        const [hours, minutes] = cutoffSettings.checkin_cutoff_time.split(':').map(Number);
+
+        // Create cutoff datetime by combining event date with cutoff time
+        const cutoffDateTime = new Date(eventDate);
+        cutoffDateTime.setHours(hours, minutes, 0, 0);
+
+        // Format the cutoff time for display
+        cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: cutoffSettings.timezone || 'UTC',
+        });
+
+        isPastCutoff = now > cutoffDateTime;
+
+        console.log(`[Check-in API] Cutoff check: now=${now.toISOString()}, cutoff=${cutoffDateTime.toISOString()}, isPast=${isPastCutoff}`);
+      }
+    } catch (cutoffError) {
+      console.warn(`[Check-in API] Error checking cutoff settings:`, cutoffError);
+      // Continue without cutoff enforcement - non-critical
+    }
+
+    // If past cutoff and no override provided, return soft block
+    if (isPastCutoff && !cutoff_override) {
+      console.log(`[Check-in API] Past cutoff time, requesting override for ${attendeeName}`);
+      return NextResponse.json({
+        error: "past_cutoff",
+        message: "Check-in cutoff time has passed",
+        requires_override: true,
+        cutoff_time_formatted: cutoffTimeFormatted,
+        attendee_name: attendeeName,
+        attendee_id: registration.attendee_id,
+      }, { status: 400 });
+    }
 
     // Fetch VIP status for this attendee
     let vipStatus = {
@@ -319,6 +368,8 @@ export async function POST(
         .insert({
           registration_id: registrationId,
           checked_in_by: userId,
+          cutoff_override: isPastCutoff && cutoff_override,
+          cutoff_override_reason: isPastCutoff ? cutoff_override_reason : null,
         })
         .select()
         .single();

@@ -1,18 +1,20 @@
 "use client";
 
-import { Modal, Badge, Button, VipStatus } from "@crowdstack/ui";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Crown, 
-  Star, 
-  TrendingUp, 
-  MessageSquare, 
+import { useState } from "react";
+import { Modal, Badge, Button, VipStatus, Input } from "@crowdstack/ui";
+import {
+  User,
+  Mail,
+  Phone,
+  Crown,
+  Star,
+  TrendingUp,
+  MessageSquare,
   CheckCircle2,
   XCircle,
   Users,
-  Calendar
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -20,6 +22,7 @@ interface CheckInConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onConfirmWithOverride?: (reason?: string) => void;
   data: {
     attendee: {
       id: string;
@@ -61,6 +64,11 @@ interface CheckInConfirmationModalProps {
       bookingId: string | null;
       notes: string | null;
     } | null;
+    cutoff_status?: {
+      isPastCutoff: boolean;
+      cutoffTime: string | null;
+      cutoffTimeFormatted: string | null;
+    };
     already_checked_in: boolean;
     checked_in_at?: string | null;
     registered_at: string;
@@ -73,10 +81,13 @@ export function CheckInConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
+  onConfirmWithOverride,
   data,
   loading = false,
   confirming = false,
 }: CheckInConfirmationModalProps) {
+  const [overrideReason, setOverrideReason] = useState("");
+
   if (!isOpen) return null;
 
   const formatDate = (dateStr: string) => {
@@ -170,6 +181,32 @@ export function CheckInConfirmationModal({
                   Checked in at: {formatDate(data.checked_in_at)}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Past Cutoff Warning */}
+          {data.cutoff_status?.isPastCutoff && !data.already_checked_in && (
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <h3 className="font-semibold text-primary">Past Check-in Cutoff</h3>
+              </div>
+              <p className="text-sm text-secondary mb-3">
+                The check-in cutoff time ({data.cutoff_status.cutoffTimeFormatted}) has passed.
+                You can still allow entry with an override.
+              </p>
+              <div>
+                <label className="text-xs text-secondary block mb-1">
+                  Override Reason (optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., VIP guest, delayed arrival"
+                  value={overrideReason}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOverrideReason(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
             </div>
           )}
 
@@ -346,10 +383,16 @@ export function CheckInConfirmationModal({
               Cancel
             </Button>
             <Button
-              variant="primary"
-              onClick={onConfirm}
+              variant={data.cutoff_status?.isPastCutoff && !data.already_checked_in ? "warning" : "primary"}
+              onClick={() => {
+                if (data.cutoff_status?.isPastCutoff && !data.already_checked_in && onConfirmWithOverride) {
+                  onConfirmWithOverride(overrideReason || undefined);
+                } else {
+                  onConfirm();
+                }
+              }}
               disabled={confirming}
-              className="flex-1"
+              className={`flex-1 ${data.cutoff_status?.isPastCutoff && !data.already_checked_in ? '!bg-amber-500 hover:!bg-amber-600' : ''}`}
             >
               {confirming ? (
                 <>
@@ -360,6 +403,11 @@ export function CheckInConfirmationModal({
                 <>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   View Details
+                </>
+              ) : data.cutoff_status?.isPastCutoff ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Override & Check In
                 </>
               ) : (
                 <>

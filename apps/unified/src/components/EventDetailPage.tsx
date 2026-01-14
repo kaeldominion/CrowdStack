@@ -174,6 +174,8 @@ interface EventData {
   is_public?: boolean | null;
   external_ticket_url?: string | null;
   table_booking_mode?: "disabled" | "promoter_only" | "direct" | null;
+  checkin_cutoff_enabled?: boolean;
+  checkin_cutoff_time?: string | null; // "HH:MM:SS" format
   created_at: string;
   // Closeout fields
   closed_at?: string | null;
@@ -399,6 +401,11 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [tablesCurrency, setTablesCurrency] = useState<string>("USD");
   const [bookingMode, setBookingMode] = useState<"disabled" | "promoter_only" | "direct">("disabled");
   const [savingBookingMode, setSavingBookingMode] = useState(false);
+
+  // Check-in cutoff state
+  const [checkinCutoffEnabled, setCheckinCutoffEnabled] = useState(false);
+  const [checkinCutoffTime, setCheckinCutoffTime] = useState("");
+  const [savingCutoff, setSavingCutoff] = useState(false);
 
   // Load current user ID for referral attribution
   useEffect(() => {
@@ -688,6 +695,9 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         if (data.event.table_booking_mode) {
           setBookingMode(data.event.table_booking_mode);
         }
+        // Set check-in cutoff settings from event data
+        setCheckinCutoffEnabled(data.event.checkin_cutoff_enabled ?? false);
+        setCheckinCutoffTime(data.event.checkin_cutoff_time?.slice(0, 5) ?? ""); // "HH:MM:SS" -> "HH:MM"
         // Load event tags
         loadEventTags();
         // Set organizer ID for organizer role (for their own referral link)
@@ -2777,6 +2787,109 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                     <p className="text-xs text-secondary">
                       Select the music genres for this event
                     </p>
+                  </div>
+                </Card>
+              )}
+
+              {/* Check-in Cutoff Settings */}
+              {effectivePermissions.canEdit && (
+                <Card>
+                  <h2 className="section-header">Check-in Cutoff</h2>
+                  <p className="text-sm text-secondary mb-4">
+                    Set a time after which door staff will receive a warning before checking in guests. They can still override and allow entry.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Enable Toggle */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-primary">Enable Cutoff Time</p>
+                        <p className="text-xs text-secondary">Warn door staff for late arrivals</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={checkinCutoffEnabled}
+                          onClick={async () => {
+                            const newEnabled = !checkinCutoffEnabled;
+                            setSavingCutoff(true);
+                            try {
+                              const response = await fetch(config.eventApiEndpoint, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ checkin_cutoff_enabled: newEnabled }),
+                              });
+                              if (response.ok) {
+                                setCheckinCutoffEnabled(newEnabled);
+                                toast.success(newEnabled ? "Cutoff time enabled" : "Cutoff time disabled");
+                              } else {
+                                const errorData = await response.json();
+                                toast.error(errorData.error || "Failed to update setting");
+                              }
+                            } catch (error) {
+                              toast.error("Failed to update setting");
+                            } finally {
+                              setSavingCutoff(false);
+                            }
+                          }}
+                          disabled={savingCutoff}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            checkinCutoffEnabled ? "bg-accent-primary" : "bg-border"
+                          } ${savingCutoff ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              checkinCutoffEnabled ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                        {savingCutoff && <InlineSpinner />}
+                      </div>
+                    </div>
+
+                    {/* Time Picker - Only shown when enabled */}
+                    {checkinCutoffEnabled && (
+                      <div>
+                        <label className="text-sm font-medium text-primary block mb-2">
+                          Cutoff Time
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="time"
+                            value={checkinCutoffTime}
+                            onChange={async (e) => {
+                              const newTime = e.target.value;
+                              setCheckinCutoffTime(newTime);
+                              setSavingCutoff(true);
+                              try {
+                                const response = await fetch(config.eventApiEndpoint, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ checkin_cutoff_time: newTime ? `${newTime}:00` : null }),
+                                });
+                                if (response.ok) {
+                                  toast.success("Cutoff time updated");
+                                } else {
+                                  const errorData = await response.json();
+                                  toast.error(errorData.error || "Failed to update cutoff time");
+                                }
+                              } catch (error) {
+                                toast.error("Failed to update cutoff time");
+                              } finally {
+                                setSavingCutoff(false);
+                              }
+                            }}
+                            disabled={savingCutoff}
+                            className="px-3 py-2 bg-surface border border-border rounded-lg text-primary"
+                          />
+                          {savingCutoff && <InlineSpinner />}
+                        </div>
+                        <p className="text-xs text-secondary mt-1">
+                          Time in event timezone ({event?.timezone || "UTC"})
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}
