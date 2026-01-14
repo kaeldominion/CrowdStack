@@ -180,7 +180,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
       }
 
       if (endpoint) {
-        const response = await fetch(endpoint);
+        // Use cache: 'no-store' to ensure fresh data when venue is switched
+        const response = await fetch(endpoint, { cache: 'no-store' });
         if (response.ok) {
           const data = await response.json();
           setLiveEvents(data.events || []);
@@ -196,8 +197,9 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     const promises = [];
 
     if (isVenue) {
+      // Use cache: 'no-store' to ensure fresh data when venue is switched
       promises.push(
-        fetch("/api/venue/dashboard-stats")
+        fetch("/api/venue/dashboard-stats", { cache: 'no-store' })
           .then((r) => r.json())
           .then((data) => {
             setVenueStats(data.stats || venueStats);
@@ -208,7 +210,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           .catch((e) => console.error("Failed to load venue stats:", e))
       );
       promises.push(
-        fetch("/api/venue/attendees/stats")
+        fetch("/api/venue/attendees/stats", { cache: 'no-store' })
           .then((r) => r.json())
           .then((data) => {
             setAttendeeStats(data);

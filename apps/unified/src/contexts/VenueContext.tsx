@@ -93,22 +93,23 @@ export function VenueProvider({ children }: VenueProviderProps) {
         throw new Error(error.error || "Failed to switch venue");
       }
 
-      // Update local state
+      // Update local state FIRST
       setSelectedVenueId(venueId);
 
-      // Increment version to signal all consumers to reload
+      // Increment version to signal all consumers to reload their data
+      // This triggers useEffect in components like UnifiedDashboard
       setVenueVersion((v) => v + 1);
 
-      // If we're on a venue-specific page, update URL and refresh
+      // If we're on a venue-specific page, update URL for bookmarkability
+      // But DON'T call router.refresh() as it interferes with React state updates
       if (pathname?.startsWith("/app/venue")) {
         const url = new URL(window.location.href);
         url.searchParams.set("venueId", venueId);
-        router.push(url.pathname + url.search);
-        router.refresh();
-      } else {
-        // For other pages, just refresh server components
-        router.refresh();
+        // Use replace to avoid adding to history for every venue switch
+        window.history.replaceState(null, "", url.pathname + url.search);
       }
+      // Note: We don't call router.refresh() anymore - the venueVersion change
+      // will trigger useEffects in components to reload their data
 
       const venueName = venues.find(v => v.id === venueId)?.name || "venue";
       toast.success("Venue Switched", `Switched to ${venueName}`);

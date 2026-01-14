@@ -444,8 +444,8 @@ export function DashboardSidebar() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          {/* Venue Switcher - only show on venue routes */}
-          {pathname?.startsWith("/app/venue") && (
+          {/* Venue Switcher - show on venue routes OR main dashboard if user has venue_admin role */}
+          {(pathname?.startsWith("/app/venue") || (pathname === "/app" && userRoles.includes("venue_admin"))) && (
             <VenueSwitcher />
           )}
         </div>
@@ -491,8 +491,8 @@ export function DashboardSidebar() {
             )}
           </button>
         </div>
-        {/* Venue Switcher - only show on venue routes */}
-        {pathname?.startsWith("/app/venue") && (
+        {/* Venue Switcher - show on venue routes OR main dashboard if user has venue_admin role */}
+        {(pathname?.startsWith("/app/venue") || (pathname === "/app" && userRoles.includes("venue_admin"))) && (
           isCollapsed ? (
             <VenueSwitcher alwaysShow compact />
           ) : (
