@@ -55,20 +55,23 @@ export async function GET() {
     const attendeeIds = Array.from(new Set(registrations?.map((r) => r.attendee_id) || []));
     const totalAttendees = attendeeIds.length;
 
-    // Get checkins directly from checkins table
-    const regIds = registrations?.map(r => r.id) || [];
+    // Get checkins using JOIN (consistent pattern across all routes)
     let totalCheckins = 0;
     const checkinsByRegistration = new Map<string, number>();
-    
-    if (regIds.length > 0) {
+
+    if (eventIds.length > 0) {
       const { data: checkins } = await serviceSupabase
         .from("checkins")
-        .select("registration_id")
-        .in("registration_id", regIds)
+        .select(`
+          id,
+          registration_id,
+          registrations!inner(event_id)
+        `)
+        .in("registrations.event_id", eventIds)
         .is("undo_at", null);
-      
+
       totalCheckins = checkins?.length || 0;
-      checkins?.forEach(c => {
+      checkins?.forEach((c: any) => {
         checkinsByRegistration.set(c.registration_id, (checkinsByRegistration.get(c.registration_id) || 0) + 1);
       });
     }
@@ -110,20 +113,28 @@ export async function GET() {
       .slice(0, 5)
       .map(([id]) => id);
 
+    console.log("[Venue Attendee Stats] topAttendeeIds:", topAttendeeIds);
+
     let topAttendees: Array<{ id: string; name: string; checkins: number; events: number; xp_points: number }> = [];
 
     if (topAttendeeIds.length > 0) {
-      const { data: attendeesData } = await serviceSupabase
+      const { data: attendeesData, error: attendeesError } = await serviceSupabase
         .from("attendees")
         .select("id, name, surname, xp_points")
         .in("id", topAttendeeIds);
 
+      console.log("[Venue Attendee Stats] attendeesData:", attendeesData?.length, "rows, error:", attendeesError?.message || "none");
+      if (attendeesData) {
+        console.log("[Venue Attendee Stats] Sample attendee:", JSON.stringify(attendeesData[0]));
+      }
+
       topAttendees = topAttendeeIds.map((id) => {
         const attendee = attendeesData?.find((a) => a.id === id);
         // Combine first and last name
-        const fullName = attendee 
+        const fullName = attendee
           ? (attendee.surname ? `${attendee.name || ""} ${attendee.surname}`.trim() : attendee.name || "Unknown")
           : "Unknown";
+        console.log("[Venue Attendee Stats] Mapping attendee:", id, "found:", !!attendee, "name:", fullName);
         return {
           id,
           name: fullName,
