@@ -74,21 +74,23 @@ export async function getOrganizerDashboardStats(passedOrganizerId?: string | nu
     .in("event_id", eventIds);
 
   const regCount = allRegs?.length || 0;
-  const regIds = allRegs?.map((r) => r.id) || [];
-  console.log("[OrganizerDashboardStats] regCount:", regCount, "regIds:", regIds.length);
+  console.log("[OrganizerDashboardStats] regCount:", regCount);
 
-  // Get check-in count from checkins table
+  // Get check-in count using JOIN (same pattern as stats route which works correctly)
   let checkinCount = 0;
-  if (regIds.length > 0) {
+  if (eventIds.length > 0) {
     const { count, error: checkinError } = await supabase
       .from("checkins")
-      .select("*", { count: "exact", head: true })
-      .in("registration_id", regIds)
+      .select(`
+        *,
+        registrations!inner(event_id)
+      `, { count: "exact", head: true })
+      .in("registrations.event_id", eventIds)
       .is("undo_at", null);
     checkinCount = count || 0;
     console.log("[OrganizerDashboardStats] checkinCount:", checkinCount, "error:", checkinError?.message || "none");
   } else {
-    console.log("[OrganizerDashboardStats] No registration IDs, skipping checkin query");
+    console.log("[OrganizerDashboardStats] No events, skipping checkin query");
   }
 
   // Get promoter count
@@ -155,19 +157,21 @@ export async function getOrganizerChartData(passedOrganizerId?: string | null): 
     registrationIdToEventId.set(reg.id, reg.event_id);
   });
 
-  // Batch fetch check-ins from checkins table
+  // Batch fetch check-ins using JOIN (same pattern as stats route which works correctly)
   const checkinsByEvent = new Map<string, number>();
-  const regIds = allRegs?.map((r) => r.id) || [];
 
-  if (regIds.length > 0) {
+  if (eventIds.length > 0) {
     const { data: allCheckins } = await supabase
       .from("checkins")
-      .select("registration_id")
-      .in("registration_id", regIds)
+      .select(`
+        id,
+        registrations!inner(event_id)
+      `)
+      .in("registrations.event_id", eventIds)
       .is("undo_at", null);
 
-    (allCheckins || []).forEach((checkin) => {
-      const eventId = registrationIdToEventId.get(checkin.registration_id);
+    (allCheckins || []).forEach((checkin: any) => {
+      const eventId = checkin.registrations?.event_id;
       if (eventId) {
         checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
       }

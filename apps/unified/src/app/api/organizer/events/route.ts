@@ -86,33 +86,31 @@ export async function GET() {
       registrationIdToEventId.set(reg.id, reg.event_id);
     });
 
-    // 2. Batch fetch check-ins from the checkins table (separate from registrations)
-    const registrationIds = allRegs?.map((r) => r.id) || [];
+    // 2. Batch fetch check-ins using JOIN (same pattern as stats route which works correctly)
     const checkinsByEvent = new Map<string, number>();
 
-    if (registrationIds.length > 0) {
-      console.log("[OrganizerEvents] Querying checkins for", registrationIds.length, "registration IDs");
-
+    if (eventIds.length > 0) {
       const { data: allCheckins, error: checkinsError } = await serviceSupabase
         .from("checkins")
-        .select("registration_id")
-        .in("registration_id", registrationIds)
+        .select(`
+          id,
+          registrations!inner(event_id)
+        `)
+        .in("registrations.event_id", eventIds)
         .is("undo_at", null);
 
-      console.log("[OrganizerEvents] Checkins query returned:", allCheckins?.length || 0, "rows, error:", checkinsError?.message || "none");
+      console.log("[OrganizerEvents] Checkins JOIN query returned:", allCheckins?.length || 0, "rows, error:", checkinsError?.message || "none");
 
       if (checkinsError) {
         console.error("[OrganizerEvents] Checkins query error:", checkinsError);
       } else {
-        (allCheckins || []).forEach((checkin) => {
-          const eventId = registrationIdToEventId.get(checkin.registration_id);
+        (allCheckins || []).forEach((checkin: any) => {
+          const eventId = checkin.registrations?.event_id;
           if (eventId) {
             checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
           }
         });
       }
-    } else {
-      console.log("[OrganizerEvents] No registration IDs to query checkins for");
     }
 
     // Log final counts for debugging
