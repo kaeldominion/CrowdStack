@@ -23,6 +23,8 @@ interface AttendeeWithSource {
   is_organizer_vip?: boolean;
   is_global_vip?: boolean;
   notes?: string | null;
+  notes_updated_at?: string | null;
+  notes_updated_by_name?: string | null;
 }
 
 /**
@@ -192,13 +194,13 @@ export async function GET(
 
     // Fetch notes from attendee_notes table based on user's role (simplified notes system)
     const attendeeIdsForNotes = [...new Set(registrations?.map(r => r.attendee_id) || [])];
-    const notesMap = new Map<string, string>();
+    const notesMap = new Map<string, { note: string; updated_at: string | null; updated_by: string | null }>();
 
     if (attendeeIdsForNotes.length > 0) {
       // Determine which org ID to use for notes lookup
       let noteQuery = serviceSupabase
         .from("attendee_notes")
-        .select("attendee_id, note")
+        .select("attendee_id, note, updated_at, updated_by")
         .in("attendee_id", attendeeIdsForNotes);
 
       if (userVenueId && event.venue_id) {
@@ -220,8 +222,30 @@ export async function GET(
       }
 
       const { data: notes } = await noteQuery;
+
+      // Get unique user IDs who updated notes to fetch their names
+      const noteUpdaterIds = [...new Set(notes?.filter(n => n.updated_by).map(n => n.updated_by) || [])];
+      const noteUpdaterMap = new Map<string, string>();
+
+      if (noteUpdaterIds.length > 0) {
+        const { data: profiles } = await serviceSupabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", noteUpdaterIds);
+
+        profiles?.forEach(p => {
+          if (p.full_name) noteUpdaterMap.set(p.id, p.full_name);
+        });
+      }
+
       notes?.forEach(n => {
-        if (n.note) notesMap.set(n.attendee_id, n.note);
+        if (n.note) {
+          notesMap.set(n.attendee_id, {
+            note: n.note,
+            updated_at: n.updated_at,
+            updated_by: n.updated_by ? noteUpdaterMap.get(n.updated_by) || null : null,
+          });
+        }
       });
     }
 
@@ -349,7 +373,9 @@ export async function GET(
         is_global_vip: globalVipSet.has(reg.attendee_id),
         is_event_vip: reg.is_event_vip || false,
         event_vip_reason: reg.event_vip_reason || null,
-        notes: notesMap.get(reg.attendee_id) || null,
+        notes: notesMap.get(reg.attendee_id)?.note || null,
+        notes_updated_at: notesMap.get(reg.attendee_id)?.updated_at || null,
+        notes_updated_by_name: notesMap.get(reg.attendee_id)?.updated_by || null,
       };
     });
 

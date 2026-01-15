@@ -74,36 +74,32 @@ export async function PATCH(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Build the note record based on role
-    const noteRecord: {
-      attendee_id: string;
-      note: string;
-      updated_at: string;
-      updated_by: string;
-      venue_id?: string;
-      organizer_id?: string;
-      promoter_id?: string;
-    } = {
-      attendee_id: registration.attendee_id,
-      note: notes,
-      updated_at: new Date().toISOString(),
-      updated_by: userId,
-    };
+    // Get user's name for the response
+    const { data: userData } = await serviceSupabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
 
-    let conflictColumn: string;
+    const userName = userData?.full_name || "Unknown User";
+    const now = new Date().toISOString();
+
+    // Determine org ID and build query based on role
+    let orgId: string;
+    let orgColumn: "venue_id" | "organizer_id" | "promoter_id";
 
     if (role === "venue") {
       if (!eventInfo.venue_id) {
         return NextResponse.json({ error: "Event has no venue" }, { status: 400 });
       }
-      noteRecord.venue_id = eventInfo.venue_id;
-      conflictColumn = "idx_attendee_notes_venue_unique";
+      orgId = eventInfo.venue_id;
+      orgColumn = "venue_id";
     } else if (role === "organizer") {
       if (!eventInfo.organizer_id) {
         return NextResponse.json({ error: "Event has no organizer" }, { status: 400 });
       }
-      noteRecord.organizer_id = eventInfo.organizer_id;
-      conflictColumn = "idx_attendee_notes_organizer_unique";
+      orgId = eventInfo.organizer_id;
+      orgColumn = "organizer_id";
     } else {
       // Promoter - find their promoter_id
       const { data: promoter } = await serviceSupabase
@@ -115,24 +111,58 @@ export async function PATCH(
       if (!promoter) {
         return NextResponse.json({ error: "Promoter profile not found" }, { status: 400 });
       }
-      noteRecord.promoter_id = promoter.id;
-      conflictColumn = "idx_attendee_notes_promoter_unique";
+      orgId = promoter.id;
+      orgColumn = "promoter_id";
     }
 
-    // Upsert the note (insert or update on conflict)
-    const { error: upsertError } = await serviceSupabase
+    // Check if note already exists for this attendee+org combination
+    const { data: existingNote } = await serviceSupabase
       .from("attendee_notes")
-      .upsert(noteRecord, {
-        onConflict: conflictColumn,
-        ignoreDuplicates: false,
-      });
+      .select("id")
+      .eq("attendee_id", registration.attendee_id)
+      .eq(orgColumn, orgId)
+      .maybeSingle();
 
-    if (upsertError) {
-      console.error("[Notes API] Upsert error:", upsertError);
+    let error;
+
+    if (existingNote) {
+      // Update existing note
+      const { error: updateError } = await serviceSupabase
+        .from("attendee_notes")
+        .update({
+          note: notes,
+          updated_at: now,
+          updated_by: userId,
+        })
+        .eq("id", existingNote.id);
+      error = updateError;
+    } else {
+      // Insert new note
+      const insertData: Record<string, string> = {
+        attendee_id: registration.attendee_id,
+        note: notes,
+        updated_at: now,
+        updated_by: userId,
+        [orgColumn]: orgId,
+      };
+
+      const { error: insertError } = await serviceSupabase
+        .from("attendee_notes")
+        .insert(insertData);
+      error = insertError;
+    }
+
+    if (error) {
+      console.error("[Notes API] Save error:", error);
       return NextResponse.json({ error: "Failed to save notes" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, notes });
+    return NextResponse.json({
+      success: true,
+      notes,
+      updated_by_name: userName,
+      updated_at: now,
+    });
   } catch (error: any) {
     console.error("[Notes API] Error:", error);
     return NextResponse.json(

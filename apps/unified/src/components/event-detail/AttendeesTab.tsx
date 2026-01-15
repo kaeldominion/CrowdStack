@@ -51,6 +51,8 @@ interface Attendee {
   is_event_vip?: boolean;
   event_vip_reason?: string | null;
   notes?: string | null;
+  notes_updated_at?: string | null;
+  notes_updated_by_name?: string | null;
 }
 
 interface PromoterOption {
@@ -633,11 +635,18 @@ export function AttendeesTab({
                     {/* Notes */}
                     {canEditNotes && (
                       <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                        <InlineEditField
-                          value={attendee.notes || ""}
-                          onSave={(notes) => handleSaveNotes(attendee.id, notes)}
-                          placeholder="Add note..."
-                        />
+                        <div className="space-y-1">
+                          <InlineEditField
+                            value={attendee.notes || ""}
+                            onSave={(notes) => handleSaveNotes(attendee.id, notes)}
+                            placeholder="Add note..."
+                          />
+                          {attendee.notes && attendee.notes_updated_by_name && (
+                            <p className="text-[10px] text-muted truncate max-w-[150px]" title={`${attendee.notes_updated_by_name} • ${attendee.notes_updated_at ? new Date(attendee.notes_updated_at).toLocaleString() : ""}`}>
+                              {attendee.notes_updated_by_name} • {attendee.notes_updated_at ? new Date(attendee.notes_updated_at).toLocaleDateString() : ""}
+                            </p>
+                          )}
+                        </div>
                       </td>
                     )}
 
