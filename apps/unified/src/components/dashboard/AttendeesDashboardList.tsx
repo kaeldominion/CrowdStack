@@ -206,7 +206,9 @@ export function AttendeesDashboardList({
                       {displayName}
                     </span>
                     {attendee.has_note && (
-                      <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" title="Has notes" />
+                      <span title="Has notes">
+                        <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" />
+                      </span>
                     )}
                     {attendee.instagram_handle && (
                       <span className="text-[10px] text-pink-500 truncate hidden sm:inline">

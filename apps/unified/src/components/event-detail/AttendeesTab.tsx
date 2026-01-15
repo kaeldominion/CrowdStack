@@ -540,7 +540,9 @@ export function AttendeesTab({
                           {attendee.name}
                         </span>
                         {attendee.notes && (
-                          <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" title="Has notes" />
+                          <span title="Has notes">
+                            <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" />
+                          </span>
                         )}
                       </div>
                     </td>
@@ -730,7 +732,9 @@ export function AttendeesTab({
                       {attendee.name}
                     </span>
                     {attendee.notes && (
-                      <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" />
+                      <span title="Has notes">
+                        <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" />
+                      </span>
                     )}
                     {(attendee.is_global_vip || attendee.is_venue_vip || attendee.is_organizer_vip || attendee.is_event_vip) && (
                       <div className="flex items-center gap-0.5 flex-shrink-0">
