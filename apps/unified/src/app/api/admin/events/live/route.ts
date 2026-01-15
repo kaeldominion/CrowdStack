@@ -89,41 +89,31 @@ export async function GET() {
 
     // Build registration counts map
     const regsByEvent = new Map<string, number>();
-    const regIdsByEvent = new Map<string, string[]>();
 
     (allRegs || []).forEach((reg) => {
       regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-      if (!regIdsByEvent.has(reg.event_id)) {
-        regIdsByEvent.set(reg.event_id, []);
-      }
-      regIdsByEvent.get(reg.event_id)!.push(reg.id);
     });
 
-    // Get all registration IDs to fetch check-ins
-    const allRegIds = (allRegs || []).map((r) => r.id);
-
-    // Batch fetch all check-ins for these registrations (only active, not undone)
-    const { data: allCheckins } = allRegIds.length > 0
-      ? await serviceClient
-          .from("checkins")
-          .select("registration_id")
-          .in("registration_id", allRegIds)
-          .is("undo_at", null)
-      : { data: [] };
-
-    // Build check-ins count by event
+    // Batch fetch check-ins using JOIN (consistent pattern across all routes)
     const checkinsByEvent = new Map<string, number>();
-    const regToEvent = new Map<string, string>();
-    (allRegs || []).forEach((reg) => {
-      regToEvent.set(reg.id, reg.event_id);
-    });
 
-    (allCheckins || []).forEach((checkin) => {
-      const eventId = regToEvent.get(checkin.registration_id);
-      if (eventId) {
-        checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
-      }
-    });
+    if (eventIds.length > 0) {
+      const { data: allCheckins } = await serviceClient
+        .from("checkins")
+        .select(`
+          id,
+          registrations!inner(event_id)
+        `)
+        .in("registrations.event_id", eventIds)
+        .is("undo_at", null);
+
+      (allCheckins || []).forEach((checkin: any) => {
+        const eventId = checkin.registrations?.event_id;
+        if (eventId) {
+          checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
+        }
+      });
+    }
 
     // Map events with stats from pre-computed maps (no additional queries)
     const eventsWithStats = (events || []).map((event) => ({

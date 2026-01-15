@@ -97,19 +97,21 @@ export async function GET() {
       registrationIdToEventId.set(reg.id, reg.event_id);
     });
 
-    // 2. Batch fetch check-ins from the checkins table
-    const registrationIds = allRegs?.map((r) => r.id) || [];
+    // 2. Batch fetch check-ins using JOIN (consistent pattern across all routes)
     const checkinsByEvent = new Map<string, number>();
 
-    if (registrationIds.length > 0) {
+    if (eventIds.length > 0) {
       const { data: allCheckins } = await serviceClient
         .from("checkins")
-        .select("registration_id")
-        .in("registration_id", registrationIds)
+        .select(`
+          id,
+          registrations!inner(event_id)
+        `)
+        .in("registrations.event_id", eventIds)
         .is("undo_at", null);
 
-      (allCheckins || []).forEach((checkin) => {
-        const eventId = registrationIdToEventId.get(checkin.registration_id);
+      (allCheckins || []).forEach((checkin: any) => {
+        const eventId = checkin.registrations?.event_id;
         if (eventId) {
           checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
         }

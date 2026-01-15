@@ -97,28 +97,22 @@ export async function GET(request: Request) {
         regCountMap.set(r.event_id, (regCountMap.get(r.event_id) || 0) + 1);
       });
 
-      // Get all checkins for these registrations
-      const regIds = (registrations || []).map((r: any) => r.id);
-      if (regIds.length > 0) {
-        const { data: checkins } = await serviceSupabase
-          .from("checkins")
-          .select("registration_id")
-          .in("registration_id", regIds)
-          .is("undo_at", null);
+      // Get all checkins using JOIN (consistent pattern across all routes)
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select(`
+          id,
+          registrations!inner(event_id)
+        `)
+        .in("registrations.event_id", eventIds)
+        .is("undo_at", null);
 
-        // Map registration_id back to event_id
-        const regToEvent = new Map<string, string>();
-        (registrations || []).forEach((r: any) => {
-          regToEvent.set(r.id, r.event_id);
-        });
-
-        (checkins || []).forEach((c: any) => {
-          const eventId = regToEvent.get(c.registration_id);
-          if (eventId) {
-            checkinCountMap.set(eventId, (checkinCountMap.get(eventId) || 0) + 1);
-          }
-        });
-      }
+      (allCheckins || []).forEach((checkin: any) => {
+        const eventId = checkin.registrations?.event_id;
+        if (eventId) {
+          checkinCountMap.set(eventId, (checkinCountMap.get(eventId) || 0) + 1);
+        }
+      });
     }
 
     const eventsWithCounts = (events || []).map((event: any) => ({
