@@ -91,11 +91,15 @@ export async function GET() {
     const checkinsByEvent = new Map<string, number>();
 
     if (registrationIds.length > 0) {
+      console.log("[OrganizerEvents] Querying checkins for", registrationIds.length, "registration IDs");
+
       const { data: allCheckins, error: checkinsError } = await serviceSupabase
         .from("checkins")
         .select("registration_id")
         .in("registration_id", registrationIds)
         .is("undo_at", null);
+
+      console.log("[OrganizerEvents] Checkins query returned:", allCheckins?.length || 0, "rows, error:", checkinsError?.message || "none");
 
       if (checkinsError) {
         console.error("[OrganizerEvents] Checkins query error:", checkinsError);
@@ -107,6 +111,8 @@ export async function GET() {
           }
         });
       }
+    } else {
+      console.log("[OrganizerEvents] No registration IDs to query checkins for");
     }
 
     // Log final counts for debugging
