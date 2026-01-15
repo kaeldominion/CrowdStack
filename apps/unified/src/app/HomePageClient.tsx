@@ -191,14 +191,14 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 mb-10">
                 <Link href="/login">
-                  <button className="group px-8 py-4 text-sm font-bold uppercase tracking-widest bg-white text-void rounded-xl transition-all duration-300 hover:bg-accent-secondary hover:text-white hover:scale-105 flex items-center gap-2 shadow-xl">
+                  <button className="group px-8 py-4 text-sm font-mono font-bold uppercase tracking-widest bg-accent-primary text-void rounded-xl transition-all duration-300 hover:bg-accent-primary/90 hover:scale-105 flex items-center gap-2 shadow-xl">
                     <Sparkles className="h-4 w-4" />
                     GET STARTED
                     <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
                 <Link href="/for-business">
-                  <button className="px-8 py-4 text-sm font-semibold uppercase tracking-wider text-white dark:text-white bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/30 rounded-xl transition-all duration-300 hover:bg-white/20 dark:hover:bg-white/20 hover:scale-105">
+                  <button className="px-8 py-4 text-sm font-mono font-semibold uppercase tracking-wider text-white dark:text-white bg-white/10 dark:bg-white/10 backdrop-blur-sm border border-white/30 dark:border-white/30 rounded-xl transition-all duration-300 hover:bg-white/20 dark:hover:bg-white/20 hover:scale-105">
                     FOR BUSINESS
                   </button>
                 </Link>
@@ -481,7 +481,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/login">
                 <motion.button
-                  className="group px-8 py-4 text-base font-bold uppercase tracking-widest bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
+                  className="group px-8 py-4 text-base font-mono font-bold uppercase tracking-widest bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -546,7 +546,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/for-business">
                 <motion.button
-                  className="px-8 py-4 text-base font-bold uppercase tracking-wider bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
+                  className="px-8 py-4 text-base font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-accent-primary/30 flex items-center gap-2"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -556,7 +556,7 @@ export function HomePageClient({ initialEvents }: HomePageClientProps) {
               </Link>
               <Link href="/contact">
                 <motion.button
-                  className="px-8 py-4 text-base font-semibold uppercase tracking-wider text-primary bg-active border border-border-subtle rounded-xl transition-all duration-300 hover:bg-raised flex items-center gap-2"
+                  className="px-8 py-4 text-base font-mono font-semibold uppercase tracking-wider text-primary bg-active border border-border-subtle rounded-xl transition-all duration-300 hover:bg-raised flex items-center gap-2"
                   whileHover={{ scale: 1.02 }}
                 >
                   Book a Demo

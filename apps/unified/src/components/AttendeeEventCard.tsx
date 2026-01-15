@@ -487,7 +487,7 @@ export function AttendeeEventCard({
                   <button
                     onClick={handleViewEntry}
                     disabled={loading}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-accent-success text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
                     View Pass
@@ -504,23 +504,23 @@ export function AttendeeEventCard({
               ) : isLive ? (
                 <>
                   <button
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-accent-success text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors"
                   >
                     <QrCode className="h-3 w-3" />
                     Show QR
                   </button>
                   <button
-                    className="flex-1 flex items-center justify-center bg-transparent text-primary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md border border-border-strong hover:bg-glass/50 transition-colors"
+                    className="flex-1 flex items-center justify-center bg-transparent text-primary font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md border border-border-strong hover:bg-glass/50 transition-colors"
                   >
                     Status
                   </button>
                 </>
               ) : isPast ? (
-                <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
+                <span className="flex-1 text-center bg-raised text-secondary font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
                   Event Ended
                 </span>
               ) : isGuestlistClosed && event.has_guestlist ? (
-                <span className="flex-1 text-center bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
+                <span className="flex-1 text-center bg-raised text-secondary font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md cursor-not-allowed">
                   Guestlist Closed
                 </span>
               ) : event.ticket_sale_mode === "external" && event.external_ticket_url ? (
@@ -529,13 +529,13 @@ export function AttendeeEventCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-blue-500 text-white font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-blue-600 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-blue-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-blue-600 transition-colors"
                 >
                   Get Tickets
                   <ExternalLink className="h-3 w-3" />
                 </a>
               ) : !event.has_guestlist && event.ticket_sale_mode !== "external" ? (
-                <span className="flex-1 flex items-center justify-center gap-1.5 bg-raised text-muted font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
+                <span className="flex-1 flex items-center justify-center gap-1.5 bg-raised text-muted font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md">
                   <Eye className="h-3 w-3" />
                   Info Only
                 </span>
@@ -546,7 +546,7 @@ export function AttendeeEventCard({
                     e.stopPropagation();
                     router.push(`/e/${event.slug}/register`);
                   }}
-                  className="flex-1 bg-accent-primary text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-primary/90 transition-colors"
+                  className="flex-1 bg-accent-primary text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-primary/90 transition-colors"
                 >
                   Join Guestlist
                 </button>

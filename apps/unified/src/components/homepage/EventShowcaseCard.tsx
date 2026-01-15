@@ -79,7 +79,7 @@ export function EventShowcaseCard({ event, index }: { event: any; index: number 
               
               {/* CTA Button */}
               <motion.button
-                className="w-full bg-white text-void font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-xl hover:bg-accent-secondary hover:text-white transition-all duration-300 flex items-center justify-center gap-2 group/btn"
+                className="w-full bg-accent-primary text-void font-mono font-bold text-xs uppercase tracking-widest py-3 px-4 rounded-xl hover:bg-accent-primary/90 transition-all duration-300 flex items-center justify-center gap-2 group/btn"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

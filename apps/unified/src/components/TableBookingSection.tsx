@@ -558,7 +558,7 @@ export function TableBookingSection({ eventId, eventName, venueName, eventStartT
                         {!table.has_confirmed_booking && (
                           <Button
                             size="sm"
-                            className="mt-3 w-full"
+                            className="mt-3 w-full font-mono"
                             onClick={(e) => {
                               e?.stopPropagation();
                               handleSelectTable(table);

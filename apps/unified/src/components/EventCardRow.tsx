@@ -235,14 +235,14 @@ export const EventCardRow = memo(function EventCardRow({
                   <button
                     onClick={handleViewPass}
                     disabled={loading}
-                    className="flex items-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 bg-accent-success text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
                     View Pass
                   </button>
                 )}
                 {!isAttending && isGuestlistClosed && event.has_guestlist && (
-                  <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
+                  <span className="bg-raised text-secondary font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
                     Guestlist Closed
                   </span>
                 )}
@@ -252,7 +252,7 @@ export const EventCardRow = memo(function EventCardRow({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1.5 bg-blue-500 text-white font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
+                    className="flex items-center gap-1.5 bg-blue-500 text-white font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
                   >
                     Get Tickets
                     <ExternalLink className="h-3 w-3" />
@@ -265,7 +265,7 @@ export const EventCardRow = memo(function EventCardRow({
                       e.stopPropagation();
                       router.push(`/e/${event.slug}/register`);
                     }}
-                    className="bg-accent-primary text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-primary/90 transition-colors"
+                    className="bg-accent-primary text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-primary/90 transition-colors"
                   >
                     Join Guestlist
                   </button>
