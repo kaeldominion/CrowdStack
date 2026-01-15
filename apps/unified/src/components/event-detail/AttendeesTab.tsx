@@ -876,6 +876,8 @@ export function AttendeesTab({
             onToggleOrganizerVip={onToggleOrganizerVip}
             togglingVip={togglingVip}
             attendeeNotes={selectedAttendee?.notes || ""}
+            notesUpdatedAt={selectedAttendee?.notes_updated_at}
+            notesUpdatedByName={selectedAttendee?.notes_updated_by_name}
             isEventVip={selectedAttendee?.is_event_vip || false}
             isVenueVip={selectedAttendee?.is_venue_vip || false}
             isOrganizerVip={selectedAttendee?.is_organizer_vip || false}

@@ -361,24 +361,28 @@ export async function GET(
 
     // Fetch attendee note based on role (simplified notes system)
     let attendeeNote: string | null = null;
+    let notesUpdatedAt: string | null = null;
+    let notesUpdatedByName: string | null = null;
     if (role && eventInfo) {
       try {
+        let noteData: { note: string; updated_at: string; updated_by: string } | null = null;
+
         if (role === "venue" && eventInfo.venue_id) {
-          const { data: noteData } = await serviceSupabase
+          const { data } = await serviceSupabase
             .from("attendee_notes")
-            .select("note")
+            .select("note, updated_at, updated_by")
             .eq("attendee_id", attendee.id)
             .eq("venue_id", eventInfo.venue_id)
             .maybeSingle();
-          attendeeNote = noteData?.note || null;
+          noteData = data;
         } else if (role === "organizer" && eventInfo.organizer_id) {
-          const { data: noteData } = await serviceSupabase
+          const { data } = await serviceSupabase
             .from("attendee_notes")
-            .select("note")
+            .select("note, updated_at, updated_by")
             .eq("attendee_id", attendee.id)
             .eq("organizer_id", eventInfo.organizer_id)
             .maybeSingle();
-          attendeeNote = noteData?.note || null;
+          noteData = data;
         } else if (role === "promoter") {
           // Get promoter ID for current user
           const { data: promoter } = await serviceSupabase
@@ -387,13 +391,28 @@ export async function GET(
             .eq("user_id", userId)
             .maybeSingle();
           if (promoter) {
-            const { data: noteData } = await serviceSupabase
+            const { data } = await serviceSupabase
               .from("attendee_notes")
-              .select("note")
+              .select("note, updated_at, updated_by")
               .eq("attendee_id", attendee.id)
               .eq("promoter_id", promoter.id)
               .maybeSingle();
-            attendeeNote = noteData?.note || null;
+            noteData = data;
+          }
+        }
+
+        if (noteData) {
+          attendeeNote = noteData.note || null;
+          notesUpdatedAt = noteData.updated_at || null;
+
+          // Look up user name from profiles table
+          if (noteData.updated_by) {
+            const { data: profile } = await serviceSupabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", noteData.updated_by)
+              .maybeSingle();
+            notesUpdatedByName = profile?.full_name || null;
           }
         }
       } catch (noteError) {
@@ -502,6 +521,8 @@ export async function GET(
       },
       attendance: attendanceStats,
       notes: attendeeNote,
+      notes_updated_at: notesUpdatedAt,
+      notes_updated_by_name: notesUpdatedByName,
       feedback_history: feedbackHistory,
       table_party: tablePartyInfo,
       cutoff_status: cutoffStatus,

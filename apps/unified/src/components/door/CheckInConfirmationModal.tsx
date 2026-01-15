@@ -64,6 +64,8 @@ interface CheckInConfirmationModalProps {
       venue_checkins: number;
     };
     notes?: string | null;
+    notes_updated_at?: string | null;
+    notes_updated_by_name?: string | null;
     feedback_history: Array<{
       id: string;
       rating: number;
@@ -426,7 +428,17 @@ export function CheckInConfirmationModal({
                 </div>
               </div>
             ) : data.notes ? (
-              <p className="text-sm text-secondary whitespace-pre-wrap">{data.notes}</p>
+              <div>
+                <p className="text-sm text-secondary whitespace-pre-wrap">{data.notes}</p>
+                {data.notes_updated_by_name && (
+                  <p className="text-[10px] text-secondary/60 mt-1">
+                    Last edited by {data.notes_updated_by_name}
+                    {data.notes_updated_at && (
+                      <> • {new Date(data.notes_updated_at).toLocaleString()}</>
+                    )}
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="text-sm text-secondary/60 italic">No notes added</p>
             )}

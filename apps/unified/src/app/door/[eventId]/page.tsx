@@ -573,8 +573,16 @@ export default function DoorScannerPage() {
       throw new Error(data.error || "Failed to save notes");
     }
 
-    // Update local state
-    setCheckInPreviewData((prev: any) => prev ? { ...prev, notes } : null);
+    // Get updated metadata from response
+    const responseData = await response.json();
+
+    // Update local state with notes and metadata
+    setCheckInPreviewData((prev: any) => prev ? {
+      ...prev,
+      notes,
+      notes_updated_at: responseData.updated_at,
+      notes_updated_by_name: responseData.updated_by_name,
+    } : null);
   };
 
   // QR Scanner using html5-qrcode

@@ -319,18 +319,16 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
     .maybeSingle();
 
   if (noteData?.note) {
-    // Get the name of who last updated the note
+    // Get the name of who last updated the note from profiles table
     let updatedByName = "Unknown";
     if (noteData.updated_by) {
-      const { data: noteCreator } = await supabase
-        .from("attendees")
-        .select("name, surname")
-        .eq("user_id", noteData.updated_by)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", noteData.updated_by)
         .maybeSingle();
-      if (noteCreator) {
-        updatedByName = noteCreator.surname
-          ? `${noteCreator.name || ""} ${noteCreator.surname}`.trim()
-          : (noteCreator.name || "Unknown");
+      if (profile?.full_name) {
+        updatedByName = profile.full_name;
       }
     }
     attendeeNote = {

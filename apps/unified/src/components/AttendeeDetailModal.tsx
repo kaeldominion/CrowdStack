@@ -24,6 +24,8 @@ interface AttendeeDetailModalProps {
   onToggleOrganizerVip?: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
   togglingVip?: string | null;
   attendeeNotes?: string;
+  notesUpdatedAt?: string | null;
+  notesUpdatedByName?: string | null;
   isEventVip?: boolean;
   isVenueVip?: boolean;
   isOrganizerVip?: boolean;
@@ -154,6 +156,8 @@ export function AttendeeDetailModal({
   onToggleOrganizerVip,
   togglingVip = null,
   attendeeNotes = "",
+  notesUpdatedAt = null,
+  notesUpdatedByName = null,
   isEventVip = false,
   isVenueVip = false,
   isOrganizerVip = false,
@@ -367,6 +371,14 @@ export function AttendeeDetailModal({
                     onSave={(notes) => onSaveNotes(registrationId, notes)}
                     placeholder="Add note..."
                   />
+                  {attendeeNotes && notesUpdatedByName && (
+                    <p className="text-[10px] text-secondary mt-1">
+                      Last edited by {notesUpdatedByName}
+                      {notesUpdatedAt && (
+                        <> • {new Date(notesUpdatedAt).toLocaleString()}</>
+                      )}
+                    </p>
+                  )}
                 </div>
               )}
 
