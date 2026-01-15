@@ -24,7 +24,10 @@ export interface ChartDataPoint {
  */
 export async function getOrganizerDashboardStats(passedOrganizerId?: string | null): Promise<DashboardStats> {
   const organizerId = passedOrganizerId ?? await getUserOrganizerId();
+  console.log("[OrganizerDashboardStats] organizerId:", organizerId);
+
   if (!organizerId) {
+    console.log("[OrganizerDashboardStats] No organizerId found, returning zeros");
     return {
       totalEvents: 0,
       registrations: 0,
@@ -50,8 +53,10 @@ export async function getOrganizerDashboardStats(passedOrganizerId?: string | nu
     .eq("organizer_id", organizerId);
 
   const eventIds = organizerEvents?.map((e) => e.id) || [];
+  console.log("[OrganizerDashboardStats] eventCount:", eventCount, "eventIds:", eventIds.length);
 
   if (eventIds.length === 0) {
+    console.log("[OrganizerDashboardStats] No events found, returning zeros");
     return {
       totalEvents: eventCount || 0,
       registrations: 0,
@@ -70,16 +75,20 @@ export async function getOrganizerDashboardStats(passedOrganizerId?: string | nu
 
   const regCount = allRegs?.length || 0;
   const regIds = allRegs?.map((r) => r.id) || [];
+  console.log("[OrganizerDashboardStats] regCount:", regCount, "regIds:", regIds.length);
 
   // Get check-in count from checkins table
   let checkinCount = 0;
   if (regIds.length > 0) {
-    const { count } = await supabase
+    const { count, error: checkinError } = await supabase
       .from("checkins")
       .select("*", { count: "exact", head: true })
       .in("registration_id", regIds)
       .is("undo_at", null);
     checkinCount = count || 0;
+    console.log("[OrganizerDashboardStats] checkinCount:", checkinCount, "error:", checkinError?.message || "none");
+  } else {
+    console.log("[OrganizerDashboardStats] No registration IDs, skipping checkin query");
   }
 
   // Get promoter count
