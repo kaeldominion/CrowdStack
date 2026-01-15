@@ -205,12 +205,11 @@ export default function VenueEventsPage() {
           </Badge>
         );
       } else if (isUpcoming) {
-        return (
-          <Badge variant="success" className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            Upcoming
-          </Badge>
-        );
+        // Show actual publication status for upcoming events
+        if (status === "draft") {
+          return <Badge variant="secondary">Draft</Badge>;
+        }
+        return <Badge variant="success">Published</Badge>;
       }
     }
 
