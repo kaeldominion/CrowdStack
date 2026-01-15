@@ -48,7 +48,9 @@ export default function RegisterPage() {
     flier_url?: string | null;
     show_photo_email_notice?: boolean;
     checkin_cutoff_enabled?: boolean;
-    checkin_cutoff_time?: string | null;
+    checkin_cutoff_time_male?: string | null;
+    checkin_cutoff_time_female?: string | null;
+    attendee_gender?: string | null;
   } | null>(null);
   const [eventDataForSignup, setEventDataForSignup] = useState<{
     name: string;
@@ -94,7 +96,8 @@ export default function RegisterPage() {
                 flier_url: eventData.event.flier_url || null,
                 show_photo_email_notice: eventData.event.show_photo_email_notice || false,
                 checkin_cutoff_enabled: eventData.event.checkin_cutoff_enabled || false,
-                checkin_cutoff_time: eventData.event.checkin_cutoff_time || null,
+                checkin_cutoff_time_male: eventData.event.checkin_cutoff_time_male || null,
+                checkin_cutoff_time_female: eventData.event.checkin_cutoff_time_female || null,
               });
             }
           }
@@ -126,7 +129,9 @@ export default function RegisterPage() {
                 flier_url: checkData.event.flier_url,
                 show_photo_email_notice: checkData.event.show_photo_email_notice || false,
                 checkin_cutoff_enabled: checkData.event.checkin_cutoff_enabled || false,
-                checkin_cutoff_time: checkData.event.checkin_cutoff_time || null,
+                checkin_cutoff_time_male: checkData.event.checkin_cutoff_time_male || null,
+                checkin_cutoff_time_female: checkData.event.checkin_cutoff_time_female || null,
+                attendee_gender: checkData.attendee?.gender || null,
               });
               setLoading(false);
               return;
@@ -269,7 +274,8 @@ export default function RegisterPage() {
           flier_url: data.event.flier_url,
           show_photo_email_notice: data.event.show_photo_email_notice || false,
           checkin_cutoff_enabled: data.event.checkin_cutoff_enabled || false,
-          checkin_cutoff_time: data.event.checkin_cutoff_time || null,
+          checkin_cutoff_time_male: data.event.checkin_cutoff_time_male || null,
+          checkin_cutoff_time_female: data.event.checkin_cutoff_time_female || null,
         });
       } else {
         // If event details not in response, fetch them
@@ -285,7 +291,8 @@ export default function RegisterPage() {
               flier_url: eventData.event?.flier_url || eventData.flier_url || null,
               show_photo_email_notice: eventData.event?.show_photo_email_notice || false,
               checkin_cutoff_enabled: eventData.event?.checkin_cutoff_enabled || false,
-              checkin_cutoff_time: eventData.event?.checkin_cutoff_time || null,
+              checkin_cutoff_time_male: eventData.event?.checkin_cutoff_time_male || null,
+              checkin_cutoff_time_female: eventData.event?.checkin_cutoff_time_female || null,
             });
           }
         } catch (err) {
@@ -320,7 +327,9 @@ export default function RegisterPage() {
             start_time: checkData.event.start_time,
             flier_url: checkData.event.flier_url,
             checkin_cutoff_enabled: checkData.event.checkin_cutoff_enabled || false,
-            checkin_cutoff_time: checkData.event.checkin_cutoff_time || null,
+            checkin_cutoff_time_male: checkData.event.checkin_cutoff_time_male || null,
+            checkin_cutoff_time_female: checkData.event.checkin_cutoff_time_female || null,
+            attendee_gender: checkData.attendee?.gender || null,
           });
           return true;
         }
@@ -362,7 +371,9 @@ export default function RegisterPage() {
         venueAddress={eventDetails.venue?.address || null}
         showPhotoEmailNotice={eventDetails.show_photo_email_notice || false}
         checkinCutoffEnabled={eventDetails.checkin_cutoff_enabled || false}
-        checkinCutoffTime={eventDetails.checkin_cutoff_time || null}
+        checkinCutoffTimeMale={eventDetails.checkin_cutoff_time_male || null}
+        checkinCutoffTimeFemale={eventDetails.checkin_cutoff_time_female || null}
+        attendeeGender={eventDetails.attendee_gender || null}
       />
     );
   }

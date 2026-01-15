@@ -182,7 +182,7 @@ export async function POST(
         event_id,
         attendee_id,
         referral_promoter_id,
-        attendee:attendees(id, name, surname, email, phone)
+        attendee:attendees(id, name, surname, email, phone, gender)
       `)
       .eq("id", registrationId)
       .single();
@@ -209,36 +209,44 @@ export async function POST(
       : attendee?.name || "Unknown Attendee";
     console.log(`[Check-in API] Found registration for attendee: ${attendeeName}`);
 
-    // Check cutoff time settings
+    // Check cutoff time settings (gender-based)
     let isPastCutoff = false;
     let cutoffTimeFormatted: string | null = null;
 
     try {
       const { data: cutoffSettings } = await serviceSupabase
         .from("events")
-        .select("checkin_cutoff_enabled, checkin_cutoff_time, timezone, start_time")
+        .select("checkin_cutoff_enabled, checkin_cutoff_time_male, checkin_cutoff_time_female, timezone, start_time")
         .eq("id", eventId)
         .single();
 
-      if (cutoffSettings?.checkin_cutoff_enabled && cutoffSettings?.checkin_cutoff_time) {
-        const now = new Date();
-        const eventDate = new Date(cutoffSettings.start_time);
-        const [hours, minutes] = cutoffSettings.checkin_cutoff_time.split(':').map(Number);
+      if (cutoffSettings?.checkin_cutoff_enabled) {
+        // Select cutoff time based on attendee gender (default to male if no gender set)
+        const attendeeGender = attendee?.gender || 'male';
+        const cutoffTime = attendeeGender === 'female'
+          ? cutoffSettings.checkin_cutoff_time_female
+          : cutoffSettings.checkin_cutoff_time_male;
 
-        // Create cutoff datetime by combining event date with cutoff time
-        const cutoffDateTime = new Date(eventDate);
-        cutoffDateTime.setHours(hours, minutes, 0, 0);
+        if (cutoffTime) {
+          const now = new Date();
+          const eventDate = new Date(cutoffSettings.start_time);
+          const [hours, minutes] = cutoffTime.split(':').map(Number);
 
-        // Format the cutoff time for display
-        cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          timeZone: cutoffSettings.timezone || 'UTC',
-        });
+          // Create cutoff datetime by combining event date with cutoff time
+          const cutoffDateTime = new Date(eventDate);
+          cutoffDateTime.setHours(hours, minutes, 0, 0);
 
-        isPastCutoff = now > cutoffDateTime;
+          // Format the cutoff time for display
+          cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: cutoffSettings.timezone || 'UTC',
+          });
 
-        console.log(`[Check-in API] Cutoff check: now=${now.toISOString()}, cutoff=${cutoffDateTime.toISOString()}, isPast=${isPastCutoff}`);
+          isPastCutoff = now > cutoffDateTime;
+
+          console.log(`[Check-in API] Cutoff check: gender=${attendeeGender}, now=${now.toISOString()}, cutoff=${cutoffDateTime.toISOString()}, isPast=${isPastCutoff}`);
+        }
       }
     } catch (cutoffError) {
       console.warn(`[Check-in API] Error checking cutoff settings:`, cutoffError);

@@ -39,7 +39,7 @@ export async function GET(
     // Find attendee by user_id or email
     const { data: attendee } = await serviceSupabase
       .from("attendees")
-      .select("id, name, surname, email")
+      .select("id, name, surname, email, gender")
       .or(`user_id.eq.${user.id},email.eq.${user.email}`)
       .single();
 
@@ -72,7 +72,8 @@ export async function GET(
         flier_url,
         show_photo_email_notice,
         checkin_cutoff_enabled,
-        checkin_cutoff_time
+        checkin_cutoff_time_male,
+        checkin_cutoff_time_female
       `)
       .eq("id", event.id)
       .single();
@@ -102,6 +103,7 @@ export async function GET(
       attendee: {
         id: attendee.id,
         name: [attendee.name, attendee.surname].filter(Boolean).join(" ") || attendee.email?.split("@")[0] || "Guest",
+        gender: attendee.gender || null,
       },
       event: eventDetails ? {
         id: eventDetails.id,
@@ -113,7 +115,8 @@ export async function GET(
         end_time: eventDetails.end_time,
         show_photo_email_notice: eventDetails.show_photo_email_notice || false,
         checkin_cutoff_enabled: eventDetails.checkin_cutoff_enabled || false,
-        checkin_cutoff_time: eventDetails.checkin_cutoff_time || null,
+        checkin_cutoff_time_male: eventDetails.checkin_cutoff_time_male || null,
+        checkin_cutoff_time_female: eventDetails.checkin_cutoff_time_female || null,
       } : null,
     });
   } catch (error: any) {

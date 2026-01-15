@@ -175,7 +175,8 @@ interface EventData {
   external_ticket_url?: string | null;
   table_booking_mode?: "disabled" | "promoter_only" | "direct" | null;
   checkin_cutoff_enabled?: boolean;
-  checkin_cutoff_time?: string | null; // "HH:MM:SS" format
+  checkin_cutoff_time_male?: string | null; // "HH:MM:SS" format
+  checkin_cutoff_time_female?: string | null; // "HH:MM:SS" format
   created_at: string;
   // Closeout fields
   closed_at?: string | null;
@@ -404,7 +405,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
 
   // Check-in cutoff state
   const [checkinCutoffEnabled, setCheckinCutoffEnabled] = useState(false);
-  const [checkinCutoffTime, setCheckinCutoffTime] = useState("");
+  const [checkinCutoffTimeMale, setCheckinCutoffTimeMale] = useState("");
+  const [checkinCutoffTimeFemale, setCheckinCutoffTimeFemale] = useState("");
   const [savingCutoff, setSavingCutoff] = useState(false);
 
   // Load current user ID for referral attribution
@@ -697,7 +699,8 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
         }
         // Set check-in cutoff settings from event data
         setCheckinCutoffEnabled(data.event.checkin_cutoff_enabled ?? false);
-        setCheckinCutoffTime(data.event.checkin_cutoff_time?.slice(0, 5) ?? ""); // "HH:MM:SS" -> "HH:MM"
+        setCheckinCutoffTimeMale(data.event.checkin_cutoff_time_male?.slice(0, 5) ?? ""); // "HH:MM:SS" -> "HH:MM"
+        setCheckinCutoffTimeFemale(data.event.checkin_cutoff_time_female?.slice(0, 5) ?? ""); // "HH:MM:SS" -> "HH:MM"
         // Load event tags
         loadEventTags();
         // Set organizer ID for organizer role (for their own referral link)
@@ -2848,45 +2851,87 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                       </div>
                     </div>
 
-                    {/* Time Picker - Only shown when enabled */}
+                    {/* Time Pickers - Only shown when enabled */}
                     {checkinCutoffEnabled && (
-                      <div>
-                        <label className="text-sm font-medium text-primary block mb-2">
-                          Cutoff Time
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="time"
-                            value={checkinCutoffTime}
-                            onChange={async (e) => {
-                              const newTime = e.target.value;
-                              setCheckinCutoffTime(newTime);
-                              setSavingCutoff(true);
-                              try {
-                                const response = await fetch(config.eventApiEndpoint, {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ checkin_cutoff_time: newTime ? `${newTime}:00` : null }),
-                                });
-                                if (response.ok) {
-                                  toast.success("Cutoff time updated");
-                                } else {
-                                  const errorData = await response.json();
-                                  toast.error(errorData.error || "Failed to update cutoff time");
-                                }
-                              } catch (error) {
-                                toast.error("Failed to update cutoff time");
-                              } finally {
-                                setSavingCutoff(false);
-                              }
-                            }}
-                            disabled={savingCutoff}
-                            className="px-3 py-2 bg-surface border border-border rounded-lg text-primary"
-                          />
-                          {savingCutoff && <InlineSpinner />}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Male Cutoff Time */}
+                          <div>
+                            <label className="text-sm font-medium text-primary block mb-2">
+                              Male Cutoff
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={checkinCutoffTimeMale}
+                                onChange={async (e) => {
+                                  const newTime = e.target.value;
+                                  setCheckinCutoffTimeMale(newTime);
+                                  setSavingCutoff(true);
+                                  try {
+                                    const response = await fetch(config.eventApiEndpoint, {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ checkin_cutoff_time_male: newTime ? `${newTime}:00` : null }),
+                                    });
+                                    if (response.ok) {
+                                      toast.success("Male cutoff time updated");
+                                    } else {
+                                      const errorData = await response.json();
+                                      toast.error(errorData.error || "Failed to update cutoff time");
+                                    }
+                                  } catch (error) {
+                                    toast.error("Failed to update cutoff time");
+                                  } finally {
+                                    setSavingCutoff(false);
+                                  }
+                                }}
+                                disabled={savingCutoff}
+                                className="w-full px-3 py-2 bg-surface border border-border rounded-lg dark:text-white text-gray-900 dark:[color-scheme:dark]"
+                              />
+                              {savingCutoff && <InlineSpinner />}
+                            </div>
+                          </div>
+
+                          {/* Female Cutoff Time */}
+                          <div>
+                            <label className="text-sm font-medium text-primary block mb-2">
+                              Female Cutoff
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={checkinCutoffTimeFemale}
+                                onChange={async (e) => {
+                                  const newTime = e.target.value;
+                                  setCheckinCutoffTimeFemale(newTime);
+                                  setSavingCutoff(true);
+                                  try {
+                                    const response = await fetch(config.eventApiEndpoint, {
+                                      method: "PATCH",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ checkin_cutoff_time_female: newTime ? `${newTime}:00` : null }),
+                                    });
+                                    if (response.ok) {
+                                      toast.success("Female cutoff time updated");
+                                    } else {
+                                      const errorData = await response.json();
+                                      toast.error(errorData.error || "Failed to update cutoff time");
+                                    }
+                                  } catch (error) {
+                                    toast.error("Failed to update cutoff time");
+                                  } finally {
+                                    setSavingCutoff(false);
+                                  }
+                                }}
+                                disabled={savingCutoff}
+                                className="w-full px-3 py-2 bg-surface border border-border rounded-lg dark:text-white text-gray-900 dark:[color-scheme:dark]"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-secondary mt-1">
-                          Time in event timezone ({event?.timezone || "UTC"})
+                        <p className="text-xs text-secondary">
+                          Times in event timezone ({event?.timezone || "UTC"}). If attendee has no gender set, male cutoff is used as default.
                         </p>
                       </div>
                     )}

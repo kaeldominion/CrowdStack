@@ -21,10 +21,12 @@ interface PassData {
   eventDate: string;
   venueName: string;
   attendeeName: string;
+  attendeeGender?: string | null;
   passId: string;
   flierUrl?: string;
   checkinCutoffEnabled?: boolean;
-  checkinCutoffTime?: string; // "HH:MM:SS"
+  checkinCutoffTimeMale?: string; // "HH:MM:SS"
+  checkinCutoffTimeFemale?: string; // "HH:MM:SS"
   eventTimezone?: string;
 }
 
@@ -125,7 +127,7 @@ export default function QRPassPage() {
         }
 
         let token = tokenFromQuery;
-        let eventDetails = { name: "", venue: "", date: "", attendee: "", flier: "" };
+        let eventDetails = { name: "", venue: "", date: "", attendee: "", attendeeGender: "" as string | null, flier: "" };
 
         // If we have a token in URL, validate it first to get all details
         if (tokenFromQuery) {
@@ -165,8 +167,11 @@ export default function QRPassPage() {
             if (!eventDetails.flier) eventDetails.flier = data.event.flier_url || data.event.cover_image_url || "";
           }
           
-          if (data.attendee && !eventDetails.attendee) {
-            eventDetails.attendee = data.attendee.name || "Guest";
+          if (data.attendee) {
+            if (!eventDetails.attendee) {
+              eventDetails.attendee = data.attendee.name || "Guest";
+            }
+            eventDetails.attendeeGender = data.attendee.gender || null;
           }
           
           if (data.qr_pass_token && !token) {
@@ -176,7 +181,8 @@ export default function QRPassPage() {
         
         // Always fetch full event details to get flier, venue, cutoff settings, etc.
         let cutoffEnabled = false;
-        let cutoffTime: string | undefined;
+        let cutoffTimeMale: string | undefined;
+        let cutoffTimeFemale: string | undefined;
         let eventTimezone: string | undefined;
 
         const eventResponse = await fetch(`/api/events/by-slug/${eventSlug}`);
@@ -188,9 +194,10 @@ export default function QRPassPage() {
           if (!eventDetails.date) eventDetails.date = eventData.start_time || "";
           // Always get flier from this endpoint as it's more reliable
           eventDetails.flier = eventData.flier_url || eventData.cover_image_url || eventDetails.flier || "";
-          // Get cutoff settings
+          // Get cutoff settings (gender-based)
           cutoffEnabled = eventData.checkin_cutoff_enabled ?? false;
-          cutoffTime = eventData.checkin_cutoff_time ?? undefined;
+          cutoffTimeMale = eventData.checkin_cutoff_time_male ?? undefined;
+          cutoffTimeFemale = eventData.checkin_cutoff_time_female ?? undefined;
           eventTimezone = eventData.timezone ?? undefined;
         }
 
@@ -206,10 +213,12 @@ export default function QRPassPage() {
             eventDate: eventDetails.date,
             venueName: eventDetails.venue,
             attendeeName: eventDetails.attendee || "Guest",
+            attendeeGender: eventDetails.attendeeGender,
             passId: generatePassId(token),
             flierUrl: eventDetails.flier,
             checkinCutoffEnabled: cutoffEnabled,
-            checkinCutoffTime: cutoffTime,
+            checkinCutoffTimeMale: cutoffTimeMale,
+            checkinCutoffTimeFemale: cutoffTimeFemale,
             eventTimezone: eventTimezone,
           });
           
@@ -337,29 +346,38 @@ export default function QRPassPage() {
                   </div>
                 </div>
 
-                {/* Check-in Cutoff Time */}
-                {passData.checkinCutoffEnabled && passData.checkinCutoffTime && (
-                  <div className="px-5 pb-4">
-                    <div className="flex items-center justify-center gap-2 text-secondary">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">
-                        Check-in closes at{' '}
-                        <span className="font-semibold text-primary">
-                          {(() => {
-                            const [hours, minutes] = passData.checkinCutoffTime!.split(':').map(Number);
-                            const date = new Date();
-                            date.setHours(hours, minutes);
-                            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                          })()}
+                {/* Check-in Cutoff Time (gender-based) */}
+                {passData.checkinCutoffEnabled && (() => {
+                  // Select cutoff time based on attendee gender (default to male if no gender)
+                  const cutoffTime = passData.attendeeGender === 'female'
+                    ? passData.checkinCutoffTimeFemale
+                    : passData.checkinCutoffTimeMale;
+
+                  if (!cutoffTime) return null;
+
+                  return (
+                    <div className="px-5 pb-4">
+                      <div className="flex items-center justify-center gap-2 text-secondary">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">
+                          Check-in closes at{' '}
+                          <span className="font-semibold text-primary">
+                            {(() => {
+                              const [hours, minutes] = cutoffTime.split(':').map(Number);
+                              const date = new Date();
+                              date.setHours(hours, minutes);
+                              return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                            })()}
+                          </span>
                         </span>
-                      </span>
+                      </div>
+                      <CutoffCountdown
+                        cutoffTime={cutoffTime}
+                        eventDate={passData.eventDate}
+                      />
                     </div>
-                    <CutoffCountdown
-                      cutoffTime={passData.checkinCutoffTime}
-                      eventDate={passData.eventDate}
-                    />
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* QR Code */}
                 <div className="p-6 flex flex-col items-center">

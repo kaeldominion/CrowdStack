@@ -93,7 +93,8 @@ export async function GET(
           user_id,
           avatar_url,
           is_global_vip,
-          global_vip_reason
+          global_vip_reason,
+          gender
         )
       `)
       .eq("id", finalRegistrationId)
@@ -139,35 +140,43 @@ export async function GET(
     // Get event info for venue_id, organizer_id, and cutoff settings
     const { data: eventInfo } = await serviceSupabase
       .from("events")
-      .select("venue_id, organizer_id, name, checkin_cutoff_enabled, checkin_cutoff_time, timezone, start_time")
+      .select("venue_id, organizer_id, name, checkin_cutoff_enabled, checkin_cutoff_time_male, checkin_cutoff_time_female, timezone, start_time")
       .eq("id", eventId)
       .single();
 
-    // Calculate cutoff status
+    // Calculate cutoff status (gender-based)
     let cutoffStatus = {
       isPastCutoff: false,
       cutoffTime: null as string | null,
       cutoffTimeFormatted: null as string | null,
     };
 
-    if (eventInfo?.checkin_cutoff_enabled && eventInfo?.checkin_cutoff_time) {
-      const now = new Date();
-      const eventDate = new Date(eventInfo.start_time);
-      const [hours, minutes] = eventInfo.checkin_cutoff_time.split(':').map(Number);
+    if (eventInfo?.checkin_cutoff_enabled) {
+      // Select cutoff time based on attendee gender (default to male if no gender set)
+      const attendeeGender = attendee?.gender || 'male';
+      const cutoffTime = attendeeGender === 'female'
+        ? eventInfo.checkin_cutoff_time_female
+        : eventInfo.checkin_cutoff_time_male;
 
-      // Create cutoff datetime by combining event date with cutoff time
-      const cutoffDateTime = new Date(eventDate);
-      cutoffDateTime.setHours(hours, minutes, 0, 0);
+      if (cutoffTime) {
+        const now = new Date();
+        const eventDate = new Date(eventInfo.start_time);
+        const [hours, minutes] = cutoffTime.split(':').map(Number);
 
-      // Format the cutoff time for display
-      cutoffStatus.cutoffTime = eventInfo.checkin_cutoff_time;
-      cutoffStatus.cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        timeZone: eventInfo.timezone || 'UTC',
-      });
+        // Create cutoff datetime by combining event date with cutoff time
+        const cutoffDateTime = new Date(eventDate);
+        cutoffDateTime.setHours(hours, minutes, 0, 0);
 
-      cutoffStatus.isPastCutoff = now > cutoffDateTime;
+        // Format the cutoff time for display
+        cutoffStatus.cutoffTime = cutoffTime;
+        cutoffStatus.cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: eventInfo.timezone || 'UTC',
+        });
+
+        cutoffStatus.isPastCutoff = now > cutoffDateTime;
+      }
     }
 
     // Fetch VIP status
