@@ -6,9 +6,6 @@ import Image from "next/image";
 import { Card, Badge, LoadingSpinner, Button, InlineSpinner } from "@crowdstack/ui";
 import {
   Calendar,
-  MapPin,
-  Users,
-  Clock,
   Instagram,
   Share2,
   CheckCircle2,
@@ -18,6 +15,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { createBrowserClient } from "@crowdstack/shared";
+import { EventCardRow } from "@/components/EventCardRow";
 
 interface Event {
   id: string;
@@ -29,6 +27,9 @@ interface Event {
   flier_url: string | null;
   max_guestlist_size: number | null;
   registration_count: number;
+  has_guestlist?: boolean;
+  ticket_sale_mode?: "none" | "external" | "internal";
+  external_ticket_url?: string | null;
   venue: {
     id: string;
     name: string;
@@ -413,59 +414,17 @@ export function PromoterProfileClient({ slug, promoterId, initialData, cacheBust
           ) : (
             <div className="space-y-3">
               {upcomingEvents.map((event) => (
-                <Link
+                <EventCardRow
                   key={event.id}
-                  href={`/e/${event.slug}?ref=${promoterId}`}
-                  className="block group"
-                >
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-glass border border-subtle hover:border-accent-primary/30 transition-all">
-                    {/* Compact Thumbnail */}
-                    {event.flier_url ? (
-                      <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 border border-subtle">
-                        <Image
-                          src={event.flier_url}
-                          alt={event.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-14 h-20 rounded-md bg-raised flex items-center justify-center flex-shrink-0 border border-subtle">
-                        <Calendar className="h-5 w-5 text-muted" />
-                      </div>
-                    )}
-
-                    {/* Event Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-primary uppercase text-sm line-clamp-1 group-hover:text-accent-primary transition-colors">
-                        {event.name}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-1 text-xs text-secondary">
-                        <Calendar className="h-3 w-3 text-muted" />
-                        <span>{formatDate(event.start_time)}</span>
-                        <span className="text-muted">•</span>
-                        <span>{formatTime(event.start_time)}</span>
-                      </div>
-                      {event.venue && (
-                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-secondary">
-                          <MapPin className="h-3 w-3 text-muted" />
-                          <span className="line-clamp-1">{event.venue.name}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stats & CTA */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-primary">{event.registration_count}</p>
-                        <p className="label-mono text-[8px]">Going</p>
-                      </div>
-                      <span className="px-3 py-1.5 bg-accent-primary text-void text-xs font-bold rounded-md group-hover:glow-primary transition-shadow">
-                        Join
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  event={{
+                    ...event,
+                    has_guestlist: event.has_guestlist,
+                    ticket_sale_mode: event.ticket_sale_mode ?? "none",
+                    external_ticket_url: event.external_ticket_url,
+                  }}
+                  linkParams={`ref=${promoterId}`}
+                  shareRef={promoterId}
+                />
               ))}
             </div>
           )}

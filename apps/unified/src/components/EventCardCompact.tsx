@@ -263,7 +263,7 @@ export function EventCardCompact({
                   e.stopPropagation();
                   router.push(`/e/${event.slug}/register`);
                 }}
-                className="flex items-center gap-1.5 bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-white/90 transition-colors"
+                className="flex items-center gap-1.5 bg-accent-primary text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-primary/90 transition-colors"
               >
                 Join Guestlist
               </button>

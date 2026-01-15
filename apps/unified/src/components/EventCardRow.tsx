@@ -55,6 +55,10 @@ interface EventCardRowProps {
   didAttend?: boolean;
   /** Guestlist is closed (full or registration ended) */
   isGuestlistClosed?: boolean;
+  /** Optional query params to append to event link (e.g., for referral tracking) */
+  linkParams?: string;
+  /** Optional promoter ID for referral-attributed share links (used on promoter profile pages) */
+  shareRef?: string;
   className?: string;
 }
 
@@ -68,6 +72,8 @@ export const EventCardRow = memo(function EventCardRow({
   isPast = false,
   didAttend,
   isGuestlistClosed = false,
+  linkParams,
+  shareRef,
   className = "",
 }: EventCardRowProps) {
   const router = useRouter();
@@ -160,18 +166,21 @@ export const EventCardRow = memo(function EventCardRow({
     return null;
   };
 
-  // Build share URL
-  const shareUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/e/${event.slug}` 
-    : `/e/${event.slug}`;
+  // Build share URL - include referral code if provided (for promoter profile pages)
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/e/${event.slug}${shareRef ? `?ref=${shareRef}` : ''}`
+    : `/e/${event.slug}${shareRef ? `?ref=${shareRef}` : ''}`;
+
+  // Build event URL with optional params
+  const eventUrl = linkParams ? `/e/${event.slug}?${linkParams}` : `/e/${event.slug}`;
 
   return (
-    <Link 
-      href={`/e/${event.slug}`} 
+    <Link
+      href={eventUrl}
       className={`block group ${className}`}
       onMouseEnter={() => prefetchEvent(event.slug)}
     >
-      <Card padding="none" hover className="flex gap-2.5 p-2.5">
+      <Card padding="none" hover className={`flex gap-2.5 p-2.5 ${isLive ? "ring-2 ring-accent-success/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]" : ""}`}>
         {/* Flier Image - 1:1 square aspect ratio */}
         <div className="relative w-16 sm:w-20 aspect-square rounded-lg overflow-hidden bg-glass flex-shrink-0">
           {heroImage ? (
@@ -221,20 +230,23 @@ export const EventCardRow = memo(function EventCardRow({
             <div className="flex items-center justify-between gap-2 mt-auto pt-1">
               {/* Left: Action Buttons */}
               <div className="flex items-center gap-2">
-                {isAttending ? (
+                {/* Render CTA button based on state */}
+                {isAttending && (
                   <button
                     onClick={handleViewPass}
                     disabled={loading}
                     className="flex items-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
-                    View Entry
+                    View Pass
                   </button>
-                ) : isGuestlistClosed && event.has_guestlist ? (
+                )}
+                {!isAttending && isGuestlistClosed && event.has_guestlist && (
                   <span className="bg-raised text-secondary font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md cursor-not-allowed">
                     Guestlist Closed
                   </span>
-                ) : event.ticket_sale_mode === "external" && event.external_ticket_url ? (
+                )}
+                {!isAttending && !isGuestlistClosed && event.ticket_sale_mode === "external" && event.external_ticket_url && (
                   <a
                     href={event.external_ticket_url}
                     target="_blank"
@@ -245,18 +257,19 @@ export const EventCardRow = memo(function EventCardRow({
                     Get Tickets
                     <ExternalLink className="h-3 w-3" />
                   </a>
-                ) : event.has_guestlist ? (
+                )}
+                {!isAttending && !isGuestlistClosed && !(event.ticket_sale_mode === "external" && event.external_ticket_url) && event.has_guestlist === true && (
                   <button
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       router.push(`/e/${event.slug}/register`);
                     }}
-                    className="bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-white/90 transition-colors"
+                    className="bg-accent-primary text-void font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-primary/90 transition-colors"
                   >
                     Join Guestlist
                   </button>
-                ) : null}
+                )}
                 <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                   <ShareButton
                     title={event.name}

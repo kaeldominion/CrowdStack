@@ -253,8 +253,8 @@ export default function PromoterProfilePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-primary">Profile</h1>
-          <p className="mt-2 text-sm text-secondary">
+          <h1 className="page-title">Profile</h1>
+          <p className="page-description">
             Manage your promoter profile information
           </p>
         </div>
@@ -273,8 +273,8 @@ export default function PromoterProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tighter text-primary">Profile</h1>
-        <p className="mt-2 text-sm text-secondary">
+        <h1 className="page-title">Profile</h1>
+        <p className="page-description">
           Manage your promoter profile information
         </p>
       </div>
@@ -312,7 +312,7 @@ export default function PromoterProfilePage() {
       <BentoCard>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-primary">Profile Information</h2>
+            <h2 className="section-header">Profile Information</h2>
             {saved && (
               <div className="flex items-center gap-2 text-accent-success text-sm">
                 <Check className="h-4 w-4" />
@@ -330,7 +330,7 @@ export default function PromoterProfilePage() {
           <div className="space-y-4">
             {/* Profile Photo */}
             <div>
-              <label className="block text-sm font-medium text-primary mb-3">
+              <label className="label-mono mb-3">
                 Profile Photo
               </label>
               <div className="flex items-center gap-6">
@@ -398,7 +398,7 @@ export default function PromoterProfilePage() {
 
             {/* Profile URL (Slug) */}
             <div>
-              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+              <label className="label-mono mb-2 flex items-center gap-2">
                 <Link2 className="h-4 w-4" />
                 Profile URL
               </label>
@@ -420,7 +420,7 @@ export default function PromoterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+              <label className="label-mono mb-2 flex items-center gap-2">
                 <User className="h-4 w-4" />
                 Name
               </label>
@@ -433,7 +433,7 @@ export default function PromoterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">
+              <label className="label-mono mb-2">
                 Bio
               </label>
               <Textarea
@@ -449,7 +449,7 @@ export default function PromoterProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                <label className="label-mono mb-2 flex items-center gap-2">
                   <Instagram className="h-4 w-4" />
                   Instagram
                 </label>
@@ -465,7 +465,7 @@ export default function PromoterProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+                <label className="label-mono mb-2 flex items-center gap-2">
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
                 </label>
@@ -482,7 +482,7 @@ export default function PromoterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+              <label className="label-mono mb-2 flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Email
               </label>
@@ -499,7 +499,7 @@ export default function PromoterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-primary mb-2 flex items-center gap-2">
+              <label className="label-mono mb-2 flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Phone
               </label>

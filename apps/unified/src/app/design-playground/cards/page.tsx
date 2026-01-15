@@ -89,6 +89,8 @@ const MOCK_EVENT = {
   cover_image_url: null,
   capacity: 200,
   registration_count: 145,
+  has_guestlist: true,
+  ticket_sale_mode: "none" as const,
   venue: {
     name: "Jade by Todd English",
     city: "Dubai",
@@ -126,25 +128,38 @@ const MOCK_REGISTRATION = {
   checkins: [],
 };
 
-// External ticket event
+// Guestlist event (Join Guestlist button)
+const MOCK_EVENT_GUESTLIST = {
+  ...MOCK_EVENT,
+  id: "event-guestlist",
+  name: "Guestlist Event",
+  slug: "guestlist-event",
+  has_guestlist: true,
+  ticket_sale_mode: "none" as const,
+  external_ticket_url: null,
+};
+
+// External ticket event (Get Tickets / Buy Tickets button)
 const MOCK_EVENT_EXTERNAL = {
   ...MOCK_EVENT,
   id: "event-external",
   name: "External Ticket Event",
   slug: "external-ticket-event",
-  registration_type: "external_link" as const,
+  has_guestlist: false,
+  ticket_sale_mode: "external" as const,
   external_ticket_url: "https://ra.co/events/example",
   capacity: null, // No capacity tracking for external
   registration_count: 0,
 };
 
-// Display only event
+// Display only event (Info Only button)
 const MOCK_EVENT_DISPLAY_ONLY = {
   ...MOCK_EVENT,
   id: "event-display",
   name: "Display Only Event",
   slug: "display-only-event",
-  registration_type: "display_only" as const,
+  has_guestlist: false,
+  ticket_sale_mode: "none" as const,
   external_ticket_url: null,
   capacity: null,
   registration_count: 0,
@@ -567,14 +582,52 @@ export default function DesignCardsPage() {
             </CardGrid>
           </div>
 
+          {/* CTA Button Variants */}
+          <div className="mb-8">
+            <CardLabel>CTA Button Variants</CardLabel>
+            <p className="text-sm text-muted mb-4">
+              Different call-to-action buttons based on event configuration and user state.
+            </p>
+
+            <CardGrid columns={4}>
+              {/* Request Guestlist - Default unregistered state */}
+              <div>
+                <p className="text-xs text-secondary mb-2 font-mono">JOIN GUESTLIST</p>
+                <p className="text-[10px] text-muted mb-2">has_guestlist: true</p>
+                <AttendeeEventCard event={MOCK_EVENT_GUESTLIST} />
+              </div>
+
+              {/* View Pass - Registered state */}
+              <div>
+                <p className="text-xs text-secondary mb-2 font-mono">VIEW PASS</p>
+                <p className="text-[10px] text-muted mb-2">Registered user</p>
+                <AttendeeEventCard event={MOCK_EVENT_GUESTLIST} registration={MOCK_REGISTRATION} />
+              </div>
+
+              {/* Get Tickets - External ticket sale */}
+              <div>
+                <p className="text-xs text-secondary mb-2 font-mono">GET TICKETS</p>
+                <p className="text-[10px] text-muted mb-2">ticket_sale_mode: &quot;external&quot;</p>
+                <AttendeeEventCard event={MOCK_EVENT_EXTERNAL} />
+              </div>
+
+              {/* Info Only - Display only */}
+              <div>
+                <p className="text-xs text-secondary mb-2 font-mono">INFO ONLY</p>
+                <p className="text-[10px] text-muted mb-2">has_guestlist: false</p>
+                <AttendeeEventCard event={MOCK_EVENT_DISPLAY_ONLY} />
+              </div>
+            </CardGrid>
+          </div>
+
           {/* External Ticket Events */}
           <div className="mb-8">
             <CardLabel>External Ticket Events</CardLabel>
             <p className="text-sm text-muted mb-4">
               Events where tickets are sold externally (RA, Eventbrite, etc.).
-              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">registration_type=&quot;external_link&quot;</code> prop.
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">ticket_sale_mode=&quot;external&quot;</code> with <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">external_ticket_url</code>.
             </p>
-            
+
             <div className="space-y-3 max-w-3xl mb-6">
               <EventCardRow event={MOCK_EVENT_EXTERNAL} />
             </div>
@@ -590,9 +643,9 @@ export default function DesignCardsPage() {
             <CardLabel>Display Only Events</CardLabel>
             <p className="text-sm text-muted mb-4">
               Events shown for info only, no registration.
-              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">registration_type=&quot;display_only&quot;</code> prop.
+              Use <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">has_guestlist=false</code> and <code className="font-mono text-xs bg-glass px-1 py-0.5 rounded">ticket_sale_mode=&quot;none&quot;</code>.
             </p>
-            
+
             <div className="space-y-3 max-w-3xl mb-6">
               <EventCardRow event={MOCK_EVENT_DISPLAY_ONLY} />
             </div>

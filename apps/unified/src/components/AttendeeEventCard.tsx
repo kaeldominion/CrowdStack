@@ -217,16 +217,16 @@ export function AttendeeEventCard({
                   <img
                     src={heroImage}
                     alt={event.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-accent-error/40 via-accent-warning/30 to-void flex items-center justify-center">
                     <Ticket className="h-16 w-16 text-muted" />
                   </div>
                 )}
-                
-                {/* Gradient overlay - stronger fade to black at bottom */}
-                <div className="absolute inset-0 bg-gradient-to-t from-void via-void/95 to-transparent" />
+
+                {/* Gradient overlay - aggressive fade to black at bottom for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-void from-20% via-void/90 via-50% to-transparent" />
                 
                 {/* Top badges */}
                 <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
@@ -365,16 +365,16 @@ export function AttendeeEventCard({
             <img
               src={heroImage}
               alt={event.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/40 via-accent-secondary/30 to-void flex items-center justify-center">
               <Ticket className="h-16 w-16 text-muted" />
             </div>
           )}
-          
-          {/* Gradient overlay - stronger fade to black at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/95 to-transparent" />
+
+          {/* Gradient overlay - aggressive fade to black at bottom for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-void from-20% via-void/90 via-50% to-transparent" />
           
           {/* Top badges */}
           <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
@@ -490,7 +490,7 @@ export function AttendeeEventCard({
                     className="flex-1 flex items-center justify-center gap-1.5 bg-accent-success text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-success/90 transition-colors disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
-                    View Entry
+                    View Pass
                   </button>
                   <button
                     className="w-8 h-8 flex items-center justify-center rounded-md bg-accent-error/20 border border-accent-error/40 hover:bg-accent-error/30 transition-colors disabled:opacity-50"
@@ -546,7 +546,7 @@ export function AttendeeEventCard({
                     e.stopPropagation();
                     router.push(`/e/${event.slug}/register`);
                   }}
-                  className="flex-1 bg-white text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-white/90 transition-colors"
+                  className="flex-1 bg-accent-primary text-void font-bold text-[10px] uppercase tracking-wider py-2 px-3 rounded-md hover:bg-accent-primary/90 transition-colors"
                 >
                   Join Guestlist
                 </button>

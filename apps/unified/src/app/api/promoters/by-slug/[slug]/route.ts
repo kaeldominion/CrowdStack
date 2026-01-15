@@ -64,6 +64,9 @@ export async function GET(
           flier_url,
           status,
           max_guestlist_size,
+          has_guestlist,
+          ticket_sale_mode,
+          external_ticket_url,
           venue:venues(
             id,
             name,
@@ -130,6 +133,9 @@ export async function GET(
           end_time: event.end_time,
           flier_url: event.flier_url,
           max_guestlist_size: event.max_guestlist_size,
+          has_guestlist: event.has_guestlist ?? true, // Default to true for promoter events
+          ticket_sale_mode: event.ticket_sale_mode ?? "none",
+          external_ticket_url: event.external_ticket_url,
           registration_count: registrationCount || 0,
           venue,
           organizer,

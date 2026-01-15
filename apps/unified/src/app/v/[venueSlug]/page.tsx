@@ -157,6 +157,7 @@ async function getVenue(slug: string) {
         has_guestlist: event.has_guestlist ?? true,
         ticket_sale_mode: event.ticket_sale_mode || "none",
         is_public: event.is_public ?? true,
+        external_ticket_url: event.external_ticket_url || null,
       };
 
       if (isLive) {

@@ -9,10 +9,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Calendar, Radio, Camera } from "lucide-react";
-import { Card, Badge } from "@crowdstack/ui";
+import { Calendar, Camera } from "lucide-react";
+import { Card } from "@crowdstack/ui";
 import { EventCardRow } from "@/components/EventCardRow";
-import { EventCard as VenueEventCard } from "@/components/venue/EventCard";
+import { AttendeeEventCard } from "@/components/AttendeeEventCard";
 import { EventCardCompact } from "@/components/EventCardCompact";
 import type { VenueGallery as VenueGalleryType } from "@crowdstack/shared/types";
 
@@ -112,19 +112,20 @@ export function VenueEventTabs({ liveEvents = [], upcomingEvents, pastEvents, ve
               {/* Desktop: Full format cards in grid */}
               <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {upcomingEvents.map((event) => (
-                  <VenueEventCard 
-                    key={event.id} 
+                  <AttendeeEventCard
+                    key={event.id}
                     event={{
                       id: event.id,
                       slug: event.slug,
                       name: event.name,
-                      description: event.description || null,
                       start_time: event.start_time,
-                      end_time: event.end_time,
                       cover_image_url: event.cover_image_url,
                       flier_url: event.flier_url,
                       max_guestlist_size: event.max_guestlist_size ?? null,
                       registration_count: event.registration_count,
+                      has_guestlist: event.has_guestlist,
+                      ticket_sale_mode: event.ticket_sale_mode,
+                      external_ticket_url: event.external_ticket_url,
                     }}
                   />
                 ))}
