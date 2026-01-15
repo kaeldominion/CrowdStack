@@ -330,6 +330,28 @@ export async function POST(
       }
     }
 
+    // Check if user already has a pending or confirmed booking for this table at this event
+    // This prevents duplicate requests from the same person
+    const { data: existingBooking } = await serviceSupabase
+      .from("table_bookings")
+      .select("id, status")
+      .eq("event_id", params.eventId)
+      .eq("table_id", body.table_id)
+      .eq("guest_email", body.guest_email)
+      .in("status", ["pending", "confirmed"])
+      .single();
+
+    if (existingBooking) {
+      return NextResponse.json(
+        {
+          error: existingBooking.status === "pending"
+            ? "You already have a pending request for this table. Please wait for venue confirmation."
+            : "You already have a confirmed booking for this table."
+        },
+        { status: 400 }
+      );
+    }
+
     // Create the booking
     // Set payment_status based on whether deposit is required
     const initialPaymentStatus = effectiveDeposit && effectiveDeposit > 0 ? "pending" : "not_required";
