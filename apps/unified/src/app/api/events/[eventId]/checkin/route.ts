@@ -231,10 +231,17 @@ export async function POST(
           const now = new Date();
           const eventDate = new Date(cutoffSettings.start_time);
           const [hours, minutes] = cutoffTime.split(':').map(Number);
+          const eventHour = eventDate.getHours();
 
           // Create cutoff datetime by combining event date with cutoff time
           const cutoffDateTime = new Date(eventDate);
           cutoffDateTime.setHours(hours, minutes, 0, 0);
+
+          // If cutoff time is earlier than event start time, it must be the next day
+          // (e.g., event at 10PM with 2AM cutoff = cutoff is next day)
+          if (hours < eventHour) {
+            cutoffDateTime.setDate(cutoffDateTime.getDate() + 1);
+          }
 
           // Format the cutoff time for display
           cutoffTimeFormatted = cutoffDateTime.toLocaleTimeString('en-US', {

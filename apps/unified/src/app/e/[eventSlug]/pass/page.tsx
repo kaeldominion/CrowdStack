@@ -39,8 +39,15 @@ function CutoffCountdown({ cutoffTime, eventDate }: { cutoffTime: string; eventD
       const now = new Date();
       const [hours, minutes] = cutoffTime.split(':').map(Number);
       const event = new Date(eventDate);
+      const eventHour = event.getHours();
       const cutoff = new Date(event);
       cutoff.setHours(hours, minutes, 0, 0);
+
+      // If cutoff time is earlier than event start time, it must be the next day
+      // (e.g., event at 10PM with 2AM cutoff = cutoff is next day)
+      if (hours < eventHour) {
+        cutoff.setDate(cutoff.getDate() + 1);
+      }
 
       const diff = cutoff.getTime() - now.getTime();
       const minsRemaining = Math.floor(diff / (1000 * 60));
