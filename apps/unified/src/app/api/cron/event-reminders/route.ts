@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
         slug,
         start_time,
         venue_id,
+        important_info,
         venues(name, address, city, state)
       `)
       .eq("status", "published")
@@ -81,6 +82,16 @@ export async function POST(request: NextRequest) {
       const venueAddress = venue?.address
         ? `${venue.address}${venue.city ? `, ${venue.city}` : ""}${venue.state ? `, ${venue.state}` : ""}`
         : null;
+
+      // Build Google Maps URL
+      const googleMapsUrl = venueAddress
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`
+        : null;
+
+      // Build venue address HTML (only if address exists)
+      const venueAddressHtml = venueAddress
+        ? `<p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0;"><strong>Address:</strong> ${googleMapsUrl ? `<a href="${googleMapsUrl}" style="color: rgba(255,255,255,0.9); text-decoration: underline;">${venueAddress}</a>` : venueAddress}</p>`
+        : "";
 
       const startTime = event.start_time ? new Date(event.start_time) : null;
       const eventDate = startTime
@@ -131,8 +142,17 @@ export async function POST(request: NextRequest) {
               event_date: eventDate,
               event_time: eventTime,
               venue_name: venueName,
-              venue_address: venueAddress,
+              venue_address_html: venueAddressHtml,
+              venue_address_text: venueAddress ? `Address: ${venueAddress}` : "",
+              google_maps_url: googleMapsUrl || "",
               event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}`,
+              important_info_html: event.important_info
+                ? `<div style="background: rgba(251, 191, 36, 0.1); padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FFC107;">
+                    <h3 style="color: #FFC107; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">⚠️ Important Info</h3>
+                    <p style="color: #E5E7EB; font-size: 14px; margin: 0; line-height: 1.5;">${event.important_info}</p>
+                  </div>`
+                : "",
+              important_info_text: event.important_info ? `Important: ${event.important_info}` : "",
             },
             { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
           );
