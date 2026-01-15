@@ -357,7 +357,7 @@ export function CheckInConfirmationModal({
             <div className="p-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
               <div className="flex items-center gap-1 mb-0.5">
                 <Star className="h-3 w-3 text-accent-primary" />
-                <span className="text-[10px] text-secondary font-medium">Venue XP</span>
+                <span className="text-[10px] text-secondary font-medium">House XP</span>
               </div>
               <p className="text-lg font-bold text-primary">
                 {data.xp.at_venue.toLocaleString()}

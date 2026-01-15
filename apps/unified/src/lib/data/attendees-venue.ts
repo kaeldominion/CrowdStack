@@ -19,6 +19,7 @@ export interface VenueAttendee {
   created_at: string;
   avg_venue_pulse_rating: number | null;
   venue_pulse_count: number;
+  has_note: boolean;
 }
 
 export interface VenueAttendeeFilters {
@@ -142,6 +143,15 @@ export async function getVenueAttendees(
     feedbackByAttendee.set(fb.attendee_id, existing);
   });
 
+  // Get notes for these attendees at this venue
+  const { data: notesData } = await supabase
+    .from("attendee_notes")
+    .select("attendee_id")
+    .eq("venue_id", venueId)
+    .in("attendee_id", filteredAttendeeIds);
+
+  const attendeesWithNotes = new Set(notesData?.map((n) => n.attendee_id) || []);
+
   // Transform and aggregate data
   const attendeesMap = new Map<string, VenueAttendee>();
 
@@ -182,6 +192,7 @@ export async function getVenueAttendees(
       created_at: attendee.created_at,
       avg_venue_pulse_rating: avgRating,
       venue_pulse_count: feedbackStats?.count || 0,
+      has_note: attendeesWithNotes.has(attendee.id),
     };
 
     attendeesMap.set(attendee.id, attendeeData);
@@ -439,11 +450,11 @@ export async function getVenueAttendeeDetails(attendeeId: string, venueId: strin
     }
   }
 
+  // Venue gets unmasked data - they need full contact info for their guests
   return {
     attendee: attendee ? {
       ...attendee,
-      email: maskEmail(attendee.email),
-      phone: maskPhone(attendee.phone) || attendee.phone,
+      // No masking for venue - they can see full PII
     } : null,
     events: registrations || [],
     flags: flags || null,

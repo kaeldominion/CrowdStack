@@ -11,6 +11,7 @@ import {
   Flag,
   Calendar,
   ChevronRight,
+  StickyNote,
 } from "lucide-react";
 
 // Types
@@ -45,6 +46,8 @@ export interface DashboardAttendee {
   upcoming_signups?: number;
   // Admin fields
   created_at?: string;
+  // Notes indicator
+  has_note?: boolean;
 }
 
 interface AttendeesDashboardListProps {
@@ -202,6 +205,9 @@ export function AttendeesDashboardList({
                     <span className="text-xs font-medium text-[var(--text-primary)] truncate">
                       {displayName}
                     </span>
+                    {attendee.has_note && (
+                      <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" title="Has notes" />
+                    )}
                     {attendee.instagram_handle && (
                       <span className="text-[10px] text-pink-500 truncate hidden sm:inline">
                         @{attendee.instagram_handle}

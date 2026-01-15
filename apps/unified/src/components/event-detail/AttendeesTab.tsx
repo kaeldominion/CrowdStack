@@ -22,9 +22,9 @@ import {
   QrCode,
   Copy,
   Megaphone,
+  StickyNote,
 } from "lucide-react";
 import Link from "next/link";
-import { InlineEditField } from "@/components/inline/InlineEditField";
 import { EventDetailRole } from "@/components/EventDetailPage";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 
@@ -235,19 +235,22 @@ export function AttendeesTab({
   // Save notes handler (simplified: one note per attendee per org)
   const handleSaveNotes = useCallback(async (registrationId: string, notes: string) => {
     try {
-      // Map role to notes role type
-      const notesRole = role === "venue" ? "venue" : role === "organizer" ? "organizer" : "promoter";
+      // Map role to notes role type - admin users default to organizer (they can edit but as organizer)
+      const notesRole = role === "venue" ? "venue" : (role === "organizer" || role === "admin") ? "organizer" : "promoter";
       const response = await fetch(`/api/events/${eventId}/registrations/${registrationId}/notes`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes, role: notesRole }),
       });
       if (!response.ok) {
-        throw new Error("Failed to save notes");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[Notes] Save failed:", response.status, errorData);
+        throw new Error(errorData.error || "Failed to save notes");
       }
       toast.success("Notes saved");
-    } catch (error) {
-      toast.error("Failed to save notes");
+    } catch (error: any) {
+      console.error("[Notes] Error:", error);
+      toast.error(error.message || "Failed to save notes");
       throw error;
     }
   }, [eventId, role, toast]);
@@ -509,14 +512,13 @@ export function AttendeesTab({
                 <th className="px-3 py-2">Promoter</th>
                 <th className="px-3 py-2 w-28">Status</th>
                 <th className="px-3 py-2 w-16">VIP</th>
-                {canEditNotes && <th className="px-3 py-2 w-28">Notes</th>}
                 <th className="px-3 py-2 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]/50">
               {filteredAttendees.length === 0 ? (
                 <tr>
-                  <td colSpan={canEditNotes ? 7 : 6} className="text-center py-8 text-[var(--text-secondary)] text-sm">
+                  <td colSpan={6} className="text-center py-8 text-[var(--text-secondary)] text-sm">
                     {isPromoterView
                       ? "You haven't referred any guests to this event yet"
                       : "No attendees found"}
@@ -533,9 +535,14 @@ export function AttendeesTab({
                   >
                     {/* Name */}
                     <td className="px-3 py-2">
-                      <span className="text-xs font-medium text-[var(--text-primary)] block truncate max-w-[150px]">
-                        {attendee.name}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-[var(--text-primary)] truncate max-w-[140px]">
+                          {attendee.name}
+                        </span>
+                        {attendee.notes && (
+                          <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" title="Has notes" />
+                        )}
+                      </div>
                     </td>
 
                     {/* Email */}
@@ -564,7 +571,7 @@ export function AttendeesTab({
                           <button
                             onClick={() => onCheckOut(attendee.id)}
                             disabled={checkingOut === attendee.id}
-                            className="flex flex-col group"
+                            className="flex items-center gap-1.5 group"
                             title="Click to check out"
                           >
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] group-hover:bg-[var(--accent-warning)]/20 group-hover:text-[var(--accent-warning)] transition-colors w-fit">
@@ -580,19 +587,19 @@ export function AttendeesTab({
                               <span className="hidden group-hover:inline">Out</span>
                             </span>
                             {attendee.check_in_time && (
-                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                              <span className="text-[9px] text-[var(--text-muted)]">
                                 {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
                           </button>
                         ) : (
-                          <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
                             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] w-fit">
                               <CheckCircle2 className="h-2.5 w-2.5" />
                               In
                             </span>
                             {attendee.check_in_time && (
-                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                              <span className="text-[9px] text-[var(--text-muted)]">
                                 {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             )}
@@ -631,24 +638,6 @@ export function AttendeesTab({
                         {attendee.is_event_vip && <VipBadge level="event" variant="badge" size="xs" />}
                       </div>
                     </td>
-
-                    {/* Notes */}
-                    {canEditNotes && (
-                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="space-y-1">
-                          <InlineEditField
-                            value={attendee.notes || ""}
-                            onSave={(notes) => handleSaveNotes(attendee.id, notes)}
-                            placeholder="Add note..."
-                          />
-                          {attendee.notes && attendee.notes_updated_by_name && (
-                            <p className="text-[10px] text-muted truncate max-w-[150px]" title={`${attendee.notes_updated_by_name} • ${attendee.notes_updated_at ? new Date(attendee.notes_updated_at).toLocaleString() : ""}`}>
-                              {attendee.notes_updated_by_name} • {attendee.notes_updated_at ? new Date(attendee.notes_updated_at).toLocaleDateString() : ""}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                    )}
 
                     {/* Actions */}
                     <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
@@ -735,11 +724,14 @@ export function AttendeesTab({
               >
                 {/* Top row: Name + VIP badges + Status */}
                 <div className="flex items-center gap-2">
-                  {/* Name (truncated) + VIP badges */}
+                  {/* Name (truncated) + Notes icon + VIP badges */}
                   <div className="flex-1 min-w-0 flex items-center gap-1.5">
                     <span className="text-sm font-medium text-[var(--text-primary)] truncate">
                       {attendee.name}
                     </span>
+                    {attendee.notes && (
+                      <StickyNote className="h-3 w-3 text-[var(--accent-secondary)] flex-shrink-0" />
+                    )}
                     {(attendee.is_global_vip || attendee.is_venue_vip || attendee.is_organizer_vip || attendee.is_event_vip) && (
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         {attendee.is_global_vip && <VipBadge level="global" variant="badge" size="xs" />}
@@ -751,7 +743,7 @@ export function AttendeesTab({
                   </div>
 
                   {/* Status badge - clickable to toggle checkout */}
-                  <div className="flex flex-col items-end" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                     {attendee.checked_in ? (
                       canCheckIn && onCheckOut ? (
                         <>
@@ -771,7 +763,7 @@ export function AttendeesTab({
                             </span>
                           </button>
                           {attendee.check_in_time && (
-                            <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                            <span className="text-[9px] text-[var(--text-muted)]">
                               {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
@@ -783,7 +775,7 @@ export function AttendeesTab({
                             In
                           </span>
                           {attendee.check_in_time && (
-                            <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                            <span className="text-[9px] text-[var(--text-muted)]">
                               {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}

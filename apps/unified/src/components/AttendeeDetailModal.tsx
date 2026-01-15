@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Modal, Badge, LoadingSpinner, Button, VipStatus, Tabs, TabsList, TabsTrigger, TabsContent, VipBadge } from "@crowdstack/ui";
-import { InlineEditField } from "@/components/inline/InlineEditField";
-import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown, Star, TrendingUp, History, MessageSquare, TableIcon, Users, Sparkles, StickyNote } from "lucide-react";
+import { User, Mail, Phone, Calendar, MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Crown, Star, TrendingUp, History, MessageSquare, TableIcon, Users, Sparkles, Ticket, Save, Clock } from "lucide-react";
 import Link from "next/link";
 
 interface AttendeeDetailModalProps {
@@ -168,6 +167,31 @@ export function AttendeeDetailModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingRegistrationId, setRemovingRegistrationId] = useState<string | null>(null);
+  const [localNotes, setLocalNotes] = useState(attendeeNotes);
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  // Sync localNotes with prop when it changes
+  useEffect(() => {
+    setLocalNotes(attendeeNotes);
+  }, [attendeeNotes]);
+
+  const handleSaveLocalNotes = async () => {
+    if (!registrationId || !onSaveNotes) {
+      console.error("Cannot save notes: registrationId=", registrationId, "onSaveNotes=", !!onSaveNotes);
+      return;
+    }
+    if (localNotes === attendeeNotes) return;
+
+    setSavingNotes(true);
+    try {
+      await onSaveNotes(registrationId, localNotes);
+    } catch (err) {
+      console.error("Failed to save notes:", err);
+      // Error is already handled by parent (toast), but we log it here
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   const loadDetails = async () => {
     // If we have prefetched data, use it immediately
@@ -234,6 +258,30 @@ export function AttendeeDetailModal({
       ];
     }
     return (details?.events || []).map((e) => ({ ...e, type: "regular" as const }));
+  };
+
+  // Calculate check-in stats for the stats cards
+  const getCheckInStats = () => {
+    const eventsList = getEventsList();
+    const totalEvents = eventsList.length;
+    const checkedInEvents = eventsList.filter((reg: any) => {
+      const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
+      if (!event) return false;
+
+      const validCheckins = reg.checkins && Array.isArray(reg.checkins)
+        ? reg.checkins.filter((c: any) => !c.undo_at)
+        : [];
+      const hasCheckinInReg = validCheckins.length > 0;
+
+      const hasCheckinInHistory = details?.checkins?.some(
+        (c: CheckInItem) => c.event_id === event.id
+      );
+
+      return hasCheckinInReg || hasCheckinInHistory;
+    }).length;
+    const checkInRate = totalEvents > 0 ? Math.round((checkedInEvents / totalEvents) * 100) : 0;
+
+    return { totalEvents, checkedInEvents, checkInRate };
   };
 
   const handleRemoveRegistration = async (registrationId: string) => {
@@ -330,29 +378,34 @@ export function AttendeeDetailModal({
               </div>
             </div>
 
-            {/* XP Points */}
+            {/* Stats Cards - XP, House XP, Check-in Rate */}
             {details.xp && (
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-4 border-t border-border-subtle">
-                <div className="p-2 sm:p-3 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent-secondary" />
-                    <span className="text-[10px] sm:text-xs text-secondary font-medium">Total XP</span>
+              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border-subtle">
+                <div className="p-2 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <TrendingUp className="h-3 w-3 text-accent-secondary" />
+                    <span className="text-[9px] text-secondary font-medium">Total XP</span>
                   </div>
-                  <p className="text-lg sm:text-xl font-bold text-primary">{details.xp.total.toLocaleString()}</p>
+                  <p className="text-base font-bold text-primary">{details.xp.total.toLocaleString()}</p>
                 </div>
-                {(details.xp.at_venue !== undefined || details.xp.at_organizer !== undefined) && (
-                  <div className="p-2 sm:p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                      <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent-primary" />
-                      <span className="text-[10px] sm:text-xs text-secondary font-medium">
-                        {role === "venue" ? "At Venue" : "With You"}
-                      </span>
-                    </div>
-                    <p className="text-lg sm:text-xl font-bold text-primary">
-                      {(details.xp.at_venue || details.xp.at_organizer || 0).toLocaleString()}
-                    </p>
+                <div className="p-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Star className="h-3 w-3 text-accent-primary" />
+                    <span className="text-[9px] text-secondary font-medium">
+                      {role === "venue" ? "House XP" : "With You"}
+                    </span>
                   </div>
-                )}
+                  <p className="text-base font-bold text-primary">
+                    {(details.xp.at_venue || details.xp.at_organizer || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-2 rounded-lg bg-success/10 border border-success/20">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <CheckCircle2 className="h-3 w-3 text-success" />
+                    <span className="text-[9px] text-secondary font-medium">Check-in %</span>
+                  </div>
+                  <p className="text-base font-bold text-primary">{getCheckInStats().checkInRate}%</p>
+                </div>
               </div>
             )}
           </div>
@@ -364,21 +417,37 @@ export function AttendeeDetailModal({
               
               {/* Notes Editor */}
               {canEditNotes && onSaveNotes && (
-                <div>
-                  <label className="text-xs text-secondary mb-1.5 block">Notes</label>
-                  <InlineEditField
-                    value={attendeeNotes}
-                    onSave={(notes) => onSaveNotes(registrationId, notes)}
-                    placeholder="Add note..."
-                  />
-                  {attendeeNotes && notesUpdatedByName && (
-                    <p className="text-[10px] text-secondary mt-1">
-                      Last edited by {notesUpdatedByName}
-                      {notesUpdatedAt && (
-                        <> • {new Date(notesUpdatedAt).toLocaleString()}</>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-secondary">Notes</label>
+                    {notesUpdatedAt && notesUpdatedByName && (
+                      <span className="text-[10px] text-muted flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(notesUpdatedAt).toLocaleString()} by {notesUpdatedByName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={localNotes}
+                      onChange={(e) => setLocalNotes(e.target.value)}
+                      placeholder="Add notes about this guest..."
+                      className="flex-1 min-h-[80px] px-3 py-2 text-sm rounded-lg border border-border-subtle bg-raised text-primary placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent-primary resize-none"
+                    />
+                    <Button
+                      onClick={handleSaveLocalNotes}
+                      disabled={savingNotes || localNotes === attendeeNotes}
+                      size="sm"
+                      variant="secondary"
+                      className="self-end"
+                    >
+                      {savingNotes ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <Save className="h-4 w-4" />
                       )}
-                    </p>
-                  )}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -471,80 +540,44 @@ export function AttendeeDetailModal({
           {/* Comprehensive History Tabs */}
           <div className="border-t border-border pt-4">
             <h3 className="section-header !mb-3">History</h3>
-            <Tabs defaultValue="events">
+            <Tabs defaultValue="guestlist">
               <TabsList className="flex-wrap gap-1">
-                <TabsTrigger value="events" className="text-xs sm:text-sm">
-                  <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Events</span>
-                  <span className="sm:hidden">Events</span>
+                <TabsTrigger value="guestlist" className="text-xs sm:text-sm">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span>Guestlist</span>
                   <span className="ml-1">({getEventsList().length})</span>
                 </TabsTrigger>
                 {(role === "venue" || role === "organizer") && (
-                  <TabsTrigger value="bookings" className="text-xs sm:text-sm">
+                  <TabsTrigger value="tables" className="text-xs sm:text-sm">
                     <TableIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Bookings</span>
-                    <span className="sm:hidden">Tables</span>
+                    <span>Tables</span>
                     <span className="ml-1">({details.tableBookings?.length || 0})</span>
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="feedback" className="text-xs sm:text-sm">
-                  <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Feedback</span>
-                  <span className="sm:hidden">FB</span>
-                  <span className="ml-1">({details.feedback?.length || 0})</span>
+                <TabsTrigger value="tickets" className="text-xs sm:text-sm">
+                  <Ticket className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span>Tickets</span>
+                  <span className="ml-1">(0)</span>
                 </TabsTrigger>
-                <TabsTrigger value="notes" className="text-xs sm:text-sm">
-                  <StickyNote className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Notes</span>
-                  <span className="sm:hidden">Notes</span>
-                  <span className="ml-1">({details.notesHistory?.length || 0})</span>
-                </TabsTrigger>
+                {role === "venue" && (
+                  <TabsTrigger value="feedback" className="text-xs sm:text-sm">
+                    <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span>Pulse</span>
+                    <span className="ml-1">({details.feedback?.length || 0})</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
 
-              <TabsContent value="events">
+              <TabsContent value="guestlist">
                 {getEventsList().length === 0 ? (
-                  <p className="text-secondary text-sm py-4">No events found</p>
+                  <p className="text-secondary text-sm py-4">No guestlist history found</p>
                 ) : (
                   <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
                     {(() => {
                       const eventsList = getEventsList();
-                      const totalEvents = eventsList.length;
-                      const checkedInEvents = eventsList.filter((reg: any) => {
-                        const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
-                        if (!event) return false;
-                        
-                        // Check if there's a valid (not undone) check-in in the registration's checkins array
-                        const validCheckins = reg.checkins && Array.isArray(reg.checkins) 
-                          ? reg.checkins.filter((c: any) => !c.undo_at)
-                          : [];
-                        const hasCheckinInReg = validCheckins.length > 0;
-                        
-                        // Also check the separate checkins array for this event
-                        const hasCheckinInHistory = details.checkins?.some(
-                          (c: CheckInItem) => c.event_id === event.id
-                        );
-                        
-                        return hasCheckinInReg || hasCheckinInHistory;
-                      }).length;
-                      const checkInRate = totalEvents > 0 ? Math.round((checkedInEvents / totalEvents) * 100) : 0;
-                      
+
                       return (
                         <>
-                          {/* Check-in Rate Summary */}
-                          <div className="p-3 rounded-lg border border-border-subtle bg-raised mb-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-primary">Check-in Rate</p>
-                                <p className="text-xs text-secondary mt-0.5">
-                                  {checkedInEvents} of {totalEvents} events
-                                </p>
-                              </div>
-                              <div className="text-2xl font-bold text-primary">
-                                {checkInRate}%
-                              </div>
-                            </div>
-                          </div>
-                          
                           {/* Events List */}
                           {eventsList.map((reg: any) => {
                             const event = Array.isArray(reg.event) ? reg.event[0] : reg.event;
@@ -649,9 +682,9 @@ export function AttendeeDetailModal({
                 )}
               </TabsContent>
 
-              {/* Table Bookings Tab (Venue and Organizer) */}
+              {/* Tables Tab (Venue and Organizer) */}
               {(role === "venue" || role === "organizer") && (
-                <TabsContent value="bookings">
+                <TabsContent value="tables">
                   {!details.tableBookings || details.tableBookings.length === 0 ? (
                     <p className="text-secondary text-sm py-4">No table bookings found</p>
                   ) : (
@@ -714,107 +747,81 @@ export function AttendeeDetailModal({
                 </TabsContent>
               )}
 
-              <TabsContent value="feedback">
-                {!details.feedback || details.feedback.length === 0 ? (
-                  <p className="text-secondary text-sm py-4">No feedback submitted</p>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
-                    {details.feedback.map((feedback) => (
-                      <div key={feedback.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`h-4 w-4 ${
-                                    star <= feedback.rating
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <Badge
-                              variant={feedback.feedback_type === "positive" ? "success" : "warning"}
-                              className="text-xs"
-                            >
-                              {feedback.feedback_type}
-                            </Badge>
-                            {feedback.resolved_at && (
-                              <Badge variant="success" className="text-xs">Resolved</Badge>
-                            )}
-                          </div>
-                          <span className="text-xs text-secondary">
-                            {new Date(feedback.submitted_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="font-medium text-primary mb-1">{feedback.event_name}</p>
-                        {feedback.comment && (
-                          <p className="text-sm text-secondary mb-2">"{feedback.comment}"</p>
-                        )}
-                        {feedback.free_text && (
-                          <p className="text-sm text-secondary mb-2">{feedback.free_text}</p>
-                        )}
-                        {feedback.categories && feedback.categories.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {feedback.categories.map((cat) => (
-                              <Badge key={cat} variant="outline" size="sm" className="text-xs">
-                                {cat.replace(/_/g, " ")}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        {feedback.event_id && (
-                          <div className="mt-2">
-                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${feedback.event_id}`}>
-                              <Button variant="ghost" size="sm">View Event</Button>
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* Tickets Tab - Placeholder for future */}
+              <TabsContent value="tickets">
+                <div className="py-8 text-center">
+                  <Ticket className="h-8 w-8 text-secondary/50 mx-auto mb-2" />
+                  <p className="text-secondary text-sm">No ticket purchases yet</p>
+                  <p className="text-secondary/60 text-xs mt-1">Ticket history will appear here</p>
+                </div>
               </TabsContent>
 
-              <TabsContent value="notes">
-                {!details.notesHistory || details.notesHistory.length === 0 ? (
-                  <p className="text-secondary text-sm py-4">No notes found</p>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
-                    {details.notesHistory.map((note) => (
-                      <div key={note.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="font-medium text-primary mb-1">{note.event_name}</p>
-                            <p className="text-sm text-secondary whitespace-pre-wrap">{note.note_text}</p>
+              {/* Pulse/Feedback Tab (Venue only) */}
+              {role === "venue" && (
+                <TabsContent value="feedback">
+                  {!details.feedback || details.feedback.length === 0 ? (
+                    <p className="text-secondary text-sm py-4">No feedback submitted</p>
+                  ) : (
+                    <div className="space-y-3 max-h-96 overflow-y-auto mt-4">
+                      {details.feedback.map((feedback) => (
+                        <div key={feedback.id} className="p-4 rounded-lg border border-border-subtle bg-raised">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-4 w-4 ${
+                                      star <= feedback.rating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <Badge
+                                variant={feedback.feedback_type === "positive" ? "success" : "warning"}
+                                className="text-xs"
+                              >
+                                {feedback.feedback_type}
+                              </Badge>
+                              {feedback.resolved_at && (
+                                <Badge variant="success" className="text-xs">Resolved</Badge>
+                              )}
+                            </div>
+                            <span className="text-xs text-secondary">
+                              {new Date(feedback.submitted_at).toLocaleDateString()}
+                            </span>
                           </div>
+                          <p className="font-medium text-primary mb-1">{feedback.event_name}</p>
+                          {feedback.comment && (
+                            <p className="text-sm text-secondary mb-2">"{feedback.comment}"</p>
+                          )}
+                          {feedback.free_text && (
+                            <p className="text-sm text-secondary mb-2">{feedback.free_text}</p>
+                          )}
+                          {feedback.categories && feedback.categories.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {feedback.categories.map((cat) => (
+                                <Badge key={cat} variant="outline" size="sm" className="text-xs">
+                                  {cat.replace(/_/g, " ")}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {feedback.event_id && (
+                            <div className="mt-2">
+                              <Link href={`/app/venue/events/${feedback.event_id}`}>
+                                <Button variant="ghost" size="sm">View Event</Button>
+                              </Link>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-subtle">
-                          <div className="flex items-center gap-2 text-xs text-secondary">
-                            <User className="h-3 w-3" />
-                            <span>{note.created_by_name}</span>
-                            {note.created_by_email && (
-                              <span className="text-[10px] opacity-75">({note.created_by_email})</span>
-                            )}
-                          </div>
-                          <span className="text-xs text-secondary">
-                            {formatDate(note.created_at)}
-                          </span>
-                        </div>
-                        {note.event_id && (
-                          <div className="mt-2">
-                            <Link href={`/app/${role === "venue" ? "venue" : "organizer"}/events/${note.event_id}`}>
-                              <Button variant="ghost" size="sm">View Event</Button>
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         </div>
