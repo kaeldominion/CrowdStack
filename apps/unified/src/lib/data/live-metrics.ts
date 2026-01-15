@@ -119,15 +119,29 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
 
   console.log(`[LiveMetrics] Event ${eventId}: totalRegistrations=${totalRegistrations}, error=${regCountError?.message || 'none'}`);
 
-  // Get current check-in count using checked_in field on registrations
-  // This is more reliable than querying the checkins table with joins
-  const { count: checkedInCount, error: checkinCountError } = await supabase
+  // Get registration IDs for this event to query checkins
+  const { data: eventRegistrations } = await supabase
     .from("registrations")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", eventId)
-    .eq("checked_in", true);
+    .select("id")
+    .eq("event_id", eventId);
 
-  console.log(`[LiveMetrics] Event ${eventId}: checkedInCount=${checkedInCount}, error=${checkinCountError?.message || 'none'}`);
+  const registrationIds = eventRegistrations?.map(r => r.id) || [];
+
+  // Get current check-in count from checkins table (source of truth)
+  // Only count ACTIVE checkins where undo_at IS NULL
+  let checkedInCount = 0;
+  if (registrationIds.length > 0) {
+    const { count, error: checkinCountError } = await supabase
+      .from("checkins")
+      .select("*", { count: "exact", head: true })
+      .in("registration_id", registrationIds)
+      .is("undo_at", null);
+
+    checkedInCount = count || 0;
+    console.log(`[LiveMetrics] Event ${eventId}: checkedInCount=${checkedInCount}, error=${checkinCountError?.message || 'none'}`);
+  } else {
+    console.log(`[LiveMetrics] Event ${eventId}: checkedInCount=0 (no registrations)`);
+  }
 
   // Get checkin details for recent activity and time-based metrics
   const { data: checkins, error: checkinsError } = await supabase
@@ -170,9 +184,9 @@ export async function getLiveMetrics(eventId: string): Promise<LiveMetrics | nul
     });
   }
 
-  // Use checkedInCount from registrations as primary source (more reliable)
-  // Fall back to checkins array length if checkedInCount is null
-  const currentAttendance = checkedInCount ?? (checkins?.length || 0);
+  // Use checkedInCount from checkins table as primary source (source of truth)
+  // Fall back to checkins array length if checkedInCount is 0
+  const currentAttendance = checkedInCount || (checkins?.length || 0);
   // Capacity is no longer stored on events table - set to null
   const capacityPercentage = 0;
 

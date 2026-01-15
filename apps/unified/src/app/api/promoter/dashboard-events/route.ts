@@ -84,23 +84,40 @@ export async function GET() {
     // BATCH QUERY OPTIMIZATION: Get all stats in bulk instead of per-event
     const now = new Date();
 
-    // Batch fetch all registrations for this promoter across all events
+    // 1. Batch fetch all registrations for this promoter across all events
     const { data: allPromoterRegs } = await serviceSupabase
       .from("registrations")
-      .select("id, event_id, checked_in")
+      .select("id, event_id")
       .in("event_id", eventIds)
       .eq("referral_promoter_id", promoterId);
 
-    // Build counts maps for O(1) lookups
+    // Build registration count map
     const regsByEvent = new Map<string, number>();
-    const checkinsByEvent = new Map<string, number>();
-
     (allPromoterRegs || []).forEach((reg) => {
       regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-      if (reg.checked_in) {
-        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
-      }
     });
+
+    // 2. Batch fetch check-ins from the checkins table
+    const allRegIds = (allPromoterRegs || []).map((r) => r.id);
+    const checkinsByEvent = new Map<string, number>();
+
+    if (allRegIds.length > 0) {
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", allRegIds)
+        .is("undo_at", null);
+
+      // Create lookup set of checked-in registration IDs
+      const checkinRegIds = new Set((allCheckins || []).map((c) => c.registration_id));
+
+      // Count check-ins per event
+      (allPromoterRegs || []).forEach((reg) => {
+        if (checkinRegIds.has(reg.id)) {
+          checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
+        }
+      });
+    }
 
     // Process events using pre-computed maps (no additional queries)
     const enrichedEvents: PromoterDashboardEvent[] = [];

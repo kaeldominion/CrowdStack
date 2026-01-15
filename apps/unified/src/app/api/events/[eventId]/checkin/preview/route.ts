@@ -40,6 +40,7 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const registrationId = searchParams.get("registration_id");
     const qrToken = searchParams.get("qr_token");
+    const role = searchParams.get("role") as "venue" | "organizer" | "promoter" | null;
 
     if (!registrationId && !qrToken) {
       return NextResponse.json(
@@ -92,6 +93,7 @@ export async function GET(
           phone,
           user_id,
           avatar_url,
+          instagram_handle,
           is_global_vip,
           global_vip_reason,
           gender
@@ -253,10 +255,63 @@ export async function GET(
 
         const venueEventIds = venueEvents?.map((e) => e.id) || [];
         if (venueEventIds.length > 0) {
-          const venueXp = xpLedger?.filter((entry) => 
+          const venueXp = xpLedger?.filter((entry) =>
             entry.event_id && venueEventIds.includes(entry.event_id)
           ) || [];
           xpAtVenue = venueXp.reduce((sum, entry) => sum + (entry.amount || 0), 0);
+        }
+      }
+    }
+
+    // Get attendance stats for this attendee
+    let attendanceStats = {
+      total_events: 0,
+      total_checkins: 0,
+      checkin_rate: 0,
+      venue_events: 0,
+      venue_checkins: 0,
+    };
+
+    // Get all registrations for this attendee
+    const { data: allRegs } = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id")
+      .eq("attendee_id", attendee.id);
+
+    if (allRegs && allRegs.length > 0) {
+      attendanceStats.total_events = allRegs.length;
+
+      // Get checkins for these registrations (only count active checkins)
+      const regIds = allRegs.map(r => r.id);
+      const { count: checkinCount } = await serviceSupabase
+        .from("checkins")
+        .select("*", { count: "exact", head: true })
+        .in("registration_id", regIds)
+        .is("undo_at", null);
+
+      attendanceStats.total_checkins = checkinCount || 0;
+      attendanceStats.checkin_rate = Math.round((attendanceStats.total_checkins / attendanceStats.total_events) * 100);
+
+      // Venue-specific stats
+      if (eventInfo?.venue_id) {
+        const { data: venueEvents } = await serviceSupabase
+          .from("events")
+          .select("id")
+          .eq("venue_id", eventInfo.venue_id);
+
+        const venueEventIds = new Set(venueEvents?.map(e => e.id) || []);
+        const venueRegs = allRegs.filter(r => venueEventIds.has(r.event_id));
+        attendanceStats.venue_events = venueRegs.length;
+
+        if (venueRegs.length > 0) {
+          const venueRegIds = venueRegs.map(r => r.id);
+          const { count: venueCheckinCount } = await serviceSupabase
+            .from("checkins")
+            .select("*", { count: "exact", head: true })
+            .in("registration_id", venueRegIds)
+            .is("undo_at", null);
+
+          attendanceStats.venue_checkins = venueCheckinCount || 0;
         }
       }
     }
@@ -301,6 +356,49 @@ export async function GET(
             };
           });
         }
+      }
+    }
+
+    // Fetch attendee note based on role (simplified notes system)
+    let attendeeNote: string | null = null;
+    if (role && eventInfo) {
+      try {
+        if (role === "venue" && eventInfo.venue_id) {
+          const { data: noteData } = await serviceSupabase
+            .from("attendee_notes")
+            .select("note")
+            .eq("attendee_id", attendee.id)
+            .eq("venue_id", eventInfo.venue_id)
+            .maybeSingle();
+          attendeeNote = noteData?.note || null;
+        } else if (role === "organizer" && eventInfo.organizer_id) {
+          const { data: noteData } = await serviceSupabase
+            .from("attendee_notes")
+            .select("note")
+            .eq("attendee_id", attendee.id)
+            .eq("organizer_id", eventInfo.organizer_id)
+            .maybeSingle();
+          attendeeNote = noteData?.note || null;
+        } else if (role === "promoter") {
+          // Get promoter ID for current user
+          const { data: promoter } = await serviceSupabase
+            .from("promoters")
+            .select("id")
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (promoter) {
+            const { data: noteData } = await serviceSupabase
+              .from("attendee_notes")
+              .select("note")
+              .eq("attendee_id", attendee.id)
+              .eq("promoter_id", promoter.id)
+              .maybeSingle();
+            attendeeNote = noteData?.note || null;
+          }
+        }
+      } catch (noteError) {
+        console.warn("[Check-in Preview API] Error fetching attendee note:", noteError);
+        // Continue without note - non-critical
       }
     }
 
@@ -394,6 +492,7 @@ export async function GET(
         email: attendee.email,
         phone: attendee.phone,
         avatar_url: attendee.avatar_url,
+        instagram_handle: attendee.instagram_handle || null,
         user_id: attendee.user_id,
       },
       vip_status: vipStatus,
@@ -401,6 +500,8 @@ export async function GET(
         total: xpTotal,
         at_venue: xpAtVenue,
       },
+      attendance: attendanceStats,
+      notes: attendeeNote,
       feedback_history: feedbackHistory,
       table_party: tablePartyInfo,
       cutoff_status: cutoffStatus,

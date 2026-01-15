@@ -187,14 +187,25 @@ export async function GET(
       }, { status: 403 });
     }
 
-    // Get stats using checked_in field
+    // Get registration count
     const { data: registrations } = await serviceSupabase
       .from("registrations")
-      .select("id, checked_in")
+      .select("id")
       .eq("event_id", eventId);
 
     const registrationsCount = registrations?.length || 0;
-    const checkinsCount = registrations?.filter((r) => r.checked_in).length || 0;
+
+    // Get check-in count from checkins table
+    const registrationIds = registrations?.map((r) => r.id) || [];
+    let checkinsCount = 0;
+    if (registrationIds.length > 0) {
+      const { count } = await serviceSupabase
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .in("registration_id", registrationIds)
+        .is("undo_at", null);
+      checkinsCount = count || 0;
+    }
 
     return NextResponse.json({
       event: {

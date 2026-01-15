@@ -318,6 +318,7 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [togglingVip, setTogglingVip] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDoorStaffModal, setShowDoorStaffModal] = useState(false);
@@ -811,6 +812,42 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
       toast.error(error.message || "Failed to check in attendee");
     } finally {
       setCheckingIn(null);
+    }
+  };
+
+  const handleCheckOut = async (registrationId: string) => {
+    if (!eventId) return;
+
+    setCheckingOut(registrationId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/checkin`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registrationId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.error || "Failed to check out attendee";
+        toast.error(errorMessage);
+        return;
+      }
+
+      if (data.success) {
+        toast.success(data.message || "Attendee checked out successfully");
+        // Reload attendees to update the UI
+        loadAttendees();
+        // Reload stats
+        loadStats();
+      } else {
+        toast.error(data.error || "Failed to check out attendee");
+      }
+    } catch (error: any) {
+      console.error("Check-out error:", error);
+      toast.error(error.message || "Failed to check out attendee");
+    } finally {
+      setCheckingOut(null);
     }
   };
 
@@ -2275,10 +2312,12 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
                 venueId={event.venue_id}
                 onRefresh={loadAttendees}
                 onCheckIn={handleCheckIn}
+                onCheckOut={handleCheckOut}
                 onToggleEventVip={handleToggleEventVip}
                 onToggleOrganizerVip={toggleOrganizerVip}
                 onToggleVenueVip={toggleVenueVip}
                 checkingIn={checkingIn}
+                checkingOut={checkingOut}
                 togglingVip={togglingVip}
               />
             </TabsContent>

@@ -82,7 +82,7 @@ export async function GET() {
     // Get all registrations referred by these promoters for these events
     const { data: allReferrals } = await serviceSupabase
       .from("registrations")
-      .select("id, event_id, referral_promoter_id, checked_in")
+      .select("id, event_id, referral_promoter_id")
       .in("event_id", eventIds)
       .in("referral_promoter_id", promoterIds);
 
@@ -94,22 +94,37 @@ export async function GET() {
       eventsByPromoter.set(ep.promoter_id, existing);
     });
 
+    // Build registration count and ID-to-promoter mapping
     const referralsByPromoter = new Map<string, number>();
-    const checkinsByPromoter = new Map<string, number>();
+    const registrationIdToPromoterId = new Map<string, string>();
     (allReferrals || []).forEach((reg) => {
       if (reg.referral_promoter_id) {
         referralsByPromoter.set(
           reg.referral_promoter_id,
           (referralsByPromoter.get(reg.referral_promoter_id) || 0) + 1
         );
-        if (reg.checked_in) {
-          checkinsByPromoter.set(
-            reg.referral_promoter_id,
-            (checkinsByPromoter.get(reg.referral_promoter_id) || 0) + 1
-          );
-        }
+        registrationIdToPromoterId.set(reg.id, reg.referral_promoter_id);
       }
     });
+
+    // Get check-ins from checkins table
+    const referralRegIds = allReferrals?.map((r) => r.id) || [];
+    const checkinsByPromoter = new Map<string, number>();
+
+    if (referralRegIds.length > 0) {
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", referralRegIds)
+        .is("undo_at", null);
+
+      (allCheckins || []).forEach((checkin) => {
+        const promoterId = registrationIdToPromoterId.get(checkin.registration_id);
+        if (promoterId) {
+          checkinsByPromoter.set(promoterId, (checkinsByPromoter.get(promoterId) || 0) + 1);
+        }
+      });
+    }
 
     // Build promoter stats from pre-computed maps (no additional queries)
     const promotersWithStats = (promoters || []).map((promoter) => {

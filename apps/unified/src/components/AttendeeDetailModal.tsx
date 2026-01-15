@@ -28,6 +28,8 @@ interface AttendeeDetailModalProps {
   isVenueVip?: boolean;
   isOrganizerVip?: boolean;
   isGlobalVip?: boolean;
+  // Prefetched data from hover (optional - speeds up modal load)
+  prefetchedData?: AttendeeDetails | null;
 }
 
 interface EventRegistration {
@@ -156,6 +158,7 @@ export function AttendeeDetailModal({
   isVenueVip = false,
   isOrganizerVip = false,
   isGlobalVip = false,
+  prefetchedData = null,
 }: AttendeeDetailModalProps) {
   const [details, setDetails] = useState<AttendeeDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,6 +166,13 @@ export function AttendeeDetailModal({
   const [removingRegistrationId, setRemovingRegistrationId] = useState<string | null>(null);
 
   const loadDetails = async () => {
+    // If we have prefetched data, use it immediately
+    if (prefetchedData) {
+      setDetails(prefetchedData);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -187,13 +197,20 @@ export function AttendeeDetailModal({
 
   useEffect(() => {
     if (isOpen && attendeeId) {
-      loadDetails();
+      // Use prefetched data if available, otherwise fetch
+      if (prefetchedData) {
+        setDetails(prefetchedData);
+        setLoading(false);
+        setError(null);
+      } else {
+        loadDetails();
+      }
     } else {
       setDetails(null);
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, attendeeId, role]);
+  }, [isOpen, attendeeId, role, prefetchedData]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {

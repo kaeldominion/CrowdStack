@@ -113,14 +113,25 @@ export async function GET(
       }
     }
 
-    // Get registration and check-in counts using checked_in field
+    // Get registration count
     const { data: allRegs } = await supabase
       .from("registrations")
-      .select("id, checked_in")
+      .select("id")
       .eq("event_id", params.eventId);
 
     const registrationsCount = allRegs?.length || 0;
-    const checkinsCount = allRegs?.filter((r) => r.checked_in).length || 0;
+
+    // Get check-in count from checkins table
+    const registrationIds = allRegs?.map((r) => r.id) || [];
+    let checkinsCount = 0;
+    if (registrationIds.length > 0) {
+      const { count } = await supabase
+        .from("checkins")
+        .select("id", { count: "exact", head: true })
+        .in("registration_id", registrationIds)
+        .is("undo_at", null);
+      checkinsCount = count || 0;
+    }
 
     return NextResponse.json({
       event: { ...event, owner },

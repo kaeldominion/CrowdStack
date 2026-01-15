@@ -173,7 +173,6 @@ export async function GET(
         referred_by_user_id,
         is_event_vip,
         event_vip_reason,
-        notes,
         attendee:attendees(
           id,
           name,
@@ -191,15 +190,52 @@ export async function GET(
       throw error;
     }
 
+    // Fetch notes from attendee_notes table based on user's role (simplified notes system)
+    const attendeeIdsForNotes = [...new Set(registrations?.map(r => r.attendee_id) || [])];
+    const notesMap = new Map<string, string>();
+
+    if (attendeeIdsForNotes.length > 0) {
+      // Determine which org ID to use for notes lookup
+      let noteQuery = serviceSupabase
+        .from("attendee_notes")
+        .select("attendee_id, note")
+        .in("attendee_id", attendeeIdsForNotes);
+
+      if (userVenueId && event.venue_id) {
+        // Venue user - fetch venue notes
+        noteQuery = noteQuery.eq("venue_id", event.venue_id);
+      } else if (userOrganizerId && event.organizer_id) {
+        // Organizer user - fetch organizer notes
+        noteQuery = noteQuery.eq("organizer_id", event.organizer_id);
+      } else if (userPromoterId) {
+        // Promoter user - fetch promoter notes
+        noteQuery = noteQuery.eq("promoter_id", userPromoterId);
+      } else if (isSuperadmin) {
+        // Superadmin - try venue notes first, then organizer
+        if (event.venue_id) {
+          noteQuery = noteQuery.eq("venue_id", event.venue_id);
+        } else if (event.organizer_id) {
+          noteQuery = noteQuery.eq("organizer_id", event.organizer_id);
+        }
+      }
+
+      const { data: notes } = await noteQuery;
+      notes?.forEach(n => {
+        if (n.note) notesMap.set(n.attendee_id, n.note);
+      });
+    }
+
     // Fetch checkins directly from checkins table (more reliable than embedded join)
     const regIds = registrations?.map(r => r.id) || [];
     const checkinMap = new Map<string, { id: string; checked_in_at: string; undo_at: string | null }>();
     
     if (regIds.length > 0) {
+      // Only fetch ACTIVE checkins (where undo_at IS NULL) to get correct check-in status
       const { data: checkins, error: checkinsError } = await serviceSupabase
         .from("checkins")
         .select("id, registration_id, checked_in_at, undo_at")
-        .in("registration_id", regIds);
+        .in("registration_id", regIds)
+        .is("undo_at", null);
       
       if (checkinsError) {
         console.error("[EventAttendees] Checkins query error:", checkinsError);
@@ -313,7 +349,7 @@ export async function GET(
         is_global_vip: globalVipSet.has(reg.attendee_id),
         is_event_vip: reg.is_event_vip || false,
         event_vip_reason: reg.event_vip_reason || null,
-        notes: reg.notes || null,
+        notes: notesMap.get(reg.attendee_id) || null,
       };
     });
 

@@ -24,6 +24,7 @@ import {
   ExternalLink,
   TrendingUp,
   UserCheck,
+  UserX,
   Crown,
   Star,
 } from "lucide-react";
@@ -157,7 +158,7 @@ export default function DoorScannerPage() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [showAttendeeDetailModal, setShowAttendeeDetailModal] = useState(false);
   const [selectedAttendeeIdForModal, setSelectedAttendeeIdForModal] = useState<string | null>(null);
-  const [doorRole, setDoorRole] = useState<"venue" | "organizer">("venue");
+  const [doorRole, setDoorRole] = useState<"venue" | "organizer" | "promoter">("venue");
   
   // Check-in confirmation modal
   const [showCheckInConfirmation, setShowCheckInConfirmation] = useState(false);
@@ -165,6 +166,10 @@ export default function DoorScannerPage() {
   const [loadingCheckInPreview, setLoadingCheckInPreview] = useState(false);
   const [pendingCheckIn, setPendingCheckIn] = useState<{ registrationId: string; qrToken?: string } | null>(null);
   const [confirmingCheckIn, setConfirmingCheckIn] = useState(false);
+  const [currentRegistrationId, setCurrentRegistrationId] = useState<string | null>(null);
+
+  // Checkout state
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
   // Load event info and stats
   useEffect(() => {
@@ -292,13 +297,15 @@ export default function DoorScannerPage() {
       const params = new URLSearchParams();
       if (registrationId) params.append("registration_id", registrationId);
       if (qrToken) params.append("qr_token", qrToken);
+      params.append("role", doorRole);
 
       const response = await fetch(`/api/events/${eventId}/checkin/preview?${params.toString()}`);
       const data = await response.json();
 
       if (response.ok) {
         setCheckInPreviewData(data);
-        setPendingCheckIn({ registrationId: registrationId || "", qrToken });
+        setPendingCheckIn({ registrationId: registrationId || data.registration_id || "", qrToken });
+        setCurrentRegistrationId(data.registration_id || registrationId || null);
         setShowCheckInConfirmation(true);
       } else {
         // If preview fails, show error
@@ -471,11 +478,103 @@ export default function DoorScannerPage() {
     }
 
     setProcessingCheckIn(true);
-    
+
     // Fetch preview and show confirmation modal
     await fetchCheckInPreview(registrationId, qrToken);
-    
+
     setProcessingCheckIn(false);
+  };
+
+  // Checkout functionality
+  const handleCheckOut = async (registrationId: string, attendeeName: string) => {
+    if (checkingOut) return;
+
+    setCheckingOut(registrationId);
+    try {
+      const response = await fetch(`/api/events/${eventId}/checkin`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration_id: registrationId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Update search results to reflect checkout
+        setSearchResults(prev =>
+          prev.map(r =>
+            r.registration_id === registrationId
+              ? { ...r, checked_in: false, checked_in_at: null }
+              : r
+          )
+        );
+
+        // Update selected attendee profile if open
+        if (selectedAttendee?.registration_id === registrationId) {
+          setSelectedAttendee(prev => prev ? { ...prev, checked_in: false, checked_in_at: null } : null);
+        }
+
+        // Show success feedback
+        const result: CheckInResult = {
+          id: "",
+          name: attendeeName,
+          status: "success",
+          message: "Checked out successfully",
+          timestamp: new Date().toISOString(),
+        };
+        setLastCheckIn(result);
+        loadStats();
+      } else {
+        const result: CheckInResult = {
+          id: "",
+          name: attendeeName,
+          status: "error",
+          message: data.error || "Checkout failed",
+          timestamp: new Date().toISOString(),
+        };
+        setLastCheckIn(result);
+        setFlashColor("red");
+        setTimeout(() => setFlashColor(null), 500);
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      const result: CheckInResult = {
+        id: "",
+        name: attendeeName,
+        status: "error",
+        message: err.message || "Checkout failed",
+        timestamp: new Date().toISOString(),
+      };
+      setLastCheckIn(result);
+      setFlashColor("red");
+      setTimeout(() => setFlashColor(null), 500);
+    } finally {
+      setCheckingOut(null);
+    }
+  };
+
+  // Save notes for an attendee (simplified: one note per org)
+  const handleSaveNotes = async (notes: string) => {
+    if (!currentRegistrationId) {
+      throw new Error("No registration selected");
+    }
+
+    const response = await fetch(
+      `/api/events/${eventId}/registrations/${currentRegistrationId}/notes`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes, role: doorRole }),
+      }
+    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || "Failed to save notes");
+    }
+
+    // Update local state
+    setCheckInPreviewData((prev: any) => prev ? { ...prev, notes } : null);
   };
 
   // QR Scanner using html5-qrcode
@@ -1100,9 +1199,28 @@ export default function DoorScannerPage() {
                               Check In
                             </Button>
                           ) : (
-                            <span className="text-sm text-muted">
-                              {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted">
+                                {result.checked_in_at && new Date(result.checked_in_at).toLocaleTimeString()}
+                              </span>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={(e) => {
+                                  e?.stopPropagation();
+                                  handleCheckOut(result.registration_id, result.attendee_name);
+                                }}
+                                disabled={checkingOut === result.registration_id}
+                                className="!px-2"
+                                title="Check out"
+                              >
+                                {checkingOut === result.registration_id ? (
+                                  <InlineSpinner size="xs" />
+                                ) : (
+                                  <UserX className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
                           )}
                           <Button
                             variant="secondary"
@@ -1398,20 +1516,47 @@ export default function DoorScannerPage() {
               </Card>
             )}
 
-            {/* Check In Button (if not checked in) */}
-            {!selectedAttendee.checked_in && selectedAttendee.registration_id && (
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={() => {
-                  handleCheckIn(selectedAttendee.registration_id);
-                  setSelectedAttendee(null);
-                }}
-              >
-                <CheckCircle2 className="h-5 w-5 mr-2" />
-                Check In Now
-              </Button>
+            {/* Check In / Check Out Buttons */}
+            {selectedAttendee.registration_id && (
+              !selectedAttendee.checked_in ? (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    handleCheckIn(selectedAttendee.registration_id);
+                    setSelectedAttendee(null);
+                  }}
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Check In Now
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    handleCheckOut(
+                      selectedAttendee.registration_id!,
+                      `${selectedAttendee.name}${selectedAttendee.surname ? ` ${selectedAttendee.surname}` : ""}`
+                    );
+                  }}
+                  disabled={checkingOut === selectedAttendee.registration_id}
+                >
+                  {checkingOut === selectedAttendee.registration_id ? (
+                    <>
+                      <InlineSpinner size="sm" className="mr-2" />
+                      Checking Out...
+                    </>
+                  ) : (
+                    <>
+                      <UserX className="h-5 w-5 mr-2" />
+                      Check Out
+                    </>
+                  )}
+                </Button>
+              )
             )}
           </div>
         ) : null}
@@ -1437,9 +1582,11 @@ export default function DoorScannerPage() {
           setShowCheckInConfirmation(false);
           setCheckInPreviewData(null);
           setPendingCheckIn(null);
+          setCurrentRegistrationId(null);
         }}
         onConfirm={() => confirmCheckIn(false)}
         onConfirmWithOverride={(reason) => confirmCheckIn(true, reason)}
+        onSaveNotes={handleSaveNotes}
         data={checkInPreviewData}
         loading={loadingCheckInPreview}
         confirming={confirmingCheckIn}

@@ -1,151 +1,140 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@crowdstack/shared/supabase/server";
-import { getUserOrganizerId, getUserVenueId } from "@/lib/data/get-user-entity";
-import { userHasRoleOrSuperadmin } from "@/lib/auth/check-role";
+import { cookies } from "next/headers";
 
-export const dynamic = "force-dynamic";
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 /**
  * PATCH /api/events/[eventId]/registrations/[registrationId]/notes
- * Update notes for a registration
- * Accessible by: event organizer, venue admin, superadmin
+ * Update notes for an attendee (simplified: one note per attendee per org)
+ *
+ * Body: { notes: string, role: "venue" | "organizer" | "promoter" }
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ eventId: string; registrationId: string }> | { eventId: string; registrationId: string } }
+  { params }: { params: Promise<{ eventId: string; registrationId: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params);
-    const { eventId, registrationId } = resolvedParams;
-
+    const { eventId, registrationId } = await params;
+    const cookieStore = await cookies();
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check for organizer, venue_admin, or admin role
-    const hasOrganizerAccess = await userHasRoleOrSuperadmin("event_organizer");
-    const hasVenueAccess = await userHasRoleOrSuperadmin("venue_admin");
-    const { userHasRole } = await import("@crowdstack/shared/auth/roles");
-    const userIsSuperadmin = await userHasRole("superadmin");
-
-    if (!hasOrganizerAccess && !hasVenueAccess && !userIsSuperadmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const organizerId = await getUserOrganizerId();
-    const venueId = await getUserVenueId();
-
     const serviceSupabase = createServiceRoleClient();
 
-    // Verify event exists and user has access
-    const { data: event, error: eventError } = await serviceSupabase
-      .from("events")
-      .select("id, organizer_id, venue_id")
-      .eq("id", eventId)
-      .single();
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (eventError || !event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    // Check ownership
-    if (!userIsSuperadmin) {
-      const isOrganizer = organizerId && event.organizer_id === organizerId;
-      const isVenueAdmin = venueId && event.venue_id === venueId;
-
-      if (!isOrganizer && !isVenueAdmin) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    // Development-only fallback
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        userId = localhostUser;
       }
     }
 
-    // Verify registration belongs to this event
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Parse request body
+    const { notes, role } = await request.json();
+
+    if (typeof notes !== "string") {
+      return NextResponse.json({ error: "Notes must be a string" }, { status: 400 });
+    }
+
+    if (!role || !["venue", "organizer", "promoter"].includes(role)) {
+      return NextResponse.json({ error: "Role must be venue, organizer, or promoter" }, { status: 400 });
+    }
+
+    // Get registration with attendee_id
     const { data: registration, error: regError } = await serviceSupabase
       .from("registrations")
-      .select("id, event_id")
+      .select("id, event_id, attendee_id")
       .eq("id", registrationId)
-      .eq("event_id", eventId)
       .single();
 
     if (regError || !registration) {
       return NextResponse.json({ error: "Registration not found" }, { status: 404 });
     }
 
-    // Get notes from request body
-    const body = await request.json();
-    const { notes } = body;
-
-    if (typeof notes !== "string") {
-      return NextResponse.json({ error: "Notes must be a string" }, { status: 400 });
+    if (registration.event_id !== eventId) {
+      return NextResponse.json({ error: "Registration does not belong to this event" }, { status: 400 });
     }
 
-    // Validate length
-    if (notes.length > 500) {
-      return NextResponse.json({ error: "Notes cannot exceed 500 characters" }, { status: 400 });
+    // Get event info to determine venue_id and organizer_id
+    const { data: eventInfo } = await serviceSupabase
+      .from("events")
+      .select("venue_id, organizer_id")
+      .eq("id", eventId)
+      .single();
+
+    if (!eventInfo) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Determine organization scope based on who is making the note
-    const userVenueId = await getUserVenueId();
-    const userOrganizerId = await getUserOrganizerId();
-    
-    let noteVenueId: string | null = null;
-    let noteOrganizerId: string | null = null;
+    // Build the note record based on role
+    const noteRecord: {
+      attendee_id: string;
+      note: string;
+      updated_at: string;
+      updated_by: string;
+      venue_id?: string;
+      organizer_id?: string;
+      promoter_id?: string;
+    } = {
+      attendee_id: registration.attendee_id,
+      note: notes,
+      updated_at: new Date().toISOString(),
+      updated_by: userId,
+    };
 
-    if (userVenueId && event.venue_id === userVenueId) {
-      // User is from the venue, scope note to venue
-      noteVenueId = event.venue_id;
-    } else if (userOrganizerId && event.organizer_id === userOrganizerId) {
-      // User is from the organizer, scope note to organizer
-      noteOrganizerId = event.organizer_id;
-    } else if (userIsSuperadmin) {
-      // Superadmin defaults to organizer if available, otherwise venue
-      if (event.organizer_id) {
-        noteOrganizerId = event.organizer_id;
-      } else if (event.venue_id) {
-        noteVenueId = event.venue_id;
+    let conflictColumn: string;
+
+    if (role === "venue") {
+      if (!eventInfo.venue_id) {
+        return NextResponse.json({ error: "Event has no venue" }, { status: 400 });
       }
-    }
-
-    if (!noteVenueId && !noteOrganizerId) {
-      return NextResponse.json({ error: "Unable to determine organization scope" }, { status: 400 });
-    }
-
-    // If notes is not empty, create a history entry
-    if (notes && notes.trim().length > 0) {
-      const { error: historyError } = await serviceSupabase
-        .from("registration_notes_history")
-        .insert({
-          registration_id: registrationId,
-          note_text: notes.trim(),
-          created_by: user.id,
-          venue_id: noteVenueId,
-          organizer_id: noteOrganizerId,
-        });
-
-      if (historyError) {
-        console.error("Error creating note history:", historyError);
-        return NextResponse.json({ error: "Failed to save note" }, { status: 500 });
+      noteRecord.venue_id = eventInfo.venue_id;
+      conflictColumn = "idx_attendee_notes_venue_unique";
+    } else if (role === "organizer") {
+      if (!eventInfo.organizer_id) {
+        return NextResponse.json({ error: "Event has no organizer" }, { status: 400 });
       }
+      noteRecord.organizer_id = eventInfo.organizer_id;
+      conflictColumn = "idx_attendee_notes_organizer_unique";
+    } else {
+      // Promoter - find their promoter_id
+      const { data: promoter } = await serviceSupabase
+        .from("promoters")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!promoter) {
+        return NextResponse.json({ error: "Promoter profile not found" }, { status: 400 });
+      }
+      noteRecord.promoter_id = promoter.id;
+      conflictColumn = "idx_attendee_notes_promoter_unique";
     }
 
-    // Also update the legacy notes field for backward compatibility
-    const { error: updateError } = await serviceSupabase
-      .from("registrations")
-      .update({ notes: notes || null })
-      .eq("id", registrationId);
+    // Upsert the note (insert or update on conflict)
+    const { error: upsertError } = await serviceSupabase
+      .from("attendee_notes")
+      .upsert(noteRecord, {
+        onConflict: conflictColumn,
+        ignoreDuplicates: false,
+      });
 
-    if (updateError) {
-      console.error("Error updating notes:", updateError);
-      return NextResponse.json({ error: "Failed to update notes" }, { status: 500 });
+    if (upsertError) {
+      console.error("[Notes API] Upsert error:", upsertError);
+      return NextResponse.json({ error: "Failed to save notes" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, notes });
   } catch (error: any) {
-    console.error("Error in registration notes PATCH:", error);
+    console.error("[Notes API] Error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to update notes" },
       { status: 500 }

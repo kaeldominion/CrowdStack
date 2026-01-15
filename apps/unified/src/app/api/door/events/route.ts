@@ -238,20 +238,38 @@ export async function GET() {
     // BATCH QUERY OPTIMIZATION: Get current attendance for all events at once
     const eventIds = events.map((e: any) => e.id);
 
+    // 1. Get all registrations
     const { data: allRegs } = eventIds.length > 0
       ? await serviceSupabase
           .from("registrations")
-          .select("event_id, checked_in")
+          .select("id, event_id")
           .in("event_id", eventIds)
       : { data: [] };
 
-    // Build attendance map for O(1) lookups
-    const attendanceByEvent = new Map<string, number>();
+    // Build registration ID to event ID mapping
+    const registrationIdToEventId = new Map<string, string>();
     (allRegs || []).forEach((reg) => {
-      if (reg.checked_in) {
-        attendanceByEvent.set(reg.event_id, (attendanceByEvent.get(reg.event_id) || 0) + 1);
-      }
+      registrationIdToEventId.set(reg.id, reg.event_id);
     });
+
+    // 2. Get check-ins from checkins table
+    const registrationIds = allRegs?.map((r) => r.id) || [];
+    const attendanceByEvent = new Map<string, number>();
+
+    if (registrationIds.length > 0) {
+      const { data: allCheckins } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", registrationIds)
+        .is("undo_at", null);
+
+      (allCheckins || []).forEach((checkin) => {
+        const eventId = registrationIdToEventId.get(checkin.registration_id);
+        if (eventId) {
+          attendanceByEvent.set(eventId, (attendanceByEvent.get(eventId) || 0) + 1);
+        }
+      });
+    }
 
     const eventsWithStats = events.map((event: any) => ({
       ...event,

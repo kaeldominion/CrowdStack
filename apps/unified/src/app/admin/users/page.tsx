@@ -54,11 +54,14 @@ export default function AdminUsersPage() {
   const [updatingName, setUpdatingName] = useState(false);
   const [nameUpdateResult, setNameUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  // Debounce search input
+  // Debounce search input - wait 500ms and require at least 2 characters
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
+      // Only search if empty (show all) or at least 2 characters
+      if (search === "" || search.length >= 2) {
+        setDebouncedSearch(search);
+      }
+    }, 500);
     return () => clearTimeout(timer);
   }, [search]);
 

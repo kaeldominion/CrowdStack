@@ -63,11 +63,11 @@ export async function GET() {
     const eventIds = (events || []).map((e) => e.id);
     console.log("[OrganizerEvents] Event IDs for registration lookup:", eventIds.length);
 
-    // Batch fetch all registrations for these events
+    // 1. Batch fetch all registrations for these events
     const { data: allRegs, error: regsError } = eventIds.length > 0
       ? await serviceSupabase
           .from("registrations")
-          .select("event_id, checked_in")
+          .select("id, event_id")
           .in("event_id", eventIds)
       : { data: [], error: null };
 
@@ -77,16 +77,37 @@ export async function GET() {
       console.log("[OrganizerEvents] Found", allRegs?.length || 0, "registrations across all events");
     }
 
-    // Build counts maps for O(1) lookups
+    // Build registration count map and ID-to-event mapping
     const regsByEvent = new Map<string, number>();
-    const checkinsByEvent = new Map<string, number>();
+    const registrationIdToEventId = new Map<string, string>();
 
     (allRegs || []).forEach((reg) => {
       regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-      if (reg.checked_in) {
-        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
-      }
+      registrationIdToEventId.set(reg.id, reg.event_id);
     });
+
+    // 2. Batch fetch check-ins from the checkins table (separate from registrations)
+    const registrationIds = allRegs?.map((r) => r.id) || [];
+    const checkinsByEvent = new Map<string, number>();
+
+    if (registrationIds.length > 0) {
+      const { data: allCheckins, error: checkinsError } = await serviceSupabase
+        .from("checkins")
+        .select("registration_id")
+        .in("registration_id", registrationIds)
+        .is("undo_at", null);
+
+      if (checkinsError) {
+        console.error("[OrganizerEvents] Checkins query error:", checkinsError);
+      } else {
+        (allCheckins || []).forEach((checkin) => {
+          const eventId = registrationIdToEventId.get(checkin.registration_id);
+          if (eventId) {
+            checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
+          }
+        });
+      }
+    }
 
     // Log final counts for debugging
     console.log("[OrganizerEvents] Registration counts by event:", Object.fromEntries(regsByEvent));

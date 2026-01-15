@@ -362,12 +362,13 @@ export async function POST(
     }
 
     // Check if already checked in (idempotent)
-    // Use upsert to handle race conditions gracefully
+    // Only look for ACTIVE checkins (undo_at IS NULL) - checked out guests can check in again
     const { data: existingCheckin } = await serviceSupabase
       .from("checkins")
       .select("*")
       .eq("registration_id", registrationId)
-      .single();
+      .is("undo_at", null)
+      .maybeSingle();
 
     let checkin;
     let isDuplicate = false;
@@ -784,6 +785,166 @@ export async function POST(
     console.error(`[Check-in API] Error:`, error);
     return NextResponse.json(
       { error: error.message || "Failed to check in" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/events/[eventId]/checkin
+ * Undo a check-in (checkout) by setting undo_at on the checkin record
+ * Does NOT remove the attendee from the guestlist
+ *
+ * Body: { registration_id: string }
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ eventId: string }> }
+) {
+  const { eventId } = await params;
+
+  try {
+    const cookieStore = await cookies();
+    const supabase = await createClient();
+    const serviceSupabase = createServiceRoleClient();
+
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    let userId = user?.id;
+    if (!userId && process.env.NODE_ENV !== "production") {
+      const localhostUser = cookieStore.get("localhost_user_id")?.value;
+      if (localhostUser) {
+        userId = localhostUser;
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check user roles
+    const { data: userRoles } = await serviceSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    const roles = userRoles?.map((r) => r.role) || [];
+    const isSuperadmin = roles.includes("superadmin");
+    const isDoorStaff = roles.includes("door_staff");
+    const isVenueAdmin = roles.includes("venue_admin");
+    const isOrganizer = roles.includes("event_organizer");
+
+    // Check if user has access to this event
+    let hasAccess = isSuperadmin || isDoorStaff;
+
+    if (!hasAccess && (isVenueAdmin || isOrganizer)) {
+      const { data: event } = await serviceSupabase
+        .from("events")
+        .select(`
+          id,
+          venue_id,
+          organizer_id,
+          venue:venues(created_by),
+          organizer:organizers(created_by)
+        `)
+        .eq("id", eventId)
+        .single();
+
+      if (event) {
+        if (isVenueAdmin && event.venue_id) {
+          const { data: venueUser } = await serviceSupabase
+            .from("venue_users")
+            .select("id")
+            .eq("venue_id", event.venue_id)
+            .eq("user_id", userId)
+            .single();
+
+          const venue = Array.isArray(event.venue) ? event.venue[0] : event.venue;
+          hasAccess = hasAccess || !!venueUser || venue?.created_by === userId;
+        }
+
+        if (isOrganizer && event.organizer_id) {
+          const { data: organizerUser } = await serviceSupabase
+            .from("organizer_users")
+            .select("id")
+            .eq("organizer_id", event.organizer_id)
+            .eq("user_id", userId)
+            .single();
+
+          const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
+          hasAccess = hasAccess || !!organizerUser || organizer?.created_by === userId;
+        }
+      }
+    }
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    // Get registration_id from body
+    const body = await request.json();
+    const { registration_id } = body;
+
+    if (!registration_id) {
+      return NextResponse.json({ error: "registration_id is required" }, { status: 400 });
+    }
+
+    // Verify registration belongs to this event
+    const { data: registration, error: regError } = await serviceSupabase
+      .from("registrations")
+      .select("id, event_id, attendee_id, attendees(name)")
+      .eq("id", registration_id)
+      .single();
+
+    if (regError || !registration) {
+      return NextResponse.json({ error: "Registration not found" }, { status: 404 });
+    }
+
+    if (registration.event_id !== eventId) {
+      return NextResponse.json({ error: "Registration does not belong to this event" }, { status: 400 });
+    }
+
+    // Find and undo the active checkin
+    const { data: checkin, error: checkinError } = await serviceSupabase
+      .from("checkins")
+      .update({ undo_at: new Date().toISOString(), undo_by: userId })
+      .eq("registration_id", registration_id)
+      .is("undo_at", null)
+      .select()
+      .single();
+
+    if (checkinError) {
+      console.error("[Checkout API] Error undoing check-in:", checkinError);
+      return NextResponse.json({ error: "Failed to checkout - no active check-in found" }, { status: 400 });
+    }
+
+    const attendeeName = (registration.attendees as any)?.name || "Attendee";
+
+    // Log activity
+    await logActivity(
+      userId,
+      "checkout",
+      "checkin",
+      checkin.id,
+      {
+        event_id: eventId,
+        registration_id,
+        attendee_id: registration.attendee_id,
+        attendee_name: attendeeName,
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: `${attendeeName} checked out successfully`,
+      attendee_name: attendeeName,
+      registration_id,
+    });
+  } catch (error: any) {
+    console.error("[Checkout API] Error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to checkout" },
       { status: 500 }
     );
   }

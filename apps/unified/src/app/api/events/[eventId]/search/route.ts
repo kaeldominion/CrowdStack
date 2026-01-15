@@ -203,13 +203,18 @@ export async function GET(
       }
     }
 
-    // Get check-in status for each
+    // Get check-in status for each (only ACTIVE checkins where undo_at IS NULL)
     const registrationIds = filtered.map((r) => r.id);
     const { data: checkins } = await serviceSupabase
       .from("checkins")
-      .select("registration_id")
-      .in("registration_id", registrationIds);
+      .select("registration_id, checked_in_at")
+      .in("registration_id", registrationIds)
+      .is("undo_at", null);
 
+    const checkedInMap = new Map<string, string>();
+    checkins?.forEach((c) => {
+      checkedInMap.set(c.registration_id, c.checked_in_at);
+    });
     const checkedInIds = new Set(checkins?.map((c) => c.registration_id) || []);
 
     // Get event details for VIP lookup
@@ -259,8 +264,8 @@ export async function GET(
     const results = filtered.map((reg) => {
       const attendee = Array.isArray(reg.attendee) ? reg.attendee[0] : reg.attendee;
       const attendeeId = attendee?.id || null;
-      const attendeeName = attendee?.surname 
-        ? `${attendee?.name || ""} ${attendee.surname}`.trim() 
+      const attendeeName = attendee?.surname
+        ? `${attendee?.name || ""} ${attendee.surname}`.trim()
         : attendee?.name || "Unknown";
       return {
         registration_id: reg.id,
@@ -269,6 +274,7 @@ export async function GET(
         attendee_email: attendee?.email || null,
         attendee_phone: attendee?.phone || null,
         checked_in: checkedInIds.has(reg.id),
+        checked_in_at: checkedInMap.get(reg.id) || null,
         is_global_vip: attendeeId ? globalVipSet.has(attendeeId) : false,
         is_venue_vip: attendeeId ? venueVipSet.has(attendeeId) : false,
         is_organizer_vip: attendeeId ? organizerVipSet.has(attendeeId) : false,

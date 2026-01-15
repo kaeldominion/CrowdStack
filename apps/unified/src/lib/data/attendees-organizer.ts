@@ -309,64 +309,35 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
     }
   }
 
-  // Get notes history for this attendee, scoped to this organizer
-  let notesHistory: any[] = [];
-  if (registrationIds.length > 0) {
-    const { data: notes } = await supabase
-      .from("registration_notes_history")
-      .select(`
-        id,
-        note_text,
-        created_at,
-        created_by,
-        registration_id,
-        registrations!inner(
-          event_id,
-          events!inner(id, name, start_time)
-        ),
-        created_by_user:created_by
-      `)
-      .in("registration_id", registrationIds)
-      .eq("organizer_id", organizerId)
-      .order("created_at", { ascending: false });
+  // Get note for this attendee from organizer (simplified: one note per attendee per organizer)
+  let attendeeNote: { note: string; updated_at: string; updated_by_name: string } | null = null;
+  const { data: noteData } = await supabase
+    .from("attendee_notes")
+    .select("note, updated_at, updated_by")
+    .eq("attendee_id", attendeeId)
+    .eq("organizer_id", organizerId)
+    .maybeSingle();
 
-    if (notes) {
-      // Get user names for note creators from attendees table
-      const userIds = [...new Set(notes.map((n) => n.created_by).filter(Boolean))];
-      const userMap = new Map<string, { name: string; email: string | null }>();
-      
-      if (userIds.length > 0) {
-        const { data: attendees } = await supabase
-          .from("attendees")
-          .select("user_id, name, surname, email")
-          .in("user_id", userIds)
-          .not("user_id", "is", null);
-        
-        attendees?.forEach((a) => {
-          const fullName = a.surname ? `${a.name || ""} ${a.surname}`.trim() : (a.name || "Unknown");
-          userMap.set(a.user_id!, { name: fullName, email: a.email });
-        });
+  if (noteData?.note) {
+    // Get the name of who last updated the note
+    let updatedByName = "Unknown";
+    if (noteData.updated_by) {
+      const { data: noteCreator } = await supabase
+        .from("attendees")
+        .select("name, surname")
+        .eq("user_id", noteData.updated_by)
+        .maybeSingle();
+      if (noteCreator) {
+        updatedByName = noteCreator.surname
+          ? `${noteCreator.name || ""} ${noteCreator.surname}`.trim()
+          : (noteCreator.name || "Unknown");
       }
-
-      notesHistory = notes.map((note) => {
-        const reg = Array.isArray(note.registrations) ? note.registrations[0] : note.registrations;
-        const eventData = reg?.events;
-        const event = Array.isArray(eventData) ? eventData[0] : eventData;
-        const creator = userMap.get(note.created_by) || { name: "Unknown", email: null };
-        
-        return {
-          id: note.id,
-          note_text: note.note_text,
-          created_at: note.created_at,
-          created_by: note.created_by,
-          created_by_name: creator.name,
-          created_by_email: creator.email,
-          registration_id: note.registration_id,
-          event_id: event?.id || null,
-          event_name: event?.name || "Unknown Event",
-        };
-      });
     }
+    attendeeNote = {
+      note: noteData.note,
+      updated_at: noteData.updated_at,
+      updated_by_name: updatedByName,
+    };
   }
 
   // Get table bookings for this attendee at this organizer's events
@@ -430,7 +401,20 @@ export async function getOrganizerAttendeeDetails(attendeeId: string, organizerI
     feedback: feedbackHistory,
     checkins: checkinHistory,
     tableBookings: tableBookings,
-    notesHistory: notesHistory,
+    // Simplified notes: single note per attendee per organizer
+    attendeeNote: attendeeNote,
+    // Keep for backward compat - wrap single note in array format if exists
+    notesHistory: attendeeNote ? [{
+      id: "current",
+      note_text: attendeeNote.note,
+      created_at: attendeeNote.updated_at,
+      created_by: "",
+      created_by_name: attendeeNote.updated_by_name,
+      created_by_email: null,
+      registration_id: "",
+      event_id: null,
+      event_name: "Current Note",
+    }] : [],
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Badge, Button, VipStatus, Input } from "@crowdstack/ui";
+import { Modal, Badge, Button, VipStatus, Input, Textarea } from "@crowdstack/ui";
 import {
   User,
   Mail,
@@ -15,14 +15,25 @@ import {
   Users,
   Calendar,
   AlertTriangle,
+  CalendarCheck,
+  Percent,
+  StickyNote,
 } from "lucide-react";
 import Image from "next/image";
+
+// Instagram icon component
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </svg>
+);
 
 interface CheckInConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   onConfirmWithOverride?: (reason?: string) => void;
+  onSaveNotes?: (notes: string) => Promise<void>;
   data: {
     attendee: {
       id: string;
@@ -32,6 +43,7 @@ interface CheckInConfirmationModalProps {
       email?: string | null;
       phone?: string | null;
       avatar_url?: string | null;
+      instagram_handle?: string | null;
     };
     vip_status: {
       isVip: boolean;
@@ -44,6 +56,14 @@ interface CheckInConfirmationModalProps {
       total: number;
       at_venue: number;
     };
+    attendance?: {
+      total_events: number;
+      total_checkins: number;
+      checkin_rate: number;
+      venue_events: number;
+      venue_checkins: number;
+    };
+    notes?: string | null;
     feedback_history: Array<{
       id: string;
       rating: number;
@@ -82,11 +102,33 @@ export function CheckInConfirmationModal({
   onClose,
   onConfirm,
   onConfirmWithOverride,
+  onSaveNotes,
   data,
   loading = false,
   confirming = false,
 }: CheckInConfirmationModalProps) {
   const [overrideReason, setOverrideReason] = useState("");
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState(data?.notes || "");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  // Sync notesValue when data changes
+  if (data?.notes !== undefined && notesValue !== (data.notes || "") && !editingNotes) {
+    setNotesValue(data.notes || "");
+  }
+
+  const handleSaveNotes = async () => {
+    if (!onSaveNotes) return;
+    setSavingNotes(true);
+    try {
+      await onSaveNotes(notesValue);
+      setEditingNotes(false);
+    } catch (err) {
+      console.error("Failed to save notes:", err);
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -157,6 +199,19 @@ export function CheckInConfirmationModal({
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-3.5 w-3.5 text-secondary" />
                     <span className="text-secondary">{data.attendee.phone}</span>
+                  </div>
+                )}
+                {data.attendee.instagram_handle && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <InstagramIcon className="h-3.5 w-3.5 text-pink-500" />
+                    <a
+                      href={`https://instagram.com/${data.attendee.instagram_handle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-pink-500 hover:text-pink-400 transition-colors"
+                    >
+                      @{data.attendee.instagram_handle.replace('@', '')}
+                    </a>
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm">
@@ -286,26 +341,95 @@ export function CheckInConfirmationModal({
             </div>
           )}
 
-          {/* XP Points */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-accent-secondary" />
-                <span className="text-xs text-secondary font-medium">Total XP</span>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-4 gap-2">
+            <div className="p-2 rounded-lg bg-accent-secondary/10 border border-accent-secondary/20">
+              <div className="flex items-center gap-1 mb-0.5">
+                <TrendingUp className="h-3 w-3 text-accent-secondary" />
+                <span className="text-[10px] text-secondary font-medium">Total XP</span>
               </div>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-lg font-bold text-primary">
                 {data.xp.total.toLocaleString()}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="h-4 w-4 text-accent-primary" />
-                <span className="text-xs text-secondary font-medium">At Venue</span>
+            <div className="p-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Star className="h-3 w-3 text-accent-primary" />
+                <span className="text-[10px] text-secondary font-medium">Venue XP</span>
               </div>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-lg font-bold text-primary">
                 {data.xp.at_venue.toLocaleString()}
               </p>
             </div>
+            <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <div className="flex items-center gap-1 mb-0.5">
+                <CalendarCheck className="h-3 w-3 text-blue-400" />
+                <span className="text-[10px] text-secondary font-medium">Events</span>
+              </div>
+              <p className="text-lg font-bold text-primary">
+                {data.attendance?.total_checkins || 0}/{data.attendance?.total_events || 0}
+              </p>
+            </div>
+            <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Percent className="h-3 w-3 text-green-400" />
+                <span className="text-[10px] text-secondary font-medium">Check-in %</span>
+              </div>
+              <p className="text-lg font-bold text-primary">
+                {data.attendance?.checkin_rate || 0}%
+              </p>
+            </div>
+          </div>
+
+          {/* Notes Section */}
+          <div className="p-3 rounded-lg bg-raised border border-border-subtle">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <StickyNote className="h-4 w-4 text-secondary" />
+                <h3 className="font-semibold text-primary text-sm">Notes</h3>
+              </div>
+              {onSaveNotes && !editingNotes && (
+                <button
+                  onClick={() => setEditingNotes(true)}
+                  className="text-xs text-accent-primary hover:text-accent-primary/80 transition-colors"
+                >
+                  {data.notes ? "Edit" : "Add Note"}
+                </button>
+              )}
+            </div>
+            {editingNotes ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={notesValue}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotesValue(e.target.value)}
+                  placeholder="Add notes about this attendee..."
+                  className="text-sm min-h-[60px]"
+                />
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setEditingNotes(false);
+                      setNotesValue(data.notes || "");
+                    }}
+                    className="text-xs text-secondary hover:text-primary transition-colors px-2 py-1"
+                    disabled={savingNotes}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNotes}
+                    disabled={savingNotes}
+                    className="text-xs bg-accent-primary text-white px-3 py-1 rounded hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {savingNotes ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            ) : data.notes ? (
+              <p className="text-sm text-secondary whitespace-pre-wrap">{data.notes}</p>
+            ) : (
+              <p className="text-sm text-secondary/60 italic">No notes added</p>
+            )}
           </div>
 
           {/* Feedback History */}

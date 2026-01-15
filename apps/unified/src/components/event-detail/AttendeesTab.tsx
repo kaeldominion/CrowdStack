@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   Button,
   Input,
@@ -11,6 +11,7 @@ import {
 import {
   Users,
   UserCheck,
+  UserX,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   QrCode,
   Copy,
+  Megaphone,
 } from "lucide-react";
 import Link from "next/link";
 import { InlineEditField } from "@/components/inline/InlineEditField";
@@ -89,10 +91,12 @@ interface AttendeesTabProps {
   venueId?: string | null;
   onRefresh: () => void;
   onCheckIn: (registrationId: string) => Promise<void>;
+  onCheckOut?: (registrationId: string) => Promise<void>;
   onToggleEventVip: (registrationId: string, isCurrentlyVip?: boolean) => Promise<void>;
   onToggleOrganizerVip: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
   onToggleVenueVip: (attendeeId: string, isCurrentlyVip: boolean) => Promise<void>;
   checkingIn: string | null;
+  checkingOut?: string | null;
   togglingVip: string | null;
 }
 
@@ -109,16 +113,62 @@ export function AttendeesTab({
   venueId,
   onRefresh,
   onCheckIn,
+  onCheckOut,
   onToggleEventVip,
   onToggleOrganizerVip,
   onToggleVenueVip,
   checkingIn,
+  checkingOut,
   togglingVip,
 }: AttendeesTabProps) {
   const toast = useToast();
 
   // Selected attendee for detail modal
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
+
+  // Prefetch cache for attendee details (keyed by attendeeId)
+  const prefetchCache = useRef<Map<string, any>>(new Map());
+  const prefetchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const prefetchingIds = useRef<Set<string>>(new Set());
+
+  // Immediate prefetch (for touch - no debounce needed)
+  const prefetchAttendeeImmediate = useCallback(async (attendeeId: string) => {
+    if (prefetchCache.current.has(attendeeId) || prefetchingIds.current.has(attendeeId)) {
+      return;
+    }
+
+    prefetchingIds.current.add(attendeeId);
+    try {
+      const endpoint = `/api/${role}/attendees/${attendeeId}`;
+      const response = await fetch(endpoint);
+      if (response.ok) {
+        const data = await response.json();
+        prefetchCache.current.set(attendeeId, data);
+      }
+    } catch (err) {
+      console.debug("Prefetch failed for attendee:", attendeeId, err);
+    } finally {
+      prefetchingIds.current.delete(attendeeId);
+    }
+  }, [role]);
+
+  // Prefetch attendee details on hover (with debounce for desktop)
+  const prefetchAttendeeDetails = useCallback((attendeeId: string) => {
+    // Skip if already cached or currently fetching
+    if (prefetchCache.current.has(attendeeId) || prefetchingIds.current.has(attendeeId)) {
+      return;
+    }
+
+    // Clear any pending prefetch
+    if (prefetchTimeout.current) {
+      clearTimeout(prefetchTimeout.current);
+    }
+
+    // Debounce the prefetch by 150ms to avoid too many requests on quick scrolls
+    prefetchTimeout.current = setTimeout(() => {
+      prefetchAttendeeImmediate(attendeeId);
+    }, 150);
+  }, [prefetchAttendeeImmediate]);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,13 +230,15 @@ export function AttendeesTab({
     setTimeout(() => setCopiedInviteId(null), 2000);
   };
 
-  // Save notes handler
+  // Save notes handler (simplified: one note per attendee per org)
   const handleSaveNotes = useCallback(async (registrationId: string, notes: string) => {
     try {
+      // Map role to notes role type
+      const notesRole = role === "venue" ? "venue" : role === "organizer" ? "organizer" : "promoter";
       const response = await fetch(`/api/events/${eventId}/registrations/${registrationId}/notes`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes }),
+        body: JSON.stringify({ notes, role: notesRole }),
       });
       if (!response.ok) {
         throw new Error("Failed to save notes");
@@ -196,7 +248,7 @@ export function AttendeesTab({
       toast.error("Failed to save notes");
       throw error;
     }
-  }, [eventId, toast]);
+  }, [eventId, role, toast]);
 
   // Check if user can check in attendees
   const canCheckIn = !isPromoterView && (role === "organizer" || role === "venue");
@@ -452,8 +504,8 @@ export function AttendeesTab({
               <tr className="label-mono">
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2 w-24">Registered</th>
-                <th className="px-3 py-2 w-28">Check-in</th>
+                <th className="px-3 py-2">Promoter</th>
+                <th className="px-3 py-2 w-28">Status</th>
                 <th className="px-3 py-2 w-16">VIP</th>
                 {canEditNotes && <th className="px-3 py-2 w-28">Notes</th>}
                 <th className="px-3 py-2 w-24">Actions</th>
@@ -470,10 +522,12 @@ export function AttendeesTab({
                 </tr>
               ) : (
                 filteredAttendees.map((attendee) => (
-                  <tr 
-                    key={attendee.id} 
+                  <tr
+                    key={attendee.id}
                     className="hover:bg-[var(--bg-raised)]/50 transition-colors cursor-pointer"
                     onClick={() => setSelectedAttendeeId(attendee.attendee_id)}
+                    onMouseEnter={() => prefetchAttendeeDetails(attendee.attendee_id)}
+                    onTouchStart={() => prefetchAttendeeImmediate(attendee.attendee_id)}
                   >
                     {/* Name */}
                     <td className="px-3 py-2">
@@ -484,32 +538,64 @@ export function AttendeesTab({
 
                     {/* Email */}
                     <td className="px-3 py-2">
-                      <span className="text-xs text-[var(--text-secondary)] block truncate max-w-[180px]">
+                      <span className="text-xs text-[var(--text-secondary)] block truncate max-w-[160px]">
                         {maskEmail(attendee.email)}
                       </span>
                     </td>
 
-                    {/* Registered Date */}
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <span className="text-[10px] text-[var(--text-muted)]">
-                        {new Date(attendee.registration_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
+                    {/* Promoter */}
+                    <td className="px-3 py-2">
+                      {attendee.promoter_name ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-[var(--accent-secondary)]">
+                          <Megaphone className="h-2.5 w-2.5" />
+                          <span className="truncate max-w-[100px]">{attendee.promoter_name}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-[var(--text-muted)]">Direct</span>
+                      )}
                     </td>
 
-                    {/* Check-in Status */}
+                    {/* Status (Check-in/out) - clickable to toggle */}
                     <td className="px-3 py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       {attendee.checked_in ? (
-                        <div className="flex flex-col">
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] w-fit">
-                            <CheckCircle2 className="h-2.5 w-2.5" />
-                            In
-                          </span>
-                          {attendee.check_in_time && (
-                            <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                              {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                        canCheckIn && onCheckOut ? (
+                          <button
+                            onClick={() => onCheckOut(attendee.id)}
+                            disabled={checkingOut === attendee.id}
+                            className="flex flex-col group"
+                            title="Click to check out"
+                          >
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] group-hover:bg-[var(--accent-warning)]/20 group-hover:text-[var(--accent-warning)] transition-colors w-fit">
+                              {checkingOut === attendee.id ? (
+                                <InlineSpinner size="xs" />
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-2.5 w-2.5 group-hover:hidden" />
+                                  <UserX className="h-2.5 w-2.5 hidden group-hover:block" />
+                                </>
+                              )}
+                              <span className="group-hover:hidden">In</span>
+                              <span className="hidden group-hover:inline">Out</span>
                             </span>
-                          )}
-                        </div>
+                            {attendee.check_in_time && (
+                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                                {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] w-fit">
+                              <CheckCircle2 className="h-2.5 w-2.5" />
+                              In
+                            </span>
+                            {attendee.check_in_time && (
+                              <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                                {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
+                        )
                       ) : canCheckIn ? (
                         <button
                           onClick={() => onCheckIn(attendee.id)}
@@ -633,13 +719,18 @@ export function AttendeesTab({
             filteredAttendees.map((attendee) => (
               <div
                 key={attendee.id}
-                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--bg-raised)]/30 transition-colors"
+                className="px-3 py-2.5 cursor-pointer hover:bg-[var(--bg-raised)]/30 transition-colors"
                 onClick={() => setSelectedAttendeeId(attendee.attendee_id)}
+                onMouseEnter={() => prefetchAttendeeDetails(attendee.attendee_id)}
+                onTouchStart={() => prefetchAttendeeImmediate(attendee.attendee_id)}
               >
-                {/* Name & VIP badges */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-[var(--text-primary)] truncate">{attendee.name}</span>
+                {/* Top row: Name + VIP badges + Status */}
+                <div className="flex items-center gap-2">
+                  {/* Name (truncated) + VIP badges */}
+                  <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+                      {attendee.name}
+                    </span>
                     {(attendee.is_global_vip || attendee.is_venue_vip || attendee.is_organizer_vip || attendee.is_event_vip) && (
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         {attendee.is_global_vip && <VipBadge level="global" variant="badge" size="xs" />}
@@ -649,40 +740,98 @@ export function AttendeesTab({
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Check-in Status */}
-                <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {attendee.checked_in ? (
-                    <div className="flex flex-col items-center">
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)]">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
-                        In
-                      </span>
-                      {attendee.check_in_time && (
-                        <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                          {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      )}
-                    </div>
-                  ) : canCheckIn ? (
-                    <button
-                      onClick={() => onCheckIn(attendee.id)}
-                      disabled={checkingIn === attendee.id}
-                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)] hover:text-[var(--accent-success)] hover:bg-[var(--accent-success)]/10 transition-colors"
-                    >
-                      {checkingIn === attendee.id ? (
-                        <InlineSpinner size="xs" />
+                  {/* Status badge - clickable to toggle checkout */}
+                  <div className="flex flex-col items-end" onClick={(e) => e.stopPropagation()}>
+                    {attendee.checked_in ? (
+                      canCheckIn && onCheckOut ? (
+                        <>
+                          <button
+                            onClick={() => onCheckOut(attendee.id)}
+                            disabled={checkingOut === attendee.id}
+                            className="group"
+                            title="Tap to check out"
+                          >
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)] active:bg-[var(--accent-warning)]/20 active:text-[var(--accent-warning)] transition-colors">
+                              {checkingOut === attendee.id ? (
+                                <InlineSpinner size="xs" />
+                              ) : (
+                                <CheckCircle2 className="h-2.5 w-2.5" />
+                              )}
+                              In
+                            </span>
+                          </button>
+                          {attendee.check_in_time && (
+                            <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                              {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </>
                       ) : (
+                        <>
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--accent-success)]/20 text-[var(--accent-success)]">
+                            <CheckCircle2 className="h-2.5 w-2.5" />
+                            In
+                          </span>
+                          {attendee.check_in_time && (
+                            <span className="text-[9px] text-[var(--text-muted)] mt-0.5">
+                              {new Date(attendee.check_in_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </>
+                      )
+                    ) : canCheckIn ? (
+                      <button
+                        onClick={() => onCheckIn(attendee.id)}
+                        disabled={checkingIn === attendee.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)] active:text-[var(--accent-success)] active:bg-[var(--accent-success)]/10 transition-colors"
+                      >
+                        {checkingIn === attendee.id ? (
+                          <InlineSpinner size="xs" />
+                        ) : (
+                          <>
+                            <UserCheck className="h-3 w-3" />
+                            In
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)]">
                         <Clock className="h-2.5 w-2.5" />
-                      )}
-                    </button>
-                  ) : (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-[var(--bg-raised)] text-[var(--text-muted)]">
-                      <Clock className="h-2.5 w-2.5" />
-                    </span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* VIP action button */}
+                  {canToggleEventVip && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => onToggleEventVip(attendee.id, attendee.is_event_vip)}
+                        disabled={togglingVip === attendee.id}
+                        className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
+                          attendee.is_event_vip
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-[var(--bg-raised)] text-[var(--text-muted)]"
+                        }`}
+                        title={attendee.is_event_vip ? "Remove VIP" : "Make VIP"}
+                      >
+                        {togglingVip === attendee.id ? (
+                          <InlineSpinner size="xs" />
+                        ) : (
+                          <VipBadge level="event" variant="icon" size="xs" iconOnly />
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
+
+                {/* Bottom row: Promoter info */}
+                {attendee.promoter_name && (
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-[var(--accent-secondary)]">
+                    <Megaphone className="h-2.5 w-2.5" />
+                    <span className="truncate">{attendee.promoter_name}</span>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -691,10 +840,15 @@ export function AttendeesTab({
 
       {/* Attendee Detail Modal */}
       {role !== "admin" && (() => {
-        const selectedAttendee = selectedAttendeeId 
+        const selectedAttendee = selectedAttendeeId
           ? filteredAttendees.find(a => a.attendee_id === selectedAttendeeId)
           : null;
-        
+
+        // Get prefetched data if available
+        const prefetchedData = selectedAttendeeId
+          ? prefetchCache.current.get(selectedAttendeeId)
+          : null;
+
         return (
           <AttendeeDetailModal
             isOpen={!!selectedAttendeeId}
@@ -717,6 +871,7 @@ export function AttendeesTab({
             isVenueVip={selectedAttendee?.is_venue_vip || false}
             isOrganizerVip={selectedAttendee?.is_organizer_vip || false}
             isGlobalVip={selectedAttendee?.is_global_vip || false}
+            prefetchedData={prefetchedData}
           />
         );
       })()}
