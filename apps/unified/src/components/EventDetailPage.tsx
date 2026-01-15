@@ -110,7 +110,7 @@ import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { EventImageUpload } from "@/components/EventImageUpload";
 import { EventLineupManagement } from "@/components/EventLineupManagement";
 import { Surface } from "@/components/foundation/Surface";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { VENUE_EVENT_GENRES } from "@/lib/constants/genres";
 import { TIMEZONE_GROUPS } from "@/lib/constants/timezones";
 import { EventStatusStepper, type EventStatus } from "@/components/EventStatusStepper";
@@ -2271,30 +2271,6 @@ export function EventDetailPage({ eventId, config }: EventDetailPageProps) {
               </Card>
             </div>
 
-            {/* Promoter Performance Chart (for organizer/venue only) */}
-            {config.role !== "promoter" && config.canViewStats && stats?.promoter_breakdown && stats.promoter_breakdown.length > 0 && (
-              <Card>
-                <h3 className="section-header">
-                  Promoter Performance
-                </h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={stats.promoter_breakdown}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="promoter_name" stroke="var(--color-foreground-muted)" fontSize={12} />
-                    <YAxis stroke="var(--color-foreground-muted)" fontSize={12} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: "var(--color-background)", 
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "8px"
-                      }} 
-                    />
-                    <Bar dataKey="registrations" fill="#8884d8" name="Registrations" />
-                    <Bar dataKey="check_ins" fill="#10b981" name="Check-ins" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            )}
           </TabsContent>
 
           {config.canViewAttendees && (
