@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button, Badge, Card, InlineSpinner } from "@crowdstack/ui";
+import { useVenue } from "@/contexts/VenueContext";
 import {
   Users,
   Calendar,
@@ -93,6 +94,7 @@ interface EventOption {
 type StatusFilter = "all" | "pending" | "confirmed" | "cancelled" | "no_show" | "completed";
 
 export default function VenueTableBookingsPage() {
+  const { venueVersion } = useVenue();
   const [bookings, setBookings] = useState<TableBooking[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,9 +121,15 @@ export default function VenueTableBookingsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [updatingDeposit, setUpdatingDeposit] = useState(false);
 
+  // Reset filters when venue changes
+  useEffect(() => {
+    setEventFilter("all");
+    setSelectedBooking(null);
+  }, [venueVersion]);
+
   useEffect(() => {
     fetchBookings();
-  }, [statusFilter, eventFilter, upcomingOnly]);
+  }, [statusFilter, eventFilter, upcomingOnly, venueVersion]);
 
   useEffect(() => {
     if (selectedBooking) {
@@ -146,7 +154,7 @@ export default function VenueTableBookingsPage() {
       }
 
       const url = `/api/venue/table-bookings${params.toString() ? `?${params.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: "no-store" });
       const data = await response.json();
 
       if (!response.ok) {
