@@ -263,7 +263,8 @@ export const EventCardRow = memo(function EventCardRow({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      router.push(`/e/${event.slug}/register`);
+                      // Include linkParams (e.g., ref=promoterId) for referral tracking
+                      router.push(linkParams ? `/e/${event.slug}/register?${linkParams}` : `/e/${event.slug}/register`);
                     }}
                     className="bg-accent-primary text-void font-mono font-bold text-[10px] uppercase tracking-wider py-2 px-4 rounded-md hover:bg-accent-primary/90 transition-colors"
                   >
