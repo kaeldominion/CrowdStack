@@ -52,7 +52,14 @@ export async function GET(
       .single();
 
     if (linkError || !link) {
-      return NextResponse.json({ error: "Booking link not found" }, { status: 404 });
+      console.error("[Book API] Booking link not found:", {
+        code: code.toUpperCase(),
+        error: linkError,
+      });
+      return NextResponse.json(
+        { error: "Booking link not found. Please check the link and try again." },
+        { status: 404 }
+      );
     }
 
     // Check if link is active
@@ -92,11 +99,33 @@ export async function GET(
       .single();
 
     if (eventError || !eventData) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      console.error("[Book API] Event not found for booking link:", {
+        linkId: link.id,
+        linkCode: link.code,
+        eventId: link.event_id,
+        error: eventError,
+      });
+      return NextResponse.json(
+        { error: "Event not found. This booking link may be outdated or the event has been removed." },
+        { status: 404 }
+      );
     }
 
     // Type assertion to fix Supabase's nested relation type inference
     const event = eventData as unknown as EventWithVenue;
+
+    // Verify venue exists (required for table lookups)
+    if (!event.venue?.id) {
+      console.error("[Book API] Event has no venue:", {
+        eventId: event.id,
+        eventName: event.name,
+        linkCode: link.code,
+      });
+      return NextResponse.json(
+        { error: "Event venue configuration error. Please contact support." },
+        { status: 500 }
+      );
+    }
 
     // Check if event is in the future
     const eventEnd = event.end_time ? new Date(event.end_time) : null;
@@ -157,7 +186,7 @@ export async function GET(
           deposit_amount,
           zone:table_zones(id, name)
         `)
-        .eq("venue_id", event.venue?.id)
+        .eq("venue_id", event.venue.id)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 

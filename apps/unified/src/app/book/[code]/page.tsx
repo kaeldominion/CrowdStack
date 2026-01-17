@@ -97,13 +97,27 @@ export default function DirectBookingPage() {
   }
 
   if (error || !data) {
+    // Determine error title based on the error message
+    let errorTitle = "Booking Link Invalid";
+    if (error?.includes("expired")) {
+      errorTitle = "Link Expired";
+    } else if (error?.includes("no longer active")) {
+      errorTitle = "Link Deactivated";
+    } else if (error?.includes("Event not found") || error?.includes("outdated")) {
+      errorTitle = "Event Not Found";
+    } else if (error?.includes("ended")) {
+      errorTitle = "Event Ended";
+    } else if (error?.includes("venue configuration")) {
+      errorTitle = "Configuration Error";
+    }
+
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
             <AlertCircle className="h-8 w-8 text-red-400" />
           </div>
-          <h1 className="text-xl font-bold text-white mb-2">Booking Link Invalid</h1>
+          <h1 className="text-xl font-bold text-white mb-2">{errorTitle}</h1>
           <p className="text-gray-400 mb-6">{error || "This booking link could not be found."}</p>
           <Link href="/">
             <Button variant="secondary">

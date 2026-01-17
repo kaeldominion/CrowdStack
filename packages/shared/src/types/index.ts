@@ -669,17 +669,8 @@ export interface AuditLog {
   created_at: string;
 }
 
-export type MessageStatus = "pending" | "sent" | "failed";
-
-export interface MessageLog {
-  id: string;
-  recipient: string;
-  subject: string;
-  status: MessageStatus;
-  sent_at: string | null;
-  error_message: string | null;
-  created_at: string;
-}
+// MessageStatus and MessageLog types removed - legacy types for deprecated message_logs table
+// All email logging now uses email_send_logs table via log-email.ts
 
 export type AudienceType = "venue" | "organizer" | "promoter" | "event";
 export type AudienceMessageStatus = "queued" | "processing" | "sent" | "failed";

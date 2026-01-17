@@ -82,7 +82,15 @@ export const queryKeys = {
     organizer: () => ['dashboard', 'organizer'] as const,
     venue: () => ['dashboard', 'venue'] as const,
     promoter: () => ['dashboard', 'promoter'] as const,
+    dj: () => ['dashboard', 'dj'] as const,
     admin: () => ['dashboard', 'admin'] as const,
+    unified: (roles: string[], venueVersion?: number) =>
+      ['dashboard', 'unified', roles.sort().join(','), venueVersion] as const,
+  },
+
+  // Live events queries
+  liveEvents: {
+    byRole: (roleType: string) => ['live-events', roleType] as const,
   },
   
   // User queries

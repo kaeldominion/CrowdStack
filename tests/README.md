@@ -1,21 +1,80 @@
 # Playwright E2E Tests
 
-## Setup
+Tests run against `http://localhost:3000`. The dev server starts automatically if not running.
 
-Tests are configured to run against `http://localhost:3000`. The test suite will automatically start the dev server if it's not already running.
+## First-Time Auth Setup
+
+```bash
+# 1. Pull env vars from Vercel (includes TEST_USER_PASSWORD)
+vercel env pull .env.test.local
+
+# 2. Seed test users in Supabase
+export $(grep SUPABASE_SERVICE_ROLE_KEY .env.local | xargs) && npx tsx scripts/seed-test-users.ts
+
+# 3. Create auth session files
+pnpm test:e2e --project=setup
+```
+
+## Test User Accounts
+
+All accounts use password: `TestPassword123!` (or `TEST_USER_PASSWORD` env var)
+
+| Email | Role |
+|-------|------|
+| `test-attendee-1@crowdstack.app` | attendee |
+| `test-attendee-2@crowdstack.app` | attendee |
+| `test-attendee-3@crowdstack.app` | attendee |
+| `test-promoter@crowdstack.app` | promoter |
+| `test-dj@crowdstack.app` | dj |
+| `test-organizer@crowdstack.app` | event_organizer |
+| `test-venue@crowdstack.app` | venue_admin |
+| `test-superadmin@crowdstack.app` | superadmin |
 
 ## Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (unauthenticated)
 pnpm test:e2e
 
-# Run tests in UI mode (interactive)
-pnpm test:e2e:ui
+# Run as specific role (pre-authenticated)
+pnpm test:e2e --project=venue
+pnpm test:e2e --project=attendee
+pnpm test:e2e --project=superadmin
 
-# Run tests in headed mode (see browser)
+# UI mode / headed mode
+pnpm test:e2e:ui
 pnpm test:e2e:headed
+
+# Re-auth if sessions expire
+pnpm test:e2e --project=setup
 ```
+
+## Writing Authenticated Tests
+
+**Option 1: Playwright projects** (single-role)
+```typescript
+import { test, expect } from '@playwright/test';
+// Run with: pnpm test:e2e --project=venue
+test('venue dashboard', async ({ page }) => {
+  await page.goto('/app/venue');
+});
+```
+
+**Option 2: Auth fixtures** (multi-user)
+```typescript
+import { test, expect } from './fixtures/auth';
+test('multi-user test', async ({ attendeePage, venuePage }) => {
+  await attendeePage.goto('/app');
+  await venuePage.goto('/app');
+});
+```
+
+## Auth Files
+
+- `tests/auth.setup.ts` - Authenticates users on setup
+- `tests/fixtures/auth.ts` - Multi-user fixtures
+- `.auth/*.json` - Session state (gitignored)
+- `scripts/seed-test-users.ts` - Creates test users
 
 ## Test Coverage
 

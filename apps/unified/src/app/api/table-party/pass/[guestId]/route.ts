@@ -179,18 +179,27 @@ export async function GET(
       );
     }
 
-    // Check if guest has joined
-    if (guest.status !== "joined") {
+    // Check guest status - order matters here!
+    // First check if removed (revoked access)
+    if (guest.status === "removed") {
       return NextResponse.json(
-        { error: "Please accept your invitation first to get your pass" },
+        { error: "This pass has been revoked" },
         { status: 400 }
       );
     }
 
-    // Check if removed
-    if (guest.status === "removed") {
+    // Check if declined
+    if (guest.status === "declined") {
       return NextResponse.json(
-        { error: "This pass has been revoked" },
+        { error: "You declined this invitation. Contact the host if you changed your mind." },
+        { status: 400 }
+      );
+    }
+
+    // Check if guest has joined (accepted the invitation)
+    if (guest.status !== "joined") {
+      return NextResponse.json(
+        { error: "Please accept your invitation first to get your pass" },
         { status: 400 }
       );
     }
