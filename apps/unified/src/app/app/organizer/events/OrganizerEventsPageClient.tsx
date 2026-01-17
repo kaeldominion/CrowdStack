@@ -167,7 +167,7 @@ export function OrganizerEventsPageClient({ initialEvents }: OrganizerEventsPage
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Your Events</h1>
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Events</h1>
           <p className="text-sm text-secondary">
             Manage and track all events you've created
           </p>
