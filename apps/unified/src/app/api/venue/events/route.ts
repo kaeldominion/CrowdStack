@@ -92,10 +92,11 @@ export async function GET(request: Request) {
       // Count registration
       registrationsByEvent.set(reg.event_id, (registrationsByEvent.get(reg.event_id) || 0) + 1);
 
-      // Count active checkins (where undo_at is null)
-      const activeCheckins = (reg.checkins || []).filter((c: any) => c.undo_at === null);
-      if (activeCheckins.length > 0) {
-        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + activeCheckins.length);
+      // Count active checkin (checkins is an array due to one-to-many relation syntax, but max 1 due to unique constraint)
+      const checkins = Array.isArray(reg.checkins) ? reg.checkins : (reg.checkins ? [reg.checkins] : []);
+      const hasActiveCheckin = checkins.some((c: any) => c.undo_at === null);
+      if (hasActiveCheckin) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + 1);
       }
     });
 
