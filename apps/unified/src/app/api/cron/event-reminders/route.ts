@@ -38,7 +38,12 @@ async function handleCronRequest(request: NextRequest) {
   const now = new Date();
   const sixHoursFromNow = new Date(now.getTime() + 6 * 60 * 60 * 1000);
 
-  console.log("[EventReminders] Cron triggered at:", now.toISOString());
+  // Test mode parameters
+  const { searchParams } = new URL(request.url);
+  const testEventId = searchParams.get("event_id"); // Test specific event (bypasses time window)
+  const dryRun = searchParams.get("dry_run") === "true"; // Don't actually send, just preview
+
+  console.log("[EventReminders] Cron triggered at:", now.toISOString(), testEventId ? `(TEST MODE: event_id=${testEventId})` : "", dryRun ? "(DRY RUN)" : "");
 
   try {
     // Pre-check: Verify the email template exists and is enabled
@@ -52,27 +57,50 @@ async function handleCronRequest(request: NextRequest) {
     }
     console.log("[EventReminders] Template found:", template.slug, "enabled:", template.enabled);
 
-    // Get events starting in ~6 hours (±1 hour window)
-    const sixHoursStart = new Date(sixHoursFromNow.getTime() - 60 * 60 * 1000);
-    const sixHoursEnd = new Date(sixHoursFromNow.getTime() + 60 * 60 * 1000);
+    let events;
+    let eventsError;
 
-    console.log("[EventReminders] Looking for events between:", sixHoursStart.toISOString(), "and", sixHoursEnd.toISOString());
+    if (testEventId) {
+      // TEST MODE: Fetch specific event regardless of time window
+      console.log("[EventReminders] TEST MODE: Fetching specific event:", testEventId);
+      const result = await supabase
+        .from("events")
+        .select(`
+          id,
+          name,
+          slug,
+          start_time,
+          venue_id,
+          important_info,
+          venues(name, address, city, state)
+        `)
+        .eq("id", testEventId);
+      events = result.data;
+      eventsError = result.error;
+    } else {
+      // NORMAL MODE: Get events starting in ~6 hours (±1 hour window)
+      const sixHoursStart = new Date(sixHoursFromNow.getTime() - 60 * 60 * 1000);
+      const sixHoursEnd = new Date(sixHoursFromNow.getTime() + 60 * 60 * 1000);
 
-    // Get all published events starting in the 6-hour window
-    const { data: events, error: eventsError } = await supabase
-      .from("events")
-      .select(`
-        id,
-        name,
-        slug,
-        start_time,
-        venue_id,
-        important_info,
-        venues(name, address, city, state)
-      `)
-      .eq("status", "published")
-      .gte("start_time", sixHoursStart.toISOString())
-      .lte("start_time", sixHoursEnd.toISOString());
+      console.log("[EventReminders] Looking for events between:", sixHoursStart.toISOString(), "and", sixHoursEnd.toISOString());
+
+      const result = await supabase
+        .from("events")
+        .select(`
+          id,
+          name,
+          slug,
+          start_time,
+          venue_id,
+          important_info,
+          venues(name, address, city, state)
+        `)
+        .eq("status", "published")
+        .gte("start_time", sixHoursStart.toISOString())
+        .lte("start_time", sixHoursEnd.toISOString());
+      events = result.data;
+      eventsError = result.error;
+    }
 
     if (eventsError) {
       console.error("[EventReminders] Error fetching events:", eventsError);
@@ -80,11 +108,11 @@ async function handleCronRequest(request: NextRequest) {
     }
 
     if (!events || events.length === 0) {
-      console.log("[EventReminders] No events found in the 6-hour window");
+      console.log("[EventReminders] No events found", testEventId ? `(event_id ${testEventId} not found)` : "in the 6-hour window");
       return NextResponse.json({
         success: true,
         sent: 0,
-        message: "No events starting in 6 hours",
+        message: testEventId ? `Event ${testEventId} not found` : "No events starting in 6 hours",
       });
     }
 
@@ -220,42 +248,49 @@ async function handleCronRequest(request: NextRequest) {
         }
 
         try {
-          const emailResult = await sendTemplateEmail(
-            "event_reminder_6h",
-            attendee.email,
-            attendee.user_id,
-            {
-              attendee_name: attendee.name || "there",
-              event_name: event.name,
-              event_date: details.eventDate,
-              event_time: details.eventTime,
-              venue_name: details.venueName,
-              venue_address_html: details.venueAddressHtml,
-              venue_address_text: details.venueAddress ? `Address: ${details.venueAddress}` : "",
-              google_maps_url: details.googleMapsUrl || "",
-              event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}`,
-              important_info_html: event.important_info
-                ? `<div style="background: rgba(251, 191, 36, 0.1); padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FFC107;">
-                    <h3 style="color: #FFC107; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">⚠️ Important Info</h3>
-                    <p style="color: #E5E7EB; font-size: 14px; margin: 0; line-height: 1.5;">${event.important_info}</p>
-                  </div>`
-                : "",
-              important_info_text: event.important_info ? `Important: ${event.important_info}` : "",
-            },
-            { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
-          );
-
-          // Only track as sent if email was actually successful
-          if (emailResult.success) {
-            console.log(`[EventReminders] Sent reminder to ${attendee.email} for event ${event.name}`);
-            remindersToInsert.push({
-              registration_id: registration.id,
-              event_id: event.id,
-              reminder_type: "6h",
-            });
+          if (dryRun) {
+            // DRY RUN: Just log what would be sent
+            console.log(`[EventReminders] DRY RUN: Would send to ${attendee.email} for event ${event.name}`);
             sent.push(registration.id);
           } else {
-            console.error(`[EventReminders] Failed to send to ${attendee.email}:`, emailResult.error);
+            // Actually send the email
+            const emailResult = await sendTemplateEmail(
+              "event_reminder_6h",
+              attendee.email,
+              attendee.user_id,
+              {
+                attendee_name: attendee.name || "there",
+                event_name: event.name,
+                event_date: details.eventDate,
+                event_time: details.eventTime,
+                venue_name: details.venueName,
+                venue_address_html: details.venueAddressHtml,
+                venue_address_text: details.venueAddress ? `Address: ${details.venueAddress}` : "",
+                google_maps_url: details.googleMapsUrl || "",
+                event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}`,
+                important_info_html: event.important_info
+                  ? `<div style="background: rgba(251, 191, 36, 0.1); padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FFC107;">
+                      <h3 style="color: #FFC107; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">⚠️ Important Info</h3>
+                      <p style="color: #E5E7EB; font-size: 14px; margin: 0; line-height: 1.5;">${event.important_info}</p>
+                    </div>`
+                  : "",
+                important_info_text: event.important_info ? `Important: ${event.important_info}` : "",
+              },
+              { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
+            );
+
+            // Only track as sent if email was actually successful
+            if (emailResult.success) {
+              console.log(`[EventReminders] Sent reminder to ${attendee.email} for event ${event.name}`);
+              remindersToInsert.push({
+                registration_id: registration.id,
+                event_id: event.id,
+                reminder_type: "6h",
+              });
+              sent.push(registration.id);
+            } else {
+              console.error(`[EventReminders] Failed to send to ${attendee.email}:`, emailResult.error);
+            }
           }
         } catch (error) {
           console.error(`[EventReminders] Exception sending to ${attendee.email}:`, error);
@@ -264,7 +299,8 @@ async function handleCronRequest(request: NextRequest) {
     }
 
     // 7. Batch insert all reminder records (1 query instead of N×M)
-    if (remindersToInsert.length > 0) {
+    // Skip during dry run
+    if (remindersToInsert.length > 0 && !dryRun) {
       const { error: insertError } = await supabase
         .from("event_reminder_sent")
         .insert(remindersToInsert);
@@ -276,12 +312,15 @@ async function handleCronRequest(request: NextRequest) {
       }
     }
 
-    console.log("[EventReminders] Completed. Sent:", sent.length, "emails for", events.length, "events");
+    console.log("[EventReminders] Completed.", dryRun ? "(DRY RUN)" : "", "Sent:", sent.length, "emails for", events.length, "events");
 
     return NextResponse.json({
       success: true,
+      dry_run: dryRun,
+      test_event_id: testEventId || undefined,
       sent: sent.length,
       events_processed: events.length,
+      events: events.map(e => ({ id: e.id, name: e.name, start_time: e.start_time })),
       registrations_found: allRegistrations.length,
       already_sent: existingReminders?.length || 0,
     });
