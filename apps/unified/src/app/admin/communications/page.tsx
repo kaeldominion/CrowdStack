@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, LoadingSpinner, Badge, EmptyState, Tabs, TabsList, TabsTrigger, TabsContent, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Input, InlineSpinner, Modal } from "@crowdstack/ui";
-import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download, Search, ExternalLink, Eye, MousePointerClick, Loader2, ChevronRight } from "lucide-react";
+import { Plus, Mail, Edit, ToggleLeft, ToggleRight, BarChart3, Calendar, Filter, Download, Search, ExternalLink, Eye, MousePointerClick, Loader2, ChevronRight, Bell, Play, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -91,12 +91,41 @@ interface EmailStats {
   };
 }
 
+interface EventOption {
+  id: string;
+  name: string;
+  start_time: string;
+  status: string;
+  registrations_count?: number;
+}
+
+interface ReminderResult {
+  success: boolean;
+  dry_run?: boolean;
+  test_event_id?: string;
+  sent?: number;
+  events_processed?: number;
+  events?: Array<{ id: string; name: string; start_time: string }>;
+  registrations_found?: number;
+  already_sent?: number;
+  error?: string;
+}
+
 export default function AdminCommunicationsPage() {
   const router = useRouter();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"templates" | "stats" | "logs">("templates");
+  const [activeTab, setActiveTab] = useState<"templates" | "stats" | "logs" | "reminders">("templates");
+
+  // Event Reminders state
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [eventSearch, setEventSearch] = useState("");
+  const [dryRun, setDryRun] = useState(true);
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderResult, setReminderResult] = useState<ReminderResult | null>(null);
   
   // Stats state
   const [stats, setStats] = useState<EmailStats | null>(null);
@@ -189,7 +218,61 @@ export default function AdminCommunicationsPage() {
     if (activeTab === "stats") {
       loadStats();
     }
+    if (activeTab === "reminders") {
+      loadEvents();
+    }
   }, [activeTab, groupBy, templateFilter, dateRange]);
+
+  const loadEvents = async () => {
+    try {
+      setLoadingEvents(true);
+      const response = await fetch("/api/admin/events?limit=100");
+      if (response.ok) {
+        const data = await response.json();
+        setEvents(data.events || []);
+      }
+    } catch (error) {
+      console.error("Failed to load events:", error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
+  const sendEventReminder = async () => {
+    if (!selectedEventId) return;
+
+    try {
+      setSendingReminder(true);
+      setReminderResult(null);
+
+      const params = new URLSearchParams();
+      params.set("event_id", selectedEventId);
+      if (dryRun) {
+        params.set("dry_run", "true");
+      }
+
+      const response = await fetch(`/api/cron/event-reminders?${params}`, {
+        method: "GET",
+        headers: {
+          "x-vercel-cron": "1", // Simulate cron header for auth
+        },
+      });
+
+      const data = await response.json();
+      setReminderResult(data);
+    } catch (error: any) {
+      setReminderResult({
+        success: false,
+        error: error.message || "Failed to send reminders",
+      });
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const filteredEvents = events.filter((event) =>
+    event.name.toLowerCase().includes(eventSearch.toLowerCase())
+  );
 
   // Debounce email logs search
   useEffect(() => {
@@ -457,7 +540,7 @@ export default function AdminCommunicationsPage() {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "templates" | "stats" | "logs")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "templates" | "stats" | "logs" | "reminders")}>
         <TabsList>
           <TabsTrigger value="templates">
             <Mail className="h-4 w-4 mr-2" />
@@ -470,6 +553,10 @@ export default function AdminCommunicationsPage() {
           <TabsTrigger value="logs">
             <Mail className="h-4 w-4 mr-2" />
             Email Logs
+          </TabsTrigger>
+          <TabsTrigger value="reminders">
+            <Bell className="h-4 w-4 mr-2" />
+            Event Reminders
           </TabsTrigger>
         </TabsList>
 
@@ -1108,6 +1195,196 @@ export default function AdminCommunicationsPage() {
                 </p>
               )}
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reminders">
+          <div className="space-y-6">
+            <Card>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-primary mb-2">Send Event Reminders</h2>
+                  <p className="text-sm text-secondary">
+                    Test event reminder emails for a specific event. Use dry run to preview without sending.
+                  </p>
+                </div>
+
+                {/* Event Search & Select */}
+                <div>
+                  <label className="block text-xs font-medium text-secondary mb-2">
+                    Search & Select Event
+                  </label>
+                  <Input
+                    placeholder="Search events by name..."
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    className="mb-2"
+                  />
+                  {loadingEvents ? (
+                    <div className="flex items-center gap-2 text-secondary py-4">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Loading events...</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedEventId}
+                      onChange={(e) => {
+                        setSelectedEventId(e.target.value);
+                        setReminderResult(null);
+                      }}
+                      className="w-full px-3 py-2 rounded-lg bg-raised border border-border-subtle text-sm text-primary focus:outline-none focus:border-accent-primary/50"
+                    >
+                      <option value="">Select an event...</option>
+                      {filteredEvents.map((event) => (
+                        <option key={event.id} value={event.id}>
+                          {event.name} - {new Date(event.start_time).toLocaleDateString()} ({event.status})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Dry Run Toggle */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setDryRun(!dryRun)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      dryRun ? "bg-accent-primary" : "bg-border-subtle"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        dryRun ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                  <div>
+                    <p className="text-sm font-medium text-primary">Dry Run Mode</p>
+                    <p className="text-xs text-secondary">
+                      {dryRun
+                        ? "Preview only - no emails will be sent"
+                        : "Live mode - emails will actually be sent!"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Send Button */}
+                <Button
+                  variant={dryRun ? "secondary" : "primary"}
+                  onClick={sendEventReminder}
+                  disabled={!selectedEventId || sendingReminder}
+                  className="w-full"
+                >
+                  {sendingReminder ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {dryRun ? "Running Preview..." : "Sending Reminders..."}
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      {dryRun ? "Preview Reminders" : "Send Reminders Now"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
+
+            {/* Results */}
+            {reminderResult && (
+              <Card>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    {reminderResult.success ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-400" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    )}
+                    <h3 className="text-lg font-semibold text-primary">
+                      {reminderResult.success ? "Success" : "Error"}
+                    </h3>
+                    {reminderResult.dry_run && (
+                      <Badge variant="warning">Dry Run</Badge>
+                    )}
+                  </div>
+
+                  {reminderResult.error ? (
+                    <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <p className="text-sm text-red-400">{reminderResult.error}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-3 rounded-lg bg-active border border-border-subtle">
+                        <p className="text-xs text-secondary mb-1">
+                          {reminderResult.dry_run ? "Would Send" : "Sent"}
+                        </p>
+                        <p className="text-2xl font-bold text-primary">{reminderResult.sent || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-active border border-border-subtle">
+                        <p className="text-xs text-secondary mb-1">Registrations Found</p>
+                        <p className="text-2xl font-bold text-primary">{reminderResult.registrations_found || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-active border border-border-subtle">
+                        <p className="text-xs text-secondary mb-1">Already Sent</p>
+                        <p className="text-2xl font-bold text-secondary">{reminderResult.already_sent || 0}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-active border border-border-subtle">
+                        <p className="text-xs text-secondary mb-1">Events Processed</p>
+                        <p className="text-2xl font-bold text-primary">{reminderResult.events_processed || 0}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {reminderResult.events && reminderResult.events.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-secondary mb-2">Event Details</p>
+                      <div className="space-y-2">
+                        {reminderResult.events.map((event) => (
+                          <div
+                            key={event.id}
+                            className="p-2 rounded-lg bg-active border border-border-subtle text-sm"
+                          >
+                            <p className="font-medium text-primary">{event.name}</p>
+                            <p className="text-xs text-secondary">
+                              {new Date(event.start_time).toLocaleString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!reminderResult.dry_run && reminderResult.success && reminderResult.sent && reminderResult.sent > 0 && (
+                    <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <p className="text-sm text-green-400">
+                        {reminderResult.sent} reminder email{reminderResult.sent !== 1 ? "s" : ""} sent successfully!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Info */}
+            <Card className="!bg-blue-500/5 !border-blue-500/20">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-secondary space-y-2">
+                  <p>
+                    <strong className="text-primary">How it works:</strong> The cron job normally runs every hour and
+                    sends reminders to events starting in 5-7 hours. This tool lets you test for any event.
+                  </p>
+                  <p>
+                    <strong className="text-primary">Already sent:</strong> Reminders are tracked to prevent duplicates.
+                    If you see "Already Sent" count, those attendees already received reminders.
+                  </p>
+                  <p>
+                    <strong className="text-primary">Dry run:</strong> Use dry run first to see how many emails would be
+                    sent without actually sending them.
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
