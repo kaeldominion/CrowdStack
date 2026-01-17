@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 import { MobileScrollExperience } from "@/components/MobileScrollExperience";
 import { EventPageContent } from "./EventPageContent";
 import { ReferralTracker } from "@/components/ReferralTracker";
@@ -195,10 +195,19 @@ export async function generateMetadata({
 
 export default async function EventPage({
   params,
+  searchParams,
 }: {
   params: { eventSlug: string };
+  searchParams: { refresh?: string };
 }) {
-  const event = await getCachedEvent(params.eventSlug);
+  // Allow cache bypass with ?refresh=1 for debugging stale cache issues
+  // This also revalidates the cache tag so subsequent requests get fresh data
+  if (searchParams.refresh === "1") {
+    revalidateTag(`event-${params.eventSlug}`);
+  }
+  const event = searchParams.refresh === "1"
+    ? await getEventData(params.eventSlug)
+    : await getCachedEvent(params.eventSlug);
 
   if (!event) {
     notFound();
