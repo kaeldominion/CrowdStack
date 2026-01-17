@@ -63,6 +63,8 @@ async function getEventData(slug: string) {
       .single();
 
     if (eventError || !event) {
+      // Log for debugging - this helps identify why events aren't found
+      console.log(`[Event Page] Event not found: slug=${slug}, error=${eventError?.message || 'No data'}`);
       return null;
     }
 
