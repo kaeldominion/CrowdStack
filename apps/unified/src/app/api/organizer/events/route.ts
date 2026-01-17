@@ -59,57 +59,42 @@ export async function GET() {
       console.log("[OrganizerEvents] Event names:", events.map(e => e.name).join(", "));
     }
 
-    // BATCH QUERY OPTIMIZATION: Get all counts in bulk instead of per-event
+    // BATCH QUERY OPTIMIZATION: Get registrations with checkins in one query
     const eventIds = (events || []).map((e) => e.id);
     console.log("[OrganizerEvents] Event IDs for registration lookup:", eventIds.length);
 
-    // 1. Batch fetch all registrations for these events
-    const { data: allRegs, error: regsError } = eventIds.length > 0
+    // Fetch registrations with their checkins nested (avoids URL length issues with large .in() queries)
+    const { data: regsWithCheckins, error: regsError } = eventIds.length > 0
       ? await serviceSupabase
           .from("registrations")
-          .select("id, event_id")
+          .select(`
+            id,
+            event_id,
+            checkins(id, undo_at)
+          `)
           .in("event_id", eventIds)
       : { data: [], error: null };
 
     if (regsError) {
       console.error("[OrganizerEvents] Registration query error:", regsError);
     } else {
-      console.log("[OrganizerEvents] Found", allRegs?.length || 0, "registrations across all events");
+      console.log("[OrganizerEvents] Found", regsWithCheckins?.length || 0, "registrations across all events");
     }
 
-    // Build registration count map and ID-to-event mapping
+    // Build registration and checkin count maps from the nested data
     const regsByEvent = new Map<string, number>();
-    const registrationIdToEventId = new Map<string, string>();
-
-    (allRegs || []).forEach((reg) => {
-      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-      registrationIdToEventId.set(reg.id, reg.event_id);
-    });
-
-    // 2. Batch fetch check-ins by registration IDs (more reliable than filtering on joined column)
     const checkinsByEvent = new Map<string, number>();
-    const regIds = (allRegs || []).map(r => r.id);
 
-    if (regIds.length > 0) {
-      const { data: allCheckins, error: checkinsError } = await serviceSupabase
-        .from("checkins")
-        .select("id, registration_id")
-        .in("registration_id", regIds)
-        .is("undo_at", null);
+    (regsWithCheckins || []).forEach((reg: any) => {
+      // Count registration
+      regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
 
-      console.log("[OrganizerEvents] Checkins query returned:", allCheckins?.length || 0, "rows, error:", checkinsError?.message || "none");
-
-      if (checkinsError) {
-        console.error("[OrganizerEvents] Checkins query error:", checkinsError);
-      } else {
-        (allCheckins || []).forEach((checkin: any) => {
-          const eventId = registrationIdToEventId.get(checkin.registration_id);
-          if (eventId) {
-            checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
-          }
-        });
+      // Count active checkins (where undo_at is null)
+      const activeCheckins = (reg.checkins || []).filter((c: any) => c.undo_at === null);
+      if (activeCheckins.length > 0) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + activeCheckins.length);
       }
-    }
+    });
 
     // Log final counts for debugging
     console.log("[OrganizerEvents] Registration counts by event:", Object.fromEntries(regsByEvent));

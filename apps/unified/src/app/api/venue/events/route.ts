@@ -74,39 +74,30 @@ export async function GET(request: Request) {
     // BATCH QUERY OPTIMIZATION: Fetch all counts in bulk instead of N+1 queries
     const eventIds = events.map((e) => e.id);
 
-    // 1. Batch fetch all registrations for these events
-    const { data: allRegistrations } = await serviceSupabase
+    // Fetch registrations with their checkins nested (avoids URL length issues with large .in() queries)
+    const { data: regsWithCheckins } = await serviceSupabase
       .from("registrations")
-      .select("id, event_id")
+      .select(`
+        id,
+        event_id,
+        checkins(id, undo_at)
+      `)
       .in("event_id", eventIds);
 
-    // Build registration count map
+    // Build registration and checkin count maps from the nested data
     const registrationsByEvent = new Map<string, number>();
-    const registrationIdToEventId = new Map<string, string>();
-
-    (allRegistrations || []).forEach((reg) => {
-      registrationsByEvent.set(reg.event_id, (registrationsByEvent.get(reg.event_id) || 0) + 1);
-      registrationIdToEventId.set(reg.id, reg.event_id);
-    });
-
-    // 2. Batch fetch check-ins by registration IDs (more reliable than filtering on joined column)
     const checkinsByEvent = new Map<string, number>();
-    const regIds = (allRegistrations || []).map(r => r.id);
 
-    if (regIds.length > 0) {
-      const { data: allCheckins } = await serviceSupabase
-        .from("checkins")
-        .select("id, registration_id")
-        .in("registration_id", regIds)
-        .is("undo_at", null);
+    (regsWithCheckins || []).forEach((reg: any) => {
+      // Count registration
+      registrationsByEvent.set(reg.event_id, (registrationsByEvent.get(reg.event_id) || 0) + 1);
 
-      (allCheckins || []).forEach((checkin: any) => {
-        const eventId = registrationIdToEventId.get(checkin.registration_id);
-        if (eventId) {
-          checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
-        }
-      });
-    }
+      // Count active checkins (where undo_at is null)
+      const activeCheckins = (reg.checkins || []).filter((c: any) => c.undo_at === null);
+      if (activeCheckins.length > 0) {
+        checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + activeCheckins.length);
+      }
+    });
 
     // 3. Batch fetch payout information for owned events
     const payoutsPending: Record<string, number> = {};

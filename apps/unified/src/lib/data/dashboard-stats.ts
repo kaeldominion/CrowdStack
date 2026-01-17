@@ -67,29 +67,25 @@ export async function getOrganizerDashboardStats(passedOrganizerId?: string | nu
     };
   }
 
-  // Get registration count and IDs
-  const { data: allRegs } = await supabase
+  // Get registrations with their checkins nested (avoids URL length issues with large .in() queries)
+  const { data: regsWithCheckins } = await supabase
     .from("registrations")
-    .select("id")
+    .select(`
+      id,
+      checkins(id, undo_at)
+    `)
     .in("event_id", eventIds);
 
-  const regCount = allRegs?.length || 0;
-  const regIds = (allRegs || []).map(r => r.id);
-  console.log("[OrganizerDashboardStats] regCount:", regCount);
+  const regCount = regsWithCheckins?.length || 0;
 
-  // Get check-in count by registration IDs (more reliable than filtering on joined column)
+  // Count active checkins (where undo_at is null)
   let checkinCount = 0;
-  if (regIds.length > 0) {
-    const { count, error: checkinError } = await supabase
-      .from("checkins")
-      .select("*", { count: "exact", head: true })
-      .in("registration_id", regIds)
-      .is("undo_at", null);
-    checkinCount = count || 0;
-    console.log("[OrganizerDashboardStats] checkinCount:", checkinCount, "error:", checkinError?.message || "none");
-  } else {
-    console.log("[OrganizerDashboardStats] No registrations, skipping checkin query");
-  }
+  (regsWithCheckins || []).forEach((reg: any) => {
+    const activeCheckins = (reg.checkins || []).filter((c: any) => c.undo_at === null);
+    checkinCount += activeCheckins.length;
+  });
+
+  console.log("[OrganizerDashboardStats] regCount:", regCount, "checkinCount:", checkinCount);
 
   // Get promoter count
   const { count: promoterCount } = await supabase
@@ -133,46 +129,37 @@ export async function getOrganizerChartData(passedOrganizerId?: string | null): 
 
   if (!events || events.length === 0) return [];
 
-  // BATCH QUERY OPTIMIZATION: Get all counts in bulk instead of per-event
+  // BATCH QUERY OPTIMIZATION: Get registrations with checkins in one query
   const eventIds = events.map((e) => e.id);
 
-  // Batch fetch all registrations for these events
-  const { data: allRegs, error: regsError } = await supabase
+  // Fetch registrations with their checkins nested (avoids URL length issues with large .in() queries)
+  const { data: regsWithCheckins, error: regsError } = await supabase
     .from("registrations")
-    .select("id, event_id")
+    .select(`
+      id,
+      event_id,
+      checkins(id, undo_at)
+    `)
     .in("event_id", eventIds);
 
   if (regsError) {
     console.error("[getOrganizerChartData] Error fetching registrations:", regsError);
   }
 
-  // Build registration ID to event ID mapping and count registrations per event
+  // Build registration and checkin count maps from the nested data
   const regsByEvent = new Map<string, number>();
-  const registrationIdToEventId = new Map<string, string>();
-
-  (allRegs || []).forEach((reg) => {
-    regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
-    registrationIdToEventId.set(reg.id, reg.event_id);
-  });
-
-  // Batch fetch check-ins by registration IDs (more reliable than filtering on joined column)
   const checkinsByEvent = new Map<string, number>();
-  const regIds = (allRegs || []).map(r => r.id);
 
-  if (regIds.length > 0) {
-    const { data: allCheckins } = await supabase
-      .from("checkins")
-      .select("id, registration_id")
-      .in("registration_id", regIds)
-      .is("undo_at", null);
+  (regsWithCheckins || []).forEach((reg: any) => {
+    // Count registration
+    regsByEvent.set(reg.event_id, (regsByEvent.get(reg.event_id) || 0) + 1);
 
-    (allCheckins || []).forEach((checkin: any) => {
-      const eventId = registrationIdToEventId.get(checkin.registration_id);
-      if (eventId) {
-        checkinsByEvent.set(eventId, (checkinsByEvent.get(eventId) || 0) + 1);
-      }
-    });
-  }
+    // Count active checkins (where undo_at is null)
+    const activeCheckins = (reg.checkins || []).filter((c: any) => c.undo_at === null);
+    if (activeCheckins.length > 0) {
+      checkinsByEvent.set(reg.event_id, (checkinsByEvent.get(reg.event_id) || 0) + activeCheckins.length);
+    }
+  });
 
   // Build chart data from pre-computed maps (no additional queries)
   const chartData: ChartDataPoint[] = events.map((event) => ({
