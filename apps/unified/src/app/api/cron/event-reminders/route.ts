@@ -10,7 +10,18 @@ import { sendTemplateEmail, getEmailTemplate } from "@crowdstack/shared/email/te
 
 // Force dynamic rendering since this route uses cookies() or createClient()
 export const dynamic = 'force-dynamic';
+
+// Vercel cron jobs send GET requests
+export async function GET(request: NextRequest) {
+  return handleCronRequest(request);
+}
+
+// Also support POST for manual testing
 export async function POST(request: NextRequest) {
+  return handleCronRequest(request);
+}
+
+async function handleCronRequest(request: NextRequest) {
   // Verify cron secret or Vercel cron header
   const authHeader = request.headers.get("authorization");
   const vercelCronHeader = request.headers.get("x-vercel-cron");
