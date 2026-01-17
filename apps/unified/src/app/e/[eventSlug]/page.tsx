@@ -8,13 +8,13 @@ import { ReferralTracker } from "@/components/ReferralTracker";
 import { MobileStickyCTAWrapper } from "./MobileStickyCTAWrapper";
 import { createServiceRoleClient } from "@crowdstack/shared/supabase/server";
 
-// ISR: Revalidate event pages every 30 seconds (more aggressive caching for performance)
-// Events change more frequently than venues (registration counts, status updates)
+// ISR: Revalidate event pages every 30 seconds
+// Events change frequently (registration counts, status updates, new events published)
 export const revalidate = 30;
 
-// Force static generation with ISR - without this, dynamic routes may be treated as
-// server-side rendered and not cached
-export const dynamic = 'force-static';
+// Allow dynamic params to be generated on-demand (default behavior)
+// Note: Removed 'force-static' as it was causing stale 404s to be cached
+// when events didn't exist yet or weren't published at first request
 
 function getBaseUrl() {
   if (typeof window !== "undefined") {
