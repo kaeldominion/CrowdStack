@@ -51,37 +51,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify referrer user exists and get promoter ID if applicable
-    const { data: referrer, error: userError } = await supabase.auth.admin.getUserById(referrerUserId);
-    
-    if (userError || !referrer) {
-      return NextResponse.json(
-        { error: "Referrer user not found" },
-        { status: 404 }
-      );
+    // Determine if referrerUserId is a user ID or a promoter ID
+    // Promoter profile pages pass promoter ID directly, while user shares pass user ID
+    let actualUserId: string | null = null;
+    let promoterId: string | undefined;
+
+    // First check if it's a promoter ID
+    const { data: promoterByDirectId } = await supabase
+      .from("promoters")
+      .select("id, created_by")
+      .eq("id", referrerUserId)
+      .single();
+
+    if (promoterByDirectId) {
+      // It's a promoter ID - use the promoter's created_by as the user ID
+      promoterId = promoterByDirectId.id;
+      actualUserId = promoterByDirectId.created_by;
+    } else {
+      // It's likely a user ID - verify it exists
+      const { data: referrer, error: userError } = await supabase.auth.admin.getUserById(referrerUserId);
+
+      if (userError || !referrer) {
+        return NextResponse.json(
+          { error: "Referrer user not found" },
+          { status: 404 }
+        );
+      }
+
+      actualUserId = referrerUserId;
+
+      // Check if this user is also a promoter
+      const { data: promoter } = await supabase
+        .from("promoters")
+        .select("id")
+        .eq("created_by", referrerUserId)
+        .single();
+
+      if (promoter) {
+        promoterId = promoter.id;
+      }
     }
 
-    // Get promoter ID if the referrer is a promoter
-    let promoterId: string | undefined;
-    const { data: promoter } = await supabase
-      .from("promoters")
-      .select("id")
-      .eq("created_by", referrerUserId)
-      .single();
-    
-    if (promoter) {
-      promoterId = promoter.id;
+    if (!actualUserId) {
+      return NextResponse.json(
+        { error: "Could not determine referrer user" },
+        { status: 400 }
+      );
     }
 
     // Create visitor fingerprint
     const visitorFingerprint = createVisitorFingerprint(request);
 
-    // Record the click
+    // Record the click using the resolved user ID
     const { data: click, error: clickError } = await supabase
       .from("referral_clicks")
       .insert({
         event_id: eventId,
-        referrer_user_id: referrerUserId,
+        referrer_user_id: actualUserId,
         visitor_fingerprint: visitorFingerprint,
       })
       .select()
@@ -98,11 +124,11 @@ export async function POST(request: NextRequest) {
     // Award XP for the referral click (small reward to encourage sharing)
     try {
       const { error: xpError } = await supabase.rpc('award_referral_click_xp', {
-        p_referrer_user_id: referrerUserId,
+        p_referrer_user_id: actualUserId,
         p_event_id: eventId,
         p_click_id: click.id,
       });
-      
+
       if (xpError) {
         console.warn("[Track Click] Failed to award XP (non-critical):", xpError);
         // Don't fail the request if XP award fails
@@ -115,7 +141,7 @@ export async function POST(request: NextRequest) {
     // Track analytics event
     try {
       if (promoterId) {
-        await trackReferralClick(eventId, promoterId, referrerUserId, request);
+        await trackReferralClick(eventId, promoterId, actualUserId, request);
       }
     } catch (analyticsError) {
       console.warn("[Track Click] Failed to track analytics event:", analyticsError);

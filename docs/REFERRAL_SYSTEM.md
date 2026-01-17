@@ -162,9 +162,15 @@ Records a referral click (called by ReferralTracker).
 ```json
 {
   "eventId": "uuid",
-  "referrerUserId": "uuid"
+  "referrerUserId": "uuid"  // Can be a user ID or promoter ID
 }
 ```
+
+**Note:** The `referrerUserId` parameter accepts both:
+- **User IDs** (from `auth.users`) - when a regular user shares
+- **Promoter IDs** (from `promoters` table) - when sharing from a promoter profile page
+
+The API automatically detects which type was provided and resolves the actual user ID from the promoter's `created_by` field if needed.
 
 **Response:**
 ```json
