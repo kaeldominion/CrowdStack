@@ -56,43 +56,76 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const sent = [];
+    // BATCH QUERY OPTIMIZATION: Fetch all data upfront instead of per-event/per-registration queries
+    const eventIds = events.map((e) => e.id);
 
-    // For each event, get all registrations and send reminders
-    for (const event of events) {
-      // Get all registrations for this event
-      const { data: registrations } = await supabase
-        .from("registrations")
-        .select(`
+    // 1. Batch fetch ALL registrations for all events (1 query instead of N)
+    const { data: allRegistrations } = await supabase
+      .from("registrations")
+      .select(`
+        id,
+        event_id,
+        attendee:attendees(
           id,
-          attendee:attendees(
-            id,
-            name,
-            email,
-            user_id
-          )
-        `)
-        .eq("event_id", event.id);
+          name,
+          email,
+          user_id
+        )
+      `)
+      .in("event_id", eventIds);
 
-      if (!registrations || registrations.length === 0) continue;
+    if (!allRegistrations || allRegistrations.length === 0) {
+      return NextResponse.json({
+        success: true,
+        sent: 0,
+        message: "No registrations for upcoming events",
+      });
+    }
 
-      // Get venue details
+    // 2. Batch fetch ALL existing reminders (1 query instead of N×M)
+    const allRegIds = allRegistrations.map((r) => r.id);
+    const { data: existingReminders } = await supabase
+      .from("event_reminder_sent")
+      .select("registration_id, event_id")
+      .in("registration_id", allRegIds)
+      .eq("reminder_type", "6h");
+
+    // 3. Build lookup Set for O(1) "already sent" checks
+    const alreadySentSet = new Set<string>();
+    (existingReminders || []).forEach((r) => {
+      alreadySentSet.add(`${r.event_id}:${r.registration_id}`);
+    });
+
+    // 4. Build registrations-by-event Map for O(1) lookup
+    const regsByEvent = new Map<string, typeof allRegistrations>();
+    allRegistrations.forEach((reg) => {
+      const list = regsByEvent.get(reg.event_id) || [];
+      list.push(reg);
+      regsByEvent.set(reg.event_id, list);
+    });
+
+    // 5. Pre-compute event details (venue info, dates) for each event
+    const eventDetailsMap = new Map<string, {
+      venueName: string;
+      venueAddress: string | null;
+      venueAddressHtml: string;
+      googleMapsUrl: string | null;
+      eventDate: string;
+      eventTime: string;
+    }>();
+
+    for (const event of events) {
       const venue = Array.isArray(event.venues) ? event.venues[0] : event.venues;
       const venueName = venue?.name || "Venue TBA";
       const venueAddress = venue?.address
         ? `${venue.address}${venue.city ? `, ${venue.city}` : ""}${venue.state ? `, ${venue.state}` : ""}`
         : null;
-
-      // Build Google Maps URL
       const googleMapsUrl = venueAddress
         ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueAddress)}`
         : null;
-
-      // Build venue address HTML (only if address exists)
       const venueAddressHtml = venueAddress
         ? `<p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0;"><strong>Address:</strong> ${googleMapsUrl ? `<a href="${googleMapsUrl}" style="color: rgba(255,255,255,0.9); text-decoration: underline;">${venueAddress}</a>` : venueAddress}</p>`
         : "";
-
       const startTime = event.start_time ? new Date(event.start_time) : null;
       const eventDate = startTime
         ? startTime.toLocaleDateString("en-US", {
@@ -109,27 +142,37 @@ export async function POST(request: NextRequest) {
           })
         : "TBA";
 
-      // Send reminder to each registered attendee (skip if already sent)
+      eventDetailsMap.set(event.id, {
+        venueName,
+        venueAddress,
+        venueAddressHtml,
+        googleMapsUrl,
+        eventDate,
+        eventTime,
+      });
+    }
+
+    // 6. Process events and send reminders (no DB queries in loops!)
+    const sent: string[] = [];
+    const remindersToInsert: Array<{ registration_id: string; event_id: string; reminder_type: string }> = [];
+
+    for (const event of events) {
+      const registrations = regsByEvent.get(event.id) || [];
+      const details = eventDetailsMap.get(event.id)!;
+
       for (const registration of registrations) {
+        // Skip if already sent (O(1) lookup instead of DB query)
+        const reminderKey = `${event.id}:${registration.id}`;
+        if (alreadySentSet.has(reminderKey)) {
+          console.log(`Skipping reminder for registration ${registration.id} - already sent`);
+          continue;
+        }
+
         const attendee = Array.isArray(registration.attendee)
           ? registration.attendee[0]
           : registration.attendee;
 
         if (!attendee?.email) continue;
-
-        // Check if reminder was already sent for this registration
-        const { data: existingReminder } = await supabase
-          .from("event_reminder_sent")
-          .select("id")
-          .eq("registration_id", registration.id)
-          .eq("event_id", event.id)
-          .eq("reminder_type", "6h")
-          .single();
-
-        if (existingReminder) {
-          console.log(`Skipping reminder for registration ${registration.id} - already sent`);
-          continue;
-        }
 
         try {
           await sendTemplateEmail(
@@ -139,12 +182,12 @@ export async function POST(request: NextRequest) {
             {
               attendee_name: attendee.name || "there",
               event_name: event.name,
-              event_date: eventDate,
-              event_time: eventTime,
-              venue_name: venueName,
-              venue_address_html: venueAddressHtml,
-              venue_address_text: venueAddress ? `Address: ${venueAddress}` : "",
-              google_maps_url: googleMapsUrl || "",
+              event_date: details.eventDate,
+              event_time: details.eventTime,
+              venue_name: details.venueName,
+              venue_address_html: details.venueAddressHtml,
+              venue_address_text: details.venueAddress ? `Address: ${details.venueAddress}` : "",
+              google_maps_url: details.googleMapsUrl || "",
               event_url: `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/e/${event.slug}`,
               important_info_html: event.important_info
                 ? `<div style="background: rgba(251, 191, 36, 0.1); padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FFC107;">
@@ -157,19 +200,28 @@ export async function POST(request: NextRequest) {
             { event_id: event.id, registration_id: registration.id, attendee_id: attendee.id }
           );
 
-          // Record that reminder was sent
-          await supabase
-            .from("event_reminder_sent")
-            .insert({
-              registration_id: registration.id,
-              event_id: event.id,
-              reminder_type: "6h",
-            });
+          // Collect for batch insert (instead of inserting per registration)
+          remindersToInsert.push({
+            registration_id: registration.id,
+            event_id: event.id,
+            reminder_type: "6h",
+          });
 
           sent.push(registration.id);
         } catch (error) {
           console.error(`Failed to send reminder for registration ${registration.id}:`, error);
         }
+      }
+    }
+
+    // 7. Batch insert all reminder records (1 query instead of N×M)
+    if (remindersToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from("event_reminder_sent")
+        .insert(remindersToInsert);
+
+      if (insertError) {
+        console.error("Error batch inserting reminder records:", insertError);
       }
     }
 
