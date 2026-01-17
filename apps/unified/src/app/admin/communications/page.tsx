@@ -119,10 +119,11 @@ export default function AdminCommunicationsPage() {
   const [activeTab, setActiveTab] = useState<"templates" | "stats" | "logs" | "reminders">("templates");
 
   // Event Reminders state
-  const [events, setEvents] = useState<EventOption[]>([]);
-  const [loadingEvents, setLoadingEvents] = useState(false);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  const [eventSearchResults, setEventSearchResults] = useState<EventOption[]>([]);
+  const [loadingEventSearch, setLoadingEventSearch] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventOption | null>(null);
   const [eventSearch, setEventSearch] = useState("");
+  const [debouncedEventSearch, setDebouncedEventSearch] = useState("");
   const [dryRun, setDryRun] = useState(true);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [reminderResult, setReminderResult] = useState<ReminderResult | null>(null);
@@ -218,35 +219,49 @@ export default function AdminCommunicationsPage() {
     if (activeTab === "stats") {
       loadStats();
     }
-    if (activeTab === "reminders") {
-      loadEvents();
-    }
   }, [activeTab, groupBy, templateFilter, dateRange]);
 
-  const loadEvents = async () => {
+  // Debounce event search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEventSearch(eventSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [eventSearch]);
+
+  // Search events when debounced search changes
+  useEffect(() => {
+    if (debouncedEventSearch.length >= 2) {
+      searchEvents(debouncedEventSearch);
+    } else {
+      setEventSearchResults([]);
+    }
+  }, [debouncedEventSearch]);
+
+  const searchEvents = async (query: string) => {
     try {
-      setLoadingEvents(true);
-      const response = await fetch("/api/admin/events?limit=100");
+      setLoadingEventSearch(true);
+      const response = await fetch(`/api/admin/events?search=${encodeURIComponent(query)}&limit=20`);
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events || []);
+        setEventSearchResults(data.events || []);
       }
     } catch (error) {
-      console.error("Failed to load events:", error);
+      console.error("Failed to search events:", error);
     } finally {
-      setLoadingEvents(false);
+      setLoadingEventSearch(false);
     }
   };
 
   const sendEventReminder = async () => {
-    if (!selectedEventId) return;
+    if (!selectedEvent) return;
 
     try {
       setSendingReminder(true);
       setReminderResult(null);
 
       const params = new URLSearchParams();
-      params.set("event_id", selectedEventId);
+      params.set("event_id", selectedEvent.id);
       if (dryRun) {
         params.set("dry_run", "true");
       }
@@ -269,10 +284,6 @@ export default function AdminCommunicationsPage() {
       setSendingReminder(false);
     }
   };
-
-  const filteredEvents = events.filter((event) =>
-    event.name.toLowerCase().includes(eventSearch.toLowerCase())
-  );
 
   // Debounce email logs search
   useEffect(() => {
@@ -1209,40 +1220,77 @@ export default function AdminCommunicationsPage() {
                   </p>
                 </div>
 
-                {/* Event Search & Select */}
-                <div>
-                  <label className="block text-xs font-medium text-secondary mb-2">
-                    Search & Select Event
-                  </label>
-                  <Input
-                    placeholder="Search events by name..."
-                    value={eventSearch}
-                    onChange={(e) => setEventSearch(e.target.value)}
-                    className="mb-2"
-                  />
-                  {loadingEvents ? (
-                    <div className="flex items-center gap-2 text-secondary py-4">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Loading events...</span>
+                {/* Selected Event Display */}
+                {selectedEvent && (
+                  <div className="p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-primary">{selectedEvent.name}</p>
+                        <p className="text-xs text-secondary">
+                          {new Date(selectedEvent.start_time).toLocaleString()} • {selectedEvent.status}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedEvent(null);
+                          setReminderResult(null);
+                        }}
+                      >
+                        Change
+                      </Button>
                     </div>
-                  ) : (
-                    <select
-                      value={selectedEventId}
-                      onChange={(e) => {
-                        setSelectedEventId(e.target.value);
-                        setReminderResult(null);
-                      }}
-                      className="w-full px-3 py-2 rounded-lg bg-raised border border-border-subtle text-sm text-primary focus:outline-none focus:border-accent-primary/50"
-                    >
-                      <option value="">Select an event...</option>
-                      {filteredEvents.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.name} - {new Date(event.start_time).toLocaleDateString()} ({event.status})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Event Search */}
+                {!selectedEvent && (
+                  <div>
+                    <label className="block text-xs font-medium text-secondary mb-2">
+                      Search for Event
+                    </label>
+                    <Input
+                      placeholder="Type at least 2 characters to search..."
+                      value={eventSearch}
+                      onChange={(e) => setEventSearch(e.target.value)}
+                    />
+
+                    {/* Search Results */}
+                    {loadingEventSearch && (
+                      <div className="flex items-center gap-2 text-secondary py-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Searching...</span>
+                      </div>
+                    )}
+
+                    {!loadingEventSearch && eventSearchResults.length > 0 && (
+                      <div className="mt-2 max-h-64 overflow-y-auto space-y-1 border border-border-subtle rounded-lg p-2">
+                        {eventSearchResults.map((event) => (
+                          <button
+                            key={event.id}
+                            onClick={() => {
+                              setSelectedEvent(event);
+                              setEventSearch("");
+                              setEventSearchResults([]);
+                              setReminderResult(null);
+                            }}
+                            className="w-full text-left p-2 rounded-lg hover:bg-active transition-colors"
+                          >
+                            <p className="font-medium text-primary text-sm">{event.name}</p>
+                            <p className="text-xs text-secondary">
+                              {new Date(event.start_time).toLocaleDateString()} • {event.status}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!loadingEventSearch && debouncedEventSearch.length >= 2 && eventSearchResults.length === 0 && (
+                      <p className="text-sm text-secondary mt-2">No events found matching "{debouncedEventSearch}"</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Dry Run Toggle */}
                 <div className="flex items-center gap-3">
@@ -1272,7 +1320,7 @@ export default function AdminCommunicationsPage() {
                 <Button
                   variant={dryRun ? "secondary" : "primary"}
                   onClick={sendEventReminder}
-                  disabled={!selectedEventId || sendingReminder}
+                  disabled={!selectedEvent || sendingReminder}
                   className="w-full"
                 >
                   {sendingReminder ? (
