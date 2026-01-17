@@ -379,9 +379,9 @@ export default function AdminAttendeesPage() {
                       <Building2 className="h-3.5 w-3.5 text-blue-500" />
                       <span className="text-xs font-medium text-[var(--text-primary)]">Venue VIP</span>
                     </div>
-                    {vipData.venueVips.length > 0 && (
+                    {(vipData.venueVips || []).length > 0 && (
                       <div className="space-y-1 mb-2">
-                        {vipData.venueVips.map((v: any) => (
+                        {(vipData.venueVips || []).map((v: any) => (
                           <div key={v.id} className="flex items-center justify-between text-[10px] p-1.5 bg-white/5 rounded">
                             <span className="truncate">{v.venueName}</span>
                             <button
@@ -402,8 +402,8 @@ export default function AdminAttendeesPage() {
                         className="flex-1 text-[10px] p-1.5 rounded bg-[var(--bg-void)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
                       >
                         <option value="">Select venue...</option>
-                        {vipData.availableVenues
-                          .filter((v: any) => !vipData.venueVips.some((vv: any) => vv.venueId === v.id))
+                        {(vipData.availableVenues || [])
+                          .filter((v: any) => !(vipData.venueVips || []).some((vv: any) => vv.venueId === v.id))
                           .map((v: any) => (
                             <option key={v.id} value={v.id}>{v.name}</option>
                           ))}
@@ -425,9 +425,9 @@ export default function AdminAttendeesPage() {
                       <Calendar className="h-3.5 w-3.5 text-purple-500" />
                       <span className="text-xs font-medium text-[var(--text-primary)]">Organizer VIP</span>
                     </div>
-                    {vipData.organizerVips.length > 0 && (
+                    {(vipData.organizerVips || []).length > 0 && (
                       <div className="space-y-1 mb-2">
-                        {vipData.organizerVips.map((o: any) => (
+                        {(vipData.organizerVips || []).map((o: any) => (
                           <div key={o.id} className="flex items-center justify-between text-[10px] p-1.5 bg-white/5 rounded">
                             <span className="truncate">{o.organizerName}</span>
                             <button
@@ -448,8 +448,8 @@ export default function AdminAttendeesPage() {
                         className="flex-1 text-[10px] p-1.5 rounded bg-[var(--bg-void)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
                       >
                         <option value="">Select organizer...</option>
-                        {vipData.availableOrganizers
-                          .filter((o: any) => !vipData.organizerVips.some((vo: any) => vo.organizerId === o.id))
+                        {(vipData.availableOrganizers || [])
+                          .filter((o: any) => !(vipData.organizerVips || []).some((vo: any) => vo.organizerId === o.id))
                           .map((o: any) => (
                             <option key={o.id} value={o.id}>{o.name}</option>
                           ))}
