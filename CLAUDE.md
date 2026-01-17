@@ -119,6 +119,15 @@ Supabase with Row Level Security. Migrations in `supabase/migrations/`.
 4. **Loading skeletons**: Per-section loading states, not full-page loaders
 5. **Error boundaries**: Display refresh option, don't swallow errors
 
+### Referral System
+
+See **[docs/REFERRAL_SYSTEM.md](docs/REFERRAL_SYSTEM.md)** for complete documentation on:
+- How promoter profile referrals work (`/promoter/{slug}`)
+- The `?ref=` parameter flow and attribution
+- Special case: sharing from promoter pages preserves their referral code
+- Database schema (`referral_clicks`, `registrations` referral columns)
+- XP awards for referrals (clicks: 2 XP, registrations: 15-25 XP)
+
 ### Testing
 
 E2E tests in `/tests/` using Playwright. See **[tests/README.md](tests/README.md)** for:
