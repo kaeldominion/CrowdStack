@@ -95,10 +95,21 @@ Supabase with Row Level Security. Migrations in `supabase/migrations/`.
 - `createClient()` - Authenticated client (respects RLS)
 - `createServiceRoleClient()` - Admin client (bypasses RLS, server-only)
 
+### Environments & Databases
+
+| Environment | URL | Database |
+|-------------|-----|----------|
+| **Local dev** | localhost:3000 | Beta DB |
+| **Beta** | beta.crowdstack.app | Beta DB |
+| **Staging** | staging.crowdstack.app | **Production DB** |
+| **Production** | crowdstack.app | **Production DB** |
+
+⚠️ **Staging and Production share the same database!** Test data changes on staging affect production.
+
 ### Branch Strategy
 
-- `develop` → Beta (app-beta.crowdstack.app)
-- `main` → Production (crowdstack.app)
+- `staging` → Staging (staging.crowdstack.app) - uses Production DB
+- `main` → Production (crowdstack.app) - uses Production DB
 
 ### Key Patterns
 
