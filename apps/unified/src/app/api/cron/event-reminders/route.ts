@@ -70,6 +70,7 @@ async function handleCronRequest(request: NextRequest) {
           name,
           slug,
           start_time,
+          timezone,
           venue_id,
           important_info,
           venues(name, address, city, state)
@@ -91,6 +92,7 @@ async function handleCronRequest(request: NextRequest) {
           name,
           slug,
           start_time,
+          timezone,
           venue_id,
           important_info,
           venues(name, address, city, state)
@@ -197,18 +199,21 @@ async function handleCronRequest(request: NextRequest) {
         ? `<p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0;"><strong>Address:</strong> ${googleMapsUrl ? `<a href="${googleMapsUrl}" style="color: rgba(255,255,255,0.9); text-decoration: underline;">${venueAddress}</a>` : venueAddress}</p>`
         : "";
       const startTime = event.start_time ? new Date(event.start_time) : null;
+      const eventTimezone = event.timezone || "America/New_York";
       const eventDate = startTime
         ? startTime.toLocaleDateString("en-US", {
             weekday: "long",
             year: "numeric",
             month: "long",
             day: "numeric",
+            timeZone: eventTimezone,
           })
         : "TBA";
       const eventTime = startTime
         ? startTime.toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
+            timeZone: eventTimezone,
           })
         : "TBA";
 

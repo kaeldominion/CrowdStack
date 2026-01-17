@@ -86,6 +86,7 @@ interface EventDetails {
   eventSlug: string;
   eventDate: string;
   eventEndDate?: string | null;
+  eventTimezone?: string | null;
   eventDescription?: string | null;
   venueName?: string | null;
   venueAddress?: string | null;
@@ -189,17 +190,20 @@ export async function sendEventAssignmentEmail(
     ? termsParts.join("\n• ") 
     : "To be determined";
 
-  // Format event date/time
+  // Format event date/time with proper timezone
   const startDate = new Date(eventDetails.eventDate);
+  const timezone = eventDetails.eventTimezone || "America/New_York";
   const formattedDate = startDate.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: timezone,
   });
   const formattedTime = startDate.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZone: timezone,
   });
 
   let eventTimeText = `${formattedDate} at ${formattedTime}`;
@@ -208,6 +212,7 @@ export async function sendEventAssignmentEmail(
     const endTime = endDate.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
+      timeZone: timezone,
     });
     eventTimeText += ` - ${endTime}`;
   }
