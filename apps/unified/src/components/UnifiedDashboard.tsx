@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { UserRole } from "@crowdstack/shared";
 import { BentoCard } from "@/components/BentoCard";
 import { Button, Badge } from "@crowdstack/ui";
@@ -9,143 +9,30 @@ import Link from "next/link";
 import Image from "next/image";
 import { RegistrationChart } from "@/components/charts/RegistrationChart";
 import { EarningsChart } from "@/components/charts/EarningsChart";
-import { createBrowserClient } from "@crowdstack/shared";
 import { DJProfileSelector } from "@/components/DJProfileSelector";
 import { BeautifiedQRCode } from "@/components/BeautifiedQRCode";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { useVenue } from "@/contexts/VenueContext";
 import { VenueSwitcher } from "@/components/VenueSwitcher";
+import { useUnifiedDashboard, useDashboardLiveEvents } from "@/lib/hooks/use-dashboard-stats";
+import { getWebUrl, getVenueUrl, getDJUrl, getPromoterUrl } from "@/lib/utils/url";
 
 interface UnifiedDashboardProps {
   userRoles: UserRole[];
 }
 
-interface LiveEvent {
+// Extended venue type that includes image properties from the API
+interface DashboardVenue {
   id: string;
   name: string;
-  slug: string;
-  start_time: string;
-  end_time: string | null;
-  status: string;
-  max_guestlist_size: number | null;
-  venue?: { id: string; name: string } | null;
-  organizer?: { id: string; name: string } | null;
-  registrations: number;
-  checkins: number;
-}
-
-interface PromoterEvent {
-  id: string;
-  name: string;
-  slug: string;
-  start_time: string;
-  end_time: string | null;
-  status: string;
-  flier_url: string | null;
-  venue_name: string | null;
-  referral_link: string;
-  registrations: number;
-  checkins: number;
-  conversionRate: number;
-  isLive: boolean;
-  isUpcoming: boolean;
-  isPast: boolean;
+  slug: string | null;
+  logo_url?: string | null;
+  cover_image_url?: string | null;
 }
 
 export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
-  const [venueStats, setVenueStats] = useState({
-    totalEvents: 0,
-    thisMonth: 0,
-    totalCheckIns: 0,
-    repeatRate: 0,
-    avgAttendance: 0,
-    topEvent: "N/A",
-    topEventDetails: null as {
-      id: string;
-      name: string;
-      registrations: number;
-      checkins: number;
-      date: string;
-    } | null,
-  });
-  const [attendeeStats, setAttendeeStats] = useState({
-    totalAttendees: 0,
-    totalCheckins: 0,
-    newThisMonth: 0,
-    repeatVisitors: 0,
-    flaggedCount: 0,
-    topAttendees: [] as Array<{ id: string; name: string; checkins: number; events: number; xp_points: number }>,
-  });
-  const [venue, setVenue] = useState<{
-    id: string;
-    name: string;
-    slug: string | null;
-    logo_url: string | null;
-    cover_image_url: string | null;
-  } | null>(null);
-  const [organizerStats, setOrganizerStats] = useState({
-    totalEvents: 0,
-    registrations: 0,
-    checkIns: 0,
-    promoters: 0,
-    conversionRate: 0,
-    revenue: 0,
-  });
-  const [promoterStats, setPromoterStats] = useState({
-    totalCheckIns: 0,
-    conversionRate: 0,
-    totalEarnings: 0,
-    earnings: {
-      confirmed: 0,
-      pending: 0,
-      estimated: 0,
-      total: 0,
-    },
-    earningsByCurrency: {} as Record<string, { confirmed: number; pending: number; estimated: number; total: number }>,
-    rank: 0,
-    referrals: 0,
-    avgPerEvent: 0,
-    eventsCount: 0,
-  });
-  const [organizerChartData, setOrganizerChartData] = useState<Array<{ date: string; registrations: number; checkins: number }>>([]);
-  const [promoterChartData, setPromoterChartData] = useState<Array<{ date: string; earnings: number }>>([]);
-  const [promoterEvents, setPromoterEvents] = useState<{
-    liveEvents: PromoterEvent[];
-    upcomingEvents: PromoterEvent[];
-    pastEvents: PromoterEvent[];
-  }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
-  const [organizerEvents, setOrganizerEvents] = useState<{
-    liveEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
-    upcomingEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
-    pastEvents: Array<{ id: string; name: string; slug: string; start_time: string; end_time: string | null; venue_name: string | null; registrations: number; checkins: number; max_guestlist_size: number | null; flier_url: string | null; status: string; venue_approval_status: string }>;
-  }>({ liveEvents: [], upcomingEvents: [], pastEvents: [] });
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedAttendeeId, setSelectedAttendeeId] = useState<string | null>(null);
-  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
-  const [djStats, setDJStats] = useState({
-    mixesCount: 0,
-    totalPlays: 0,
-    followerCount: 0,
-    upcomingEventsCount: 0,
-    gigInvitationsCount: 0,
-    earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
-    totalEarnings: 0,
-    referrals: 0,
-    totalCheckIns: 0,
-    conversionRate: 0,
-    eventsPromotedCount: 0,
-  });
-  const [djHandle, setDJHandle] = useState<string | null>(null);
-  const [promoterProfile, setPromoterProfile] = useState<{
-    id: string;
-    name: string;
-    slug: string | null;
-    bio: string | null;
-    profile_image_url: string | null;
-    instagram_handle: string | null;
-    is_public: boolean;
-  } | null>(null);
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
 
   // Get venue context for reacting to venue changes
@@ -157,141 +44,103 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
   const isDJ = userRoles.includes("dj");
   const isSuperadmin = userRoles.includes("superadmin");
 
-    useEffect(() => {
-    loadAllStats();
-    loadLiveEvents();
+  // Determine primary role for live events
+  const primaryRole = useMemo(() => {
+    if (isVenue) return 'venue' as const;
+    if (isOrganizer) return 'organizer' as const;
+    if (isPromoter) return 'promoter' as const;
+    return null;
+  }, [isVenue, isOrganizer, isPromoter]);
 
-    // Refresh live events every 30 seconds
-    const interval = setInterval(loadLiveEvents, 30000);
-    return () => clearInterval(interval);
-    // venueVersion triggers reload when venue is switched
-  }, [userRoles, isPromoter, isVenue, isOrganizer, isDJ, venueVersion]);
+  // Unified dashboard fetch - single API call for all role data
+  const {
+    data: dashboardData,
+    isLoading,
+    error: dashboardError,
+  } = useUnifiedDashboard(userRoles, venueVersion);
 
-  const loadLiveEvents = async () => {
-    try {
-      // Fetch live events based on user's role
-      let endpoint = "";
-      if (isVenue) {
-        endpoint = "/api/venue/events/live";
-      } else if (isOrganizer) {
-        endpoint = "/api/organizer/events/live";
-      } else if (isPromoter) {
-        endpoint = "/api/promoter/events/live";
-      }
+  // Extract data from unified response with defaults
+  const venueStats = dashboardData?.venue?.stats || {
+    totalEvents: 0,
+    thisMonth: 0,
+    totalCheckIns: 0,
+    repeatRate: 0,
+    avgAttendance: 0,
+    topEvent: "N/A",
+    topEventDetails: null,
+  };
+  const attendeeStats = dashboardData?.venue?.attendeeStats || {
+    totalAttendees: 0,
+    totalCheckins: 0,
+    newThisMonth: 0,
+    repeatVisitors: 0,
+    flaggedCount: 0,
+    topAttendees: [],
+  };
+  const venue: DashboardVenue | null = (dashboardData?.venue?.venue || selectedVenue || null) as DashboardVenue | null;
 
-      if (endpoint) {
-        // Use cache: 'no-store' to ensure fresh data when venue is switched
-        const response = await fetch(endpoint, { cache: 'no-store' });
-        if (response.ok) {
-          const data = await response.json();
-          setLiveEvents(data.events || []);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading live events:", error);
-    }
+  const organizerStats = dashboardData?.organizer?.stats || {
+    totalEvents: 0,
+    registrations: 0,
+    checkIns: 0,
+    promoters: 0,
+    conversionRate: 0,
+    revenue: 0,
+  };
+  const organizerChartData = dashboardData?.organizer?.chartData || [];
+  const organizerEvents = dashboardData?.organizer?.events || {
+    liveEvents: [],
+    upcomingEvents: [],
+    pastEvents: [],
   };
 
-  const loadAllStats = async () => {
-    setLoading(true);
-    const promises = [];
-
-    if (isVenue) {
-      // Use cache: 'no-store' to ensure fresh data when venue is switched
-      promises.push(
-        fetch("/api/venue/dashboard-stats", { cache: 'no-store' })
-          .then((r) => r.json())
-          .then((data) => {
-            setVenueStats(data.stats || venueStats);
-            if (data.venue) {
-              setVenue(data.venue);
-            }
-          })
-          .catch((e) => console.error("Failed to load venue stats:", e))
-      );
-      promises.push(
-        fetch("/api/venue/attendees/stats", { cache: 'no-store' })
-          .then((r) => r.json())
-          .then((data) => {
-            setAttendeeStats(data);
-          })
-          .catch((e) => console.error("Failed to load attendee stats:", e))
-      );
-    }
-
-    if (isOrganizer) {
-      promises.push(
-        fetch("/api/organizer/dashboard-stats")
-          .then((r) => r.json())
-          .then((data) => {
-            setOrganizerStats(data.stats || organizerStats);
-            setOrganizerChartData(data.chartData || []);
-          })
-          .catch((e) => console.error("Failed to load organizer stats:", e)),
-        fetch("/api/organizer/dashboard-events")
-          .then((r) => r.json())
-          .then((data) => {
-            setOrganizerEvents({
-              liveEvents: data.liveEvents || [],
-              upcomingEvents: data.upcomingEvents || [],
-              pastEvents: data.pastEvents || [],
-            });
-          })
-          .catch((e) => console.error("Failed to load organizer events:", e))
-      );
-    }
-
-    if (isPromoter) {
-      promises.push(
-        fetch("/api/promoter/dashboard-stats")
-          .then((r) => r.json())
-          .then((data) => {
-            setPromoterStats(data.stats || promoterStats);
-            setPromoterChartData(data.earningsChartData || []);
-            if (data.promoter) {
-              setPromoterProfile(data.promoter);
-            }
-          })
-          .catch((e) => console.error("Failed to load promoter stats:", e))
-      );
-      promises.push(
-        fetch("/api/promoter/dashboard-events")
-          .then((r) => r.json())
-          .then((data) => {
-            setPromoterEvents({
-              liveEvents: data.liveEvents || [],
-              upcomingEvents: data.upcomingEvents || [],
-              pastEvents: data.pastEvents || [],
-            });
-          })
-          .catch((e) => console.error("Failed to load promoter events:", e))
-      );
-    }
-
-    if (isDJ) {
-      promises.push(
-        fetch("/api/dj/dashboard-stats")
-          .then((r) => r.json())
-          .then((data) => {
-            setDJStats(data.stats || djStats);
-          })
-          .catch((e) => console.error("Failed to load DJ stats:", e))
-      );
-      promises.push(
-        fetch("/api/dj/profile")
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.dj?.handle) {
-              setDJHandle(data.dj.handle);
-            }
-          })
-          .catch((e) => console.error("Failed to load DJ profile:", e))
-      );
-    }
-
-    await Promise.all(promises);
-    setLoading(false);
+  const promoterStats = dashboardData?.promoter?.stats || {
+    totalCheckIns: 0,
+    conversionRate: 0,
+    totalEarnings: 0,
+    earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
+    earningsByCurrency: {},
+    rank: 0,
+    referrals: 0,
+    avgPerEvent: 0,
+    eventsCount: 0,
   };
+  const promoterChartData = dashboardData?.promoter?.chartData || [];
+  const promoterEvents = dashboardData?.promoter?.events || {
+    liveEvents: [],
+    upcomingEvents: [],
+    pastEvents: [],
+  };
+  const promoterProfile = dashboardData?.promoter?.profile || null;
+
+  const djStats = dashboardData?.dj?.stats || {
+    mixesCount: 0,
+    totalPlays: 0,
+    followerCount: 0,
+    upcomingEventsCount: 0,
+    gigInvitationsCount: 0,
+    earnings: { confirmed: 0, pending: 0, estimated: 0, total: 0 },
+    totalEarnings: 0,
+    referrals: 0,
+    totalCheckIns: 0,
+    conversionRate: 0,
+    eventsPromotedCount: 0,
+  };
+  const djHandle = dashboardData?.dj?.handle || null;
+
+  // Live events from unified response, with conditional polling
+  const liveEventsFromUnified = dashboardData?.liveEvents || [];
+  const hasLiveEvents = liveEventsFromUnified.length > 0;
+
+  // Use dedicated live events hook for polling when there are live events
+  const { data: polledLiveEvents } = useDashboardLiveEvents(
+    primaryRole,
+    hasLiveEvents,
+    30000 // 30 second polling interval
+  );
+
+  // Use polled data if available (more recent), otherwise use unified data
+  const liveEvents = polledLiveEvents || liveEventsFromUnified;
 
   const copyEventLink = (eventId: string, link: string) => {
     navigator.clipboard.writeText(link);
@@ -299,10 +148,54 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     setTimeout(() => setCopiedEventId(null), 2000);
   };
 
-  if (loading) {
+  // Loading skeleton for sections
+  const SectionSkeleton = () => (
+    <div className="animate-pulse space-y-4">
+      <div className="h-6 w-48 bg-active rounded" />
+      <div className="grid grid-cols-4 gap-2">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-20 bg-active rounded-xl" />
+        ))}
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse text-[var(--text-muted)]">Loading dashboard...</div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title flex items-center gap-2">
+              <LayoutGrid className="h-6 w-6 text-[var(--accent-secondary)]" />
+              Dashboard
+            </h1>
+            <p className="page-description">Loading your dashboard...</p>
+          </div>
+        </div>
+        {isVenue && <SectionSkeleton />}
+        {isOrganizer && <SectionSkeleton />}
+        {isPromoter && <SectionSkeleton />}
+        {isDJ && <SectionSkeleton />}
+      </div>
+    );
+  }
+
+  if (dashboardError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title flex items-center gap-2">
+              <LayoutGrid className="h-6 w-6 text-[var(--accent-secondary)]" />
+              Dashboard
+            </h1>
+          </div>
+        </div>
+        <BentoCard className="text-center py-8">
+          <div className="text-red-400 mb-4">Failed to load dashboard data</div>
+          <p className="text-secondary text-sm mb-4">Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()}>Refresh</Button>
+        </BentoCard>
       </div>
     );
   }
@@ -317,8 +210,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
             Dashboard
           </h1>
           <p className="page-description">
-            {userRoles.length > 1 
-              ? "Overview across all your roles" 
+            {userRoles.length > 1
+              ? "Overview across all your roles"
               : "Overview of your performance"}
           </p>
         </div>
@@ -356,8 +249,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {liveEvents.map((event) => (
-              <Link 
-                key={event.id} 
+              <Link
+                key={event.id}
                 href={isVenue ? `/app/venue/events/${event.id}` : isOrganizer ? `/app/organizer/events/${event.id}` : `/app/promoter/events/${event.id}`}
               >
                 <BentoCard className="border-l-4 border-l-red-500 hover:bg-active transition-colors cursor-pointer">
@@ -377,7 +270,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     </div>
                     <Radio className="h-4 w-4 text-red-500 animate-pulse flex-shrink-0" />
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-1">
                       <Users className="h-3 w-3 text-muted" />
@@ -513,22 +406,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 p-2 bg-glass/50 rounded-md border border-border-subtle">
                           <code className="text-sm text-primary font-mono flex-1 truncate">
-                            {(() => {
-                              if (typeof window !== "undefined") {
-                                const origin = window.location.origin;
-                                const webUrl = origin.replace(/app(-beta)?\./, "");
-                                return `${webUrl}/v/${venue.slug}`;
-                              }
-                              return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
-                            })()}
+                            {getVenueUrl(venue.slug)}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const origin = window.location.origin;
-                              const webUrl = origin.replace(/app(-beta)?\./, "");
-                              const url = `${webUrl}/v/${venue.slug}`;
+                              const url = getVenueUrl(venue.slug!);
                               navigator.clipboard.writeText(url);
                               alert("Link copied to clipboard!");
                             }}
@@ -539,14 +423,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <a
-                            href={(() => {
-                              if (typeof window !== "undefined") {
-                                const origin = window.location.origin;
-                                const webUrl = origin.replace(/app(-beta)?\./, "");
-                                return `${webUrl}/v/${venue.slug}`;
-                              }
-                              return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/v/${venue.slug}`;
-                            })()}
+                            href={getVenueUrl(venue.slug)}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -703,7 +580,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     <ExternalLink className="h-3 w-3" />
                   </span>
                 </div>
-                
+
                 {/* Quick Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="bg-glass/50 rounded-lg p-4 border border-border-subtle">
@@ -736,7 +613,11 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                       {attendeeStats.topAttendees.map((attendee, index) => (
                         <div
                           key={attendee.id}
-                          onClick={() => setSelectedAttendeeId(attendee.id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedAttendeeId(attendee.id);
+                          }}
                           className="flex items-center gap-2 bg-glass/50 rounded-full px-3 py-1.5 border border-border-subtle hover:bg-active cursor-pointer transition-colors"
                         >
                           <div className="flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-xs font-bold text-white">
@@ -963,7 +844,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                   <div className="flex-shrink-0 flex flex-col items-center">
                     <div className="bg-white p-2 rounded-xl">
                       <BeautifiedQRCode
-                        url={`${typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/${promoterProfile.slug}`}
+                        url={getPromoterUrl(promoterProfile.slug)}
                         size={140}
                         logoSize={30}
                       />
@@ -989,13 +870,13 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                         </p>
                         <div className="flex items-center gap-2 p-2 bg-glass/50 rounded-md border border-border-subtle">
                           <code className="text-sm text-primary font-mono flex-1 truncate">
-                            {typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/{promoterProfile.slug}
+                            {getPromoterUrl(promoterProfile.slug)}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const url = `${window.location.origin}/promoter/${promoterProfile.slug}`;
+                              const url = getPromoterUrl(promoterProfile.slug!);
                               navigator.clipboard.writeText(url);
                               setProfileLinkCopied(true);
                               setTimeout(() => setProfileLinkCopied(false), 2000);
@@ -1007,7 +888,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <a
-                            href={`${typeof window !== 'undefined' ? window.location.origin : 'https://crowdstack.app'}/promoter/${promoterProfile.slug}`}
+                            href={getPromoterUrl(promoterProfile.slug)}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -1094,7 +975,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                     <p className="text-xs uppercase tracking-widest text-muted font-medium mb-2">Earnings</p>
                     {Object.keys(promoterStats.earningsByCurrency || {}).length > 0 ? (
                       <div className="space-y-1">
-                        {Object.entries(promoterStats.earningsByCurrency).map(([currency, amounts]) => (
+                        {Object.entries(promoterStats.earningsByCurrency || {}).map(([currency, amounts]) => (
                           <div key={currency} className="flex items-baseline gap-2">
                             <span className="text-xl font-bold tracking-tighter text-primary font-mono">
                               {new Intl.NumberFormat("en-US", {
@@ -1299,8 +1180,8 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
           )}
 
           {/* No Events State */}
-          {promoterEvents.liveEvents.length === 0 && 
-           promoterEvents.upcomingEvents.length === 0 && 
+          {promoterEvents.liveEvents.length === 0 &&
+           promoterEvents.upcomingEvents.length === 0 &&
            promoterEvents.pastEvents.length === 0 && (
             <BentoCard>
               <div className="text-center py-8">
@@ -1365,14 +1246,7 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
                   </p>
                 </div>
                 <a
-                  href={(() => {
-                    if (typeof window !== "undefined") {
-                      const origin = window.location.origin;
-                      const webUrl = origin.replace(/app(-beta)?\./, "");
-                      return `${webUrl}/dj/${djHandle}`;
-                    }
-                    return `${process.env.NEXT_PUBLIC_WEB_URL || "https://crowdstack.app"}/dj/${djHandle}`;
-                  })()}
+                  href={getDJUrl(djHandle)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -1577,5 +1451,3 @@ export function UnifiedDashboard({ userRoles }: UnifiedDashboardProps) {
     </div>
   );
 }
-
-

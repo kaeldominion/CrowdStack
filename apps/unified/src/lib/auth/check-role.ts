@@ -71,3 +71,21 @@ export async function userHasRoleOrSuperadmin(role: string): Promise<boolean> {
   return userHasAnyRoleOrSuperadmin([role]);
 }
 
+/**
+ * Get all roles for the current user
+ */
+export async function getUserRoles(): Promise<string[]> {
+  const userId = await getUserId();
+  if (!userId) {
+    return [];
+  }
+
+  const serviceSupabase = createServiceRoleClient();
+  const { data: userRoles } = await serviceSupabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  return userRoles?.map((r) => r.role) || [];
+}
+
